@@ -1,50 +1,31 @@
-# React + TypeScript + Vite
+The goal is to create a program that allows the creation of a playable gamebook. In the same world, within a similar timeframe, it should be possible to play as different characters and observe the events in the world from various perspectives. At the same time, the events in the world should be influenced by the decisions of individual characters. The program should support multiple people working on the same project.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Basic Concepts
+- **world** is composed of a set of objects with properties.
+- **state of the world** refers to the values of the properties of the world's objects.
+- **event** is used to describe happenings in the world and consists of:
+  - a set of changes in the properties of the world's objects
+  - a set of pairs ("condition", event). The condition describes under what circumstances the next event should occur.
+  - a time interval that indicates within which time range the event can happen.
+- **linear event** is an event extended with a duration. It may contain sub-events that have a fixed time offset from the start of the event. It is used to describe a non-branching part of the story. It can display sub-events on a timeline.
+- **passage** describes the state the player is currently in and also describes the options available to the player, allowing them to transition to a different passage. In the case of a playable gamebook, it refers to the code for rendering buttons to transition to another passage.
+  - each passage can be assigned an event it relates to.
 
-Currently, two official plugins are available:
+## Insights
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Objekty sveta
 
-## Expanding the ESLint configuration
+Samotne objekty sveta muzeme vyjadrit jako singletony.
+Typy pro definovani spolecnych vlastnosti vice objektu pak mohou rozsirovat tyto objekty.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Staticka vlastnost singletonu lze vyuzit primym odkazem v nejake pasazi. Zaroven by takovy objekt vlastnil 
+svuj typ, coz by znamenalo, ze pri spatnem napsani vlastnosti by se kompilator mohl ozvat pri kontrole. 
 
-- Configure the top-level `parserOptions` property like this:
+Hodilo by se, kdybychom mohli rikat z pohledu uzivatele, ve kterych udalostech je pro nas dana vlastnost, respektive mnozina vlastnosti
+daneho objektu dulezita. 
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+Realne, pri psani zmen vlastnosti v pasazi by naseptavac naseptaval vlastnosti podle udalosti, ktere se tyka.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Typy pasazi 
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim frameworkem.
