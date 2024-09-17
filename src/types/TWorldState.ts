@@ -1,11 +1,13 @@
-import { TVillageData } from '../passages/Thomas/villageEvent/TVillageData';
+import { TVillageEventData } from '../data/events/village/village.data';
 import { TItem } from './TItem';
 
 export type TWorldState = {
     time: 0;
     characters: Record<'franta', TCharacter>;
 
-    village: Partial<TVillageData>;
+    event: {
+        village: Partial<TVillageEventData>;
+    };
 };
 
 type TCharacter = {

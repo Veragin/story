@@ -15,7 +15,7 @@ export const introPassage: TPassage<'thomas', 'village'> = () => ({
                 text: 'text',
                 links: [
                     {
-                        passageId: 'village',
+                        passageId: 'forest',
                         cost: s.time ? 1 : 2,
                     },
                 ],

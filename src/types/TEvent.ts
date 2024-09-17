@@ -1,8 +1,7 @@
-import { TCharacterId, TEventId } from './TCharacter';
-import { TPassage } from './TPassage';
+import { TEventId } from './TCharacter';
 
-export type TEvent<Ch extends TCharacterId> = {
-    eventId: TEventId<Ch>;
+export type TEvent<E extends TEventId> = {
+    eventId: E;
     title: string;
     description: string;
 
@@ -12,11 +11,8 @@ export type TEvent<Ch extends TCharacterId> = {
     };
     location: string;
 
-    passages: Record<TEventId<Ch>, TPassage<Ch, TEventId<Ch>>>;
-    startPassageId: string;
-
     children: {
         condition: string;
-        event: TEvent<Ch>;
+        event: TEvent<TEventId>;
     }[];
 };

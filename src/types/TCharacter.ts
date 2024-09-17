@@ -1,16 +1,13 @@
-import { register } from 'passages/register';
-import { TEvent } from './TEvent';
+import { register } from 'data/register';
 
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
-
-    events: Record<string, TEvent<Ch>>;
 };
 
-export type TCharacterId = keyof typeof register;
-export type TEventId<Ch extends TCharacterId> = keyof (typeof register)[Ch]['events'];
+export type TCharacterId = keyof (typeof register)['characters'];
+export type TEventId = keyof (typeof register)['events'];
 export type TPassageId<
     Ch extends TCharacterId,
-    E extends TEventId<Ch>
-> = keyof (typeof register)[Ch]['events'][E]['passages'];
+    E extends TEventId
+> = keyof (typeof register)['events'][E]['passages'][Ch];

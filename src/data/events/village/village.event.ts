@@ -1,13 +1,15 @@
 import { TEvent } from 'types/TEvent';
-import { introPassage } from './passages/intro';
-import { villagePassage } from './passages/village';
+import { introPassage } from './thomas.passages/intro';
+import { villagePassage } from './thomas.passages/village';
 
 export const villageEventPassages = {
-    intro: introPassage,
-    village: villagePassage,
+    thomas: {
+        intro: introPassage,
+        forest: villagePassage,
+    },
 } as const;
 
-export const villageEvent: TEvent<'thomas'> = {
+export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
     title: 'Village Event',
     description: 'A village event is happening',
@@ -18,7 +20,4 @@ export const villageEvent: TEvent<'thomas'> = {
     location: 'village',
 
     children: [],
-    passages: villageEventPassages,
-
-    startPassageId: 'intro',
 };
