@@ -9,7 +9,7 @@ export const villageEventPassages = {
     },
 } as const;
 
-export const villageEvent: TEvent<'village'> = {
+export const villageEvent: TEvent = {
     eventId: 'village',
     title: 'Village Event',
     description: 'A village event is happening',

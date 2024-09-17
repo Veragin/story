@@ -1,7 +1,8 @@
 import { TEventId } from './TCharacter';
+import { TLocationId } from './TLocation';
 
-export type TEvent<E extends TEventId> = {
-    eventId: E;
+export type TEvent = {
+    eventId: TEventId;
     title: string;
     description: string;
 
@@ -9,10 +10,10 @@ export type TEvent<E extends TEventId> = {
         start: number;
         end: number;
     };
-    location: string;
+    location: TLocationId;
 
     children: {
         condition: string;
-        event: TEvent<TEventId>;
+        event: TEvent;
     }[];
 };

@@ -3,6 +3,9 @@ import { register } from 'data/register';
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
+
+    spawnLocation: string;
+    startPassageId: TPassageId<Ch, TEventId>;
 };
 
 export type TCharacterId = keyof (typeof register)['characters'];
