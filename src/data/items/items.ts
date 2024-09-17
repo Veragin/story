@@ -1,18 +1,15 @@
-export const items = [
-    {
-        id: 'gold',
+export const itemInfo = {
+    gold: {
         name: 'Gold',
         type: 'value',
     },
-    {
-        id: 'wood',
+    wood: {
         name: 'Wood',
         type: 'resouce',
     },
-    {
-        id: 'berries',
+    berries: {
         name: 'Berries',
         type: 'food',
         hungerValue: 5,
     },
-] as const;
+} as const;

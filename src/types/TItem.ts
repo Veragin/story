@@ -1,7 +1,7 @@
-import { items } from '../const/items';
+import { itemInfo } from '../data/items/items';
 
-export type TItemId = (typeof items)[number]['id'];
-export type TItemType = (typeof items)[number]['type'];
+export type TItemId = keyof typeof itemInfo;
+export type TItemType = 'value' | 'resource' | 'food';
 
 export type TItem = {
     id: TItemId;
