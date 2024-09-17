@@ -6,7 +6,13 @@ export const items = [
     },
     {
         id: 'wood',
-        name: 'Wo0d',
+        name: 'Wood',
         type: 'resouce',
+    },
+    {
+        id: 'berries',
+        name: 'Berries',
+        type: 'food',
+        hungerValue: 5,
     },
 ] as const;

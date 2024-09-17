@@ -1,21 +1,22 @@
+import { TCharacterId, TEventId, TPassageId } from './TCharacter';
 import { TItemId } from './TItem';
 
-export type TPassage<RegisterPassageId> = () => {
-    id: RegisterPassageId;
-    eventId: number;
+export type TPassage<Ch extends TCharacterId, E extends TEventId<Ch>> = () => {
+    id: TPassageId<Ch, E>;
+    eventId: E;
     title: string;
     image: string;
 
-    data: TPassageScreen<RegisterPassageId> | TPassageFight<RegisterPassageId>;
+    data: TPassageScreen<Ch, E> | TPassageTransition<Ch, TEventId<Ch>>;
 };
 
-type TPassageScreen<RegisterPassageId> = {
+type TPassageScreen<Ch extends TCharacterId, E extends TEventId<Ch>> = {
     type: 'screen';
     body: {
         condition: boolean;
         text: string;
         links: {
-            passageId: RegisterPassageId;
+            passageId: TPassageId<Ch, E>;
             cost:
                 | number
                 | {
@@ -28,6 +29,7 @@ type TPassageScreen<RegisterPassageId> = {
     }[];
 };
 
-type TPassageFight<RegisterPassageId> = {
-    type: 'fight';
+type TPassageTransition<Ch extends TCharacterId, E extends TEventId<Ch>> = {
+    type: 'transition';
+    toEventId: E;
 };

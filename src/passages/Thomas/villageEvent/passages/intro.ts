@@ -1,9 +1,9 @@
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
 
-const passage: TPassage = () => ({
-    id: 'start',
-    eventId: 1,
+export const introPassage: TPassage<'thomas', 'village'> = () => ({
+    id: 'intro',
+    eventId: 'village',
     title: 'title',
     image: 'image',
 
@@ -15,7 +15,7 @@ const passage: TPassage = () => ({
                 text: 'text',
                 links: [
                     {
-                        passageId: 1,
+                        passageId: 'village',
                         cost: s.time ? 1 : 2,
                     },
                 ],
@@ -23,5 +23,3 @@ const passage: TPassage = () => ({
         ],
     },
 });
-
-export default passage;
