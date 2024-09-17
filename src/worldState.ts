@@ -13,5 +13,7 @@ export const s: TWorldState = {
         },
     },
 
-    village: {},
+    event: {
+        village: {},
+    },
 };
