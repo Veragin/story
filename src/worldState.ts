@@ -1,12 +1,13 @@
-import { TWorldState } from 'types/TWorldState';
+import { Time } from 'Time/Time';
+import { TWorldState } from 'data/TWorldState';
 
 export const s: TWorldState = {
-    time: 0,
+    time: Time.fromMin(0),
+    mainCharacterId: 'thomas',
     characters: {
-        franta: {
-            name: 'Franta',
+        thomas: {
             health: 100,
-            energy: 100,
+            stamina: 100,
             hunger: 100,
             inventory: [],
             location: 'village',

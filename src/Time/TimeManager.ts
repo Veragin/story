@@ -1,0 +1,41 @@
+import { DAY_S, HOUR_S, MIN_S, MONTH_S, START_MONTH } from './const';
+import { Time } from './Time';
+
+export class TimeManager {
+    renderTime = (time: Time, format: TTimeRenderFormat) => {
+        const { month, day, hour, min, sec } = this.parseTime(time);
+        const minText = String(min).length < 2 ? `0${min}` : min;
+
+        let res = `${hour}:${minText}`;
+        if (format === 'dateTime' || format === 'dateTimeSec') {
+            res = `${day + 1}.${month + START_MONTH}. ${res}`;
+        }
+        if (format === 'dateTimeSec' || format === 'timeSec') {
+            const secText = String(sec).length < 2 ? `0${sec}` : sec;
+            res += `:${secText}`;
+        }
+
+        return res;
+    };
+
+    isDay = (time: Time) => {
+        const { hour } = this.parseTime(time);
+        return hour < 6 || hour > 22;
+    };
+
+    parseTime = (time: Time) => {
+        const month = Math.floor(time.s / MONTH_S);
+        let restS = time.s - month * MONTH_S;
+        const day = Math.floor(time.s / DAY_S);
+        restS = time.s - day * DAY_S;
+        const hour = Math.floor(restS / HOUR_S);
+        restS -= hour * HOUR_S;
+        const min = Math.floor(restS / MIN_S);
+        restS -= min * MIN_S;
+        const sec = restS - min * MIN_S;
+
+        return { month, day, hour, min, sec };
+    };
+}
+
+export type TTimeRenderFormat = 'dateTime' | 'dateTimeSec' | 'time' | 'timeSec';

@@ -1,16 +1,15 @@
 import { TCharacterId, TEventId, TPassageId } from './TCharacter';
 import { TItemId } from './TItem';
 
-export type TPassage<Ch extends TCharacterId, E extends TEventId> = () => {
+export type TPassage<Ch extends TCharacterId, E extends TEventId> = () =>
+    | TPassageScreen<Ch, E>
+    | TPassageTransition<Ch, E>;
+
+export type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
     id: TPassageId<Ch, E>;
     eventId: E;
     title: string;
     image: string;
-
-    data: TPassageScreen<Ch, E> | TPassageTransition<Ch, TEventId>;
-};
-
-type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
     type: 'screen';
     body: {
         condition: boolean;
@@ -29,7 +28,9 @@ type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
     }[];
 };
 
-type TPassageTransition<Ch extends TCharacterId, E extends TEventId> = {
+export type TPassageTransition<Ch extends TCharacterId, E extends TEventId> = {
+    id: TPassageId<Ch, E>;
+    eventId: E;
     type: 'transition';
     toEventId: E;
     toPassageId: TPassageId<Ch, E>;

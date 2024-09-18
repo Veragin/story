@@ -9,6 +9,8 @@ export type TLocation = {
         name: string;
         description: string;
     }[];
+
+    sublocations?: TLocation[];
 };
 
 export type TLocationId = keyof (typeof register)['locations'];

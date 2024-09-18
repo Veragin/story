@@ -4,22 +4,20 @@ import { s } from 'worldState';
 export const introPassage: TPassage<'thomas', 'village'> = () => ({
     id: 'intro',
     eventId: 'village',
+    type: 'screen',
     title: 'title',
     image: 'image',
 
-    data: {
-        type: 'screen',
-        body: [
-            {
-                condition: true,
-                text: 'text',
-                links: [
-                    {
-                        passageId: 'forest',
-                        cost: s.time ? 1 : 2,
-                    },
-                ],
-            },
-        ],
-    },
+    body: [
+        {
+            condition: true,
+            text: 'text',
+            links: [
+                {
+                    passageId: 'forest',
+                    cost: s.time ? 1 : 2,
+                },
+            ],
+        },
+    ],
 });
