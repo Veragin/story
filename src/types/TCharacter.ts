@@ -1,7 +1,7 @@
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
 import { TLocationId } from './TLocation';
-import { TItem } from './TItem';
+import { TItem, TItemId } from './TItem';
 
 export type TCharacterId = keyof (typeof register)['characters'];
 export type TCharacter<Ch extends TCharacterId> = {
@@ -16,7 +16,7 @@ export type TCharacterData = {
     health: number;
     stamina: number;
     hunger: number;
-    inventory: TItem[];
+    inventory: TItem<TItemId>[];
 };
 
 export type TSideCharacterId = keyof (typeof register)['sideCharacters'];
@@ -29,7 +29,7 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
 };
 export type TSideCharacterData = {
     location: TLocationId;
-    inventory: TItem[];
+    inventory: TItem<TItemId>[];
 };
 
 export type TEventId = keyof (typeof register)['events'];

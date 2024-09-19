@@ -1,9 +1,20 @@
-import { itemInfo } from '../data/items/items';
+import { itemInfo } from '../data/items/itemInfo';
 
 export type TItemId = keyof typeof itemInfo;
-export type TItemType = 'value' | 'resource' | 'food';
 
-export type TItem = {
-    id: TItemId;
-    count: number;
+type DeepWriteable<T> = {
+    -readonly [P in keyof T]: T[P] extends number
+        ? number
+        : T[P] extends string
+        ? string
+        : T[P] extends boolean
+        ? boolean
+        : T[P] extends []
+        ? DeepWriteable<T[P][number]>[] // not wokring
+        : DeepWriteable<T[P]>;
 };
+
+export type TItem<I extends TItemId> = {
+    id: I;
+    count: number;
+} & DeepWriteable<(typeof itemInfo)[I]>;
