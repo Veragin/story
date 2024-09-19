@@ -15,16 +15,19 @@ const ss = {
 };
 
 (Object.keys(register.characters) as TCharacterId[]).forEach((id) => {
-    ss.characters[id] = register.characters[id].init;
+    ss.characters[id] = { ...register.characters[id].init, ref: register.characters[id] };
 });
 (Object.keys(register.sideCharacters) as TSideCharacterId[]).forEach((id) => {
-    ss.sideCharacters[id] = register.sideCharacters[id].init;
+    ss.sideCharacters[id] = {
+        ...register.sideCharacters[id].init,
+        ref: register.sideCharacters[id],
+    };
 });
 (Object.keys(register.events) as TEventId[]).forEach((id) => {
-    ss.events[id] = register.events[id].info.init;
+    ss.events[id] = { ...register.events[id].info.init, ref: register.events[id] };
 });
 (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
-    ss.locations[id] = register.locations[id].init;
+    ss.locations[id] = { ...register.locations[id].init, ref: register.locations[id] };
 });
 
 const s = ss as TWorldState;

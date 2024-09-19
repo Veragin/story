@@ -1,6 +1,8 @@
 import { TEvent } from 'types/TEvent';
 import { introPassage } from './thomas.passages/intro';
 import { villagePassage } from './thomas.passages/village';
+import { Time } from 'Time/Time';
+import { DAY_S } from 'Time/const';
 
 export const villageEventPassages = {
     thomas: {
@@ -14,8 +16,8 @@ export const villageEvent: TEvent<'village'> = {
     title: 'Village Event',
     description: 'A village event is happening',
     timeRange: {
-        start: 0,
-        end: 0,
+        start: Time.fromS(0),
+        end: Time.fromS(2 * DAY_S),
     },
     location: 'village',
 

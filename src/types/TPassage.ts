@@ -1,3 +1,4 @@
+import { DeltaTime } from 'Time/Time';
 import { TCharacterId, TEventId, TPassageId } from './TCharacter';
 import { TItemId } from './TItem';
 
@@ -17,9 +18,9 @@ export type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
         links: {
             passageId: TPassageId<Ch, E>;
             cost:
-                | number
+                | DeltaTime
                 | {
-                      time?: number;
+                      time?: DeltaTime;
                       items?: { id: TItemId; count: number }[];
                       tools?: TItemId[];
                   }[];

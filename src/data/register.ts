@@ -2,6 +2,7 @@ import { Thomas } from './characters/Thomas';
 import { villageEvent, villageEventPassages } from './events/village/village.event';
 import { villageLocation } from './locations/village.location';
 import { Franta } from './sideCharacters/Franta';
+import { NobleMan } from './sideCharacters/NobleMan';
 
 export const register = {
     characters: {
@@ -9,6 +10,7 @@ export const register = {
     },
     sideCharacters: {
         franta: Franta,
+        nobleMan: NobleMan,
     },
     events: {
         village: {

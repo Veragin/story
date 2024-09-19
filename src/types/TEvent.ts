@@ -1,6 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { TEventId } from './TCharacter';
 import { TLocationId } from './TLocation';
+import { Time } from 'Time/Time';
 
 export type TEvent<E extends TEventId> = {
     eventId: E;
@@ -8,8 +9,8 @@ export type TEvent<E extends TEventId> = {
     description: string;
 
     timeRange: {
-        start: number;
-        end: number;
+        start: Time;
+        end: Time;
     };
     location: TLocationId;
 

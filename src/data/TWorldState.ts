@@ -1,25 +1,37 @@
 import { TVillageEventData } from './events/village/village.event';
-import { TCharacterData, TCharacterId, TSideCharacterData } from '../types/TCharacter';
+import {
+    TCharacter,
+    TCharacterData,
+    TCharacterId,
+    TSideCharacter,
+    TSideCharacterData,
+} from '../types/TCharacter';
 import { Time } from 'Time/Time';
 import { TThomasCharacterData } from './characters/Thomas';
 import { TFrantaSideCharacterData } from './sideCharacters/Franta';
 import { TVillageLocationData } from './locations/village.location';
+import { TEvent } from 'types/TEvent';
+import { TLocation } from 'types/TLocation';
+import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 
 export type TWorldState = {
     time: Time;
     mainCharacterId: TCharacterId;
 
     characters: {
-        thomas: TCharacterData & Partial<TThomasCharacterData>;
+        thomas: { ref: TCharacter<'thomas'> } & TCharacterData & Partial<TThomasCharacterData>;
     };
     sideCharacters: {
-        franta: TSideCharacterData & Partial<TFrantaSideCharacterData>;
+        franta: { ref: TSideCharacter<'franta'> } & TSideCharacterData &
+            Partial<TFrantaSideCharacterData>;
+        nobleMan: { ref: TSideCharacter<'nobleMan'> } & TSideCharacterData &
+            Partial<TNobleManSideCharacterData>;
     };
 
     events: {
-        village: Partial<TVillageEventData>;
+        village: { ref: TEvent<'village'> } & Partial<TVillageEventData>;
     };
     locations: {
-        village: Partial<TVillageLocationData>;
+        village: { ref: TLocation<'village'> } & Partial<TVillageLocationData>;
     };
 };

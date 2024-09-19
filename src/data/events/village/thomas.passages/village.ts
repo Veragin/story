@@ -1,3 +1,4 @@
+import { DeltaTime } from 'Time/Time';
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
 
@@ -15,7 +16,7 @@ export const villagePassage: TPassage<'thomas', 'village'> = () => ({
             links: [
                 {
                     passageId: 'intro',
-                    cost: s.time ? 1 : 2,
+                    cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),
                 },
             ],
         },
