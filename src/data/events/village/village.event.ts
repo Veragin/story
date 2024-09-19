@@ -9,7 +9,7 @@ export const villageEventPassages = {
     },
 } as const;
 
-export const villageEvent: TEvent = {
+export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
     title: 'Village Event',
     description: 'A village event is happening',
@@ -20,4 +20,13 @@ export const villageEvent: TEvent = {
     location: 'village',
 
     children: [],
+
+    init: {},
+};
+
+export type TVillageEventData = {
+    mojePromena: {
+        time: number;
+        asd: string;
+    };
 };

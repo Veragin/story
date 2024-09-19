@@ -3,7 +3,17 @@ import { TCharacter } from 'types/TCharacter';
 export const Thomas: TCharacter<'thomas'> = {
     id: 'thomas',
     name: 'Thomas',
-
-    spawnLocation: 'village',
     startPassageId: 'intro',
+
+    init: {
+        health: 100,
+        hunger: 100,
+        stamina: 100,
+        inventory: [],
+        location: 'village',
+    },
+};
+
+export type TThomasCharacterData = {
+    knowsMagic: boolean;
 };

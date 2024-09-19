@@ -1,8 +1,9 @@
+import { TWorldState } from 'data/TWorldState';
 import { TEventId } from './TCharacter';
 import { TLocationId } from './TLocation';
 
-export type TEvent = {
-    eventId: TEventId;
+export type TEvent<E extends TEventId> = {
+    eventId: E;
     title: string;
     description: string;
 
@@ -14,6 +15,8 @@ export type TEvent = {
 
     children: {
         condition: string;
-        event: TEvent;
+        event: TEvent<TEventId>;
     }[];
+
+    init: Partial<TWorldState['events'][E]>;
 };

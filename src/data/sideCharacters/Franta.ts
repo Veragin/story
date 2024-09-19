@@ -1,5 +1,19 @@
-export const Franta = {
+import { TSideCharacter } from 'types/TCharacter';
+
+export const Franta: TSideCharacter<'franta'> = {
+    id: 'franta',
     name: 'Franta',
     description: 'Franta is a very old',
-    spawnLoaction: 'village',
+
+    init: {
+        inventory: [],
+        location: 'village',
+    },
+};
+
+export type TFrantaSideCharacterData = {
+    asdasd: {
+        time: number;
+        asd: string;
+    };
 };

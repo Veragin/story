@@ -1,7 +1,8 @@
 import { register } from 'data/register';
+import { TWorldState } from 'data/TWorldState';
 
-export type TLocation = {
-    id: TLocationId;
+export type TLocation<L extends TLocationId> = {
+    id: L;
     name: string;
     description: string;
 
@@ -10,7 +11,9 @@ export type TLocation = {
         description: string;
     }[];
 
-    sublocations?: TLocation[];
+    sublocations?: TLocation<TLocationId>[];
+
+    init: Partial<TWorldState['locations'][L]>;
 };
 
 export type TLocationId = keyof (typeof register)['locations'];

@@ -4,6 +4,7 @@ import { TCharacterId, TEventId } from 'types/TCharacter';
 import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
 import { Row } from 'Components/Basic';
+import { spacingCss } from 'Components/css';
 
 type Props = {
     passage: TPassageScreen<TCharacterId, TEventId>;
@@ -13,13 +14,41 @@ export const ScreenTemplate = ({ passage }: Props) => {
     return (
         <WholeContainer>
             <StatusBar />
-            <SContainer></SContainer>
+            <SContainer>
+                <SImg src={passage.image} />
+                <SContent>
+                    <STitle>{passage.title}</STitle>
+                </SContent>
+            </SContainer>
         </WholeContainer>
     );
 };
 
 const SContainer = styled(Row)`
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+    width: 100%;
+    flex: 1;
+    padding: ${spacingCss(2)};
+    gap: ${spacingCss(2)};
+    overflow: hidden;
+`;
+
+const SImg = styled('img')`
+    height: 100%;
+    object-fit: contain;
+    aspect-ratio: 1;
+`;
+
+const SContent = styled('div')`
+    display: flex;
+    flex-direction: column;
+    padding: ${spacingCss(10)} 4%;
+    flex: 1;
+    gap: ${spacingCss(1)};
+    overflow: auto;
+`;
+
+const STitle = styled('span')`
+    font-size: 2em;
+    line-height: 2em;
+    text-align: center;
 `;

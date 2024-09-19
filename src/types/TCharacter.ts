@@ -1,14 +1,37 @@
 import { register } from 'data/register';
+import { TWorldState } from 'data/TWorldState';
+import { TLocationId } from './TLocation';
+import { TItem } from './TItem';
 
+export type TCharacterId = keyof (typeof register)['characters'];
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    spawnLocation: string;
-    startPassageId: TPassageId<Ch, TEventId>;
+    startPassageId?: TPassageId<Ch, TEventId>;
+    init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
+};
+export type TCharacterData = {
+    location: TLocationId;
+    health: number;
+    stamina: number;
+    hunger: number;
+    inventory: TItem[];
 };
 
-export type TCharacterId = keyof (typeof register)['characters'];
+export type TSideCharacterId = keyof (typeof register)['sideCharacters'];
+export type TSideCharacter<Ch extends TSideCharacterId> = {
+    id: Ch;
+    name: string;
+    description: string;
+
+    init: TSideCharacterData & Partial<TWorldState['sideCharacters'][Ch]>;
+};
+export type TSideCharacterData = {
+    location: TLocationId;
+    inventory: TItem[];
+};
+
 export type TEventId = keyof (typeof register)['events'];
 export type TPassageId<
     Ch extends TCharacterId,
