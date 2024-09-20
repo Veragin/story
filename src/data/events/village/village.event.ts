@@ -3,6 +3,7 @@ import { introPassage } from './thomas.passages/intro';
 import { villagePassage } from './thomas.passages/village';
 import { Time } from 'Time/Time';
 import { DAY_S } from 'Time/const';
+import { nobleHouseRobberyTrigger } from './triggers';
 
 export const villageEventPassages = {
     thomas: {
@@ -22,6 +23,8 @@ export const villageEvent: TEvent<'village'> = {
     location: 'village',
 
     children: [],
+
+    triggers: [nobleHouseRobberyTrigger],
 
     init: {},
 };

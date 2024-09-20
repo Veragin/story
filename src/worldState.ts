@@ -1,11 +1,12 @@
 import { Time } from 'Time/Time';
+import { MONTH_S } from 'Time/const';
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TCharacter';
 import { TLocationId } from 'types/TLocation';
 
 const ss = {
-    time: Time.fromMin(0),
+    time: Time.fromS(MONTH_S * 9),
     mainCharacterId: 'thomas',
 
     characters: {} as Record<TCharacterId, unknown>,

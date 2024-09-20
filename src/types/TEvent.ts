@@ -2,6 +2,7 @@ import { TWorldState } from 'data/TWorldState';
 import { TEventId } from './TCharacter';
 import { TLocationId } from './TLocation';
 import { Time } from 'Time/Time';
+import { TTimeTrigger } from './TTimeTrigger';
 
 export type TEvent<E extends TEventId> = {
     eventId: E;
@@ -18,6 +19,8 @@ export type TEvent<E extends TEventId> = {
         condition: string;
         event: TEvent<TEventId>;
     }[];
+
+    triggers: TTimeTrigger[];
 
     init: Partial<TWorldState['events'][E]>;
 };

@@ -1,4 +1,4 @@
-import { HOUR_S, MIN_S } from './const';
+import { DAY_S, HOUR_S, MIN_S, MONTH_S } from './const';
 
 export class Time {
     protected _timeS: number;
@@ -11,20 +11,26 @@ export class Time {
         return new Time(timeS);
     }
 
-    static fromMin(timeMin: number) {
-        return new Time(timeMin * MIN_S);
+    static from(
+        data: Partial<{ month: number; day: number; hour: number; min: number; sec: number }>
+    ) {
+        const { month = 0, day = 0, hour = 0, min = 0, sec = 0 } = data;
+        return new Time(month * MONTH_S + day * DAY_S + hour * HOUR_S + min * MIN_S + sec);
     }
 
-    static now() {
-        return Time.fromS(Math.floor(Date.now() / 1_000));
+    static fromString(
+        s:
+            | `${number}.${number} ${number}:${number}:${number}`
+            | `${number}.${number} ${number}:${number}`
+    ) {
+        const [date, time] = s.split(' ');
+        const [month, day] = date.split('.').map(Number);
+        const [hour, min, sec] = time.split(':').map(Number);
+        return Time.from({ month: month - 1, day: day - 1, hour, min, sec });
     }
 
     get s() {
         return this._timeS;
-    }
-
-    get min() {
-        return Math.floor(this._timeS / MIN_S);
     }
 
     isEqual(otherTime: Time) {

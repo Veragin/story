@@ -1,4 +1,4 @@
-import { DAY_S, HOUR_S, MIN_S, MONTH_S, START_MONTH } from './const';
+import { DAY_S, HOUR_S, MIN_S, MONTH_S } from './const';
 import { Time } from './Time';
 
 export class TimeManager {
@@ -8,7 +8,7 @@ export class TimeManager {
 
         let res = `${hour}:${minText}`;
         if (format === 'dateTime' || format === 'dateTimeSec') {
-            res = `${day + 1}.${month + START_MONTH}. ${res}`;
+            res = `${day + 1}.${month + 1}. ${res}`;
         }
         if (format === 'dateTimeSec' || format === 'timeSec') {
             const secText = String(sec).length < 2 ? `0${sec}` : sec;
