@@ -1,8 +1,8 @@
 import { TEvent } from 'types/TEvent';
 import { introPassage } from './thomas.passages/intro';
 import { villagePassage } from './thomas.passages/village';
-import { Time } from 'Time/Time';
-import { DAY_S } from 'Time/const';
+import { Time } from 'code/time/Time';
+import { DAY_S } from 'code/time/const';
 import { nobleHouseRobberyTrigger } from './triggers';
 
 export const villageEventPassages = {

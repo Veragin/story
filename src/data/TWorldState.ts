@@ -6,7 +6,7 @@ import {
     TSideCharacter,
     TSideCharacterData,
 } from '../types/TCharacter';
-import { Time } from 'Time/Time';
+import { Time } from 'code/time/Time';
 import { TThomasCharacterData } from './characters/Thomas';
 import { TFrantaSideCharacterData } from './sideCharacters/Franta';
 import { TVillageLocationData } from './locations/village.location';

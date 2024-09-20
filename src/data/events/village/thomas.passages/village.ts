@@ -1,4 +1,4 @@
-import { DeltaTime } from 'Time/Time';
+import { DeltaTime } from 'code/time/Time';
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
 

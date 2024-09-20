@@ -1,10 +1,10 @@
 import { styled } from '@mui/material';
-import { WholeContainer } from 'Components/Basic';
+import { WholeContainer } from 'code/Components/Basic';
 import { TCharacterId, TEventId } from 'types/TCharacter';
 import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
-import { Row } from 'Components/Basic';
-import { spacingCss } from 'Components/css';
+import { Row } from 'code/Components/Basic';
+import { spacingCss } from 'code/Components/css';
 
 type Props = {
     passage: TPassageScreen<TCharacterId, TEventId>;

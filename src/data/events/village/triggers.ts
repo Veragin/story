@@ -1,4 +1,4 @@
-import { Time } from 'Time/Time';
+import { Time } from 'code/time/Time';
 import { TTimeTrigger } from 'types/TTimeTrigger';
 
 export const nobleHouseRobberyTrigger: TTimeTrigger = {

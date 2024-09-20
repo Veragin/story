@@ -1,4 +1,4 @@
-import { Time } from 'Time/Time';
+import { Time } from 'code/time/Time';
 
 export type TTimeTrigger = {
     id: string;

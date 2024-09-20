@@ -1,4 +1,4 @@
-import { DeltaTime } from 'Time/Time';
+import { DeltaTime } from 'code/time/Time';
 import { TCharacterId, TEventId, TPassageId } from './TCharacter';
 import { TItemId } from './TItem';
 

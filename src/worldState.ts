@@ -1,5 +1,5 @@
-import { Time } from 'Time/Time';
-import { MONTH_S } from 'Time/const';
+import { Time } from 'code/time/Time';
+import { MONTH_S } from 'code/time/const';
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TCharacter';

@@ -1,8 +1,8 @@
 import { Button, Modal, styled, Tooltip } from '@mui/material';
-import { spacingCss } from 'Components/css';
-import { Row } from 'Components/Basic';
-import { Text } from 'Components/Text';
-import { TimeManager } from 'Time/TimeManager';
+import { spacingCss } from 'code/Components/css';
+import { Row } from 'code/Components/Basic';
+import { Text } from 'code/Components/Text';
+import { TimeManager } from 'code/time/TimeManager';
 import { s } from 'worldState';
 import { register } from 'data/register';
 import { useState } from 'react';

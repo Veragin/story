@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { TEventId } from './TCharacter';
 import { TLocationId } from './TLocation';
-import { Time } from 'Time/Time';
+import { Time } from 'code/time/Time';
 import { TTimeTrigger } from './TTimeTrigger';
 
 export type TEvent<E extends TEventId> = {
