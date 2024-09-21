@@ -10,8 +10,5 @@ type TItemInfo = {
     name: string;
     type: 'tool';
 };
-
-const test = (item: TItemInfo) => {
-    void item;
-};
-Object.values(toolInfo).forEach(test);
+// test
+Object.values(toolInfo).forEach((item: TItemInfo) => void item);

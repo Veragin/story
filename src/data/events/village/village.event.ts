@@ -4,6 +4,8 @@ import { villagePassage } from './thomas.passages/village';
 import { Time } from 'code/time/Time';
 import { DAY_S } from 'code/time/const';
 import { nobleHouseRobberyTrigger } from './triggers';
+import { TCharacterIdInEvent } from 'types/TCharacter';
+import { TPassage } from 'types/TPassage';
 
 export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
@@ -35,3 +37,8 @@ export const villageEventPassages = {
         forest: villagePassage,
     },
 } as const;
+
+// test
+Object.values(villageEventPassages)
+    .flatMap((o) => Object.values(o))
+    .forEach((item: TPassage<'village', TCharacterIdInEvent<'village'>>) => void item);

@@ -11,8 +11,5 @@ type TItemInfo = {
     type: 'food';
     hungerValue: number;
 };
-
-const test = (item: TItemInfo) => {
-    void item;
-};
-Object.values(foodInfo).forEach(test);
+// test
+Object.values(foodInfo).forEach((item: TItemInfo) => void item);
