@@ -5,6 +5,7 @@ import { s } from 'worldState';
 export const villagePassage: TPassage<'village', 'thomas'> = () => ({
     id: 'forest',
     eventId: 'village',
+    characterId: 'thomas',
     type: 'screen',
     title: 'title',
     image: 'image',

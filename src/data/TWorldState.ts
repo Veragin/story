@@ -13,6 +13,7 @@ import { TVillageLocationData } from './locations/village.location';
 import { TEvent } from 'types/TEvent';
 import { TLocation } from 'types/TLocation';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
+import { TAnnieCharacterData } from './characters/Annie';
 
 export type TWorldState = {
     time: Time;
@@ -20,7 +21,7 @@ export type TWorldState = {
 
     characters: {
         thomas: { ref: TCharacter<'thomas'> } & TCharacterData & Partial<TThomasCharacterData>;
-        annie: { ref: TCharacter<'annie'> } & TCharacterData & Partial<TThomasCharacterData>;
+        annie: { ref: TCharacter<'annie'> } & TCharacterData & Partial<TAnnieCharacterData>;
     };
     sideCharacters: {
         franta: { ref: TSideCharacter<'franta'> } & TSideCharacterData &
