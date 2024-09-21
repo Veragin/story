@@ -9,6 +9,7 @@ export type TPassage<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = ()
 export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
     id: TPassageId<E, Ch>;
     eventId: E;
+    characterId: Ch;
     title: string;
     image: string;
     type: 'screen';

@@ -4,6 +4,7 @@ import { TPassage } from 'types/TPassage';
 export const introPassage: TPassage<'village', 'thomas'> = () => ({
     id: 'intro',
     eventId: 'village',
+    characterId: 'thomas',
     type: 'screen',
     title: 'title',
     image: 'image',
