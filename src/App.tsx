@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Button, styled } from '@mui/material';
+import { Column, WholeContainer } from 'code/Components/Basic';
+import { spacingCss } from 'code/Components/css';
+import { Title } from 'code/Components/Text';
+import { Engine } from 'code/Engine/Engine';
+import { Visualizer } from 'code/Visualizer/Visualizer';
+import { useState } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+export const App = () => {
+    const [service, setService] = useState<null | 'engine' | 'visualizer'>(null);
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    if (service === 'engine') {
+        return <Engine />;
+    }
 
-export default App
+    if (service === 'visualizer') {
+        return <Visualizer />;
+    }
+
+    return (
+        <WholeContainer>
+            <SContainer>
+                <STitle>Choose a service</STitle>
+                <Button onClick={() => setService('engine')} variant="contained">
+                    Start
+                </Button>
+                <Button onClick={() => setService('visualizer')} variant="contained">
+                    Visualiser
+                </Button>
+            </SContainer>
+        </WholeContainer>
+    );
+};
+
+const SContainer = styled(Column)`
+    justify-content: center;
+    gap: ${spacingCss(3)};
+    align-items: center;
+    flex: 1;
+
+    & > button {
+        width: 200px;
+    }
+`;
+
+const STitle = styled(Title)`
+    padding-bottom: ${spacingCss(10)};
+`;
