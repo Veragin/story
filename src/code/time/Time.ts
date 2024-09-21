@@ -85,10 +85,10 @@ export class DeltaTime {
     }
 
     get min() {
-        return Math.floor(this._deltaTimeS / MIN_S);
+        return this._deltaTimeS / MIN_S;
     }
 
     get hour() {
-        return Math.floor(this._deltaTimeS / HOUR_S);
+        return this._deltaTimeS / HOUR_S;
     }
 }

@@ -15,6 +15,7 @@ export const villagePassage: TPassage<'thomas', 'village'> = () => ({
             text: 'text',
             links: [
                 {
+                    text: 'Lets hunt',
                     passageId: 'intro',
                     cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),
                 },

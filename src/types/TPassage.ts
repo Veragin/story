@@ -16,18 +16,22 @@ export type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
         condition: boolean;
         text: string;
         links: {
+            text: string;
             passageId: TPassageId<Ch, E>;
-            cost:
-                | DeltaTime
-                | {
-                      time?: DeltaTime;
-                      items?: { id: TItemId; count: number }[];
-                      tools?: TItemId[];
-                  }[];
+            cost: TPassageCost;
+
             callback?: () => void;
         }[];
     }[];
 };
+
+export type TPassageCost =
+    | DeltaTime
+    | {
+          time?: DeltaTime;
+          items?: { id: TItemId; count: number }[];
+          tools?: TItemId[];
+      }[];
 
 export type TPassageTransition<Ch extends TCharacterId, E extends TEventId> = {
     id: TPassageId<Ch, E>;
