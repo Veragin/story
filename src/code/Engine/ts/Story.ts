@@ -1,15 +1,12 @@
 import { DeltaTime } from 'code/time/Time';
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TCharacterIdInEvent, TEventId, TPassageId } from 'types/TCharacter';
-import { TPassageCost } from 'types/TPassage';
+import { TCharacterIdInEvent, TEventId, TPassageId } from 'types/TIds';
+import { TLinkCost } from 'types/TPassage';
 
 export class Story {
     constructor(private s: TWorldState) {}
 
-    goToPassage = (
-        id: TPassageId<TEventId, TCharacterIdInEvent<TEventId>>,
-        cost: TPassageCost
-    ) => {};
+    goToPassage = (id: TPassageId<TEventId, TCharacterIdInEvent<TEventId>>, cost: TLinkCost) => {};
 
     spendTime = (time: DeltaTime) => {
         this.s.time = this.s.time.moveToFutureBy(time);

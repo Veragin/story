@@ -2,7 +2,7 @@ import { DeltaTime } from 'code/time/Time';
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
 
-export const villagePassage: TPassage<'village', 'thomas'> = () => ({
+export const forestPassage = (): TPassage<'village', 'thomas'> => ({
     id: 'forest',
     eventId: 'village',
     characterId: 'thomas',

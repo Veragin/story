@@ -1,11 +1,10 @@
 import { TEvent } from 'types/TEvent';
 import { introPassage } from './thomas.passages/intro';
-import { villagePassage } from './thomas.passages/village';
+import { forestPassage } from './thomas.passages/forest';
 import { Time } from 'code/time/Time';
 import { DAY_S } from 'code/time/const';
 import { nobleHouseRobberyTrigger } from './triggers';
-import { TCharacterIdInEvent } from 'types/TCharacter';
-import { TPassage } from 'types/TPassage';
+import { TEventPassage } from 'types/TPassage';
 
 export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
@@ -34,11 +33,11 @@ export type TVillageEventData = {
 export const villageEventPassages = {
     thomas: {
         intro: introPassage,
-        forest: villagePassage,
+        forest: forestPassage,
     },
 } as const;
 
 // test
 Object.values(villageEventPassages)
     .flatMap((o) => Object.values(o))
-    .forEach((item: TPassage<'village', TCharacterIdInEvent<'village'>>) => void item);
+    .forEach((item: () => TEventPassage<'village'>) => void item);

@@ -1,8 +1,10 @@
 import { DeltaTime } from 'code/time/Time';
-import { TCharacterIdInEvent, TEventId, TPassageId } from './TCharacter';
+import { TCharacterIdInEvent, TEventId, TPassageId } from './TIds';
 import { TItemId } from './TItem';
 
-export type TPassage<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = () =>
+export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterIdInEvent<E>>;
+
+export type TPassage<E extends TEventId, Ch extends TCharacterIdInEvent<E>> =
     | TPassageScreen<E, Ch>
     | TPassageTransition<E, Ch>;
 
@@ -19,14 +21,14 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>
         links: {
             text: string;
             passageId: TPassageId<E, Ch>;
-            cost: TPassageCost;
+            cost: TLinkCost;
 
             callback?: () => void;
         }[];
     }[];
 };
 
-export type TPassageCost =
+export type TLinkCost =
     | DeltaTime
     | {
           time?: DeltaTime;
@@ -37,6 +39,7 @@ export type TPassageCost =
 export type TPassageTransition<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
     id: TPassageId<E, Ch>;
     eventId: E;
+    characterId: Ch;
     type: 'transition';
     toEventId: E;
     toPassageId: TPassageId<E, Ch>;

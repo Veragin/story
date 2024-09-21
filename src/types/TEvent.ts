@@ -1,5 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { TEventId } from './TCharacter';
+import { TEventId } from './TIds';
 import { TLocationId } from './TLocation';
 import { Time } from 'code/time/Time';
 import { TTimeTrigger } from './TTimeTrigger';

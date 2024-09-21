@@ -1,9 +1,8 @@
-import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
 import { TLocationId } from './TLocation';
 import { TItem, TItemId } from './TItem';
+import { TCharacterId, TEventId, TSideCharacterId, TStartPassageId } from './TIds';
 
-export type TCharacterId = keyof (typeof register)['characters'];
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
@@ -19,7 +18,6 @@ export type TCharacterData = {
     inventory: TItem<TItemId>[];
 };
 
-export type TSideCharacterId = keyof (typeof register)['sideCharacters'];
 export type TSideCharacter<Ch extends TSideCharacterId> = {
     id: Ch;
     name: string;
@@ -31,17 +29,3 @@ export type TSideCharacterData = {
     location: TLocationId;
     inventory: TItem<TItemId>[];
 };
-
-export type TEventId = keyof (typeof register)['events'];
-
-export type TCharacterIdInEvent<E extends TEventId> =
-    keyof (typeof register)['events'][E]['passages'];
-export type TPassageId<
-    E extends TEventId,
-    Ch extends TCharacterIdInEvent<E>
-> = keyof (typeof register)['events'][E]['passages'][Ch];
-
-export type TStartPassageId<E extends TEventId, Ch> = TPassageId<
-    E,
-    Extract<Ch, TCharacterIdInEvent<E>>
->;

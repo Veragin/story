@@ -1,6 +1,6 @@
 import { styled } from '@mui/material';
 import { WholeContainer } from 'code/Components/Basic';
-import { TCharacterIdInEvent, TEventId } from 'types/TCharacter';
+import { TCharacterIdInEvent, TEventId } from 'types/TIds';
 import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
 import { Row } from 'code/Components/Basic';

@@ -1,5 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId } from 'types/TCharacter';
+import { TCharacterId } from 'types/TIds';
 import { TItem, TItemId } from 'types/TItem';
 
 export class Inventory {

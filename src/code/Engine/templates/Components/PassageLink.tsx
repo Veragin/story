@@ -1,5 +1,5 @@
 import { styled } from '@mui/material';
-import { TCharacterIdInEvent, TEventId } from 'types/TCharacter';
+import { TCharacterIdInEvent, TEventId } from 'types/TIds';
 import { TPassageScreen } from 'types/TPassage';
 
 type Props<E extends TEventId> = {

@@ -2,7 +2,6 @@ import { TVillageEventData } from './events/village/village.event';
 import {
     TCharacter,
     TCharacterData,
-    TCharacterId,
     TSideCharacter,
     TSideCharacterData,
 } from '../types/TCharacter';
@@ -14,6 +13,7 @@ import { TEvent } from 'types/TEvent';
 import { TLocation } from 'types/TLocation';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/Annie';
+import { TCharacterId } from 'types/TIds';
 
 export type TWorldState = {
     time: Time;
