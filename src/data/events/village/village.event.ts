@@ -5,13 +5,6 @@ import { Time } from 'code/time/Time';
 import { DAY_S } from 'code/time/const';
 import { nobleHouseRobberyTrigger } from './triggers';
 
-export const villageEventPassages = {
-    thomas: {
-        intro: introPassage,
-        forest: villagePassage,
-    },
-} as const;
-
 export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
     title: 'Village Event',
@@ -35,3 +28,10 @@ export type TVillageEventData = {
         asd: string;
     };
 };
+
+export const villageEventPassages = {
+    thomas: {
+        intro: introPassage,
+        forest: villagePassage,
+    },
+} as const;

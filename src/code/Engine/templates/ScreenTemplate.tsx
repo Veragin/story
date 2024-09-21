@@ -1,17 +1,17 @@
 import { styled } from '@mui/material';
 import { WholeContainer } from 'code/Components/Basic';
-import { TCharacterId, TEventId } from 'types/TCharacter';
+import { TCharacterIdInEvent, TEventId } from 'types/TCharacter';
 import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
 import { Row } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { PassageLink } from './Components/PassageLink';
 
-type Props = {
-    passage: TPassageScreen<TCharacterId, TEventId>;
+type Props<E extends TEventId> = {
+    passage: TPassageScreen<E, TCharacterIdInEvent<E>>;
 };
 
-export const ScreenTemplate = ({ passage }: Props) => {
+export const ScreenTemplate = ({ passage }: Props<TEventId>) => {
     const body = passage.body.filter((b) => b.condition);
 
     return (

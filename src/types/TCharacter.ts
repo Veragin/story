@@ -8,7 +8,7 @@ export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    startPassageId?: TPassageId<Ch, TEventId>;
+    startPassageId?: TPassageId<TEventId, Extract<Ch, TCharacterIdInEvent<TEventId>>>;
     init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
 };
 export type TCharacterData = {
@@ -33,7 +33,10 @@ export type TSideCharacterData = {
 };
 
 export type TEventId = keyof (typeof register)['events'];
+
+export type TCharacterIdInEvent<E extends TEventId> =
+    keyof (typeof register)['events'][E]['passages'];
 export type TPassageId<
-    Ch extends TCharacterId,
-    E extends TEventId
+    E extends TEventId,
+    Ch extends TCharacterIdInEvent<E>
 > = keyof (typeof register)['events'][E]['passages'][Ch];

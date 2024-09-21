@@ -1,13 +1,13 @@
 import { DeltaTime } from 'code/time/Time';
-import { TCharacterId, TEventId, TPassageId } from './TCharacter';
+import { TCharacterIdInEvent, TEventId, TPassageId } from './TCharacter';
 import { TItemId } from './TItem';
 
-export type TPassage<Ch extends TCharacterId, E extends TEventId> = () =>
-    | TPassageScreen<Ch, E>
-    | TPassageTransition<Ch, E>;
+export type TPassage<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = () =>
+    | TPassageScreen<E, Ch>
+    | TPassageTransition<E, Ch>;
 
-export type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
-    id: TPassageId<Ch, E>;
+export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
+    id: TPassageId<E, Ch>;
     eventId: E;
     title: string;
     image: string;
@@ -17,7 +17,7 @@ export type TPassageScreen<Ch extends TCharacterId, E extends TEventId> = {
         text: string;
         links: {
             text: string;
-            passageId: TPassageId<Ch, E>;
+            passageId: TPassageId<E, Ch>;
             cost: TPassageCost;
 
             callback?: () => void;
@@ -33,10 +33,10 @@ export type TPassageCost =
           tools?: TItemId[];
       }[];
 
-export type TPassageTransition<Ch extends TCharacterId, E extends TEventId> = {
-    id: TPassageId<Ch, E>;
+export type TPassageTransition<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
+    id: TPassageId<E, Ch>;
     eventId: E;
     type: 'transition';
     toEventId: E;
-    toPassageId: TPassageId<Ch, E>;
+    toPassageId: TPassageId<E, Ch>;
 };

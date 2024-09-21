@@ -2,6 +2,7 @@ export const toolInfo = {
     axe: {
         name: 'Axe',
         type: 'tool',
+        dmg: 10,
     },
 } as const;
 

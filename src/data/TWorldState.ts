@@ -20,6 +20,7 @@ export type TWorldState = {
 
     characters: {
         thomas: { ref: TCharacter<'thomas'> } & TCharacterData & Partial<TThomasCharacterData>;
+        annie: { ref: TCharacter<'annie'> } & TCharacterData & Partial<TThomasCharacterData>;
     };
     sideCharacters: {
         franta: { ref: TSideCharacter<'franta'> } & TSideCharacterData &

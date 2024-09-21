@@ -6,7 +6,7 @@ import { TPassageCost } from 'types/TPassage';
 export class Story {
     constructor(private s: TWorldState) {}
 
-    goToPassage = (id: TPassageId<TCharacterId, TEventId>, cost: TPassageCost) => {};
+    goToPassage = (id: TPassageId<TEventId, TCharacterId>, cost: TPassageCost) => {};
 
     spendTime = (time: DeltaTime) => {
         this.s.time = this.s.time.moveToFutureBy(time);
