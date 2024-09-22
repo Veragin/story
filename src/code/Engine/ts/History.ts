@@ -2,10 +2,12 @@ import { Time } from 'code/time/Time';
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
 import { TPassagePt } from 'types/TCharacter';
-import { TCharacterId, TEventId } from 'types/TIds';
+import { TCharacterId, TCharacterIdInEvent, TEventId } from 'types/TIds';
 
 export class History {
-    data: Partial<Record<TCharacterId, THistoryItem[]>> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: Partial<Record<TCharacterId, THistoryItem<any>[]>> = {};
+
     private characterList = Object.keys(register.characters) as TCharacterId[];
 
     constructor(private s: TWorldState) {
@@ -14,23 +16,26 @@ export class History {
         });
     }
 
-    addTurn = (turn: THistoryItem) => {
-        this.data[turn.characterId]?.push(turn);
+    addTurn = <E extends TEventId>(turn: THistoryItem<E>) => {
+        this.data[turn.passagePt.characterId]?.push(turn);
     };
 
-    getTurn = (): THistoryItem => {
+    getTurn = <E extends TEventId>(): THistoryItem<E> => {
         let minHistory = {
-            ...register.characters[this.s.mainCharacterId].startPassagePt,
+            passagePt: register.characters[this.s.mainCharacterId].startPassagePt,
             time: Time.fromS(0),
-        } as THistoryItem;
+        };
 
         for (const char of this.characterList) {
+            if (this.s.characters[char].health <= 0) {
+                continue;
+            }
             const charHistory = this.data[char];
             if (!charHistory || charHistory.length === 0) {
                 return {
-                    ...register.characters[char].startPassagePt,
+                    passagePt: register.characters[char].startPassagePt,
                     time: Time.fromS(0),
-                } as THistoryItem;
+                };
             }
 
             const lastHistory = charHistory[charHistory.length - 1];
@@ -43,7 +48,8 @@ export class History {
     };
 }
 
-export type THistoryItem = TPassagePt<TEventId, TCharacterId> & {
+export type THistoryItem<E extends TEventId> = {
+    passagePt: TPassagePt<E, TCharacterIdInEvent<E>>;
     time: Time;
     onStart?: () => void; // called when passage is starts
 };

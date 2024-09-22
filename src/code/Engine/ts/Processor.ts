@@ -1,7 +1,8 @@
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
-import { Time } from 'code/time/Time';
+import { DeltaTime, Time } from 'code/time/Time';
 import { register } from 'data/register';
+import { TLinkCost, TPassageScreen } from 'types/TPassage';
 
 export class Processor {
     private eventList = Object.values(this.s.events).map((event) => event.ref);
@@ -9,9 +10,9 @@ export class Processor {
     constructor(private s: TWorldState, private e: Engine) {}
 
     continue = () => {
-        const { characterId, eventId, passageId, time, onStart } = this.e.history.getTurn();
+        const turn = this.e.history.getTurn();
 
-        const shouldTrigger = isInRange(this.s.time, time);
+        const shouldTrigger = isInRange(this.s.time, turn.time);
         for (const event of this.activeEvents) {
             event.triggers.forEach((trigger) => {
                 if (shouldTrigger(trigger.time) && trigger.condition()) {
@@ -20,10 +21,55 @@ export class Processor {
             });
         }
 
-        this.e.story.spendTime(this.s.time.distance(time));
-        onStart?.();
+        this.e.story.spendTime(this.s.time.distance(turn.time));
+        turn.onStart?.();
 
-        this.e.activePassage = register.events[eventId].passages[characterId][passageId]();
+        this.e.activePassage =
+            register.events[turn.passagePt.eventId].passages[turn.passagePt.characterId][
+                turn.passagePt.passageId
+            ]();
+    };
+
+    private autoProcess = () => {
+        const actions = this.getPossibleActions();
+
+        if (actions.length === 1) {
+            this.processAction(actions[0]);
+        }
+    };
+
+    getPossibleActions = () => {
+        const p = this.e.activePassage;
+        if (p.type === 'screen') {
+            const links = p.body.filter((b) => b.condition).flatMap((b) => b.links);
+            return links.filter((l) => this.isActionPossible(l.cost));
+        }
+        return [];
+    };
+
+    isActionPossible = (cost: TLinkCost) => {
+        const { items, tools } = this.parseCost(cost);
+        if (
+            items !== undefined &&
+            items.some((item) => this.e.inventory.getItemCount(item.id) < item.count)
+        ) {
+            return false;
+        }
+        if (
+            tools !== undefined &&
+            tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 0)
+        ) {
+            return false;
+        }
+        return true;
+    };
+
+    parseCost = (cost: TLinkCost) => {
+        if (cost instanceof DeltaTime) {
+            return { time: cost, items: [], tools: [] };
+        }
+
+        return { time: DeltaTime.fromS(0), ...cost };
     };
 
     private get activeEvents() {

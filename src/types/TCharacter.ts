@@ -7,14 +7,16 @@ export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    startPassagePt: TPassagePt<TEventId, Ch>;
+    startPassagePt: TStartPassagePt<TEventId>;
     init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
 };
 
-export type TPassagePt<E extends TEventId, Ch extends TCharacterId> = {
+type TStartPassagePt<E extends TEventId> = TPassagePt<E, TCharacterIdInEvent<E>>;
+
+export type TPassagePt<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
     eventId: E;
     characterId: Ch;
-    passageId: TPassageId<E, Extract<Ch, TCharacterIdInEvent<E>>>;
+    passageId: TPassageId<E, Ch>;
 };
 
 export type TCharacterData = {

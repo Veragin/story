@@ -2,8 +2,13 @@ import { styled } from '@mui/material';
 import { TCharacterIdInEvent, TEventId } from 'types/TIds';
 import { TPassageScreen } from 'types/TPassage';
 
+export type TPassageScreenLink<E extends TEventId> = TPassageScreen<
+    E,
+    TCharacterIdInEvent<E>
+>['body'][number]['links'][number];
+
 type Props<E extends TEventId> = {
-    link: TPassageScreen<E, TCharacterIdInEvent<E>>['body'][number]['links'][number];
+    link: TPassageScreenLink<E>;
 };
 
 export const PassageLink = ({ link }: Props<TEventId>) => {
