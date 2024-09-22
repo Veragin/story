@@ -2,7 +2,8 @@ import { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from 'time/Time';
 import { register } from 'data/register';
-import { TLinkCost } from 'types/TPassage';
+import { TLinkCost, TPassageScreen } from 'types/TPassage';
+import { TCharacterId, TEventId } from 'types/TIds';
 
 export class Processor {
     private eventList = Object.values(this.s.events).map((event) => event.ref);
@@ -26,25 +27,34 @@ export class Processor {
 
         this.e.activePassage = register.passages[turn.passageId]();
         if (this.e.activePassage.type === 'transition') {
-            this.e.activePassage = this.e.activePassage.nextPassageId;
+            this.e.history.addTurn({
+                passageId: this.e.activePassage.nextPassageId,
+                time: this.s.time,
+            });
+            this.continue();
+            return;
+        }
+
+        if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
+            this.autoProcess(this.e.activePassage);
+            this.continue();
+            return;
         }
     };
 
-    private autoProcess = () => {
-        const actions = this.getPossibleActions();
-
-        if (actions.length === 1) {
-            this.processAction(actions[0]);
+    private autoProcess = (p: TPassageScreen<TEventId, TCharacterId>) => {
+        const actions = this.getPossibleActions(p);
+        if (actions.length === 0) {
+            return;
         }
+
+        const action = actions[0];
+        this.goToPassage(action, action.cost);
     };
 
-    getPossibleActions = () => {
-        const p = this.e.activePassage;
-        if (p.type === 'screen') {
-            const links = p.body.filter((b) => b.condition).flatMap((b) => b.links);
-            return links.filter((l) => this.isActionPossible(l.cost));
-        }
-        return [];
+    getPossibleActions = (p: TPassageScreen<TEventId, TCharacterId>) => {
+        const links = p.body.filter((b) => b.condition).flatMap((b) => b.links);
+        return links.filter((l) => this.isActionPossible(l.cost));
     };
 
     isActionPossible = (cost: TLinkCost) => {
