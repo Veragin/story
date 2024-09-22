@@ -2,7 +2,7 @@ import { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from 'time/Time';
 import { register } from 'data/register';
-import { TLinkCost, TPassageScreen } from 'types/TPassage';
+import { TLinkCost } from 'types/TPassage';
 
 export class Processor {
     private eventList = Object.values(this.s.events).map((event) => event.ref);
@@ -24,10 +24,10 @@ export class Processor {
         this.e.story.spendTime(this.s.time.distance(turn.time));
         turn.onStart?.();
 
-        this.e.activePassage =
-            register.events[turn.passagePt.eventId].passages[turn.passagePt.characterId][
-                turn.passagePt.passageId
-            ]();
+        this.e.activePassage = register.passages[turn.passageId]();
+        if (this.e.activePassage.type === 'transition') {
+            this.e.activePassage = this.e.activePassage.nextPassageId;
+        }
     };
 
     private autoProcess = () => {

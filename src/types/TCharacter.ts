@@ -7,7 +7,7 @@ export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    startPassagePt: TCharacterPassageId<Ch>;
+    startPassageId: TCharacterPassageId<Ch>;
     init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
 };
 

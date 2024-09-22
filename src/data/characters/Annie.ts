@@ -3,6 +3,7 @@ import { TCharacter } from 'types/TCharacter';
 export const Annie: TCharacter<'annie'> = {
     id: 'annie',
     name: 'Annie',
+    startPassageId: 'kingdom-annie-intro',
 
     init: {
         health: 100,

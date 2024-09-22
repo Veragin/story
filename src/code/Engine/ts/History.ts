@@ -22,7 +22,7 @@ export class History {
 
     getTurn = (): THistoryItem => {
         let minHistory = {
-            passageId: register.characters[this.s.mainCharacterId].startPassagePt,
+            passageId: register.characters[this.s.mainCharacterId].startPassageId,
             time: Time.fromS(0),
         };
 
@@ -33,7 +33,7 @@ export class History {
             const charHistory = this.data[char];
             if (!charHistory || charHistory.length === 0) {
                 return {
-                    passageId: register.characters[char].startPassagePt,
+                    passageId: register.characters[char].startPassageId,
                     time: Time.fromS(0),
                 };
             }

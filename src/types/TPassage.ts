@@ -42,5 +42,5 @@ export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     characterId: Ch;
     id: string;
     type: 'transition';
-    toPassageId: TEventCharacterPassageId<TEventId, Ch>;
+    nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };
