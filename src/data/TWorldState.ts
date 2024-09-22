@@ -14,6 +14,7 @@ import { TLocation } from 'types/TLocation';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/Annie';
 import { TCharacterId } from 'types/TIds';
+import { TKingdomEventData } from './events/kingdom/kingdom.event';
 
 export type TWorldState = {
     time: Time;
@@ -32,6 +33,7 @@ export type TWorldState = {
 
     events: {
         village: { ref: TEvent<'village'> } & Partial<TVillageEventData>;
+        kingdom: { ref: TEvent<'kingdom'> } & Partial<TKingdomEventData>;
     };
     locations: {
         village: { ref: TLocation<'village'> } & Partial<TVillageLocationData>;

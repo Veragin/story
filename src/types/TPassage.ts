@@ -21,6 +21,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>
         links: {
             text: string;
             passageId: TPassageId<E, Ch>;
+            autoPriortiy: number;
             cost: TLinkCost;
 
             callback?: () => void;

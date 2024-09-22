@@ -1,5 +1,6 @@
 import { Annie } from './characters/Annie';
 import { Thomas } from './characters/Thomas';
+import { kingdomEvent, kingdomEventPassages } from './events/kingdom/kingdom.event';
 import { villageEvent, villageEventPassages } from './events/village/village.event';
 import { villageLocation } from './locations/village.location';
 import { Franta } from './sideCharacters/Franta';
@@ -18,6 +19,10 @@ export const register = {
         village: {
             info: villageEvent,
             passages: villageEventPassages,
+        },
+        kingdom: {
+            info: kingdomEvent,
+            passages: kingdomEventPassages,
         },
     },
     locations: {

@@ -19,6 +19,7 @@ export const forestPassage = (): TPassage<'village', 'thomas'> => ({
                     text: 'Lets hunt',
                     passageId: 'intro',
                     cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),
+                    autoPriortiy: 2,
                 },
             ],
         },
