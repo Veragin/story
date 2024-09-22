@@ -6,5 +6,5 @@ export type TTimeTrigger = {
 
     time: Time;
     condition: () => boolean;
-    trigger: () => void;
+    action: () => void;
 };

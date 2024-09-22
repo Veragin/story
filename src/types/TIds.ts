@@ -8,11 +8,7 @@ export type TPassageId<
     E extends TEventId,
     Ch extends TCharacterIdInEvent<E>
 > = keyof (typeof register)['events'][E]['passages'][Ch];
+export type TEventPassageId<E extends TEventId> = TPassageId<E, TCharacterIdInEvent<E>>;
 
 export type TCharacterIdInEvent<E extends TEventId> =
     keyof (typeof register)['events'][E]['passages'];
-
-export type TStartPassageId<E extends TEventId, Ch> = TPassageId<
-    E,
-    Extract<Ch, TCharacterIdInEvent<E>>
->;

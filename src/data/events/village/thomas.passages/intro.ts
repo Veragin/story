@@ -17,12 +17,10 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
                 {
                     text: 'Lets go to the forest',
                     passageId: 'forest',
-                    cost: [
-                        {
-                            time: DeltaTime.fromMin(10),
-                            items: [{ id: 'axe', count: 1 }],
-                        },
-                    ],
+                    cost: {
+                        time: DeltaTime.fromMin(10),
+                        items: [{ id: 'axe', count: 1 }],
+                    },
                 },
             ],
         },

@@ -34,7 +34,7 @@ export type TLinkCost =
           time?: DeltaTime;
           items?: { id: TItemId; count: number }[];
           tools?: TItemId[];
-      }[];
+      };
 
 export type TPassageTransition<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
     id: TPassageId<E, Ch>;

@@ -1,15 +1,22 @@
 import { TWorldState } from 'data/TWorldState';
 import { TLocationId } from './TLocation';
 import { TItem, TItemId } from './TItem';
-import { TCharacterId, TEventId, TSideCharacterId, TStartPassageId } from './TIds';
+import { TCharacterId, TCharacterIdInEvent, TEventId, TPassageId, TSideCharacterId } from './TIds';
 
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    startPassageId?: TStartPassageId<TEventId, Ch>;
+    startPassagePt: TPassagePt<TEventId, Ch>;
     init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
 };
+
+export type TPassagePt<E extends TEventId, Ch extends TCharacterId> = {
+    eventId: E;
+    characterId: Ch;
+    passageId: TPassageId<E, Extract<Ch, TCharacterIdInEvent<E>>>;
+};
+
 export type TCharacterData = {
     location: TLocationId;
     health: number;

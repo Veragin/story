@@ -9,5 +9,5 @@ export const nobleHouseRobberyTrigger: TTimeTrigger = {
     condition: () => {
         return true;
     },
-    trigger: () => {},
+    action: () => {},
 };
