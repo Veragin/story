@@ -31,13 +31,9 @@ export type TVillageEventData = {
 };
 
 export const villageEventPassages = {
-    thomas: {
-        intro: introPassage,
-        forest: forestPassage,
-    },
+    'village-thomas-intro': introPassage,
+    'village-thomas-forest': forestPassage,
 } as const;
 
 // test
-Object.values(villageEventPassages)
-    .flatMap((o) => Object.values(o))
-    .forEach((item: () => TEventPassage<'village'>) => void item);
+Object.values(villageEventPassages).forEach((item: () => TEventPassage<'village'>) => void item);

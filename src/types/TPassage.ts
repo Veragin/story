@@ -1,17 +1,15 @@
 import { DeltaTime } from 'code/time/Time';
-import { TCharacterIdInEvent, TEventId, TPassageId } from './TIds';
+import { TCharacterId, TEventCharacterPassageId, TEventId } from './TIds';
 import { TItemId } from './TItem';
 
-export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterIdInEvent<E>>;
+export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId>;
 
-export type TPassage<E extends TEventId, Ch extends TCharacterIdInEvent<E>> =
+export type TPassage<E extends TEventId, Ch extends TCharacterId> =
     | TPassageScreen<E, Ch>
     | TPassageTransition<E, Ch>;
 
-export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
-    id: TPassageId<E, Ch>;
-    eventId: E;
-    characterId: Ch;
+export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
+    id: TEventCharacterPassageId<E, Ch>;
     title: string;
     image: string;
     type: 'screen';
@@ -20,7 +18,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterIdInEvent<E>
         text: string;
         links: {
             text: string;
-            passageId: TPassageId<E, Ch>;
+            passageId: TEventCharacterPassageId<E, Ch>;
             autoPriortiy: number;
             cost: TLinkCost;
 
@@ -37,11 +35,8 @@ export type TLinkCost =
           tools?: TItemId[];
       };
 
-export type TPassageTransition<E extends TEventId, Ch extends TCharacterIdInEvent<E>> = {
-    id: TPassageId<E, Ch>;
-    eventId: E;
-    characterId: Ch;
+export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
+    id: TEventCharacterPassageId<E, Ch>;
     type: 'transition';
-    toEventId: E;
-    toPassageId: TPassageId<E, Ch>;
+    toPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };

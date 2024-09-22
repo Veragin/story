@@ -1,12 +1,11 @@
 import { Time } from 'code/time/Time';
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
-import { TPassagePt } from 'types/TCharacter';
-import { TCharacterId, TCharacterIdInEvent, TEventId } from 'types/TIds';
+import { TCharacterId, TEventId, TEventPassageId } from 'types/TIds';
 
 export class History {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: Partial<Record<TCharacterId, THistoryItem<any>[]>> = {};
+    data: Partial<Record<TCharacterId, THistoryItem[]>> = {};
 
     private characterList = Object.keys(register.characters) as TCharacterId[];
 
@@ -16,7 +15,7 @@ export class History {
         });
     }
 
-    addTurn = <E extends TEventId>(turn: THistoryItem<E>) => {
+    addTurn = (turn: THistoryItem) => {
         this.data[turn.passagePt.characterId]?.push(turn);
     };
 
@@ -48,8 +47,8 @@ export class History {
     };
 }
 
-export type THistoryItem<E extends TEventId> = {
-    passagePt: TPassagePt<E, TCharacterIdInEvent<E>>;
+export type THistoryItem = {
+    passageId: TEventPassageId<TEventId>;
     time: Time;
     onStart?: () => void; // called when passage is starts
 };

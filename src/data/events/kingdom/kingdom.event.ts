@@ -29,12 +29,8 @@ export type TKingdomEventData = {
 };
 
 export const kingdomEventPassages = {
-    annie: {
-        intro: introPassage,
-    },
+    'kingdom-annie-intro': introPassage,
 } as const;
 
 // test
-Object.values(kingdomEventPassages)
-    .flatMap((o) => Object.values(o))
-    .forEach((item: () => TEventPassage<'kingdom'>) => void item);
+Object.values(kingdomEventPassages).forEach((item: () => TEventPassage<'kingdom'>) => void item);

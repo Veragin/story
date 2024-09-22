@@ -16,16 +16,14 @@ export const register = {
         nobleMan: NobleMan,
     },
     events: {
-        village: {
-            info: villageEvent,
-            passages: villageEventPassages,
-        },
-        kingdom: {
-            info: kingdomEvent,
-            passages: kingdomEventPassages,
-        },
+        village: villageEvent,
+        kingdom: kingdomEvent,
     },
     locations: {
         village: villageLocation,
+    },
+    passages: {
+        ...villageEventPassages,
+        ...kingdomEventPassages,
     },
 } as const;
