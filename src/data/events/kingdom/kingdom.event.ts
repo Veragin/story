@@ -1,6 +1,6 @@
 import { TEvent } from 'types/TEvent';
-import { Time } from 'code/time/Time';
-import { DAY_S } from 'code/time/const';
+import { Time } from 'time/Time';
+import { DAY_S } from 'time/const';
 import { TEventPassage } from 'types/TPassage';
 import { introPassage } from './annie.passages/intro';
 

@@ -1,8 +1,8 @@
 import { TEvent } from 'types/TEvent';
 import { introPassage } from './thomas.passages/intro';
 import { forestPassage } from './thomas.passages/forest';
-import { Time } from 'code/time/Time';
-import { DAY_S } from 'code/time/const';
+import { Time } from 'time/Time';
+import { DAY_S } from 'time/const';
 import { nobleHouseRobberyTrigger } from './triggers';
 import { TEventPassage } from 'types/TPassage';
 

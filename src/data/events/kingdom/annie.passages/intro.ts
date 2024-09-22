@@ -1,10 +1,11 @@
-import { DeltaTime } from 'code/time/Time';
+import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
 
 export const introPassage = (): TPassage<'kingdom', 'annie'> => ({
-    id: 'intro',
     eventId: 'kingdom',
     characterId: 'annie',
+    id: 'intro',
+
     type: 'screen',
     title: 'title',
     image: 'image',
@@ -16,7 +17,7 @@ export const introPassage = (): TPassage<'kingdom', 'annie'> => ({
             links: [
                 {
                     text: 'Lets go to the forest',
-                    passageId: 'intro',
+                    passageId: 'kingdom-annie-intro',
                     cost: {
                         time: DeltaTime.fromMin(10),
                         items: [{ id: 'axe', count: 1 }],

@@ -1,4 +1,4 @@
-import { DeltaTime } from 'code/time/Time';
+import { DeltaTime } from 'time/Time';
 import { TWorldState } from 'data/TWorldState';
 import { TCharacterIdInEvent, TEventId } from 'types/TIds';
 import { TLinkCost } from 'types/TPassage';

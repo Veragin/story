@@ -1,11 +1,12 @@
-import { DeltaTime } from 'code/time/Time';
+import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
 
 export const forestPassage = (): TPassage<'village', 'thomas'> => ({
-    id: 'forest',
     eventId: 'village',
     characterId: 'thomas',
+    id: 'forest',
+
     type: 'screen',
     title: 'title',
     image: 'image',
@@ -17,7 +18,7 @@ export const forestPassage = (): TPassage<'village', 'thomas'> => ({
             links: [
                 {
                     text: 'Lets hunt',
-                    passageId: 'intro',
+                    passageId: 'village-thomas-intro',
                     cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),
                     autoPriortiy: 2,
                 },

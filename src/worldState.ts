@@ -1,5 +1,5 @@
-import { Time } from 'code/time/Time';
-import { MONTH_S } from 'code/time/const';
+import { Time } from 'time/Time';
+import { MONTH_S } from 'time/const';
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
@@ -25,7 +25,7 @@ const ss = {
     };
 });
 (Object.keys(register.events) as TEventId[]).forEach((id) => {
-    ss.events[id] = { ...register.events[id].info.init, ref: register.events[id] };
+    ss.events[id] = { ...register.events[id].init, ref: register.events[id] };
 });
 (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
     ss.locations[id] = { ...register.locations[id].init, ref: register.locations[id] };

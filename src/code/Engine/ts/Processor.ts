@@ -1,6 +1,6 @@
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
-import { DeltaTime, Time } from 'code/time/Time';
+import { DeltaTime, Time } from 'time/Time';
 import { register } from 'data/register';
 import { TLinkCost, TPassageScreen } from 'types/TPassage';
 
