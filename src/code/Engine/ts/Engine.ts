@@ -6,6 +6,7 @@ import { DUMMY_PASSAGE } from './const';
 import { History } from './History';
 import { Processor } from './Processor';
 import { Story } from './Story';
+import { Store } from './Store';
 
 export class Engine {
     inventory: Inventory;
@@ -14,6 +15,7 @@ export class Engine {
     story: Story;
 
     activePassage: TEventPassage<TEventId> = DUMMY_PASSAGE;
+    store = new Store();
 
     constructor(private s: TWorldState) {
         this.inventory = new Inventory(s, this);

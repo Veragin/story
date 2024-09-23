@@ -7,7 +7,7 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
     id: 'intro',
 
     type: 'screen',
-    title: 'title',
+    title: 'Intro',
     image: 'image',
 
     body: [

@@ -8,7 +8,7 @@ export const forestPassage = (): TPassage<'village', 'thomas'> => ({
     id: 'forest',
 
     type: 'screen',
-    title: 'title',
+    title: 'Forest',
     image: 'image',
 
     body: [

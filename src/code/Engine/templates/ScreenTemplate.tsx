@@ -1,17 +1,17 @@
 import { styled } from '@mui/material';
 import { WholeContainer } from 'code/Components/Basic';
-import { TCharacterIdInEvent, TEventId } from 'types/TIds';
+import { TCharacterId, TEventId } from 'types/TIds';
 import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
 import { Row } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { PassageLink } from './Components/PassageLink';
 
-type Props<E extends TEventId> = {
-    passage: TPassageScreen<E, TCharacterIdInEvent<E>>;
+type Props = {
+    passage: TPassageScreen<TEventId, TCharacterId>;
 };
 
-export const ScreenTemplate = ({ passage }: Props<TEventId>) => {
+export const ScreenTemplate = ({ passage }: Props) => {
     const body = passage.body.filter((b) => b.condition);
 
     return (
@@ -22,12 +22,14 @@ export const ScreenTemplate = ({ passage }: Props<TEventId>) => {
                 <SContent>
                     <STitle>{passage.title}</STitle>
                     <SText>
-                        {body.map((b) => (
-                            <span>{b.text}</span>
+                        {body.map((b, i) => (
+                            <span key={i}>{b.text}</span>
                         ))}
                     </SText>
                     <SText>
-                        {body.flatMap((b) => b.links.map((link) => <PassageLink link={link} />))}
+                        {body.flatMap((b, i) =>
+                            b.links.map((link) => <PassageLink key={i} link={link} />)
+                        )}
                     </SText>
                 </SContent>
             </SContainer>

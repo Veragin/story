@@ -4,6 +4,7 @@ import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
 import { TLocationId } from 'types/TLocation';
+import { Engine } from 'code/Engine/ts/Engine';
 
 const ss = {
     time: Time.fromS(MONTH_S * 9),
@@ -32,5 +33,6 @@ const ss = {
 });
 
 const s = ss as TWorldState;
+const e = new Engine(s);
 
-export { s };
+export { s, e };

@@ -40,6 +40,8 @@ export class Processor {
             this.continue();
             return;
         }
+
+        this.e.store.setPassage(this.e.activePassage);
     };
 
     private autoProcess = (p: TPassageScreen<TEventId, TCharacterId>) => {
