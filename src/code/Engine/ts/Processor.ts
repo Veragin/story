@@ -45,11 +45,19 @@ export class Processor {
     private autoProcess = (p: TPassageScreen<TEventId, TCharacterId>) => {
         const actions = this.getPossibleActions(p);
         if (actions.length === 0) {
-            return;
+            throw new Error(
+                `Passage ${p.characterId}-${p.eventId}-${p.id} without possible action.`
+            );
         }
 
-        const action = actions[0];
-        this.goToPassage(action, action.cost);
+        let action = actions[0];
+        for (const a of actions) {
+            if (a.autoPriortiy > action.autoPriortiy) {
+                action = a;
+            }
+        }
+
+        this.e.story.goToPassage(action.passageId, action.cost, action.onFinish);
     };
 
     getPossibleActions = (p: TPassageScreen<TEventId, TCharacterId>) => {

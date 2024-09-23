@@ -24,7 +24,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
             autoPriortiy: number;
             cost: TLinkCost;
 
-            callback?: () => void;
+            onFinish?: () => void;
         }[];
     }[];
 };

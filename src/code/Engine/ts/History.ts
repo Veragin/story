@@ -11,7 +11,11 @@ export class History {
 
     constructor(private s: TWorldState) {
         this.characterList.forEach((char) => {
-            this.data[char] = [];
+            const passageId = register.characters[char].startPassageId;
+            const eventId = parsePassageId(passageId).eventId;
+            const time = register.events[eventId].timeRange.start;
+
+            this.data[char] = [{ passageId, time }];
         });
     }
 
@@ -21,30 +25,26 @@ export class History {
     };
 
     getTurn = (): THistoryItem => {
-        let minHistory = {
-            passageId: register.characters[this.s.mainCharacterId].startPassageId,
-            time: Time.fromS(0),
-        };
+        let minHistory = this.getLastHistoryItemOfCharacter(this.s.mainCharacterId);
 
         for (const char of this.characterList) {
             if (this.s.characters[char].health <= 0) {
+                // skip all dead characters
                 continue;
             }
-            const charHistory = this.data[char];
-            if (!charHistory || charHistory.length === 0) {
-                return {
-                    passageId: register.characters[char].startPassageId,
-                    time: Time.fromS(0),
-                };
-            }
+            const lastHistory = this.getLastHistoryItemOfCharacter(char);
 
-            const lastHistory = charHistory[charHistory.length - 1];
             if (lastHistory.time.isBefore(minHistory.time)) {
                 minHistory = lastHistory;
             }
         }
 
         return minHistory;
+    };
+
+    private getLastHistoryItemOfCharacter = (char: TCharacterId) => {
+        const mainData = this.data[char]!; // initialized in constructor
+        return mainData[mainData.length - 1];
     };
 }
 

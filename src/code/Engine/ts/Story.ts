@@ -1,26 +1,23 @@
 import { DeltaTime } from 'time/Time';
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterIdInEvent, TEventId } from 'types/TIds';
+import { TPassageId } from 'types/TIds';
 import { TLinkCost } from 'types/TPassage';
 import { Engine } from './Engine';
-import { TPassagePt } from 'types/TCharacter';
+import { parsePassageId } from 'code/utils/parsePassageId';
 
 export class Story {
     constructor(private s: TWorldState, private e: Engine) {}
 
-    goToPassage = <E extends TEventId>(
-        pt: TPassagePt<E, TCharacterIdInEvent<E>>,
-        cost: TLinkCost,
-        cb?: () => void
-    ) => {
+    goToPassage = (passageId: TPassageId, cost: TLinkCost, cb?: () => void) => {
+        const { characterId } = parsePassageId(passageId);
         const { time, items } = this.e.processor.parseCost(cost);
         this.e.history.addTurn({
-            passagePt: pt,
+            passageId,
             time: this.s.time.moveToFutureBy(time),
             onStart: cb,
         });
 
-        items?.forEach((item) => this.e.inventory.removeItem(item), pt.characterId);
+        items?.forEach((item) => this.e.inventory.removeItem(item), characterId);
 
         this.e.processor.continue();
     };
