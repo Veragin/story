@@ -20,7 +20,6 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
                     passageId: 'village-thomas-forest',
                     cost: {
                         time: DeltaTime.fromMin(10),
-                        tools: ['axe'],
                     },
                     autoPriortiy: 1,
                 },

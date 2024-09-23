@@ -34,4 +34,7 @@ const ss = {
 const s = ss as TWorldState;
 const e = new Engine(s);
 
+window.s = s;
+window.e = e;
+
 export { s, e };

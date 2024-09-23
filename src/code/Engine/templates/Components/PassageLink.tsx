@@ -25,7 +25,10 @@ export const PassageLink = ({ link }: Props) => {
     const isActive = e.processor.isActionPossible(link.cost);
 
     return (
-        <SLink $isDisabled={!isActive}>
+        <SLink
+            $isDisabled={!isActive}
+            onClick={() => e.story.goToPassage(link.passageId, link.cost, link.onFinish)}
+        >
             {link.text}
             {time}
             {items}

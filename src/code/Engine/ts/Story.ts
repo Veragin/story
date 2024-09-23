@@ -26,6 +26,10 @@ export class Story {
         this.s.time = this.s.time.moveToFutureBy(time);
         const val = (time.hour * 50) / 16;
 
+        if (this.e.history.data[this.s.mainCharacterId]!.length <= 1) {
+            // character havent started yet
+            return;
+        }
         // computers are imortal
         const mainChar = this.s.characters[this.s.mainCharacterId];
         mainChar.stamina = Math.max(0, mainChar.stamina - val);

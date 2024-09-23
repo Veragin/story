@@ -22,7 +22,8 @@ export class Processor {
             });
         }
 
-        this.e.story.spendTime(this.s.time.distance(turn.time));
+        const distance = this.s.time.distance(turn.time);
+        this.e.story.spendTime(distance);
         turn.onStart?.();
 
         this.e.activePassage = register.passages[turn.passageId]();
@@ -69,6 +70,7 @@ export class Processor {
 
     isActionPossible = (cost: TLinkCost) => {
         const { items, tools } = this.parseCost(cost);
+
         if (
             items !== undefined &&
             items.some((item) => this.e.inventory.getItemCount(item.id) < item.count)
@@ -77,7 +79,7 @@ export class Processor {
         }
         if (
             tools !== undefined &&
-            tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 0)
+            tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 1)
         ) {
             return false;
         }

@@ -26,19 +26,19 @@ export const StatusBar = observer(() => {
             <Tooltip title="Health">
                 <SStat>
                     <FavoriteIcon />
-                    <Text>{char.health}%</Text>
+                    <Text>{Math.floor(char.health)}%</Text>
                 </SStat>
             </Tooltip>
             <Tooltip title="Stamina">
                 <SStat>
                     <BoltIcon />
-                    <Text>{char.stamina}%</Text>
+                    <Text>{Math.floor(char.stamina)}%</Text>
                 </SStat>
             </Tooltip>
             <Tooltip title="Hunger">
                 <SStat>
                     <RestaurantIcon />
-                    <Text>{char.hunger}%</Text>
+                    <Text>{Math.floor(char.hunger)}%</Text>
                 </SStat>
             </Tooltip>
 
