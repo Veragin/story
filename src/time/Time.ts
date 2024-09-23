@@ -24,7 +24,7 @@ export class Time {
             | `${number}.${number} ${number}:${number}`
     ) {
         const [date, time] = s.split(' ');
-        const [month, day] = date.split('.').map(Number);
+        const [day, month] = date.split('.').map(Number);
         const [hour, min, sec] = time.split(':').map(Number);
         return Time.from({ month: month - 1, day: day - 1, hour, min, sec });
     }

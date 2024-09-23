@@ -1,21 +1,44 @@
-import { styled } from '@mui/material';
-import { TCharacterIdInEvent, TEventId } from 'types/TIds';
+import { css, styled } from '@mui/material';
+import { useEngine } from 'code/Context';
+import { itemInfo } from 'data/items/itemInfo';
+import { TCharacterId, TEventId } from 'types/TIds';
+import { TItemId } from 'types/TItem';
 import { TPassageScreen } from 'types/TPassage';
 
-export type TPassageScreenLink<E extends TEventId> = TPassageScreen<
-    E,
-    TCharacterIdInEvent<E>
+export type TPassageScreenLink = TPassageScreen<
+    TEventId,
+    TCharacterId
 >['body'][number]['links'][number];
 
-type Props<E extends TEventId> = {
-    link: TPassageScreenLink<E>;
+type Props = {
+    link: TPassageScreenLink;
 };
 
-export const PassageLink = ({ link }: Props<TEventId>) => {
-    return <SLink>{link.text}</SLink>;
+export const PassageLink = ({ link }: Props) => {
+    const e = useEngine();
+    const cost = e.processor.parseCost(link.cost);
+
+    const time = cost.time.s > 0 ? ` (${e.timeManager.renderDeltaTime(cost.time)})` : '';
+    const items = cost.items && cost.items.length > 0 ? ` (${renderItems(cost.items)})` : '';
+    const tools = cost.tools && cost.tools.length > 0 ? ` [${cost.tools.join(', ')}]` : '';
+
+    const isActive = e.processor.isActionPossible(link.cost);
+
+    return (
+        <SLink $isDisabled={!isActive}>
+            {link.text}
+            {time}
+            {items}
+            {tools}
+        </SLink>
+    );
 };
 
-const SLink = styled('a')`
+const renderItems = (items: { id: TItemId; count: number }[]) => {
+    return items.map((item) => `${item.count} ${itemInfo[item.id].name}`).join(', ');
+};
+
+const SLink = styled('a')<{ $isDisabled: boolean }>`
     color: lime;
     cursor: pointer;
     text-decoration: none;
@@ -25,8 +48,11 @@ const SLink = styled('a')`
         color: green;
     }
 
-    &:disabled {
-        color: grey;
-        pointer-events: none;
-    }
+    ${({ $isDisabled }) =>
+        $isDisabled
+            ? css`
+                  color: grey;
+                  pointer-events: none;
+              `
+            : ''}
 `;

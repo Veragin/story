@@ -18,16 +18,35 @@ export class TimeManager {
         return res;
     };
 
+    renderDeltaTime = (time: DeltaTime, withSeconds?: boolean) => {
+        const { month, day, hour, min, sec } = this.parseTime(time);
+        const minText = String(min).length < 2 ? `0${min}` : min;
+
+        let res = `${hour}:${minText}`;
+        if (day > 0 || month > 0) {
+            res = `${day} day${day === 1 ? '' : 's'} ${res}`;
+        }
+        if (month > 0) {
+            res = `${month} month${month === 1 ? '' : 's'} ${res}`;
+        }
+        if (withSeconds) {
+            const secText = String(sec).length < 2 ? `0${sec}` : sec;
+            res += `:${secText}`;
+        }
+
+        return res;
+    };
+
     isDay = (time: Time) => {
         const { hour } = this.parseTime(time);
         return hour < 6 || hour > 22;
     };
 
-    parseTime = (time: Time) => {
+    parseTime = (time: Time | DeltaTime) => {
         const month = Math.floor(time.s / MONTH_S);
         let restS = time.s - month * MONTH_S;
-        const day = Math.floor(time.s / DAY_S);
-        restS = time.s - day * DAY_S;
+        const day = Math.floor(restS / DAY_S);
+        restS = restS - day * DAY_S;
         const hour = Math.floor(restS / HOUR_S);
         restS -= hour * HOUR_S;
         const min = Math.floor(restS / MIN_S);

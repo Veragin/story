@@ -6,6 +6,7 @@ import { StatusBar } from './Components/StatusBar';
 import { Row } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { PassageLink } from './Components/PassageLink';
+import { Header, Text } from 'code/Components/Text';
 
 type Props = {
     passage: TPassageScreen<TEventId, TCharacterId>;
@@ -18,12 +19,12 @@ export const ScreenTemplate = ({ passage }: Props) => {
         <WholeContainer>
             <StatusBar />
             <SContainer>
-                <SImg src={passage.image} />
+                <SImg src={`${passage.image}.png`} />
                 <SContent>
-                    <STitle>{passage.title}</STitle>
+                    <Header>{passage.title}</Header>
                     <SText>
                         {body.map((b, i) => (
-                            <span key={i}>{b.text}</span>
+                            <Text key={i}>{b.text}</Text>
                         ))}
                     </SText>
                     <SText>
@@ -40,15 +41,17 @@ export const ScreenTemplate = ({ passage }: Props) => {
 const SContainer = styled(Row)`
     width: 100%;
     flex: 1;
-    padding: ${spacingCss(2)};
     gap: ${spacingCss(2)};
     overflow: hidden;
 `;
 
 const SImg = styled('img')`
     height: 100%;
-    object-fit: contain;
+    width: 50%;
+    object-fit: cover;
     aspect-ratio: 1;
+    pointer-events: none;
+    user-select: none;
 `;
 
 const SContent = styled('div')`
@@ -60,15 +63,10 @@ const SContent = styled('div')`
     overflow: auto;
 `;
 
-const STitle = styled('span')`
-    font-size: 2em;
-    line-height: 2em;
-    text-align: center;
-`;
-
 const SText = styled('div')`
     display: flex;
     flex-direction: column;
     flex: 1;
     gap: ${spacingCss(1)};
+    font-size: 20px;
 `;

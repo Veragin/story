@@ -2,6 +2,7 @@ import { TWorldState } from 'data/TWorldState';
 import { TCharacterId } from 'types/TIds';
 import { TItem, TItemId } from 'types/TItem';
 import { Engine } from './Engine';
+import { itemInfo } from 'data/items/itemInfo';
 
 export class Inventory {
     constructor(private s: TWorldState, private e: Engine) {}
@@ -14,12 +15,15 @@ export class Inventory {
         return this.getInventory(charId).find((k) => k.id === id);
     };
 
-    addItem = (item: TItem<TItemId>, charId: TCharacterId = this.e.activePassage.characterId) => {
+    addItem = <I extends TItemId>(
+        item: { id: I } & Partial<TItem<TItemId>>,
+        charId: TCharacterId = this.e.activePassage.characterId
+    ) => {
         const itemInInv = this.getItem(item.id, charId);
         if (!itemInInv) {
-            this.getInventory().push(item);
+            this.getInventory().push({ ...itemInfo[item.id], count: 1, ...item });
         } else {
-            itemInInv.count += item.count;
+            itemInInv.count += item.count ?? 1;
         }
     };
 

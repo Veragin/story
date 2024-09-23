@@ -8,7 +8,7 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
 
     type: 'screen',
     title: 'Intro',
-    image: 'image',
+    image: 'hunter',
 
     body: [
         {
@@ -20,7 +20,7 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
                     passageId: 'village-thomas-forest',
                     cost: {
                         time: DeltaTime.fromMin(10),
-                        items: [{ id: 'axe', count: 1 }],
+                        tools: ['axe'],
                     },
                     autoPriortiy: 1,
                 },

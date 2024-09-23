@@ -4,10 +4,10 @@ import { TPassage } from 'types/TPassage';
 export const introPassage = (): TPassage<'kingdom', 'annie'> => ({
     eventId: 'kingdom',
     characterId: 'annie',
-    id: 'intro',
+    id: 'palace',
 
     type: 'screen',
-    title: 'title',
+    title: 'Palace',
     image: 'image',
 
     body: [
@@ -16,13 +16,19 @@ export const introPassage = (): TPassage<'kingdom', 'annie'> => ({
             text: 'text',
             links: [
                 {
-                    text: 'Lets go to the forest',
+                    text: 'Back to intro',
+                    passageId: 'kingdom-annie-intro',
+                    cost: DeltaTime.fromMin(10),
+                    autoPriortiy: 1,
+                },
+                {
+                    text: 'Back to intro with axe',
                     passageId: 'kingdom-annie-intro',
                     cost: {
-                        time: DeltaTime.fromMin(10),
-                        items: [{ id: 'berries', count: 1 }],
+                        time: DeltaTime.fromMin(100),
+                        tools: ['axe'],
                     },
-                    autoPriortiy: 1,
+                    autoPriortiy: 5,
                 },
             ],
         },

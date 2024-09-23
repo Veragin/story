@@ -1,6 +1,5 @@
 import { TEvent } from 'types/TEvent';
 import { Time } from 'time/Time';
-import { DAY_S } from 'time/const';
 import { TEventPassage } from 'types/TPassage';
 import { introPassage } from './annie.passages/intro';
 
@@ -9,8 +8,8 @@ export const kingdomEvent: TEvent<'kingdom'> = {
     title: 'Kingdom Event',
     description: 'A Kingdom event is happening',
     timeRange: {
-        start: Time.fromS(0),
-        end: Time.fromS(2 * DAY_S),
+        start: Time.fromString('2.1. 8:00'),
+        end: Time.fromString('5.1. 8:00'),
     },
     location: 'village',
 

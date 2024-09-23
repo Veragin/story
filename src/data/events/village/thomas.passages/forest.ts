@@ -9,7 +9,7 @@ export const forestPassage = (): TPassage<'village', 'thomas'> => ({
 
     type: 'screen',
     title: 'Forest',
-    image: 'image',
+    image: 'hunter',
 
     body: [
         {
