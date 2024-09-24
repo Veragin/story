@@ -44,3 +44,13 @@ export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     type: 'transition';
     nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };
+
+export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId> = {
+    eventId: E;
+    characterId: Ch;
+    id: string;
+    type: 'linear';
+    description: string;
+    nextPassageId: TEventCharacterPassageId<E, Ch> | undefined;
+};
+
