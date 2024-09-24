@@ -1,11 +1,14 @@
 import { TWorldState } from 'data/TWorldState';
 import { TCharacterId } from 'types/TIds';
-import { TItem, TItemId } from 'types/TItem';
+import { TItemId, TItemPartial } from 'types/TItem';
 import { Engine } from './Engine';
 import { itemInfo } from 'data/items/itemInfo';
 
 export class Inventory {
-    constructor(private s: TWorldState, private e: Engine) {}
+    constructor(
+        private s: TWorldState,
+        private e: Engine
+    ) {}
 
     getInventory = (charId: TCharacterId = this.e.activePassage.characterId) => {
         return this.s.characters[charId].inventory;
@@ -15,10 +18,7 @@ export class Inventory {
         return this.getInventory(charId).find((k) => k.id === id);
     };
 
-    addItem = <I extends TItemId>(
-        item: { id: I } & Partial<TItem<TItemId>>,
-        charId: TCharacterId = this.e.activePassage.characterId
-    ) => {
+    addItem = (item: TItemPartial<TItemId>, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (!itemInInv) {
             this.getInventory().push({ ...itemInfo[item.id], count: 1, ...item });
@@ -32,16 +32,11 @@ export class Inventory {
         return itemInInv?.count ?? 0;
     };
 
-    removeItem = (
-        item: { id: TItemId; count: number },
-        charId: TCharacterId = this.e.activePassage.characterId
-    ) => {
+    removeItem = (item: { id: TItemId; count: number }, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (itemInInv) {
             if (itemInInv.count <= item.count) {
-                this.s.characters[charId].inventory = this.getInventory(charId).filter(
-                    (i) => i.id !== item.id
-                );
+                this.s.characters[charId].inventory = this.getInventory(charId).filter((i) => i.id !== item.id);
                 return;
             }
             itemInInv.count -= item.count;

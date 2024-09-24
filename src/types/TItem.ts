@@ -18,3 +18,5 @@ export type TItem<I extends TItemId> = {
     id: I;
     count: number;
 } & DeepWriteable<(typeof itemInfo)[I]>;
+
+export type TItemPartial<I extends TItemId> = { id: I } & Partial<TItem<I>>;
