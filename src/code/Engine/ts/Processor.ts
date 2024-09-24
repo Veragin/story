@@ -48,9 +48,8 @@ export class Processor {
     private autoProcess = (p: TPassageScreen<TEventId, TCharacterId>) => {
         const actions = this.getPossibleActions(p);
         if (actions.length === 0) {
-            throw new Error(
-                `Passage ${p.characterId}-${p.eventId}-${p.id} without possible action.`
-            );
+            this.e.history.addEnd(p.characterId, 'NO_ACTIONS');
+            return;
         }
 
         let action = actions[0];

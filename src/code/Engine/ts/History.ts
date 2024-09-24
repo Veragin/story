@@ -19,24 +19,31 @@ export class History {
         });
     }
 
-    addTurn = (turn: THistoryItem) => {
+    addTurn = (turn: THistoryTurnItem) => {
         const { characterId } = parsePassageId(turn.passageId);
         this.data[characterId]?.push(turn);
     };
 
-    getTurn = (): THistoryItem => {
+    addEnd = (characterId: TCharacterId, reason: THistoryEndItem['reason']) => {
+        this.data[characterId]?.push({
+            time: Time.fromS(Infinity),
+            reason,
+        });
+    };
+
+    getTurn = (): THistoryTurnItem => {
         let minHistory = this.getLastHistoryItemOfCharacter(this.s.mainCharacterId);
 
         for (const char of this.characterList) {
-            if (this.s.characters[char].health <= 0) {
-                // skip all dead characters
-                continue;
-            }
             const lastHistory = this.getLastHistoryItemOfCharacter(char);
 
             if (lastHistory.time.isBefore(minHistory.time)) {
                 minHistory = lastHistory;
             }
+        }
+
+        if (isEndHistoryItem(minHistory)) {
+            throw new Error('No moves left');
         }
 
         return minHistory;
@@ -48,8 +55,19 @@ export class History {
     };
 }
 
-export type THistoryItem = {
+type THistoryItem = THistoryTurnItem | THistoryEndItem;
+
+export type THistoryTurnItem = {
     passageId: TEventPassageId<TEventId>;
     time: Time;
     onStart?: () => void; // called when passage is starts
+};
+
+type THistoryEndItem = {
+    time: Time;
+    reason: 'NO_ACTIONS' | 'DEAD';
+};
+
+const isEndHistoryItem = (item: THistoryItem): item is THistoryEndItem => {
+    return !Number.isFinite(item.time.s);
 };
