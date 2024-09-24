@@ -54,7 +54,7 @@ export class Processor {
 
         let action = actions[0];
         for (const a of actions) {
-            if (a.autoPriortiy > action.autoPriortiy) {
+            if (a.autoPriortiy ?? 1 > (action.autoPriortiy ?? 1)) {
                 action = a;
             }
         }
@@ -63,11 +63,12 @@ export class Processor {
     };
 
     getPossibleActions = (p: TPassageScreen<TEventId, TCharacterId>) => {
-        const links = p.body.filter((b) => b.condition).flatMap((b) => b.links);
+        const links = p.body.filter((b) => b.condition !== false).flatMap((b) => b.links);
         return links.filter((l) => this.isActionPossible(l.cost));
     };
 
-    isActionPossible = (cost: TLinkCost) => {
+    isActionPossible = (cost?: TLinkCost) => {
+        if (cost === undefined) return true;
         const { items, tools } = this.parseCost(cost);
 
         if (
@@ -85,7 +86,10 @@ export class Processor {
         return true;
     };
 
-    parseCost = (cost: TLinkCost) => {
+    parseCost = (cost?: TLinkCost) => {
+        if (cost === undefined) {
+            return { time: DeltaTime.fromS(0), items: [], tools: [] };
+        }
         if (cost instanceof DeltaTime) {
             return { time: cost, items: [], tools: [] };
         }

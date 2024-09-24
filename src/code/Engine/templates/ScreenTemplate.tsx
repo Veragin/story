@@ -13,7 +13,7 @@ type Props = {
 };
 
 export const ScreenTemplate = ({ passage }: Props) => {
-    const body = passage.body.filter((b) => b.condition);
+    const body = passage.body.filter((b) => b.condition !== false);
 
     return (
         <WholeContainer>

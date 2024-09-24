@@ -8,9 +8,10 @@ import { parsePassageId } from 'code/utils/parsePassageId';
 export class Story {
     constructor(private s: TWorldState, private e: Engine) {}
 
-    goToPassage = (passageId: TPassageId, cost: TLinkCost, cb?: () => void) => {
+    goToPassage = (passageId: TPassageId, cost?: TLinkCost, cb?: () => void) => {
         const { characterId } = parsePassageId(passageId);
         const { time, items } = this.e.processor.parseCost(cost);
+
         this.e.history.addTurn({
             passageId,
             time: this.s.time.moveToFutureBy(time),

@@ -16,13 +16,13 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
     image: string;
     type: 'screen';
     body: {
-        condition: boolean;
+        condition?: boolean;
         text: string;
         links: {
             text: string;
             passageId: TEventCharacterPassageId<E, Ch>;
-            autoPriortiy: number;
-            cost: TLinkCost;
+            autoPriortiy?: number;
+            cost?: TLinkCost;
 
             onFinish?: () => void;
         }[];
@@ -53,4 +53,3 @@ export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId>
     description: string;
     nextPassageId: TEventCharacterPassageId<E, Ch> | undefined;
 };
-
