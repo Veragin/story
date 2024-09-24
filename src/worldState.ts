@@ -8,6 +8,7 @@ import { Engine } from 'code/Engine/ts/Engine';
 const ss = {
     time: Time.fromS(0),
     mainCharacterId: 'thomas',
+    activePassageId: register.characters.thomas.startPassageId,
 
     characters: {} as Record<TCharacterId, unknown>,
     sideCharacters: {} as Record<TSideCharacterId, unknown>,

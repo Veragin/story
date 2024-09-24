@@ -42,6 +42,7 @@ export class Processor {
             return;
         }
 
+        this.s.activePassageId = turn.passageId;
         this.e.store.setPassage(this.e.activePassage);
     };
 
