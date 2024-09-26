@@ -21,25 +21,25 @@ export class Inventory {
     addItem = (item: TItemPartial<TItemId>, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (!itemInInv) {
-            this.getInventory().push({ ...itemInfo[item.id], count: 1, ...item });
+            this.getInventory().push({ ...itemInfo[item.id], amount: 1, ...item });
         } else {
-            itemInInv.count += item.count ?? 1;
+            itemInInv.amount += item.amount ?? 1;
         }
     };
 
     getItemCount = (id: TItemId, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(id, charId);
-        return itemInInv?.count ?? 0;
+        return itemInInv?.amount ?? 0;
     };
 
     removeItem = (item: { id: TItemId; count: number }, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (itemInInv) {
-            if (itemInInv.count <= item.count) {
+            if (itemInInv.amount <= item.count) {
                 this.s.characters[charId].inventory = this.getInventory(charId).filter((i) => i.id !== item.id);
                 return;
             }
-            itemInInv.count -= item.count;
+            itemInInv.amount -= item.count;
         }
     };
 }
