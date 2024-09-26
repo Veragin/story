@@ -18,16 +18,25 @@ export const PassageLink = ({ link }: Props) => {
     const e = useEngine();
     const cost = e.processor.parseCost(link.cost);
 
-    const time = cost.time.s > 0 ? ` (${e.timeManager.renderDeltaTime(cost.time)})` : '';
-    const items = cost.items && cost.items.length > 0 ? ` (${renderItems(cost.items)})` : '';
-    const tools = cost.tools && cost.tools.length > 0 ? ` [${cost.tools.join(', ')}]` : '';
+    const time =
+        cost.time.s > 0 ? ` (${e.timeManager.renderDeltaTime(cost.time)})` : '';
+    const items =
+        cost.items && cost.items.length > 0
+            ? ` (${renderItems(cost.items)})`
+            : '';
+    const tools =
+        cost.tools && cost.tools.length > 0
+            ? ` [${cost.tools.join(', ')}]`
+            : '';
 
     const isActive = e.processor.isActionPossible(link.cost);
 
     return (
         <SLink
             $isDisabled={!isActive}
-            onClick={() => e.story.goToPassage(link.passageId, link.cost, link.onFinish)}
+            onClick={() =>
+                e.story.goToPassage(link.passageId, link.cost, link.onFinish)
+            }
         >
             {link.text}
             {time}
@@ -38,13 +47,16 @@ export const PassageLink = ({ link }: Props) => {
 };
 
 const renderItems = (items: { id: TItemId; count: number }[]) => {
-    return items.map((item) => `${item.count} ${itemInfo[item.id].name}`).join(', ');
+    return items
+        .map((item) => `${item.count} ${itemInfo[item.id].name}`)
+        .join(', ');
 };
 
 const SLink = styled('a')<{ $isDisabled: boolean }>`
     color: lime;
     cursor: pointer;
     text-decoration: none;
+    font-size: 24px;
 
     &:hover,
     a:visited:hover {

@@ -1,17 +1,17 @@
 import { styled } from '@mui/material';
 
 export const SmallText = styled('span')`
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
 `;
 
 export const Text = styled('span')`
-    font-size: 20px;
-    line-height: 1;
+    font-size: 24px;
+    line-height: 1.5;
 `;
 
 export const LargeText = styled('span')`
-    font-size: 28px;
+    font-size: 32px;
     line-height: 1;
 `;
 

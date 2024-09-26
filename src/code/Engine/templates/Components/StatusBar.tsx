@@ -47,7 +47,11 @@ export const StatusBar = observer(() => {
                     <InventoryIcon />
                 </Button>
             </Tooltip>
-            <Modal open={openInventory} onClose={() => setOpenInventory(false)} title="Inventory">
+            <Modal
+                open={openInventory}
+                onClose={() => setOpenInventory(false)}
+                title="Inventory"
+            >
                 <Inventory />
             </Modal>
         </SRow>
@@ -62,7 +66,7 @@ export const SRow = styled(Row)`
 `;
 
 export const SStat = styled(Row)`
-    align-items: end;
+    align-items: center;
     gap: ${spacingCss(0.5)};
-    width: 80px;
+    width: 90px;
 `;

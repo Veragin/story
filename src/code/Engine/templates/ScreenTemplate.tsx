@@ -19,7 +19,7 @@ export const ScreenTemplate = ({ passage }: Props) => {
         <WholeContainer>
             <StatusBar />
             <SContainer>
-                <SImg src={`${passage.image}.png`} />
+                <SImg src={`${passage.eventId}/${passage.image}.png`} />
                 <SContent>
                     <Header>{passage.title}</Header>
                     <SText>
@@ -29,7 +29,9 @@ export const ScreenTemplate = ({ passage }: Props) => {
                     </SText>
                     <SText>
                         {body.flatMap((b, i) =>
-                            b.links.map((link) => <PassageLink key={i} link={link} />)
+                            b.links.map((link) => (
+                                <PassageLink key={i} link={link} />
+                            ))
                         )}
                     </SText>
                 </SContent>
@@ -67,6 +69,5 @@ const SText = styled('div')`
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: ${spacingCss(1)};
-    font-size: 20px;
+    gap: ${spacingCss(2)};
 `;
