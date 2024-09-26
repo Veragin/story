@@ -8,7 +8,10 @@ import { TCharacterId, TEventId } from 'types/TIds';
 export class Processor {
     private eventList = Object.values(this.s.events).map((event) => event.ref);
 
-    constructor(private s: TWorldState, private e: Engine) {}
+    constructor(
+        private s: TWorldState,
+        private e: Engine
+    ) {}
 
     continue = () => {
         const turn = this.e.history.getTurn();
@@ -42,7 +45,6 @@ export class Processor {
             return;
         }
 
-        this.s.activePassageId = turn.passageId;
         this.e.store.setPassage(this.e.activePassage);
     };
 
@@ -72,16 +74,10 @@ export class Processor {
         if (cost === undefined) return true;
         const { items, tools } = this.parseCost(cost);
 
-        if (
-            items !== undefined &&
-            items.some((item) => this.e.inventory.getItemCount(item.id) < item.count)
-        ) {
+        if (items !== undefined && items.some((item) => this.e.inventory.getItemCount(item.id) < item.count)) {
             return false;
         }
-        if (
-            tools !== undefined &&
-            tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 1)
-        ) {
+        if (tools !== undefined && tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 1)) {
             return false;
         }
         return true;
@@ -99,11 +95,8 @@ export class Processor {
     };
 
     private get activeEvents() {
-        return this.eventList.filter((event) =>
-            isInRange(event.timeRange.start, event.timeRange.end)(this.s.time)
-        );
+        return this.eventList.filter((event) => isInRange(event.timeRange.start, event.timeRange.end)(this.s.time));
     }
 }
 
-const isInRange = (start: Time, end: Time) => (time: Time) =>
-    start.isAfter(time) && end.isBefore(time);
+const isInRange = (start: Time, end: Time) => (time: Time) => start.isAfter(time) && end.isBefore(time);

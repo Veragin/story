@@ -11,13 +11,20 @@ export class History {
 
     constructor(private s: TWorldState) {
         this.characterList.forEach((char) => {
-            const passageId = register.characters[char].startPassageId;
-            const eventId = parsePassageId(passageId).eventId;
-            const time = register.events[eventId].timeRange.start;
-
-            this.data[char] = [{ passageId, time }];
+            this.data[char] = [this.prepareHistory(char)];
         });
     }
+
+    private prepareHistory = (char: TCharacterId) => {
+        if (this.s.currentHistory?.[char] !== undefined) {
+            return this.s.currentHistory[char];
+        }
+
+        const passageId = register.characters[char].startPassageId;
+        const eventId = parsePassageId(passageId).eventId;
+        const time = register.events[eventId].timeRange.start;
+        return { passageId, time };
+    };
 
     addTurn = (turn: THistoryTurnItem) => {
         const { characterId } = parsePassageId(turn.passageId);
@@ -55,7 +62,7 @@ export class History {
     };
 }
 
-type THistoryItem = THistoryTurnItem | THistoryEndItem;
+export type THistoryItem = THistoryTurnItem | THistoryEndItem;
 
 export type THistoryTurnItem = {
     passageId: TEventPassageId<TEventId>;

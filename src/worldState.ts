@@ -8,7 +8,12 @@ import { Engine } from 'code/Engine/ts/Engine';
 const ss = {
     time: Time.fromS(0),
     mainCharacterId: 'thomas',
-    activePassageId: register.characters.thomas.startPassageId,
+    currentHistory: {
+        thomas: {
+            passageId: 'village-thomas-village',
+            time: Time.fromS(0),
+        },
+    },
 
     characters: {} as Record<TCharacterId, unknown>,
     sideCharacters: {} as Record<TSideCharacterId, unknown>,

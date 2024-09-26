@@ -20,14 +20,22 @@ export class Engine {
     activePassage: TEventPassage<TEventId> = DUMMY_PASSAGE;
     store: Store;
 
-    constructor(s: TWorldState) {
+    constructor(private s: TWorldState) {
         makeAutoObservable(s);
 
+        this.timeManager = new TimeManager();
+        this.store = new Store(s);
         this.inventory = new Inventory(s, this);
         this.history = new History(s);
-        this.processor = new Processor(s, this);
         this.story = new Story(s, this);
-        this.store = new Store(s);
-        this.timeManager = new TimeManager();
+        this.processor = new Processor(s, this);
+
+        this.handleAutoStart();
     }
+
+    handleAutoStart = () => {
+        if (this.s.currentHistory !== null) {
+            this.processor.continue();
+        }
+    };
 }

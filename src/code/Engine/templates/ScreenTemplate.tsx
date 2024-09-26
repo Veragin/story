@@ -29,8 +29,8 @@ export const ScreenTemplate = ({ passage }: Props) => {
                     </SText>
                     <SText>
                         {body.flatMap((b, i) =>
-                            b.links.map((link) => (
-                                <PassageLink key={i} link={link} />
+                            b.links.map((link, j) => (
+                                <PassageLink key={i * 1000 + j} link={link} />
                             ))
                         )}
                     </SText>
