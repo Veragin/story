@@ -16,7 +16,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
     body: {
         condition?: boolean;
         text?: string;
-        links: {
+        links?: {
             text: string;
             passageId: TEventCharacterPassageId<E, Ch>;
             autoPriortiy?: number;

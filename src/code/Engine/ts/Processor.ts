@@ -66,7 +66,7 @@ export class Processor {
     };
 
     getPossibleActions = (p: TPassageScreen<TEventId, TCharacterId>) => {
-        const links = p.body.filter((b) => b.condition !== false).flatMap((b) => b.links);
+        const links = p.body.filter((b) => b.condition !== false).flatMap((b) => b.links ?? []);
         return links.filter((l) => this.isActionPossible(l.cost));
     };
 

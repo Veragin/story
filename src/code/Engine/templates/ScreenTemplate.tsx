@@ -14,6 +14,7 @@ type Props = {
 
 export const ScreenTemplate = ({ passage }: Props) => {
     const body = passage.body.filter((b) => b.condition !== false);
+    const links = body.flatMap((b) => b.links ?? []);
 
     return (
         <WholeContainer>
@@ -28,11 +29,9 @@ export const ScreenTemplate = ({ passage }: Props) => {
                         ))}
                     </SText>
                     <SText>
-                        {body.flatMap((b, i) =>
-                            b.links.map((link, j) => (
-                                <PassageLink key={i * 1000 + j} link={link} />
-                            ))
-                        )}
+                        {links.map((link, j) => (
+                            <PassageLink key={j} link={link} />
+                        ))}
                     </SText>
                 </SContent>
             </SContainer>

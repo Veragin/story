@@ -5,13 +5,13 @@ import { TCharacterId, TEventId } from 'types/TIds';
 import { TItemId } from 'types/TItem';
 import { TPassageScreen } from 'types/TPassage';
 
-export type TPassageScreenLink = TPassageScreen<
+type TPassageScreenLinks = TPassageScreen<
     TEventId,
     TCharacterId
->['body'][number]['links'][number];
+>['body'][number]['links'];
 
 type Props = {
-    link: TPassageScreenLink;
+    link: NonNullable<TPassageScreenLinks>[number];
 };
 
 export const PassageLink = ({ link }: Props) => {
