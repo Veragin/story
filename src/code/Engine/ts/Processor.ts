@@ -74,10 +74,10 @@ export class Processor {
         if (cost === undefined) return true;
         const { items, tools } = this.parseCost(cost);
 
-        if (items !== undefined && items.some((item) => this.e.inventory.getItemCount(item.id) < item.count)) {
+        if (items !== undefined && items.some((item) => this.e.inventory.getItemAmount(item.id) < item.amount)) {
             return false;
         }
-        if (tools !== undefined && tools.some((toolId) => this.e.inventory.getItemCount(toolId) < 1)) {
+        if (tools !== undefined && tools.some((toolId) => this.e.inventory.getItemAmount(toolId) < 1)) {
             return false;
         }
         return true;

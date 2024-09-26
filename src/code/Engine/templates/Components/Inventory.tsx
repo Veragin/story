@@ -14,7 +14,7 @@ export const Inventory = observer(() => {
     return (
         <SContainer>
             <SmallText>Name</SmallText>
-            <SmallText>Count</SmallText>
+            <SmallText>Amount</SmallText>
             <SmallText></SmallText>
             {inventory.map((item, i) => (
                 <React.Fragment key={item.id + i}>

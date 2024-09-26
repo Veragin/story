@@ -27,19 +27,19 @@ export class Inventory {
         }
     };
 
-    getItemCount = (id: TItemId, charId: TCharacterId = this.e.activePassage.characterId) => {
+    getItemAmount = (id: TItemId, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(id, charId);
         return itemInInv?.amount ?? 0;
     };
 
-    removeItem = (item: { id: TItemId; count: number }, charId: TCharacterId = this.e.activePassage.characterId) => {
+    removeItem = (item: { id: TItemId; amount: number }, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (itemInInv) {
-            if (itemInInv.amount <= item.count) {
+            if (itemInInv.amount <= item.amount) {
                 this.s.characters[charId].inventory = this.getInventory(charId).filter((i) => i.id !== item.id);
                 return;
             }
-            itemInInv.amount -= item.count;
+            itemInInv.amount -= item.amount;
         }
     };
 }

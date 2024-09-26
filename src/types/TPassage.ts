@@ -31,7 +31,7 @@ export type TLinkCost =
     | DeltaTime
     | {
           time?: DeltaTime;
-          items?: { id: TItemId; count: number }[];
+          items?: { id: TItemId; amount: number }[];
           tools?: TItemId[];
       };
 

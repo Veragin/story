@@ -46,9 +46,9 @@ export const PassageLink = ({ link }: Props) => {
     );
 };
 
-const renderItems = (items: { id: TItemId; count: number }[]) => {
+const renderItems = (items: { id: TItemId; amount: number }[]) => {
     return items
-        .map((item) => `${item.count} ${itemInfo[item.id].name}`)
+        .map((item) => `${item.amount} ${itemInfo[item.id].name}`)
         .join(', ');
 };
 
