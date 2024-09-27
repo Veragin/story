@@ -12,3 +12,5 @@ declare type TSize = {
     width: number;
     height: number;
 };
+
+declare let _: (str: string, ...values: (string | number)[]) => string;
