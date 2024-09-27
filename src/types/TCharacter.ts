@@ -26,6 +26,7 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
 
     init: TSideCharacterData & Partial<TWorldState['sideCharacters'][Ch]>;
 };
+
 export type TSideCharacterData = {
     location: TLocationId;
     inventory: TItem<TItemId>[];

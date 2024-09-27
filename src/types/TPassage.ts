@@ -3,7 +3,10 @@ import { TItemId } from './TItem';
 
 export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId>;
 
-export type TPassage<E extends TEventId, Ch extends TCharacterId> = TPassageScreen<E, Ch> | TPassageTransition<E, Ch>;
+export type TPassage<E extends TEventId, Ch extends TCharacterId> =
+    | TPassageScreen<E, Ch>
+    | TPassageTransition<E, Ch>
+    | TPassageLinearDescriber<E, Ch>;
 
 export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
     eventId: E;
