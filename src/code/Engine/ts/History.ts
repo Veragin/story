@@ -16,7 +16,7 @@ export class History {
     }
 
     private prepareHistory = (char: TCharacterId) => {
-        if (this.s.currentHistory?.[char] !== undefined) {
+        if (this.s.currentHistory[char] !== undefined) {
             return this.s.currentHistory[char];
         }
 
@@ -29,6 +29,7 @@ export class History {
     addTurn = (turn: THistoryTurnItem) => {
         const { characterId } = parsePassageId(turn.passageId);
         this.data[characterId]?.push(turn);
+        this.s.currentHistory[characterId] = turn;
     };
 
     addEnd = (characterId: TCharacterId, reason: THistoryEndItem['reason']) => {

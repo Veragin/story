@@ -9,6 +9,7 @@ import { Story } from './Story';
 import { Store } from './Store';
 import { TimeManager } from 'time/TimeManager';
 import { makeAutoObservable } from 'mobx';
+import { loadWorldState } from 'code/utils/loadWorldState';
 
 export class Engine {
     inventory: Inventory;
@@ -29,13 +30,17 @@ export class Engine {
         this.history = new History(s);
         this.story = new Story(s, this);
         this.processor = new Processor(s, this);
-
-        this.handleAutoStart();
     }
 
     handleAutoStart = () => {
-        if (this.s.currentHistory !== null) {
+        if (Object.keys(this.s.currentHistory).length !== 0) {
+            const startState = loadWorldState(JSON.stringify(this.s));
             this.processor.continue();
+
+            (Object.keys(startState) as (keyof TWorldState)[]).forEach((key) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                this.s[key] = startState[key] as any;
+            });
         }
     };
 }

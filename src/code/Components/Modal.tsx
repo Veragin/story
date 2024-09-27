@@ -1,4 +1,9 @@
-import { Modal as MuiModal, ModalProps, styled, IconButton } from '@mui/material';
+import {
+    Modal as MuiModal,
+    ModalProps,
+    styled,
+    IconButton,
+} from '@mui/material';
 import { LargeText } from './Text';
 import { Column, Row } from './Basic';
 import { Close } from '@mui/icons-material';
@@ -15,7 +20,12 @@ export const Modal = ({ title, onClose, children, ...rest }: Props) => {
             <SCont>
                 <SHeader>
                     <LargeText>{title}</LargeText>
-                    <IconButton onClick={onClose} component="button" size="small">
+                    <IconButton
+                        onClick={onClose}
+                        component="button"
+                        size="small"
+                        color="inherit"
+                    >
                         <Close />
                     </IconButton>
                 </SHeader>
@@ -44,6 +54,7 @@ const SHeader = styled(Row)`
     padding: ${spacingCss(2)};
     justify-content: space-between;
     align-items: center;
+    color: white;
 `;
 
 const SBody = styled(Column)`

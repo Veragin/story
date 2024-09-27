@@ -11,17 +11,13 @@ export class Time {
         return new Time(timeS);
     }
 
-    static from(
-        data: Partial<{ month: number; day: number; hour: number; min: number; sec: number }>
-    ) {
+    static from(data: Partial<{ month: number; day: number; hour: number; min: number; sec: number }>) {
         const { month = 0, day = 0, hour = 0, min = 0, sec = 0 } = data;
         return new Time(month * MONTH_S + day * DAY_S + hour * HOUR_S + min * MIN_S + sec);
     }
 
     static fromString(
-        s:
-            | `${number}.${number} ${number}:${number}:${number}`
-            | `${number}.${number} ${number}:${number}`
+        s: `${number}.${number} ${number}:${number}:${number}` | `${number}.${number} ${number}:${number}`
     ) {
         const [date, time] = s.split(' ');
         const [day, month] = date.split('.').map(Number);

@@ -1,4 +1,3 @@
-import { Time } from 'time/Time';
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
@@ -6,12 +5,12 @@ import { TLocationId } from 'types/TLocation';
 import { Engine } from 'code/Engine/ts/Engine';
 
 const ss = {
-    time: Time.fromS(0),
+    time: register.events.village.timeRange.start,
     mainCharacterId: 'thomas',
     currentHistory: {
         thomas: {
-            passageId: 'village-thomas-village',
-            time: Time.fromS(0),
+            passageId: 'village-thomas-forestCutTrees',
+            time: register.events.village.timeRange.start,
         },
     },
 
@@ -42,5 +41,7 @@ const e = new Engine(s);
 
 window.s = s;
 window.e = e;
+
+e.handleAutoStart();
 
 export { s, e };
