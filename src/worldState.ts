@@ -3,6 +3,7 @@ import { register } from 'data/register';
 import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
 import { TLocationId } from 'types/TLocation';
 import { Engine } from 'code/Engine/ts/Engine';
+import { itemInfo } from 'data/items/itemInfo';
 
 const ss = {
     time: register.events.village.timeRange.start,
@@ -21,11 +22,18 @@ const ss = {
 };
 
 (Object.keys(register.characters) as TCharacterId[]).forEach((id) => {
-    ss.characters[id] = { ...register.characters[id].init, ref: register.characters[id] };
+    const { inventory, ...rest } = register.characters[id].init;
+    ss.characters[id] = {
+        ...rest,
+        inventory: inventory.map((i) => ({ ...itemInfo[i.id], ...i })),
+        ref: register.characters[id],
+    };
 });
 (Object.keys(register.sideCharacters) as TSideCharacterId[]).forEach((id) => {
+    const { inventory, ...rest } = register.sideCharacters[id].init;
     ss.sideCharacters[id] = {
-        ...register.sideCharacters[id].init,
+        ...rest,
+        inventory: inventory.map((i) => ({ ...itemInfo[i.id], ...i })),
         ref: register.sideCharacters[id],
     };
 });

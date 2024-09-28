@@ -5,3 +5,5 @@
 
 const applyFormatting = (str: string, values: (string | number)[]) =>
     values.reduce((acc: string, val) => acc.replace(typeof val === 'number' ? '%d' : '%s', String(val)), str);
+
+export { applyFormatting };

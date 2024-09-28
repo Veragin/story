@@ -8,7 +8,7 @@ export type TCharacter<Ch extends TCharacterId> = {
     name: string;
 
     startPassageId: TCharacterPassageId<Ch>;
-    init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
+    init: Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };
 
 export type TCharacterData = {
@@ -24,7 +24,7 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
     name: string;
     description: string;
 
-    init: TSideCharacterData & Partial<TWorldState['sideCharacters'][Ch]>;
+    init: Omit<TWorldState['sideCharacters'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };
 export type TSideCharacterData = {
     location: TLocationId;
