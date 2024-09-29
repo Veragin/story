@@ -26,10 +26,10 @@ export type TWorldState = {
     };
 
     events: {
-        village: { ref: TEvent<'village'> } & Partial<TVillageEventData>;
-        kingdom: { ref: TEvent<'kingdom'> } & Partial<TKingdomEventData>;
+        village: { ref: TEvent<'village'> } & TVillageEventData;
+        kingdom: { ref: TEvent<'kingdom'> } & TKingdomEventData;
     };
     locations: {
-        village: { ref: TLocation<'village'> } & Partial<TVillageLocationData>;
+        village: { ref: TLocation<'village'> } & TVillageLocationData;
     };
 };

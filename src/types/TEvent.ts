@@ -22,5 +22,5 @@ export type TEvent<E extends TEventId> = {
 
     triggers: TTimeTrigger[];
 
-    init: Partial<TWorldState['events'][E]>;
+    init: Omit<TWorldState['events'][E], 'ref'>;
 };

@@ -14,6 +14,7 @@ type Props = {
 
 export const ScreenTemplate = ({ passage }: Props) => {
     const body = passage.body.filter((b) => b.condition !== false);
+    const texts = body.flatMap((b) => b.text?.split('\n') ?? []);
     const links = body.flatMap((b) => b.links ?? []);
 
     return (
@@ -24,8 +25,8 @@ export const ScreenTemplate = ({ passage }: Props) => {
                 <SContent>
                     <Header>{passage.title}</Header>
                     <SText>
-                        {body.map((b, i) => (
-                            <Text key={i}>{b.text}</Text>
+                        {texts.map((t, i) => (
+                            <Text key={i}>{t}</Text>
                         ))}
                     </SText>
                     <SText>
