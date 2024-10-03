@@ -5,12 +5,12 @@ import { TLocationId } from 'types/TLocation';
 import { Engine } from 'code/Engine/ts/Engine';
 
 const ss = {
-    time: register.events.village.timeRange.start,
+    time: register.events.jflkdf.timeRange.start,
     mainCharacterId: 'thomas',
     currentHistory: {
         thomas: {
             passageId: 'village-thomas-forestCutTrees',
-            time: register.events.village.timeRange.start,
+            time: register.events.jflkdf.timeRange.start,
         },
     },
 

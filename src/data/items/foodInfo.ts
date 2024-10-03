@@ -11,5 +11,6 @@ type TItemInfo = {
     type: 'food';
     hungerValue: number;
 };
+
 // test
 Object.values(foodInfo).forEach((item: TItemInfo) => void item);
