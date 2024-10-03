@@ -7,12 +7,12 @@ export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
 
-    startPassageId: TCharacterPassageId<Ch>;
+    startPassageId: TCharacterPassageId<Ch> | undefined;
     init: TCharacterData & Partial<TWorldState['characters'][Ch]>;
 };
 
 export type TCharacterData = {
-    location: TLocationId;
+    location: TLocationId | undefined;
     health: number;
     stamina: number;
     hunger: number;
@@ -23,11 +23,18 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
     id: Ch;
     name: string;
     description: string;
+    race?: TRace;
 
     init: TSideCharacterData & Partial<TWorldState['sideCharacters'][Ch]>;
 };
 
 export type TSideCharacterData = {
-    location: TLocationId;
+    location: TLocationId | undefined;
     inventory: TItem<TItemId>[];
 };
+
+export type TRace = {
+    name: string;
+    description: string;
+}
+
