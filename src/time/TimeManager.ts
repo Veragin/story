@@ -39,7 +39,7 @@ export class TimeManager {
 
     isDay = (time: Time) => {
         const { hour } = this.parseTime(time);
-        return hour < 6 || hour > 22;
+        return hour >= 6 && hour <= 22;
     };
 
     parseTime = (time: Time | DeltaTime) => {

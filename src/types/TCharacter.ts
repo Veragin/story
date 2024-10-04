@@ -1,18 +1,19 @@
 import { TWorldState } from 'data/TWorldState';
 import { TLocationId } from './TLocation';
-import { TItem, TItemId } from './TItem';
+import { TItem, TItemId, TItemPartial } from './TItem';
 import { TCharacterId, TCharacterPassageId, TSideCharacterId } from './TIds';
 
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
+    race?: TRace;
 
     startPassageId: TCharacterPassageId<Ch>;
     init: Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };
 
 export type TCharacterData = {
-    location: TLocationId | undefined;
+    location: TLocationId;
     health: number;
     stamina: number;
     hunger: number;
@@ -27,6 +28,7 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
 
     init: Omit<TWorldState['sideCharacters'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };
+
 export type TSideCharacterData = {
     location: TLocationId | undefined;
     inventory: TItem<TItemId>[];
@@ -36,5 +38,6 @@ export type TSideCharacterData = {
 export type TRace = {
     name: string;
     description: string;
-}
+};
 
+type TInitInventory = { inventory: TItemPartial<TItemId>[] };

@@ -17,15 +17,17 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
         condition?: boolean;
         redirect?: TEventCharacterPassageId<E, Ch>;
         text?: string;
-        links?: {
-            text: string;
-            passageId: TEventCharacterPassageId<E, Ch>;
-            autoPriortiy?: number;
-            cost?: TLinkCost;
-
-            onFinish?: () => void;
-        }[];
+        links?: TLink<E, Ch>[];
     }[];
+};
+
+export type TLink<E extends TEventId, Ch extends TCharacterId> = {
+    text: string;
+    passageId: TEventCharacterPassageId<E, Ch>;
+    autoPriortiy?: number;
+    cost?: TLinkCost;
+
+    onFinish?: () => void;
 };
 
 export type TLinkCost =
