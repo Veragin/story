@@ -8,12 +8,7 @@ import { itemInfo } from 'data/items/itemInfo';
 const ss = {
     time: register.events.village.timeRange.start,
     mainCharacterId: 'thomas',
-    currentHistory: {
-        thomas: {
-            passageId: 'village-thomas-forestCutTrees',
-            time: register.events.village.timeRange.start,
-        },
-    },
+    currentHistory: {},
 
     characters: {} as Record<TCharacterId, unknown>,
     sideCharacters: {} as Record<TSideCharacterId, unknown>,

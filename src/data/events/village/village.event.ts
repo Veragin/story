@@ -19,7 +19,12 @@ export const villageEvent: TEvent<'village'> = {
 
     triggers: [nobleHouseRobberyTrigger],
 
-    init: {},
+    init: {
+        mojePromena: {
+            time: 0,
+            asd: 'asd',
+        },
+    },
 };
 
 export type TVillageEventData = {

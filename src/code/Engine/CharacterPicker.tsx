@@ -12,7 +12,10 @@ export const CharacterPicker = () => {
             <SContainer>
                 <STitle>Choose a character</STitle>
                 Thomas
-                <Button variant="contained" onClick={() => e.processor.continue()}>
+                <Button
+                    variant="contained"
+                    onClick={() => e.processor.continue()}
+                >
                     Start
                 </Button>
             </SContainer>
