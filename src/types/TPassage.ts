@@ -15,6 +15,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
     type: 'screen';
     body: {
         condition?: boolean;
+        redirect?: TEventCharacterPassageId<E, Ch>;
         text?: string;
         links?: {
             text: string;

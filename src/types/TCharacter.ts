@@ -30,6 +30,7 @@ export type TSideCharacter<Ch extends TSideCharacterId> = {
 export type TSideCharacterData = {
     location: TLocationId | undefined;
     inventory: TItem<TItemId>[];
+    isDead: boolean;
 };
 
 export type TRace = {

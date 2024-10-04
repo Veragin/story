@@ -39,6 +39,18 @@ export class Processor {
             return;
         }
 
+        const redirect = this.e.activePassage.body.find(
+            (b) => b.condition !== false && b.redirect !== undefined
+        )?.redirect;
+        if (redirect !== undefined) {
+            this.e.history.addTurn({
+                passageId: redirect,
+                time: this.s.time,
+            });
+            this.continue();
+            return;
+        }
+
         if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
             this.autoProcess(this.e.activePassage);
             this.continue();
