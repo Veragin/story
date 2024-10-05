@@ -1,6 +1,4 @@
 import { TEvent } from 'types/TEvent';
-import { introPassage } from './thomas.passages/intro';
-import { forestPassage } from './thomas.passages/forest';
 import { Time } from 'time/Time';
 import { nobleHouseRobberyTrigger } from './triggers';
 import { TEventPassage } from 'types/TPassage';
@@ -35,9 +33,11 @@ export type TVillageEventData = {
 };
 
 export const villageEventPassages = {
-    'village-thomas-intro': introPassage,
-    'village-thomas-forest': forestPassage,
+    'village-thomas-intro': () => import('./thomas.passages/intro'),
+    'village-thomas-forest': () => import('./thomas.passages/forest'),
 } as const;
 
 // test
-Object.values(villageEventPassages).forEach((item: () => TEventPassage<'village'>) => void item);
+Object.values(villageEventPassages).forEach(
+    (item: () => Promise<{ default: () => TEventPassage<'village'> }>) => void item
+);

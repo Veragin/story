@@ -6,7 +6,10 @@ import { Engine } from './Engine';
 import { parsePassageId } from 'code/utils/parsePassageId';
 
 export class Story {
-    constructor(private s: TWorldState, private e: Engine) {}
+    constructor(
+        private s: TWorldState,
+        private e: Engine
+    ) {}
 
     goToPassage = (passageId: TPassageId, cost?: TLinkCost, cb?: () => void) => {
         const { characterId } = parsePassageId(passageId);
@@ -20,7 +23,7 @@ export class Story {
 
         items?.forEach((item) => this.e.inventory.removeItem(item), characterId);
 
-        this.e.processor.continue();
+        void this.e.processor.continue();
     };
 
     spendTime = (time: DeltaTime) => {

@@ -1,7 +1,7 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
 
-export const introPassage = (): TPassage<'village', 'thomas'> => ({
+const passage = (): TPassage<'village', 'thomas'> => ({
     eventId: 'village',
     characterId: 'thomas',
     id: 'intro',
@@ -27,3 +27,5 @@ export const introPassage = (): TPassage<'village', 'thomas'> => ({
         },
     ],
 });
+
+export default passage;

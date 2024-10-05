@@ -13,7 +13,7 @@ export class Processor {
         private e: Engine
     ) {}
 
-    continue = () => {
+    continue = async () => {
         const turn = this.e.history.getTurn();
 
         const shouldTrigger = isInRange(this.s.time, turn.time);
@@ -29,13 +29,14 @@ export class Processor {
         this.e.story.spendTime(distance);
         turn.onStart?.();
 
-        this.e.activePassage = register.passages[turn.passageId]();
+        const passageFun = await register.passages[turn.passageId]();
+        this.e.activePassage = passageFun.default();
         if (this.e.activePassage.type === 'transition') {
             this.e.history.addTurn({
                 passageId: this.e.activePassage.nextPassageId,
                 time: this.s.time,
             });
-            this.continue();
+            void this.continue();
             return;
         }
 
@@ -47,13 +48,13 @@ export class Processor {
                 passageId: redirect,
                 time: this.s.time,
             });
-            this.continue();
+            void this.continue();
             return;
         }
 
         if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
             this.autoProcess(this.e.activePassage);
-            this.continue();
+            void this.continue();
             return;
         }
 

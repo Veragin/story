@@ -45,6 +45,6 @@ const e = new Engine(s);
 window.s = s;
 window.e = e;
 
-e.handleAutoStart();
+void e.handleAutoStart();
 
 export { s, e };

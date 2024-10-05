@@ -32,10 +32,10 @@ export class Engine {
         this.processor = new Processor(s, this);
     }
 
-    handleAutoStart = () => {
+    handleAutoStart = async () => {
         if (Object.keys(this.s.currentHistory).length !== 0) {
             const startState = loadWorldState(JSON.stringify(this.s));
-            this.processor.continue();
+            await this.processor.continue();
 
             (Object.keys(startState) as (keyof TWorldState)[]).forEach((key) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

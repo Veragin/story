@@ -1,7 +1,6 @@
 import { TEvent } from 'types/TEvent';
 import { Time } from 'time/Time';
 import { TEventPassage } from 'types/TPassage';
-import { introPassage } from './annie.passages/intro';
 
 export const kingdomEvent: TEvent<'kingdom'> = {
     eventId: 'kingdom',
@@ -17,7 +16,12 @@ export const kingdomEvent: TEvent<'kingdom'> = {
 
     triggers: [],
 
-    init: {},
+    init: {
+        mojePromena: {
+            time: 0,
+            asd: 'asd',
+        },
+    },
 };
 
 export type TKingdomEventData = {
@@ -28,8 +32,11 @@ export type TKingdomEventData = {
 };
 
 export const kingdomEventPassages = {
-    'kingdom-annie-intro': introPassage,
+    'kingdom-annie-intro': () => import('./annie.passages/intro'),
+    'kingdom-annie-palace': () => import('./annie.passages/palace'),
 } as const;
 
 // test
-Object.values(kingdomEventPassages).forEach((item: () => TEventPassage<'kingdom'>) => void item);
+Object.values(kingdomEventPassages).forEach(
+    (item: () => Promise<{ default: () => TEventPassage<'kingdom'> }>) => void item
+);
