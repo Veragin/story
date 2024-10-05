@@ -43,13 +43,17 @@ Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim fram
         -   nodejs server + api
         -   browser (rights for all files vscode in browser) ???
         -   event time range (drag, move)
--   lazy load for passages ???
 -   passage in event
     -   save position of passages to solo file
     -   display passage layout
     -   display event info
     -   time mode (can click throw passages) => display world state
 -   display map with locations
+    -   display characters position in time
+-   setup benchmark tests 10000 passages 1000 events
+
+-   save, reset button to save state to localstorage
+-   start engine/visualizer
 
 MVP:
 
