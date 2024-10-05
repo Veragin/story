@@ -8,6 +8,7 @@ export const Franta: TSideCharacter<'franta'> = {
     init: {
         inventory: [],
         location: 'village',
+        isDead: false,
     },
 };
 

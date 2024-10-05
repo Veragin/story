@@ -8,6 +8,7 @@ export const NobleMan: TSideCharacter<'nobleMan'> = {
     init: {
         inventory: [],
         location: 'village',
+        isDead: false,
     },
 };
 
