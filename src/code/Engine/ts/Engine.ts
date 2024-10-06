@@ -24,6 +24,8 @@ export class Engine {
     constructor(private s: TWorldState) {
         makeAutoObservable(s);
 
+        this.loadStateFromLocalStorage();
+
         this.timeManager = new TimeManager();
         this.store = new Store(s);
         this.inventory = new Inventory(s, this);
@@ -34,13 +36,35 @@ export class Engine {
 
     handleAutoStart = async () => {
         if (Object.keys(this.s.currentHistory).length !== 0) {
-            const startState = loadWorldState(JSON.stringify(this.s));
+            const startState = JSON.stringify(this.s);
             await this.processor.continue();
-
-            (Object.keys(startState) as (keyof TWorldState)[]).forEach((key) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                this.s[key] = startState[key] as any;
-            });
+            this.setWorldState(startState);
         }
     };
+
+    saveStateToLocalStorage = () => {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.s));
+    };
+
+    clearStateFromLocalStorage = () => {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+    };
+
+    private loadStateFromLocalStorage = () => {
+        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (data !== null) {
+            this.setWorldState(data);
+        }
+    };
+
+    private setWorldState = (state: string) => {
+        const worldState = loadWorldState(state);
+        // we have to keep the reference to the object
+        (Object.keys(worldState) as (keyof TWorldState)[]).forEach((key) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            this.s[key] = worldState[key] as any;
+        });
+    };
 }
+
+const LOCAL_STORAGE_KEY = 'worldState';

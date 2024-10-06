@@ -52,9 +52,6 @@ Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim fram
     -   display characters position in time
 -   setup benchmark tests 10000 passages 1000 events
 
--   save, reset button to save state to localstorage
--   start engine/visualizer
-
 MVP:
 
 -   timeline: display event, toggle connections, 2 view, zoom

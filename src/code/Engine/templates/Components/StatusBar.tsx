@@ -54,6 +54,25 @@ export const StatusBar = observer(() => {
             >
                 <Inventory />
             </Modal>
+
+            <SButtons>
+                <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() => e.saveStateToLocalStorage()}
+                >
+                    Save
+                </Button>
+                <Button
+                    color="error"
+                    onClick={() => {
+                        e.clearStateFromLocalStorage();
+                        window.location.reload();
+                    }}
+                >
+                    Reset
+                </Button>
+            </SButtons>
         </SRow>
     );
 });
@@ -69,4 +88,11 @@ export const SStat = styled(Row)`
     align-items: center;
     gap: ${spacingCss(0.5)};
     width: 90px;
+`;
+
+export const SButtons = styled(Row)`
+    align-items: center;
+    gap: ${spacingCss(1)};
+    flex: 1;
+    justify-content: flex-end;
 `;
