@@ -8,8 +8,9 @@ import { Processor } from './Processor';
 import { Story } from './Story';
 import { Store } from './Store';
 import { TimeManager } from 'time/TimeManager';
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, makeObservable, runInAction } from 'mobx';
 import { loadWorldState } from 'code/utils/loadWorldState';
+import { showToast } from 'code/Wrapper';
 
 export class Engine {
     inventory: Inventory;
@@ -43,6 +44,7 @@ export class Engine {
     };
 
     saveStateToLocalStorage = () => {
+        showToast(_('Game was saved'), { variant: 'success' });
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.s));
     };
 
@@ -60,9 +62,11 @@ export class Engine {
     private setWorldState = (state: string) => {
         const worldState = loadWorldState(state);
         // we have to keep the reference to the object
-        (Object.keys(worldState) as (keyof TWorldState)[]).forEach((key) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            this.s[key] = worldState[key] as any;
+        runInAction(() => {
+            (Object.keys(worldState) as (keyof TWorldState)[]).forEach((key) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                this.s[key] = worldState[key] as any;
+            });
         });
     };
 }

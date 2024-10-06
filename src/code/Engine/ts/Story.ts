@@ -4,12 +4,19 @@ import { TPassageId } from 'types/TIds';
 import { TLinkCost } from 'types/TPassage';
 import { Engine } from './Engine';
 import { parsePassageId } from 'code/utils/parsePassageId';
+import { showToast } from 'code/Wrapper';
+import { itemInfo } from 'data/items/itemInfo';
+import { action, makeObservable } from 'mobx';
 
 export class Story {
     constructor(
         private s: TWorldState,
         private e: Engine
-    ) {}
+    ) {
+        makeObservable(this, {
+            spendTime: action,
+        });
+    }
 
     goToPassage = (passageId: TPassageId, cost?: TLinkCost, cb?: () => void) => {
         const { characterId } = parsePassageId(passageId);
@@ -21,6 +28,11 @@ export class Story {
             onStart: cb,
         });
 
+        if (items && items.length > 0 && characterId === this.s.mainCharacterId) {
+            showToast(_('You have spent: %s', items.map((item) => itemInfo[item.id].name).join(', ')), {
+                variant: 'info',
+            });
+        }
         items?.forEach((item) => this.e.inventory.removeItem(item), characterId);
 
         void this.e.processor.continue();
