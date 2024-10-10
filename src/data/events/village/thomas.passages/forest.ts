@@ -1,8 +1,9 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
 import { s } from 'worldState';
+import { TVillagePassageId } from '../village.event';
 
-const passage = (): TPassage<'village', 'thomas'> => ({
+export const forestPassage = (): TPassage<'village', 'thomas', TVillagePassageId> => ({
     eventId: 'village',
     characterId: 'thomas',
     id: 'forest',
@@ -26,5 +27,3 @@ const passage = (): TPassage<'village', 'thomas'> => ({
         },
     ],
 });
-
-export default passage;

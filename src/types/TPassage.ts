@@ -1,11 +1,13 @@
-import { TCharacterId, TEventCharacterPassageId, TEventId } from './TIds';
+import { TCharacterId, TEventCharacterPassageId, TEventId, TEventPassageId } from './TIds';
 import { TItemId } from './TItem';
 
-export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId>;
+export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId, TEventPassageId<E>>;
 
-export type TPassage<E extends TEventId, Ch extends TCharacterId> = TPassageScreen<E, Ch> | TPassageTransition<E, Ch>;
+export type TPassage<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> =
+    | TPassageScreen<E, Ch, Ids>
+    | TPassageTransition<E, Ch>;
 
-export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
+export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
     eventId: E;
     characterId: Ch;
     id: string;
@@ -15,15 +17,15 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId> = {
     type: 'screen';
     body: {
         condition?: boolean;
-        redirect?: TEventCharacterPassageId<E, Ch>;
+        redirect?: Ids & TEventCharacterPassageId<E, Ch>;
         text?: string;
-        links?: TLink<E, Ch>[];
+        links?: TLink<Ids & TEventCharacterPassageId<E, Ch>>[];
     }[];
 };
 
-export type TLink<E extends TEventId, Ch extends TCharacterId> = {
+export type TLink<Ids extends TEventCharacterPassageId<TEventId, TCharacterId>> = {
     text: string;
-    passageId: TEventCharacterPassageId<E, Ch>;
+    passageId: Ids;
     autoPriortiy?: number;
     cost?: TLinkCost;
 
@@ -46,11 +48,11 @@ export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };
 
-export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId> = {
+export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
     eventId: E;
     characterId: Ch;
     id: string;
     type: 'linear';
     description: string;
-    nextPassageId: TEventCharacterPassageId<E, Ch> | undefined;
+    nextPassageId?: Ids & TEventCharacterPassageId<E, Ch>;
 };

@@ -1,17 +1,12 @@
 import { css, styled } from '@mui/material';
 import { useEngine } from 'code/Context';
 import { itemInfo } from 'data/items/itemInfo';
-import { TCharacterId, TEventId } from 'types/TIds';
+import { TPassageId } from 'types/TIds';
 import { TItemId } from 'types/TItem';
-import { TPassageScreen } from 'types/TPassage';
-
-type TPassageScreenLinks = TPassageScreen<
-    TEventId,
-    TCharacterId
->['body'][number]['links'];
+import { TLink } from 'types/TPassage';
 
 type Props = {
-    link: NonNullable<TPassageScreenLinks>[number];
+    link: TLink<TPassageId>;
 };
 
 export const PassageLink = ({ link }: Props) => {

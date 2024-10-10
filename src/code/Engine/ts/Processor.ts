@@ -2,8 +2,9 @@ import { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from 'time/Time';
 import { register } from 'data/register';
-import { TLinkCost, TPassageScreen } from 'types/TPassage';
-import { TCharacterId, TEventId } from 'types/TIds';
+import { TLinkCost } from 'types/TPassage';
+import { TUnkownPassageScreen } from './const';
+import { parsePassageId } from 'code/utils/parsePassageId';
 
 export class Processor {
     private eventList = Object.values(this.s.events).map((event) => event.ref);
@@ -29,8 +30,10 @@ export class Processor {
         this.e.story.spendTime(distance);
         turn.onStart?.();
 
-        const passageFun = await register.passages[turn.passageId]();
-        this.e.activePassage = passageFun.default();
+        const { eventId } = parsePassageId(turn.passageId);
+        const passageFun = await register.passages[eventId]();
+        this.e.activePassage = (passageFun.default as any)[turn.passageId](this.s, this.e);
+
         if (this.e.activePassage.type === 'transition') {
             this.e.history.addTurn({
                 passageId: this.e.activePassage.nextPassageId,
@@ -61,7 +64,7 @@ export class Processor {
         this.e.store.setPassage(this.e.activePassage);
     };
 
-    private autoProcess = (p: TPassageScreen<TEventId, TCharacterId>) => {
+    private autoProcess = (p: TUnkownPassageScreen) => {
         const actions = this.getPossibleActions(p);
         if (actions.length === 0) {
             this.e.history.addEnd(p.characterId, 'NO_ACTIONS');
@@ -78,7 +81,7 @@ export class Processor {
         this.e.story.goToPassage(action.passageId, action.cost, action.onFinish);
     };
 
-    getPossibleActions = (p: TPassageScreen<TEventId, TCharacterId>) => {
+    getPossibleActions = (p: TUnkownPassageScreen) => {
         const links = p.body.filter((b) => b.condition !== false).flatMap((b) => b.links ?? []);
         return links.filter((l) => this.isActionPossible(l.cost));
     };

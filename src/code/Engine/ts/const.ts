@@ -1,4 +1,5 @@
-import { TEventPassage } from 'types/TPassage';
+import { TCharacterId, TEventId, TEventPassageId } from 'types/TIds';
+import { TEventPassage, TPassageScreen } from 'types/TPassage';
 
 export const DUMMY_PASSAGE: TEventPassage<'village'> = {
     id: 'forest',
@@ -9,3 +10,5 @@ export const DUMMY_PASSAGE: TEventPassage<'village'> = {
     title: 'Forest',
     type: 'screen',
 };
+
+export type TUnkownPassageScreen = TPassageScreen<TEventId, TCharacterId, TEventPassageId<TEventId>>;

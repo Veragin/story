@@ -8,7 +8,7 @@ import { Processor } from './Processor';
 import { Story } from './Story';
 import { Store } from './Store';
 import { TimeManager } from 'time/TimeManager';
-import { makeAutoObservable, makeObservable, runInAction } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from 'code/utils/loadWorldState';
 import { showToast } from 'code/Wrapper';
 

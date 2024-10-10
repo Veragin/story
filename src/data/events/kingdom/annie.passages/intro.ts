@@ -1,7 +1,9 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
+import { TKingdomPassageId } from '../kingdom.event';
+import { TWorldState } from 'data/TWorldState';
 
-const passage = (): TPassage<'kingdom', 'annie'> => ({
+export const introPassage = (s: TWorldState): TPassage<'kingdom', 'annie', TKingdomPassageId> => ({
     eventId: 'kingdom',
     characterId: 'annie',
     id: 'intro',
@@ -12,12 +14,12 @@ const passage = (): TPassage<'kingdom', 'annie'> => ({
 
     body: [
         {
-            condition: true,
+            condition: s.characters.annie.health > 0,
             text: 'text',
             links: [
                 {
                     text: 'Lets go to the forest',
-                    passageId: 'kingdom-annie-intro',
+                    passageId: 'kingdom-annie-palace',
                     cost: {
                         time: DeltaTime.fromMin(10),
                         items: [{ id: 'berries', amount: 1 }],
@@ -28,5 +30,3 @@ const passage = (): TPassage<'kingdom', 'annie'> => ({
         },
     ],
 });
-
-export default passage;

@@ -1,10 +1,9 @@
 import { TWorldState } from 'data/TWorldState';
 import { action, makeObservable, observable } from 'mobx';
-import { TCharacterId, TEventId } from 'types/TIds';
-import { TPassageScreen } from 'types/TPassage';
+import { TUnkownPassageScreen } from './const';
 
 export class Store {
-    passage: TPassageScreen<TEventId, TCharacterId> | null = null;
+    passage: TUnkownPassageScreen | null = null;
 
     constructor(public s: TWorldState) {
         makeObservable(this, {
@@ -13,7 +12,7 @@ export class Store {
         });
     }
 
-    setPassage = (passage: TPassageScreen<TEventId, TCharacterId> | null) => {
+    setPassage = (passage: TUnkownPassageScreen | null) => {
         this.passage = passage;
     };
 }

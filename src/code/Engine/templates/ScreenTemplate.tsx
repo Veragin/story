@@ -1,15 +1,14 @@
 import { styled } from '@mui/material';
 import { WholeContainer } from 'code/Components/Basic';
-import { TCharacterId, TEventId } from 'types/TIds';
-import { TPassageScreen } from 'types/TPassage';
 import { StatusBar } from './Components/StatusBar';
 import { Row } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { PassageLink } from './Components/PassageLink';
 import { Header, Text } from 'code/Components/Text';
+import { TUnkownPassageScreen } from '../ts/const';
 
 type Props = {
-    passage: TPassageScreen<TEventId, TCharacterId>;
+    passage: TUnkownPassageScreen;
 };
 
 export const ScreenTemplate = ({ passage }: Props) => {
