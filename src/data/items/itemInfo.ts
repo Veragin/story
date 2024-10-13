@@ -1,5 +1,7 @@
 import { foodInfo } from './foodInfo';
 import { toolInfo } from './toolInfo';
+import { applyFormatting } from 'code/utils/translations';
+void applyFormatting;
 
 export const itemInfo = {
     gold: {
