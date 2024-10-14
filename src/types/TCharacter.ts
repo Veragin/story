@@ -8,12 +8,12 @@ export type TCharacter<Ch extends TCharacterId> = {
     name: string;
     race?: TRace;
 
-    startPassageId: TCharacterPassageId<Ch>;
+    startPassageId?: TCharacterPassageId<Ch>;
     init: Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };
 
 export type TCharacterData = {
-    location: TLocationId;
+    location?: TLocationId;
     health: number;
     stamina: number;
     hunger: number;

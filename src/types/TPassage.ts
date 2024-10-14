@@ -3,11 +3,11 @@ import { TItemId } from './TItem';
 
 export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId, TEventPassageId<E>>;
 
-export type TPassage<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> =
+export type TPassage<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> =
     | TPassageScreen<E, Ch, Ids>
     | TPassageTransition<E, Ch>;
 
-export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
+export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> = {
     eventId: E;
     characterId: Ch;
     id: string;
@@ -17,9 +17,9 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids exte
     type: 'screen';
     body: {
         condition?: boolean;
-        redirect?: Ids & TEventCharacterPassageId<E, Ch>;
+        redirect?: Ids;
         text?: string;
-        links?: TLink<Ids & TEventCharacterPassageId<E, Ch>>[];
+        links?: TLink<Ids>[];
     }[];
 };
 

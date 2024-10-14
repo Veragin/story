@@ -23,7 +23,7 @@ export const register = {
         village: villageLocation,
     },
     passages: {
-        village: () => import('./events/village/village.event'),
-        kingdom: () => import('./events/kingdom/kingdom.event'),
+        village: () => import('./events/village/village.passages'),
+        kingdom: () => import('./events/kingdom/kingdom.passages'),
     },
 } as const;

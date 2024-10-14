@@ -1,8 +1,8 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
-import { TKingdomPassageId } from '../kingdom.event';
+import { TKingdomAnniePassageId } from '../kingdom.passages';
 
-export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomPassageId> => {
+export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomAnniePassageId> => {
     return {
         eventId: 'kingdom',
         characterId: 'annie',

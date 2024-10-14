@@ -1,8 +1,8 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
-import { TVillagePassageId } from '../village.event';
+import { TVillageThomasPassageId } from '../village.passages';
 
-export const introPassage = (): TPassage<'village', 'thomas', TVillagePassageId> => ({
+export const introPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
     eventId: 'village',
     characterId: 'thomas',
     id: 'intro',

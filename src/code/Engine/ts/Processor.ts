@@ -5,14 +5,18 @@ import { register } from 'data/register';
 import { TLinkCost } from 'types/TPassage';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from 'code/utils/parsePassageId';
+import { TEvent } from 'types/TEvent';
+import { TEventId } from 'types/TIds';
 
 export class Processor {
-    private eventList = Object.values(this.s.events).map((event) => event.ref);
+    private eventList: TEvent<TEventId>[];
 
     constructor(
         private s: TWorldState,
         private e: Engine
-    ) {}
+    ) {
+        this.eventList = Object.values(this.s.events).map((event) => event.ref);
+    }
 
     continue = async () => {
         const turn = this.e.history.getTurn();

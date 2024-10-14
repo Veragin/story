@@ -15,12 +15,19 @@ export class History {
         });
     }
 
-    private prepareHistory = (char: TCharacterId) => {
+    private prepareHistory = (char: TCharacterId): THistoryItem => {
         if (this.s.currentHistory[char] !== undefined) {
             return this.s.currentHistory[char];
         }
 
         const passageId = register.characters[char].startPassageId;
+        if (passageId === undefined) {
+            return {
+                time: this.s.time,
+                reason: 'NO_ACTIONS',
+            };
+        }
+
         const eventId = parsePassageId(passageId).eventId;
         const time = register.events[eventId].timeRange.start;
         return { passageId, time };

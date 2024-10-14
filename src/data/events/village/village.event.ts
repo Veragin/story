@@ -1,11 +1,6 @@
 import { TEvent } from 'types/TEvent';
 import { Time } from 'time/Time';
 import { nobleHouseRobberyTrigger } from './triggers';
-import { TEventPassage } from 'types/TPassage';
-import { introPassage } from './thomas.passages/intro';
-import { forestPassage } from './thomas.passages/forest';
-import { TWorldState } from 'data/TWorldState';
-import { Engine } from 'code/Engine/ts/Engine';
 
 export const villageEvent: TEvent<'village'> = {
     eventId: 'village',
@@ -35,12 +30,3 @@ export type TVillageEventData = {
         asd: string;
     };
 };
-
-export type TVillagePassageId = 'village-thomas-intro' | 'village-thomas-forest';
-
-const villageEventPassages: Record<TVillagePassageId, (s: TWorldState, e: Engine) => TEventPassage<'village'>> = {
-    'village-thomas-intro': introPassage,
-    'village-thomas-forest': forestPassage,
-};
-
-export default villageEventPassages;
