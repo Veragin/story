@@ -1,6 +1,6 @@
-import { TCharacterId, TEventId } from 'types/TIds';
+import { TCharacterId, TEventId, TPassageId } from 'types/TIds';
 
-export const parsePassageId = (passageId: `${TEventId}-${TCharacterId}-${string}`) => {
+export const parsePassageId = (passageId: TPassageId) => {
     const [eventId, characterId, ...rest] = passageId.split('-');
     return { eventId, characterId, id: rest.join('-') } as {
         eventId: TEventId;

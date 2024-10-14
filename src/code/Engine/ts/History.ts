@@ -2,7 +2,7 @@ import { parsePassageId } from 'code/utils/parsePassageId';
 import { Time } from 'time/Time';
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TEventCharacterPassageId, TEventId, TEventPassageId, TPassageId } from 'types/TIds';
+import { TCharacterId, TEventCharacterPassageId, TEventId, TPassageId } from 'types/TIds';
 
 export class History {
     data: Partial<Record<TCharacterId, THistoryItem[]>> = {};
@@ -91,7 +91,7 @@ export class History {
 export type THistoryItem = THistoryTurnItem | THistoryEndItem;
 
 export type THistoryTurnItem = {
-    passageId: TEventPassageId<TEventId>;
+    passageId: TPassageId;
     time: Time;
     onStart?: () => void; // called when passage is starts
 };

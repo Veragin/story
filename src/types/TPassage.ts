@@ -1,4 +1,4 @@
-import { TCharacterId, TEventCharacterPassageId, TEventId, TEventPassageId } from './TIds';
+import { TCharacterId, TEventCharacterPassageId, TEventId, TEventPassageId, TPassageId } from './TIds';
 import { TItemId } from './TItem';
 
 export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId, TEventPassageId<E>>;
@@ -23,7 +23,7 @@ export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids exte
     }[];
 };
 
-export type TLink<Ids extends TEventCharacterPassageId<TEventId, TCharacterId>> = {
+export type TLink<Ids extends TPassageId> = {
     text: string;
     passageId: Ids;
     autoPriortiy?: number;
