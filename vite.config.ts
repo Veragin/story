@@ -14,4 +14,9 @@ export default defineConfig({
             path: `ws`,
         },
     },
+    esbuild: {
+        supported: {
+            'top-level-await': true
+        },
+    }
 });
