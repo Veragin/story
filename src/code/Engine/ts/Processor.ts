@@ -35,7 +35,7 @@ export class Processor {
         turn.onStart?.();
 
         const { eventId } = parsePassageId(turn.passageId);
-        const passageFun = await register.passages[eventId]();
+        const passageFun = await (register.passages[eventId] as any)(); // TODO create new type 
         this.e.activePassage = (passageFun.default as any)[turn.passageId](this.s, this.e);
 
         if (this.e.activePassage.type === 'transition') {
