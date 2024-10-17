@@ -1,5 +1,23 @@
 import { DAY_S, HOUR_S, MIN_S, MONTH_S } from './const';
 
+
+type DeltaTimeStringFormat = 
+        `${number}months` | 
+        `${number}d` | 
+        `${number}h` | 
+        `${number}min` | 
+        `${number}s` | 
+        `${number}months ${number}d` | 
+        `${number}d ${number}h` | 
+        `${number}h ${number}min` | 
+        `${number}min ${number}s` | 
+        `${number}months ${number}d ${number}h ${number}min ${number}s` | 
+        `${number}d ${number}h ${number}min ${number}s` | 
+        `${number}h ${number}min ${number}s` | 
+        `${number}min ${number}s`;
+
+type TimeStringFormat = `${number}.${number} ${number}:${number}:${number}` | `${number}.${number} ${number}:${number}`;
+
 export class Time {
     protected _timeS: number;
 
@@ -17,7 +35,7 @@ export class Time {
     }
 
     static fromString(
-        s: `${number}.${number} ${number}:${number}:${number}` | `${number}.${number} ${number}:${number}`
+        s: TimeStringFormat
     ) {
         const [date, time] = s.split(' ');
         const [day, month] = date.split('.').map(Number);
@@ -60,6 +78,29 @@ export class DeltaTime {
         this._deltaTimeS = Math.floor(deltaTimeS);
     }
 
+    static fromString(s: DeltaTimeStringFormat) {
+    
+        const parts = s.split(' ');
+        let months = 0, days = 0, hours = 0, mins = 0, secs = 0;
+    
+        parts.forEach(part => {
+            if (part.endsWith('months')) {
+                months = parseInt(part.slice(0, -6), 10);
+            } else if (part.endsWith('d')) {
+                days = parseInt(part.slice(0, -1), 10);
+            } else if (part.endsWith('h')) {
+                hours = parseInt(part.slice(0, -1), 10);
+            } else if (part.endsWith('min')) {
+                mins = parseInt(part.slice(0, -3), 10);
+            } else if (part.endsWith('s')) {
+                secs = parseInt(part.slice(0, -1), 10);
+            }
+        });
+    
+        return new DeltaTime(months * MONTH_S + days * DAY_S + hours * HOUR_S + mins * MIN_S + secs);
+    }
+    
+
     static fromS(deltaTimeS: number) {
         return new DeltaTime(deltaTimeS);
     }
@@ -88,3 +129,25 @@ export class DeltaTime {
         return this._deltaTimeS / HOUR_S;
     }
 }
+
+export class TimeRange {
+    start: Time;
+    end: Time;
+
+    constructor(start: Time, end: Time) {
+        this.start = start;
+        this.end = end;
+    }
+
+    static fromDuration(start: Time, duration: DeltaTime) {
+        return new TimeRange(start, start.moveToFutureBy(duration));
+    }
+
+    static fromDurationString(start: TimeStringFormat, duration: DeltaTimeStringFormat) {
+        return new TimeRange(Time.fromString(start), Time.fromString(start).moveToFutureBy(DeltaTime.fromString(duration)));
+    }
+
+    static fromString(start: TimeStringFormat, end: TimeStringFormat) {
+        return new TimeRange(Time.fromString(start), Time.fromString(end));
+    }
+};

@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { TEventId } from './TIds';
 import { TLocationId } from './TLocation';
-import { Time } from 'time/Time';
+import { TimeRange } from 'time/Time';
 import { TTimeTrigger } from './TTimeTrigger';
 
 export type TEvent<E extends TEventId> = {
@@ -9,10 +9,7 @@ export type TEvent<E extends TEventId> = {
     title: string;
     description: string;
 
-    timeRange: {
-        start: Time;
-        end: Time;
-    };
+    timeRange: TimeRange;
     location: TLocationId;
 
     children: {

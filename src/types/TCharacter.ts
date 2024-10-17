@@ -6,7 +6,9 @@ import { TCharacterId, TCharacterPassageId, TSideCharacterId } from './TIds';
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
+    generalDescription?: string;
     race?: TRace;
+    archetype?: string;
 
     startPassageId?: TCharacterPassageId<Ch>;
     init: Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory;

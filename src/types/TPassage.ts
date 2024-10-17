@@ -48,7 +48,7 @@ export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };
 
-export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
+export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
     eventId: E;
     characterId: Ch;
     id: string;
@@ -56,3 +56,4 @@ export type TPassageLinearDescriber<E extends TEventId, Ch extends TCharacterId,
     description: string;
     nextPassageId?: Ids & TEventCharacterPassageId<E, Ch>;
 };
+

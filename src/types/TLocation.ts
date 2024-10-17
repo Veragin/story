@@ -13,8 +13,8 @@ export type TLocation<L extends TLocationId> = {
 
     sublocations?: TLocation<TLocationId>[];
 
-    x: number;
-    y: number;
+    x?: number;
+    y?: number;
 
     init: Partial<TWorldState['locations'][L]>;
 };
