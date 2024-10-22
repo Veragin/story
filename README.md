@@ -35,7 +35,7 @@ Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim fram
 
 -   timeline,
     -   display events
-    -   2 view: by location, by character, by connections
+    -   2 view: by location, by concrete character, by connections
     -   toggle display connections
     -   zoom
     -   display time triggers
@@ -50,11 +50,18 @@ Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim fram
     -   time mode (can click throw passages) => display world state
 -   display map with locations
     -   display characters position in time
--   setup benchmark tests 10000 passages 1000 events
+-   api calls vscode server
 
 MVP:
 
--   timeline: display event, toggle connections, 2 view, zoom
--   lazy load passage
+-   timeline: display event, toggle connections, zoom
+    -   display timeline with labels
+    -   everywhere mouse wheel can zoom (zoom levels: [den, 3 hodiny], [7 dní, den], [měsíc, 5dní], [rok, 2 měsíce])
+    -   drag and drop timeline only
+    -   display events
+    -   toggle connections button, add spacesc to display arrows
+    -   sort by connections
+    -   double click open passage in event of the event
 -   passage in event (bez time modu)
+    -   same as in twine
 -   display map location
