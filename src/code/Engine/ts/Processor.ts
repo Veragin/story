@@ -119,4 +119,4 @@ export class Processor {
     }
 }
 
-const isInRange = (start: Time, end: Time) => (time: Time) => start.isAfter(time) && end.isBefore(time);
+const isInRange = (start: Time, end: Time) => (time: Time) => !start.isAfter(time) && end.isAfter(time);

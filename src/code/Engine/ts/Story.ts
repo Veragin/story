@@ -29,9 +29,12 @@ export class Story {
         });
 
         if (items && items.length > 0 && characterId === this.s.mainCharacterId) {
-            showToast(_('You have spent: %s', items.map((item) => itemInfo[item.id].name).join(', ')), {
-                variant: 'info',
-            });
+            showToast(
+                _('You have spent: %s', items.map((item) => `${item.amount} ${itemInfo[item.id].name}`).join(', ')),
+                {
+                    variant: 'info',
+                }
+            );
         }
         items?.forEach((item) => this.e.inventory.removeItem(item), characterId);
 
