@@ -10,7 +10,7 @@ import { Store } from './Store';
 import { TimeManager } from 'time/TimeManager';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from 'code/utils/loadWorldState';
-import { showToast } from 'code/Wrapper';
+import { showToast } from 'code/GlobalWrapper';
 
 export class Engine {
     inventory: Inventory;
