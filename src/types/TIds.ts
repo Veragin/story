@@ -4,6 +4,7 @@ export type TCharacterId = keyof TWorldState['characters'];
 export type TSideCharacterId = keyof TWorldState['sideCharacters'];
 
 export type TEventId = keyof TWorldState['events'];
+export type THappeningId = keyof TWorldState['happenings'];
 
 export type TPassageId = `${string}-${string}-${string}`;
 export type TEventPassageId<E extends TEventId> = `${E}-${TCharacterId}-${string}`;

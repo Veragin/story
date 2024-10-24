@@ -10,6 +10,7 @@ import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomEventData } from './events/kingdom/kingdom.event';
 import { TCharacterId } from 'types/TIds';
 import { THistoryItem } from 'code/Engine/ts/History';
+import { THappening } from 'types/THappening';
 
 export type TWorldState = {
     time: Time;
@@ -31,5 +32,8 @@ export type TWorldState = {
     };
     locations: {
         village: { ref: TLocation<'village'> } & TVillageLocationData;
+    };
+    happenings: {
+        village_under_attack: { ref: THappening<'village_under_attack'> };
     };
 };
