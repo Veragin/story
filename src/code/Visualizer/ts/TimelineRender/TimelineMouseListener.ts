@@ -4,29 +4,33 @@ import { Store } from '../Store';
 import { ZOOM_CONFIG } from './zoomConfig';
 import { DeltaTime, Time } from 'time/Time';
 import { DurationHelper } from './DurationHelper';
+import { TimelineMarker } from './TimelineMarker';
 
 export class TimelineMouseListener {
     private isMouseDown = false;
     private isDragging = false;
 
     private timeToLengthFactor: number = 1;
-    private mouseXPosition: number = 1;
+    private mouseDownXPosition: number = 1;
     private mouseDownTime = Time.fromS(0);
     private zoomLevelProgress: number = 0;
 
     constructor(
         private container: HTMLCanvasElement,
         private store: Store,
-        private durationHelper: DurationHelper
+        private durationHelper: DurationHelper,
+        private timelineMarker: TimelineMarker
     ) {
         this.container.addEventListener('mousedown', this.onMouseDown);
         document.addEventListener('mouseup', this.onMouseUp);
         this.container.addEventListener('mousemove', this.onMouseMove);
         this.container.addEventListener('wheel', this.onWheelEvent);
+        this.container.addEventListener('mouseenter', this.onMouseEnter);
+        this.container.addEventListener('mouseleave', this.onMouseLeave);
     }
 
     getTimeShift(e: MouseEvent) {
-        const delta = this.mouseXPosition - e.clientX;
+        const delta = this.mouseDownXPosition - e.clientX;
         return DeltaTime.fromS(delta / this.timeToLengthFactor);
     }
 
@@ -34,18 +38,31 @@ export class TimelineMouseListener {
         e.preventDefault();
         this.isMouseDown = true;
         this.timeToLengthFactor = this.container.offsetWidth / this.store.zoom.displayTime.s;
+        this.container.classList.add('grabbing');
     };
 
     private onMouseUp = () => {
         this.isMouseDown = false;
         this.isDragging = false;
+        this.container.classList.remove('grabbing');
+    };
+
+    private onMouseEnter = () => {
+        this.timelineMarker.show();
+    };
+
+    private onMouseLeave = () => {
+        this.timelineMarker.hide();
     };
 
     private onMouseMove = throttle((e: MouseEvent) => {
+        const mouseTime = this.durationHelper.getTimestampFromDistance(e.clientX);
+        this.timelineMarker.update(e.clientX, mouseTime);
+
         if (this.isMouseDown) {
             if (!this.isDragging) {
                 this.isDragging = true;
-                this.mouseXPosition = e.clientX;
+                this.mouseDownXPosition = e.clientX;
                 this.mouseDownTime = this.store.timelineStartTime;
             }
 
@@ -56,7 +73,6 @@ export class TimelineMouseListener {
     }, 30);
 
     private onWheelEvent = (e: WheelEvent) => {
-        // crop step to interval (-1, 1)
         const zoomStep = Math.max(Math.min(e.deltaY * ZOOM_SPEED_FACTOR, 1), -1);
         const zoomLevelProgress = this.zoomLevelProgress - zoomStep;
         if (zoomLevelProgress < 0 || zoomLevelProgress > ZOOM_CONFIG.length - 1) {
@@ -79,5 +95,7 @@ export class TimelineMouseListener {
         document.removeEventListener('mouseup', this.onMouseUp);
         this.container.removeEventListener('mousemove', this.onMouseMove);
         this.container.removeEventListener('wheel', this.onWheelEvent);
+        this.container.removeEventListener('mouseenter', this.onMouseEnter);
+        this.container.removeEventListener('mouseleave', this.onMouseLeave);
     }
 }

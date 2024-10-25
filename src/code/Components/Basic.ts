@@ -15,4 +15,5 @@ export const WholeContainer = styled(Column)`
     align-items: stretch;
     overflow: hidden;
     background-color: #000;
+    position: relative;
 `;

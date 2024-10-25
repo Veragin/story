@@ -30,12 +30,12 @@ export class Store {
     }
 
     timelineRender: TimelineRender | null = null;
-    setTimeRenderer = (canvasRef: HTMLCanvasElement, containerRef: HTMLDivElement) => {
+    setTimeRenderer = (canvasRef: HTMLCanvasElement, containerRef: HTMLDivElement, markerRef: HTMLDivElement) => {
         if (this.timelineRender !== null) {
             this.timelineRender.destructor();
         }
 
-        this.timelineRender = new TimelineRender(canvasRef, containerRef, this.timeManager, this);
+        this.timelineRender = new TimelineRender(canvasRef, containerRef, markerRef, this.timeManager, this);
     };
 
     timelineStartTime = Time.fromS(0);

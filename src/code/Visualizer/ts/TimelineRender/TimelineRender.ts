@@ -5,24 +5,26 @@ import { RESOLUTION_FACTOR } from './constants';
 import { Store } from '../Store';
 import { TimelineMouseListener } from './TimelineMouseListener';
 import { TimelinePaint } from './TimelinePaint/TimelinePaint';
+import { TimelineMarker } from './TimelineMarker';
 
 export class TimelineRender {
-    isMouseButtonDown: boolean;
     resizeObserver: ResizeObserver;
     durationHelper: DurationHelper;
+    timelineMarker: TimelineMarker;
     timelineListener: TimelineMouseListener;
     timelinePaint: TimelinePaint;
 
     constructor(
         public canvasRef: HTMLCanvasElement,
         public containerRef: HTMLDivElement,
+        public markerRef: HTMLDivElement,
         public timeManager: TimeManager,
         store: Store
     ) {
-        this.isMouseButtonDown = false;
         this.durationHelper = new DurationHelper(store);
+        this.timelineMarker = new TimelineMarker(markerRef, timeManager);
         this.timelinePaint = new TimelinePaint(store, timeManager, this.durationHelper, canvasRef);
-        this.timelineListener = new TimelineMouseListener(canvasRef, store, this.durationHelper);
+        this.timelineListener = new TimelineMouseListener(canvasRef, store, this.durationHelper, this.timelineMarker);
 
         this.resizeObserver = new ResizeObserver(throttle<unknown>(() => this.onCanvasResize(), 10));
         this.resizeObserver.observe(containerRef);
@@ -48,5 +50,6 @@ export class TimelineRender {
     destructor = () => {
         this.resizeObserver.disconnect();
         this.timelineListener.destructor();
+        this.timelineMarker.destructor();
     };
 }

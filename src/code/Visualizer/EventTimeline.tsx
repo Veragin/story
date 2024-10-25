@@ -4,17 +4,23 @@ import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
+import {
+    MARKER_LINE_CLASS,
+    MARKER_TIME_CLASS,
+} from './ts/TimelineRender/TimelineMarker';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
     const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
+    const markerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         store.setTimeRenderer(
             timelineCanvasRef.current!,
-            containerRef.current!
+            containerRef.current!,
+            markerRef.current!
         );
         return () => {
             store.timelineRender?.destructor();
@@ -34,6 +40,7 @@ export const EventTimeline = () => {
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
+            <STimelineTimeMarker ref={markerRef} />
         </WholeContainer>
     );
 };
@@ -54,5 +61,38 @@ const STimelineCanvas = styled('canvas')`
     width: 100%;
     height: 80px;
     user-select: none;
-    cursor: pointer;
+    cursor: grab;
+
+    &.grabbing {
+        cursor: grabbing;
+    }
+`;
+
+const STimelineTimeMarker = styled('div')`
+    position: absolute;
+    bottom: 42px;
+    left: 0;
+    width: 100px;
+    align-items: center;
+    display: none;
+    flex-direction: column;
+    pointer-events: none;
+    gap: ${spacingCss(1)};
+    translate: -50%;
+
+    & > .${MARKER_TIME_CLASS} {
+        background-color: #171a1e;
+        padding: ${spacingCss(0.5)} ${spacingCss(1)};
+        border-radius: 6px;
+        font-size: 14px;
+        line-height: 14px;
+        align-self: stretch;
+        text-align: center;
+    }
+
+    & > .${MARKER_LINE_CLASS} {
+        background-color: red;
+        width: 2px;
+        height: 30px;
+    }
 `;
