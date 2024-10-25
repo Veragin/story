@@ -3,11 +3,14 @@ import { Row, WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
-import { useEffect, useRef } from 'react';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
 } from './ts/TimelineRender/TimelineMarker';
+import { useEffect, useRef, useState } from 'react';
+import { CanvasManager } from './Graphs/CanvasManager';
+import { Node } from './Graphs/Node/Node';
+import { getExampleNodes } from './Graphs/ExampleData';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
@@ -16,6 +19,44 @@ export const EventTimeline = () => {
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
 
+    const canvasManagerRef = useRef<CanvasManager | null>(null);
+    const [nodes, setNodes] = useState<Node[]>([]);
+
+    // Initialize canvas manager and create nodes
+    useEffect(() => {
+        if (!mainCanvasRef.current) return;
+
+        // Create canvas manager
+        const manager = new CanvasManager(mainCanvasRef.current);
+        canvasManagerRef.current = manager;
+
+        // Get example nodes
+        const createdNodes = getExampleNodes(manager);
+
+        setNodes(createdNodes);
+
+        // Handle canvas resize
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === mainCanvasRef.current) {
+                    manager.setSize(
+                        entry.contentRect.width,
+                        entry.contentRect.height
+                    );
+                }
+            }
+        });
+
+        resizeObserver.observe(mainCanvasRef.current);
+
+        // Cleanup
+        return () => {
+            resizeObserver.disconnect();
+            manager.destroy();
+        };
+    }, []);
+
+    // Set timeline canvas in store
     useEffect(() => {
         store.setTimeRenderer(
             timelineCanvasRef.current!,
@@ -25,6 +66,21 @@ export const EventTimeline = () => {
         return () => {
             store.timelineRender?.destructor();
         };
+    }, []);
+
+    // Handle window resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (mainCanvasRef.current && canvasManagerRef.current) {
+                canvasManagerRef.current.setSize(
+                    mainCanvasRef.current.offsetWidth,
+                    mainCanvasRef.current.offsetHeight
+                );
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     return (

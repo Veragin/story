@@ -3,7 +3,7 @@ import { Size } from "./Size";
 import { VisualObject } from "./VisualObject";
 
 /**
- * Example implementation of a visual object (like text or image)
+ * Example implementation of a visual object
  */
 export class TextContent extends VisualObject {
     private text: string;
