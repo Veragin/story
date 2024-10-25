@@ -1,5 +1,4 @@
 import { ReactNode, useState } from 'react';
-import './index.css';
 import { visualizerStoreContext } from '../Context';
 import { Store } from './ts/Store';
 

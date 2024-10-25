@@ -1,7 +1,7 @@
 import { Button, styled } from '@mui/material';
-import { Column, Row } from 'code/Components/Basic';
+import { Column, Row, WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
-import { Text } from 'code/Components/Text';
+import { SmallText, Text } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 
@@ -15,9 +15,9 @@ export const EventTimeline = () => {
     }, []);
 
     return (
-        <SCont>
+        <WholeContainer>
             <SControlPanel>
-                <Text>{_('Event Timeline')}</Text>
+                <SmallText>{_('Event Timeline')}</SmallText>
                 <Button
                     variant="contained"
                     onClick={() => console.log('Add event')}
@@ -27,24 +27,25 @@ export const EventTimeline = () => {
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
-        </SCont>
+        </WholeContainer>
     );
 };
 
-const SCont = styled(Column)`
-    width: 100vw;
-    height: 100vh;
-    align-items: stretch;
-`;
-
 const SControlPanel = styled(Row)`
     gap: ${spacingCss(1)};
+    align-items: center;
 `;
 
 const SMainCanvas = styled('canvas')`
     flex: 1;
+    overflow: hidden;
+    border-top: 1px solid grey;
+    border-bottom: 1px solid grey;
 `;
 
 const STimelineCanvas = styled('canvas')`
+    width: 100%;
     height: 100px;
+    user-select: none;
+    cursor: pointer;
 `;

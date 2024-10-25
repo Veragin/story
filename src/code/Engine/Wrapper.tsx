@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import './index.css';
 import { worldStateContext, engineContext, storeContext } from '../Context';
 import { e, s } from 'worldState';
 import { applyFormatting } from '../utils/translations';

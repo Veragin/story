@@ -1,3 +1,5 @@
+import { EventTimeline } from './EventTimeline';
+
 export const Visualizer = () => {
-    return <div>Visualizer</div>;
+    return <EventTimeline />;
 };
