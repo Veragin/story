@@ -62,6 +62,11 @@ export class TimeManager {
 
         return { month, day, hour, min, sec };
     };
+
+    roundTo = (time: Time, base: DeltaTime) => {
+        const part = time.s % base.s;
+        return Time.fromS(time.s - part);
+    };
 }
 
 export type TTimeRenderFormat = 'month' | 'date' | 'dateTime' | 'dateTimeSec' | 'time' | 'timeSec';

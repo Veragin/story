@@ -40,6 +40,14 @@ export class Time {
         return Time.from({ month: month - 1, day: day - 1, hour, min, sec });
     }
 
+    static min(t1: Time, t2: Time) {
+        return Time.fromS(Math.min(t1.s, t2.s));
+    }
+
+    static max(t1: Time, t2: Time) {
+        return Time.fromS(Math.max(t1.s, t2.s));
+    }
+
     get s() {
         return this._timeS;
     }

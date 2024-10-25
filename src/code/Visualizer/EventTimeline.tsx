@@ -7,15 +7,22 @@ import { useEffect, useRef } from 'react';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
+    const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        store.timelineRender.canvas = timelineCanvasRef.current;
+        store.setTimeRenderer(
+            timelineCanvasRef.current!,
+            containerRef.current!
+        );
+        return () => {
+            store.timelineRender?.destroy();
+        };
     }, []);
 
     return (
-        <WholeContainer>
+        <WholeContainer ref={containerRef}>
             <SControlPanel>
                 <SmallText>{_('Event Timeline')}</SmallText>
                 <Button
@@ -45,7 +52,7 @@ const SMainCanvas = styled('canvas')`
 
 const STimelineCanvas = styled('canvas')`
     width: 100%;
-    height: 100px;
+    height: 80px;
     user-select: none;
     cursor: pointer;
 `;
