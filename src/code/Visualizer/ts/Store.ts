@@ -1,6 +1,6 @@
 import { action, makeObservable, observable } from 'mobx';
-import { ZOOM_CONFIG } from './zoomConfig';
-import { TimelineRender } from './TimelineRender';
+import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
+import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
 
@@ -32,7 +32,7 @@ export class Store {
     timelineRender: TimelineRender | null = null;
     setTimeRenderer = (canvasRef: HTMLCanvasElement, containerRef: HTMLDivElement) => {
         if (this.timelineRender !== null) {
-            this.timelineRender.destroy();
+            this.timelineRender.destructor();
         }
 
         this.timelineRender = new TimelineRender(canvasRef, containerRef, this.timeManager, this);

@@ -6,7 +6,7 @@ import {
     TIMELINE_COLOR,
     TIMELINE_HEIGHT,
     TIMELINE_TOP_POSITION,
-} from './constants';
+} from '../constants';
 
 export class TimelineDraw {
     private ctx: CanvasRenderingContext2D;

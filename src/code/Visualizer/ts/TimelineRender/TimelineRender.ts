@@ -2,27 +2,27 @@ import { throttle } from 'code/utils/throttle';
 import { DurationHelper } from './DurationHelper';
 import { TimeManager } from 'time/TimeManager';
 import { RESOLUTION_FACTOR } from './constants';
-import { TimelineDraw } from './TimelineDraw';
-import { Store } from './Store';
+import { Store } from '../Store';
 import { TimelineMouseListener } from './TimelineMouseListener';
+import { TimelinePaint } from './TimelinePaint/TimelinePaint';
 
 export class TimelineRender {
     isMouseButtonDown: boolean;
     resizeObserver: ResizeObserver;
     durationHelper: DurationHelper;
-    timelineDraw: TimelineDraw;
     timelineListener: TimelineMouseListener;
+    timelinePaint: TimelinePaint;
 
     constructor(
         public canvasRef: HTMLCanvasElement,
         public containerRef: HTMLDivElement,
         public timeManager: TimeManager,
-        private store: Store
+        store: Store
     ) {
         this.isMouseButtonDown = false;
-        this.timelineDraw = new TimelineDraw(canvasRef);
         this.durationHelper = new DurationHelper(store);
-        this.timelineListener = new TimelineMouseListener(canvasRef, store);
+        this.timelinePaint = new TimelinePaint(store, timeManager, this.durationHelper, canvasRef);
+        this.timelineListener = new TimelineMouseListener(canvasRef, store, this.durationHelper);
 
         this.resizeObserver = new ResizeObserver(throttle<unknown>(() => this.onCanvasResize(), 10));
         this.resizeObserver.observe(containerRef);
@@ -37,37 +37,16 @@ export class TimelineRender {
 
         this.durationHelper.data.width = this.canvasRef.width / RESOLUTION_FACTOR;
         this.durationHelper.data.height = this.canvasRef.height;
-        this.timelineDraw.rescale();
-        this.render();
+        this.timelinePaint.timelineDraw.rescale();
+        this.timelinePaint.render();
     };
 
     render = () => {
-        this.timelineDraw.drawTimelineBorder();
-        this.renderLabels();
+        this.timelinePaint.render();
     };
 
-    renderLabels = () => {
-        const zoom = this.store.zoom;
-        const start = this.store.timelineStartTime;
-        const end = this.store.timelineStartTime.moveToFutureBy(zoom.displayTime);
-
-        const labelsTimes: Time[] = [];
-        let time = this.timeManager.roundTo(start, zoom.labelsDistance);
-
-        while (time.isBefore(end)) {
-            if (time.isAfter(start)) {
-                labelsTimes.push(time);
-            }
-            time = time.moveToFutureBy(zoom.labelsDistance);
-        }
-
-        for (const labelTime of labelsTimes) {
-            const label = this.timeManager.renderTime(labelTime, zoom.renderedTimeFormat);
-            this.timelineDraw.drawTimelineLabel(this.durationHelper.getDistanceFromTimestamp(labelTime), label);
-        }
-    };
-
-    destroy = () => {
+    destructor = () => {
         this.resizeObserver.disconnect();
+        this.timelineListener.destructor();
     };
 }

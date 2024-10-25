@@ -1,7 +1,7 @@
 import { Button, styled } from '@mui/material';
-import { Column, Row, WholeContainer } from 'code/Components/Basic';
+import { Row, WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
-import { SmallText, Text } from 'code/Components/Text';
+import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 
@@ -17,7 +17,7 @@ export const EventTimeline = () => {
             containerRef.current!
         );
         return () => {
-            store.timelineRender?.destroy();
+            store.timelineRender?.destructor();
         };
     }, []);
 

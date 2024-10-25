@@ -1,5 +1,6 @@
 import { DeltaTime, Time } from 'time/Time';
-import { Store } from './Store';
+import { Store } from '../Store';
+import { ZOOM_CONFIG } from './zoomConfig';
 
 export class DurationHelper {
     data = {
@@ -30,5 +31,12 @@ export class DurationHelper {
 
     getTimeToLengthFactor = () => {
         return this.data.width / this.store.zoom.displayTime.s;
+    };
+
+    computeStartForZoom = (zoomLevel: number, xPosition: number) => {
+        const time = this.getTimestampFromDistance(xPosition);
+        const newFactor = this.data.width / ZOOM_CONFIG[zoomLevel].displayTime.s;
+        const timeShoft = DeltaTime.fromS(xPosition / newFactor);
+        return time.moveToHistoryBy(timeShoft);
     };
 }
