@@ -1,4 +1,4 @@
-import { DAY_S, HOUR_S, MIN_S, MONTH_S } from './const';
+import { DAY_S, HOUR_S, MIN_S, MONTH_S, START_YEAR, YEAR_S } from './const';
 
 type DeltaTimeStringFormat =
     | `${number}months`
@@ -15,7 +15,11 @@ type DeltaTimeStringFormat =
     | `${number}h ${number}min ${number}s`
     | `${number}min ${number}s`;
 
-type TimeStringFormat = `${number}.${number} ${number}:${number}:${number}` | `${number}.${number} ${number}:${number}`;
+type TimeStringFormat =
+    | `${number}.${number}.${number} ${number}:${number}:${number}`
+    | `${number}.${number}.${number} ${number}:${number}`
+    | `${number}.${number} ${number}:${number}:${number}`
+    | `${number}.${number} ${number}:${number}`;
 
 export class Time {
     protected _timeS: number;
@@ -28,16 +32,22 @@ export class Time {
         return new Time(timeS);
     }
 
-    static from(data: Partial<{ month: number; day: number; hour: number; min: number; sec: number }>) {
-        const { month = 0, day = 0, hour = 0, min = 0, sec = 0 } = data;
-        return new Time(month * MONTH_S + day * DAY_S + hour * HOUR_S + min * MIN_S + sec);
+    static from(data: Partial<{ year: number; month: number; day: number; hour: number; min: number; sec: number }>) {
+        const { year = 0, month = 0, day = 0, hour = 0, min = 0, sec = 0 } = data;
+        return new Time(year * YEAR_S + month * MONTH_S + day * DAY_S + hour * HOUR_S + min * MIN_S + sec);
     }
 
     static fromString(s: TimeStringFormat) {
         const [date, time] = s.split(' ');
-        const [day, month] = date.split('.').map(Number);
-        const [hour, min, sec] = time.split(':').map(Number);
-        return Time.from({ month: month - 1, day: day - 1, hour, min, sec });
+        const [day, month, year] = date
+            .split('.')
+            .map(Number)
+            .filter((n) => !Number.isNaN(n));
+        const [hour, min, sec] = time
+            .split(':')
+            .map(Number)
+            .filter((n) => !Number.isNaN(n));
+        return Time.from({ year: year ? year - START_YEAR : 0, month: month - 1, day: day - 1, hour, min, sec });
     }
 
     static min(t1: Time, t2: Time) {

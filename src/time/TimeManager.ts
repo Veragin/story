@@ -1,18 +1,22 @@
-import { DAY_S, HOUR_S, MIN_S, MONTH_S, MONTH_NAME } from './const';
+import { DAY_S, HOUR_S, MIN_S, MONTH_S, MONTH_NAME, YEAR_S, START_YEAR } from './const';
 import { Time } from './Time';
 
 export class TimeManager {
+    constructor(public startYear: number = START_YEAR) {}
+
     renderTime = (time: Time, format: TTimeRenderFormat) => {
-        const { month, day, hour, min, sec } = this.parseTime(time);
+        const { year, month, day, hour, min, sec } = this.parseTime(time);
         const minText = String(min).length < 2 ? `0${min}` : min;
 
+        const displayYear = year + this.startYear;
+
         if (format === 'month') {
-            return MONTH_NAME[month];
+            return `${MONTH_NAME[month]} ${displayYear}`;
         }
 
         let res = `${hour}:${minText}`;
         if (format.startsWith('date')) {
-            res = `${day + 1}.${month + 1}.`;
+            res = `${day + 1}.${month + 1}.${displayYear}`;
         }
         if (format === 'dateTime' || format === 'dateTimeSec') {
             res = `${res} ${hour}:${minText}`;
@@ -50,8 +54,10 @@ export class TimeManager {
     };
 
     parseTime = (time: Time | DeltaTime) => {
-        const month = Math.floor(time.s / MONTH_S);
-        let restS = time.s - month * MONTH_S;
+        const year = Math.floor(time.s / YEAR_S);
+        let restS = time.s - year * YEAR_S;
+        const month = Math.floor(restS / MONTH_S);
+        restS = restS - month * MONTH_S;
         const day = Math.floor(restS / DAY_S);
         restS = restS - day * DAY_S;
         const hour = Math.floor(restS / HOUR_S);
@@ -60,7 +66,7 @@ export class TimeManager {
         restS -= min * MIN_S;
         const sec = restS - min * MIN_S;
 
-        return { month, day, hour, min, sec };
+        return { year, month, day, hour, min, sec };
     };
 
     roundTo = (time: Time, base: DeltaTime) => {

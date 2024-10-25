@@ -72,7 +72,7 @@ const STimelineTimeMarker = styled('div')`
     position: absolute;
     bottom: 42px;
     left: 0;
-    width: 100px;
+    width: 150px;
     align-items: center;
     display: none;
     flex-direction: column;

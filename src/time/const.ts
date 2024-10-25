@@ -4,7 +4,7 @@ export const DAY_S = HOUR_S * 24;
 export const MONTH_S = DAY_S * 30;
 export const YEAR_S = MONTH_S * 12;
 
-export const START_MONTH = 9;
+export const START_YEAR = 1620;
 
 export const MONTH_NAME = [
     'January',
