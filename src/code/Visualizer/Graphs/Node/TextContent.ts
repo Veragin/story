@@ -1,5 +1,4 @@
-import { Point } from "./Point";
-import { Size } from "./Size";
+import { override } from "mobx";
 import { VisualObject } from "./VisualObject";
 
 /**
@@ -11,8 +10,8 @@ export class TextContent extends VisualObject {
     private color: string;
 
     constructor(
-        position: Point,
-        size: Size,
+        position: TPoint,
+        size: TSize,
         text: string,
         font: string = "14px Arial",
         color: string = "#000000"

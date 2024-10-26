@@ -1,16 +1,12 @@
 import { Observer } from "code/Visualizer/Observer";
-import { Point } from "./Point";
-import { Size } from "./Size";
-import zIndex from "@mui/material/styles/zIndex";
-import { set } from "mobx";
 
 /**
  * Base class for any visual object that can be drawn on canvas
  */
 export abstract class VisualObject {
-    protected realPosition: Point;
-    protected canvasPosition: Point;
-    protected size: Size;
+    protected realPosition: TPoint;
+    protected canvasPosition: TPoint;
+    protected size: TSize;
     private _onPropertyChanged = new Observer<VisualObject>();
     private _automaticDraw: boolean = true;
     private _zIndex: number = 0;
@@ -24,7 +20,7 @@ export abstract class VisualObject {
         return this._zIndex;
     }
 
-    constructor(realPosition: Point, size: Size, zIndex: number = 0) {
+    constructor(realPosition: TPoint, size: TSize, zIndex: number = 0) {
         this.realPosition = realPosition;
         this.canvasPosition = { ...realPosition };
         this.size = size;
@@ -39,15 +35,15 @@ export abstract class VisualObject {
         this.redraw(changed);
     }
 
-    getRealPosition(): Point {
+    getRealPosition(): TPoint {
         return this.realPosition;
     }
 
-    getCanvasPosition(): Point {
+    getCanvasPosition(): TPoint {
         return this.canvasPosition;
     }
 
-    getSize(): Size {
+    getSize(): TSize {
         return this.size;
     }
 
@@ -55,19 +51,19 @@ export abstract class VisualObject {
         return this._automaticDraw;
     }
 
-    setRealPosition(position: Point): void {
+    setRealPosition(position: TPoint): void {
         this.realPosition = position;
         this.setCanvasPosition(position);
     }
 
-    setCanvasPosition(position: Point): void {
+    setCanvasPosition(position: TPoint): void {
         let changed = this.canvasPosition.x !== position.x 
             || this.canvasPosition.y !== position.y;
         this.canvasPosition = position;
         this.redraw(changed);
     }
 
-    setSize(size: Size): void {
+    setSize(size: TSize): void {
         let changed = this.size.width !== size.width 
             || this.size.height !== size.height;
         this.size = size;

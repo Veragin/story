@@ -1,17 +1,15 @@
 import { BorderConfig } from "./BorderConfig";
 import { DraggableVisualObject } from "./DraggableVisualObject";
-import { Point } from "./Point";
-import { Size } from "./Size";
 import { VisualObject } from "./VisualObject";
 
-export class Node extends DraggableVisualObject {
+export class NodeVisualObject extends DraggableVisualObject {
     private border: BorderConfig;
     private content: VisualObject;
     private backgroundColor: string;
 
     constructor(
-        realPosition: Point,
-        size: Size,
+        realPosition: TPoint,
+        size: TSize,
         border: BorderConfig,
         content: VisualObject,
         backgroundColor: string = "#ffffff",
@@ -64,7 +62,7 @@ export class Node extends DraggableVisualObject {
         this.content.draw(ctx);
     }
 
-    drag(point: Point): void {
+    drag(point: TPoint): void {
         super.drag(point);
 
         // Update content position maintaining the offset
@@ -73,7 +71,7 @@ export class Node extends DraggableVisualObject {
         this.content.setRealPosition(newContentPosition);
     }
 
-    getContentPosition(): Point {
+    getContentPosition(): TPoint {
         return {
             x: this.canvasPosition.x + this.size.width / 2 - this.content.getSize().width / 2,
             y: this.canvasPosition.y + this.size.height / 2 - this.content.getSize().height / 2

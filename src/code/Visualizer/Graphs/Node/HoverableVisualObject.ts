@@ -1,5 +1,5 @@
 import { Observer } from "code/Visualizer/Observer";
-import { Point } from "./Point";
+import { TPoint } from "./Point";
 import { VisualObject } from "./VisualObject";
 
 export abstract class HoverableVisualObject extends VisualObject {
@@ -16,7 +16,7 @@ export abstract class HoverableVisualObject extends VisualObject {
         return this._onHoverExit;
     }
 
-    isPointInside(point: Point): boolean {
+    isPointInside(point: TPoint): boolean {
         const pos = this.getCanvasPosition();
         const size = this.getSize();
 
@@ -26,7 +26,7 @@ export abstract class HoverableVisualObject extends VisualObject {
                point.y <= pos.y + size.height;
     }
 
-    handleHover(point: Point): void {
+    handleHover(point: TPoint): void {
         if (!this._isHoverable) return;
 
         const isInside = this.isPointInside(point);

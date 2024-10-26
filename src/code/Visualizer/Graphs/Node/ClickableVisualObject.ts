@@ -1,5 +1,5 @@
 import { Observer } from "code/Visualizer/Observer";
-import { Point } from "./Point";
+import { TPoint } from "./Point";
 import { HoverableVisualObject } from "./HoverableVisualObject";
 
 export abstract class ClickableVisualObject extends HoverableVisualObject {
@@ -10,7 +10,7 @@ export abstract class ClickableVisualObject extends HoverableVisualObject {
         return this._onClick;
     }
 
-    handleClick(point: Point): void {
+    handleClick(point: TPoint): void {
         if (this._isClickable && this.isPointInside(point)) {
             this._onClick.notify(this);
         }

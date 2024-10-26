@@ -1,7 +1,6 @@
 import { ClickableVisualObject } from "./Node/ClickableVisualObject";
 import { DraggableVisualObject } from "./Node/DraggableVisualObject";
 import { HoverableVisualObject } from "./Node/HoverableVisualObject";
-import { Point } from "./Node/Point";
 import { VisualObject } from "./Node/VisualObject";
 
 export class CanvasManager {
@@ -40,7 +39,7 @@ export class CanvasManager {
         this.handleVisualObjectChange = this.handleVisualObjectChange.bind(this);
     }
 
-    private getMousePoint(event: MouseEvent): Point {
+    private getMousePoint(event: MouseEvent): TPoint {
         const rect = this.canvas.getBoundingClientRect();
         return {
             x: event.clientX - rect.left,
@@ -69,11 +68,6 @@ export class CanvasManager {
             }
         }
     }
-
-    private isDraggableObject(obj: any): obj is DraggableVisualObject {
-        return 'isDragging' in obj && 'isDraggable' in obj;
-    }
-
 
     private handleMouseMove(event: MouseEvent): void {
         const point = this.getMousePoint(event);
@@ -141,7 +135,7 @@ export class CanvasManager {
         }
     }
 
-    private getTopObjectsAtPoint(point: Point): VisualObject[] {
+    private getTopObjectsAtPoint(point: TPoint): VisualObject[] {
         return this.getSortedObjects()
             .filter(obj => {
                 if (this.isHoverableObject(obj)) {
@@ -165,10 +159,6 @@ export class CanvasManager {
 
     private handleVisualObjectChange(): void {
         this.draw();
-    }
-
-    private isHoverableObject(obj: any): obj is HoverableVisualObject {
-        return 'handleHover' in obj && 'isHovered' in obj;
     }
 
     addObject(obj: VisualObject): void {
@@ -219,4 +209,13 @@ export class CanvasManager {
         this.canvas.height = height;
         this.draw();
     }
+
+    private isDraggableObject(obj: any): obj is DraggableVisualObject {
+        return 'isDragging' in obj && 'isDraggable' in obj;
+    }
+
+    private isHoverableObject(obj: any): obj is HoverableVisualObject {
+        return 'handleHover' in obj && 'isHovered' in obj;
+    }
+
 }

@@ -9,7 +9,7 @@ import {
 } from './ts/TimelineRender/TimelineMarker';
 import { useEffect, useRef, useState } from 'react';
 import { CanvasManager } from './Graphs/CanvasManager';
-import { Node } from './Graphs/Node/Node';
+import { NodeVisualObject } from './Graphs/Node/NodeVisualObject';
 import { getExampleNodes } from './Graphs/ExampleData';
 
 export const EventTimeline = () => {
@@ -20,7 +20,8 @@ export const EventTimeline = () => {
     const markerRef = useRef<HTMLDivElement>(null);
 
     const canvasManagerRef = useRef<CanvasManager | null>(null);
-    const [nodes, setNodes] = useState<Node[]>([]);
+    const [nodes, setNodes] = useState<NodeVisualObject[]>([]);
+    void nodes;
 
     // Initialize canvas manager and create nodes
     useEffect(() => {

@@ -1,6 +1,9 @@
 import { TextContent } from "./Node/TextContent";
-import { Node } from "./Node/Node";
+import { NodeVisualObject } from "./Node/NodeVisualObject";
 import { CanvasManager } from "./CanvasManager";
+import { DragStrategy } from "./Node/dragAndDropMovingStrategies/DragStrategy";
+import { HorizontalDragStrategy } from "./Node/dragAndDropMovingStrategies/HorizontalDragStrategy";
+import { GridDragStrategy } from "./Node/dragAndDropMovingStrategies/GridDragStrategy";
 
 // Example data for nodes
 interface NodeData {
@@ -11,7 +14,7 @@ interface NodeData {
     height: number;
     label: string;
     backgroundColor: string;
-    
+    dndMoveStrategy?: DragStrategy
 }
 
 const SAMPLE_NODES: NodeData[] = [
@@ -22,7 +25,8 @@ const SAMPLE_NODES: NodeData[] = [
         width: 120,
         height: 60,
         label: 'Event 1',
-        backgroundColor: '#e3f2fd'
+        backgroundColor: '#e3f2fd',
+        dndMoveStrategy: new HorizontalDragStrategy()
     },
     {
         id: 'node2',
@@ -31,7 +35,8 @@ const SAMPLE_NODES: NodeData[] = [
         width: 120,
         height: 60,
         label: 'Event 2',
-        backgroundColor: '#f3e5f5'
+        backgroundColor: '#f3e5f5',
+        dndMoveStrategy: new GridDragStrategy(150)
     },
     {
         id: 'node3',
@@ -56,7 +61,7 @@ export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(node
         nodeData.label
     );
 
-    const node = new Node(
+    const node = new NodeVisualObject(
         { x: nodeData.x, y: nodeData.y },
         { width: nodeData.width, height: nodeData.height },
         {
@@ -68,6 +73,9 @@ export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(node
         textContent,
         nodeData.backgroundColor
     );
+
+    if(nodeData.dndMoveStrategy)
+        node.setDragStrategy(nodeData.dndMoveStrategy);
 
     // Add hover effects
     node.onHoverEnter.subscribe(() => {
@@ -92,6 +100,7 @@ export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(node
     });
 
     manager.addObject(node);
+    manager.addObject(textContent);
     return node;
 });
 

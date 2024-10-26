@@ -1,4 +1,3 @@
-import { Point } from "../Point";
 import { DragStrategy } from "./DragStrategy";
 
 /**
@@ -14,11 +13,11 @@ export class GridDragStrategy implements DragStrategy {
     }
 
     calculatePosition(params: {
-        point: Point;
-        mouseOffset: Point;
-        startPosition: Point;
-        currentPosition: Point;
-    }): Point {
+        point: TPoint;
+        mouseOffset: TPoint;
+        startPosition: TPoint;
+        currentPosition: TPoint;
+    }): TPoint {
         const rawX = params.point.x - params.mouseOffset.x;
         const rawY = params.point.y - params.mouseOffset.y;
 

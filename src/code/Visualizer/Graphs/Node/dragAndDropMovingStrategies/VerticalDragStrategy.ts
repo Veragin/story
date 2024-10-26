@@ -1,14 +1,14 @@
-import { Point } from "../Point";
+import { TPoint } from "../Point";
 import { DragStrategy } from "./DragStrategy";
 
 
 export class VerticalDragStrategy implements DragStrategy {
     calculatePosition(params: {
-        point: Point;
-        mouseOffset: Point;
-        startPosition: Point;
-        currentPosition: Point;
-    }): Point {
+        point: TPoint;
+        mouseOffset: TPoint;
+        startPosition: TPoint;
+        currentPosition: TPoint;
+    }): TPoint {
         return {
             x: params.startPosition.x,
             y: params.point.y - params.mouseOffset.y
