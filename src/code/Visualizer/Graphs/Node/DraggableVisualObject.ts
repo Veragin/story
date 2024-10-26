@@ -2,6 +2,8 @@ import { Observer } from "code/Visualizer/Observer";
 import { ClickableVisualObject } from "./ClickableVisualObject";
 import { Point } from "./Point";
 import { Size } from "./Size";
+import { DragStrategy } from "./dragAndDropMovingStrategies/DragStrategy";
+import { FreeDragStrategy } from "./dragAndDropMovingStrategies/FreeDragStrategy";
 
 export interface DragStartEvent {
     object: DraggableVisualObject;
@@ -27,6 +29,7 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     private _isDraggable: boolean = true;
     private _dragStartPosition: Point | null = null;
     private _mouseOffset: Point = { x: 0, y: 0 };
+    private _dragStrategy: DragStrategy;
     
     private _onDragStart = new Observer<DragStartEvent>();
     private _onDragMove = new Observer<DragMoveEvent>();
@@ -44,8 +47,13 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
         return this._onDragEnd;
     }
     
-    constructor(realPosition: Point, size: Size, zIndex: number = 0) {
+    constructor(
+        realPosition: Point, 
+        size: Size, 
+        zIndex: number = 0
+    ) {
         super(realPosition, size, zIndex);
+        this._dragStrategy = new FreeDragStrategy();
     }
     
     isDragging(): boolean {
@@ -54,6 +62,14 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     
     isDraggable(): boolean {
         return this._isDraggable;
+    }
+
+    setDragStrategy(strategy: DragStrategy): void {
+        this._dragStrategy = strategy;
+    }
+
+    getDragStrategy(): DragStrategy {
+        return this._dragStrategy;
     }
     
     setDraggable(draggable: boolean): void {
@@ -85,10 +101,12 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     drag(point: Point): void {
         if (!this._isDragging || !this._isDraggable) return;
         
-        const newPosition = {
-            x: point.x - this._mouseOffset.x,
-            y: point.y - this._mouseOffset.y
-        };
+        const newPosition = this._dragStrategy.calculatePosition({
+            point,
+            mouseOffset: this._mouseOffset,
+            startPosition: this._dragStartPosition!,
+            currentPosition: this.canvasPosition
+        });
         
         this.setCanvasPosition(newPosition);
         

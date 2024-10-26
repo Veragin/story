@@ -11,6 +11,7 @@ interface NodeData {
     height: number;
     label: string;
     backgroundColor: string;
+    
 }
 
 const SAMPLE_NODES: NodeData[] = [
@@ -39,7 +40,8 @@ const SAMPLE_NODES: NodeData[] = [
         width: 120,
         height: 60,
         label: 'Event 3',
-        backgroundColor: '#e8f5e9'
+        backgroundColor: '#e8f5e9',
+
     }
 ];
 
