@@ -1,4 +1,3 @@
-import { TPoint } from "../Point";
 import { DragStrategy } from "./DragStrategy";
 
 

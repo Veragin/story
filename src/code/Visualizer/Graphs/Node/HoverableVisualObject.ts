@@ -1,5 +1,4 @@
 import { Observer } from "code/Visualizer/Observer";
-import { TPoint } from "./Point";
 import { VisualObject } from "./VisualObject";
 
 export abstract class HoverableVisualObject extends VisualObject {

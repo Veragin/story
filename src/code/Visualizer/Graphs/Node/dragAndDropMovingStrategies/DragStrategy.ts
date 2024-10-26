@@ -1,5 +1,5 @@
 
-export interface DragStrategy {
+export type DragStrategy = {
     calculatePosition(params: {
         point: TPoint,
         mouseOffset: TPoint,

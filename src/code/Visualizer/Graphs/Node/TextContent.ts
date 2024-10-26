@@ -1,4 +1,3 @@
-import { override } from "mobx";
 import { VisualObject } from "./VisualObject";
 
 /**

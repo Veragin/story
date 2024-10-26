@@ -3,20 +3,20 @@ import { ClickableVisualObject } from "./ClickableVisualObject";
 import { DragStrategy } from "./dragAndDropMovingStrategies/DragStrategy";
 import { FreeDragStrategy } from "./dragAndDropMovingStrategies/FreeDragStrategy";
 
-export interface DragStartEvent {
+export type DragStartEvent = {
     object: DraggableVisualObject;
     startPosition: TPoint;
     mouseOffset: TPoint;
 }
 
-export interface DragMoveEvent {
+export type DragMoveEvent = {
     object: DraggableVisualObject;
     currentPosition: TPoint;
     startPosition: TPoint;
     mouseOffset: TPoint;
 }
 
-export interface DragEndEvent {
+export type DragEndEvent = {
     object: DraggableVisualObject;
     finalPosition: TPoint;
     startPosition: TPoint;
