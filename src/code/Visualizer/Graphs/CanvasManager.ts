@@ -1,3 +1,4 @@
+import { throttle } from "code/utils/throttle";
 import { ClickableVisualObject } from "./Node/ClickableVisualObject";
 import { DraggableVisualObject } from "./Node/DraggableVisualObject";
 import { HoverableVisualObject } from "./Node/HoverableVisualObject";
@@ -6,6 +7,8 @@ import { VisualObject } from "./Node/VisualObject";
 export class CanvasManager {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
+    private isDrawPending: boolean = false;
+    private throttledDraw: () => void;
 
     // Visual objects with insertion order
     private visualObjects: Map<VisualObject, number> = new Map();
@@ -37,6 +40,9 @@ export class CanvasManager {
 
         // Subscribe to visual object changes
         this.handleVisualObjectChange = this.handleVisualObjectChange.bind(this);
+    
+        // throttle draw calls
+        this.throttledDraw = throttle(() => this.performDraw(), 1000 / 60);
     }
 
     private getMousePoint(event: MouseEvent): TPoint {
@@ -178,12 +184,19 @@ export class CanvasManager {
     }
 
     draw(): void {
+        if (!this.isDrawPending) {
+            this.isDrawPending = true;
+            this.throttledDraw();
+        }
+    }
+
+    private performDraw(): void {
         this.clear();
-        // Draw objects in z-index order
         const sortedObjects = this.getSortedObjects();
         for (const obj of sortedObjects) {
             obj.draw(this.ctx);
         }
+        this.isDrawPending = false;
     }
 
     destroy(): void {

@@ -1,5 +1,4 @@
 import { TextContent } from "./Node/TextContent";
-import { NodeVisualObject } from "./Node/NodeVisualObject";
 import { CanvasManager } from "./CanvasManager";
 import { DragStrategy } from "./Node/dragAndDropMovingStrategies/DragStrategy";
 import { HorizontalDragStrategy } from "./Node/dragAndDropMovingStrategies/HorizontalDragStrategy";
