@@ -10,7 +10,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { CanvasManager } from './Graphs/CanvasManager';
 import { NodeVisualObject } from './Graphs/Node/NodeVisualObject';
-import { getExampleNodes } from './Graphs/ExampleData';
+import { getExampleEdges, getExampleNodes } from './Graphs/ExampleData';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
@@ -33,6 +33,7 @@ export const EventTimeline = () => {
 
         // Get example nodes
         const createdNodes = getExampleNodes(manager);
+        getExampleEdges(manager, createdNodes);
 
         setNodes(createdNodes);
 

@@ -14,3 +14,8 @@ declare type TSize = {
 };
 
 declare let _: (str: string, ...values: (string | number)[]) => string;
+
+declare type TVec = {
+    x: number;
+    y: number;
+};

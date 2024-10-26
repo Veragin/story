@@ -107,7 +107,7 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
             currentPosition: this.canvasPosition
         });
 
-        this.setCanvasPosition(newPosition);
+        this.setRealPosition(newPosition);
 
         this._onDragMove.notify({
             object: this,
@@ -129,7 +129,7 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
             currentPosition: this.canvasPosition
         });
 
-        this.setCanvasPosition(finalPosition);
+        this.setRealPosition(finalPosition);
 
         this._onDragEnd.notify({
             object: this,

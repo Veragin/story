@@ -4,6 +4,7 @@ import { DragStrategy } from "./Node/dragAndDropMovingStrategies/DragStrategy";
 import { HorizontalDragStrategy } from "./Node/dragAndDropMovingStrategies/HorizontalDragStrategy";
 import { GridDragStrategy } from "./Node/dragAndDropMovingStrategies/GridDragStrategy";
 import { HorizontallyScalableNodeVisualObject } from "./Node/HorizontallyScalableNodeVisualObject";
+import { EdgeVisualObject } from "./EdgeVisualObject";
 
 // Example data for nodes
 interface NodeData {
@@ -50,6 +51,25 @@ const SAMPLE_NODES: NodeData[] = [
     }
 ];
 
+const SAMPLE_EDGES = [
+    {
+        source: 'Event 1',
+        target: 'Event 2',
+        color: '#FF0000',
+        width: 1,
+        arrow: true
+    },
+    {
+        source: 'Event 2',
+        target: 'Event 3',
+        color: '#FF0000',
+        width: 1,
+        arrow: true
+    }
+];
+
+
+const allNodes: [string, HorizontallyScalableNodeVisualObject][] = [];
 
 export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(nodeData => {
     const textContent = new TextContent(
@@ -101,7 +121,31 @@ export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(node
 
     manager.addObject(node);
     manager.addObject(textContent);
+    allNodes.push([nodeData.id, node]);
     return node;
+});
+
+
+export const getExampleEdges = (manager: CanvasManager, nodes: HorizontallyScalableNodeVisualObject[]) => SAMPLE_EDGES.map(edgeData => {
+    const sourceNode = nodes.find(
+        node => (node.getContent() as TextContent).getText() === edgeData.source);
+        
+    const targetNode = nodes.find(
+        node => (node.getContent() as TextContent).getText() === edgeData.target);
+
+    if (!sourceNode || !targetNode) {
+        throw new Error(`Edge source or target node not found`);
+    }
+
+    const edge = new EdgeVisualObject(
+        sourceNode,
+        targetNode,
+        edgeData.color,
+        edgeData.width,
+        edgeData.arrow
+    );
+
+    manager.addObject(edge);
 });
 
 const countLabelStart = (nodeData: NodeData) =>

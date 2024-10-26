@@ -230,5 +230,5 @@ export class CanvasManager {
     private isHoverableObject(obj: any): obj is HoverableVisualObject {
         return 'handleHover' in obj && 'isHovered' in obj;
     }
-
+    
 }
