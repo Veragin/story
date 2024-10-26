@@ -21,7 +21,7 @@ export class TextContent extends VisualObject {
         this.color = color;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
+    override draw(ctx: CanvasRenderingContext2D): void {
         ctx.font = this.font;
         ctx.fillStyle = this.color;
         ctx.fillText(

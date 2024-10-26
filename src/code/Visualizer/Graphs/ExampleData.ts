@@ -4,6 +4,7 @@ import { CanvasManager } from "./CanvasManager";
 import { DragStrategy } from "./Node/dragAndDropMovingStrategies/DragStrategy";
 import { HorizontalDragStrategy } from "./Node/dragAndDropMovingStrategies/HorizontalDragStrategy";
 import { GridDragStrategy } from "./Node/dragAndDropMovingStrategies/GridDragStrategy";
+import { HorizontallyScalableNodeVisualObject } from "./Node/HorizontallyScalableNodeVisualObject";
 
 // Example data for nodes
 interface NodeData {
@@ -61,7 +62,7 @@ export const getExampleNodes = (manager: CanvasManager) => SAMPLE_NODES.map(node
         nodeData.label
     );
 
-    const node = new NodeVisualObject(
+    const node = new HorizontallyScalableNodeVisualObject(
         { x: nodeData.x, y: nodeData.y },
         { width: nodeData.width, height: nodeData.height },
         {

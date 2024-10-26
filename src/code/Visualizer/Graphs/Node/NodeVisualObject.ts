@@ -23,7 +23,7 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.backgroundColor = backgroundColor;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
+    override draw(ctx: CanvasRenderingContext2D): void {
 
         // Draw background
         ctx.fillStyle = this.backgroundColor;
@@ -62,7 +62,7 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.content.draw(ctx);
     }
 
-    drag(point: TPoint): void {
+    override drag(point: TPoint): void {
         super.drag(point);
 
         // Update content position maintaining the offset

@@ -26,7 +26,8 @@ export abstract class HoverableVisualObject extends VisualObject {
     }
 
     handleHover(point: TPoint): void {
-        if (!this._isHoverable) return;
+        if (!this._isHoverable) 
+            return;
 
         const isInside = this.isPointInside(point);
         if (isInside && !this._isHovered) {
