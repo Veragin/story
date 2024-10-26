@@ -118,7 +118,8 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     }
 
     endDrag(point: TPoint): void {
-        if (!this._isDragging) return;
+        if (!this._isDragging) 
+            return;
 
         this._isDragging = false;
         const finalPosition = this._dragStrategy.calculatePosition({

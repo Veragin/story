@@ -71,6 +71,15 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.content.setRealPosition(newContentPosition);
     }
 
+    override endDrag(point: TPoint): void {
+        super.endDrag(point);
+
+        // Update content position maintaining the offset
+        const newContentPosition = this.getContentPosition();
+        
+        this.content.setRealPosition(newContentPosition);
+    }
+
     getContentPosition(): TPoint {
         return {
             x: this.canvasPosition.x + this.size.width / 2 - this.content.getSize().width / 2,
