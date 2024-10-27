@@ -7,10 +7,9 @@ import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
 } from './ts/TimelineRender/TimelineMarker';
-import { useEffect, useRef, useState } from 'react';
-import { CanvasManager } from './Graphs/CanvasManager';
-import { NodeVisualObject } from './Graphs/Node/NodeVisualObject';
+import { useEffect, useRef } from 'react';
 import { GraphGenerator } from './Graphs/GraphGenerator';
+import { assertNotNullish } from 'code/utils/typeguards';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
@@ -19,84 +18,32 @@ export const EventTimeline = () => {
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
 
-    const canvasManagerRef = useRef<CanvasManager | null>(null);
-    const [nodes, setNodes] = useState<NodeVisualObject[]>([]);
-    void nodes;
-    void setNodes;
-
-    // Set background color of main canvas
-    if (mainCanvasRef.current) {
-        mainCanvasRef.current.style.backgroundColor = 'wheat';
-    }
-
-    // Initialize canvas manager and create nodes
+    // Set timeline canvas in store
     useEffect(() => {
-        if (!mainCanvasRef.current) return;
+        assertNotNullish(mainCanvasRef.current);
+        assertNotNullish(timelineCanvasRef.current);
+        assertNotNullish(containerRef.current);
+        assertNotNullish(markerRef.current);
 
-        mainCanvasRef.current.style.backgroundColor = 'wheat';
+        store.init(
+            mainCanvasRef.current,
+            timelineCanvasRef.current,
+            containerRef.current,
+            markerRef.current
+        );
 
-        // Create canvas manager
-        const canvasManager = new CanvasManager(mainCanvasRef.current);
-        canvasManagerRef.current = canvasManager;
-
-
-        // Generate a random graph
-        const generator = new GraphGenerator(canvasManager);
-        const graph = generator.generate({
-            nodeCount: 10,
-            edgeCount: 15,
+        const generator = new GraphGenerator(store.canvasManager!);
+        generator.generate({
+            nodeCount: 300,
+            edgeCount: 1000,
             layout: 'circular',
             canvasWidth: 800,
             canvasHeight: 600,
         });
 
-
-        // Handle canvas resize
-        const resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                if (entry.target === mainCanvasRef.current) {
-                    canvasManager.setSize(
-                        entry.contentRect.width,
-                        entry.contentRect.height
-                    );
-                }
-            }
-        });
-
-        resizeObserver.observe(mainCanvasRef.current);
-
-        // Cleanup
         return () => {
-            resizeObserver.disconnect();
-            canvasManager.destroy();
+            store.deinit();
         };
-    }, []);
-
-    // Set timeline canvas in store
-    useEffect(() => {
-        store.setTimeRenderer(
-            timelineCanvasRef.current!,
-            containerRef.current!,
-            markerRef.current!
-        );
-        return () => {
-            store.timelineRender?.destructor();
-        };
-    }, []);
-
-    // Handle window resize
-    useEffect(() => {
-        const handleResize = () => {
-            if (mainCanvasRef.current && canvasManagerRef.current) {
-                canvasManagerRef.current.setSize(
-                    mainCanvasRef.current.offsetWidth,
-                    mainCanvasRef.current.offsetHeight
-                );
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     return (
@@ -127,6 +74,7 @@ const SMainCanvas = styled('canvas')`
     overflow: hidden;
     border-top: 1px solid grey;
     border-bottom: 1px solid grey;
+    background-color: wheat;
 `;
 
 const STimelineCanvas = styled('canvas')`

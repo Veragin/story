@@ -1,11 +1,11 @@
-import { BorderConfig } from "./BorderConfig";
-import { DraggableVisualObject } from "./DraggableVisualObject";
-import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from "./VisualObject";
+import { BorderConfig } from './BorderConfig';
+import { DraggableVisualObject } from './DraggableVisualObject';
+import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from './VisualObject';
 
 export const nodeVisualObjectProperties = {
-    border: "border",
-    backgroundColor: "backgroundColor",
-    ...visualObjectProperties
+    border: 'border',
+    backgroundColor: 'backgroundColor',
+    ...visualObjectProperties,
 };
 
 export class NodeVisualObject extends DraggableVisualObject {
@@ -15,13 +15,12 @@ export class NodeVisualObject extends DraggableVisualObject {
     private id: string;
     private static idCounter: number = 0;
 
-
     constructor(
         realPosition: TPoint,
         size: TSize,
         border: BorderConfig,
         content: VisualObject,
-        backgroundColor: string = "#ffffff",
+        backgroundColor: string = '#ffffff',
         zIndex: number = 0
     ) {
         super(realPosition, size, zIndex);
@@ -42,7 +41,7 @@ export class NodeVisualObject extends DraggableVisualObject {
         };
         this.onPropertyChanged.subscribe(updateContentPosition);
 
-        // TODO: Add setContent method, unsubscribe and subcribe to content position 
+        // TODO: Add setContent method, unsubscribe and subcribe to content position
         // of the new content object
     }
 
@@ -59,21 +58,16 @@ export class NodeVisualObject extends DraggableVisualObject {
                 this.border.radius
             );
         } else {
-            ctx.rect(
-                this.canvasPosition.x,
-                this.canvasPosition.y,
-                this.size.width,
-                this.size.height
-            );
+            ctx.rect(this.canvasPosition.x, this.canvasPosition.y, this.size.width, this.size.height);
         }
         ctx.fill();
 
         // Draw border
         ctx.strokeStyle = this.border.color;
         ctx.lineWidth = this.border.width;
-        if (this.border.style === "dashed") {
+        if (this.border.style === 'dashed') {
             ctx.setLineDash([5, 5]);
-        } else if (this.border.style === "dotted") {
+        } else if (this.border.style === 'dotted') {
             ctx.setLineDash([2, 2]);
         } else {
             ctx.setLineDash([]);
@@ -87,17 +81,14 @@ export class NodeVisualObject extends DraggableVisualObject {
     getContentPosition(): TPoint {
         return {
             x: this.canvasPosition.x + this.size.width / 2 - this.content.getSize().width / 2,
-            y: this.canvasPosition.y + this.size.height / 2 - this.content.getSize().height / 2
-        }
+            y: this.canvasPosition.y + this.size.height / 2 - this.content.getSize().height / 2,
+        };
     }
-
-
 
     getContent(): VisualObject {
         return this.content;
     }
-    
-    
+
     getBorder(): BorderConfig {
         return this.border;
     }

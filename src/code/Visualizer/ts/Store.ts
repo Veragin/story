@@ -4,28 +4,12 @@ import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
 import { CanvasHandler } from './CanvasHandler';
+import { CanvasManager } from '../Graphs/CanvasManager';
 
 export class Store {
+    canvasManager: CanvasManager | null = null;
     canvasHandler: CanvasHandler | null = null;
     timelineRender: TimelineRender | null = null;
-    setTimeRenderer = (
-        mainRef: HTMLCanvasElement,
-        timelineRef: HTMLCanvasElement,
-        containerRef: HTMLDivElement,
-        markerRef: HTMLDivElement
-    ) => {
-        if (this.timelineRender !== null) {
-            this.timelineRender.destructor();
-        }
-        if (this.canvasHandler !== null) {
-            this.canvasHandler.destructor();
-        }
-
-        this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
-        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, () => {
-            this.timelineRender?.render();
-        });
-    };
 
     constructor(public timeManager: TimeManager) {
         makeObservable(this, {
@@ -35,6 +19,28 @@ export class Store {
             setZoomLevel: action,
         });
     }
+
+    init = (
+        mainRef: HTMLCanvasElement,
+        timelineRef: HTMLCanvasElement,
+        containerRef: HTMLDivElement,
+        markerRef: HTMLDivElement
+    ) => {
+        this.deinit();
+
+        this.canvasManager = new CanvasManager(mainRef);
+        this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
+        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, () => {
+            this.canvasManager?.draw();
+            this.timelineRender?.render();
+        });
+    };
+
+    deinit = () => {
+        this.canvasManager?.destroy();
+        this.timelineRender?.destructor();
+        this.canvasHandler?.destructor();
+    };
 
     displayConnections = false;
     setDisplayConnections = (value: boolean) => {
