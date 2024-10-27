@@ -1,6 +1,16 @@
 import { NodeVisualObject } from "./Node/NodeVisualObject";
 import { ClickableVisualObject } from "./Node/ClickableVisualObject";
 
+
+export const edgeVisualObjectProperties = {
+    source: 'source',
+    target: 'target',
+    color: 'color',
+    width: 'width',
+    arrow: 'arrow',
+    zIndex: 'zIndex'
+};
+
 export class EdgeVisualObject extends ClickableVisualObject {
     private _source: NodeVisualObject;
     private _target: NodeVisualObject;
@@ -35,8 +45,8 @@ export class EdgeVisualObject extends ClickableVisualObject {
         this._arrow = arrow;
 
         // Subscribe to node position changes
-        this._source.onPropertyChanged.subscribe(() => this.redraw(true));
-        this._target.onPropertyChanged.subscribe(() => this.redraw(true));
+        this._source.onPropertyChanged.subscribe(() => this.redraw(true, edgeVisualObjectProperties.source));
+        this._target.onPropertyChanged.subscribe(() => this.redraw(true, edgeVisualObjectProperties.target));
     }
 
     private getPositionOfEndpointInSourceOrTargetNode(node: NodeVisualObject): TVec {
@@ -74,7 +84,7 @@ export class EdgeVisualObject extends ClickableVisualObject {
         if (this._arrow) {
             const angle = Math.atan2(targetPos.y - sourcePos.y, targetPos.x - sourcePos.x);
             const arrowLength = 10;
-            const arrowWidth = 8;
+            const arrowWidth = 8; // TODO
 
             ctx.beginPath();
             ctx.fillStyle = this._color;
@@ -113,19 +123,19 @@ export class EdgeVisualObject extends ClickableVisualObject {
     setColor(color: string): void {
         const change = this._color !== color;
         this._color = color;
-        this.redraw(change);
+        this.redraw(change, edgeVisualObjectProperties.color);
     }
 
     setWidth(width: number): void {
         const change = this._width !== width;
         this._width = width;
-        this.redraw(change);
+        this.redraw(change, edgeVisualObjectProperties.width);
     }
 
     setArrow(arrow: boolean): void {
         const change = this._arrow !== arrow;
         this._arrow = arrow;
-        this.redraw(change);
+        this.redraw(change, edgeVisualObjectProperties.arrow);
     }
 
     override setZIndex(zIndex: number): void {

@@ -10,7 +10,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { CanvasManager } from './Graphs/CanvasManager';
 import { NodeVisualObject } from './Graphs/Node/NodeVisualObject';
-import { getExampleEdges, getExampleNodes } from './Graphs/ExampleData';
+import { GraphGenerator } from './Graphs/GraphGenerator';
 
 export const EventTimeline = () => {
     const store = useVisualizerStore();
@@ -22,26 +22,40 @@ export const EventTimeline = () => {
     const canvasManagerRef = useRef<CanvasManager | null>(null);
     const [nodes, setNodes] = useState<NodeVisualObject[]>([]);
     void nodes;
+    void setNodes;
+
+    // Set background color of main canvas
+    if (mainCanvasRef.current) {
+        mainCanvasRef.current.style.backgroundColor = 'wheat';
+    }
 
     // Initialize canvas manager and create nodes
     useEffect(() => {
         if (!mainCanvasRef.current) return;
 
+        mainCanvasRef.current.style.backgroundColor = 'wheat';
+
         // Create canvas manager
-        const manager = new CanvasManager(mainCanvasRef.current);
-        canvasManagerRef.current = manager;
+        const canvasManager = new CanvasManager(mainCanvasRef.current);
+        canvasManagerRef.current = canvasManager;
 
-        // Get example nodes
-        const createdNodes = getExampleNodes(manager);
-        getExampleEdges(manager, createdNodes);
 
-        setNodes(createdNodes);
+        // Generate a random graph
+        const generator = new GraphGenerator(canvasManager);
+        const graph = generator.generate({
+            nodeCount: 10,
+            edgeCount: 15,
+            layout: 'circular',
+            canvasWidth: 800,
+            canvasHeight: 600,
+        });
+
 
         // Handle canvas resize
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.target === mainCanvasRef.current) {
-                    manager.setSize(
+                    canvasManager.setSize(
                         entry.contentRect.width,
                         entry.contentRect.height
                     );
@@ -54,7 +68,7 @@ export const EventTimeline = () => {
         // Cleanup
         return () => {
             resizeObserver.disconnect();
-            manager.destroy();
+            canvasManager.destroy();
         };
     }, []);
 

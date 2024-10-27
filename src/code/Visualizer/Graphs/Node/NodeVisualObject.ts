@@ -1,11 +1,18 @@
 import { BorderConfig } from "./BorderConfig";
 import { DraggableVisualObject } from "./DraggableVisualObject";
-import { VisualObject } from "./VisualObject";
+import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from "./VisualObject";
+
+export const nodeVisualObjectProperties = {
+    border: "border",
+    backgroundColor: "backgroundColor",
+    ...visualObjectProperties
+};
 
 export class NodeVisualObject extends DraggableVisualObject {
     private border: BorderConfig;
     private content: VisualObject;
     private backgroundColor: string;
+
 
     constructor(
         realPosition: TPoint,
@@ -21,10 +28,23 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.border = border;
         this.content = content;
         this.backgroundColor = backgroundColor;
+
+
+        // Set content position when node position changes
+        const updateContentPosition = (args: TVisualObjectPropertyChangeArgs) => {
+            if (args.property === nodeVisualObjectProperties.CanvasPosition) {
+                // Update content position maintaining the offset
+                const newContentPosition = this.getContentPosition();
+                this.content.setRealPosition(newContentPosition);
+            }
+        };
+        this.onPropertyChanged.subscribe(updateContentPosition);
+
+        // TODO: Add setContent method, unsubscribe and subcribe to content position 
+        // of the new content object
     }
 
     override draw(ctx: CanvasRenderingContext2D): void {
-
         // Draw background
         ctx.fillStyle = this.backgroundColor;
         ctx.beginPath();
@@ -62,24 +82,6 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.content.draw(ctx);
     }
 
-    override drag(point: TPoint): void {
-        super.drag(point);
-
-        // Update content position maintaining the offset
-        const newContentPosition = this.getContentPosition();
-        
-        this.content.setRealPosition(newContentPosition);
-    }
-
-    override endDrag(point: TPoint): void {
-        super.endDrag(point);
-
-        // Update content position maintaining the offset
-        const newContentPosition = this.getContentPosition();
-        
-        this.content.setRealPosition(newContentPosition);
-    }
-
     getContentPosition(): TPoint {
         return {
             x: this.canvasPosition.x + this.size.width / 2 - this.content.getSize().width / 2,
@@ -97,22 +99,16 @@ export class NodeVisualObject extends DraggableVisualObject {
     getBorder(): BorderConfig {
         return this.border;
     }
-    
-    setContent(content: VisualObject): void {
-        let change = this.content !== content;
-        this.content = content;
-        this.redraw(change);
-    }
 
     setBorder(border: BorderConfig): void {
         let change = this.border !== border;
         this.border = border;
-        this.redraw(change);
+        this.redraw(change, nodeVisualObjectProperties.border);
     }
 
     setBackgroundColor(backgroundColor: string): void {
         let change = this.backgroundColor !== backgroundColor;
         this.backgroundColor = backgroundColor;
-        this.redraw(change);
+        this.redraw(change, nodeVisualObjectProperties.backgroundColor);
     }
 }

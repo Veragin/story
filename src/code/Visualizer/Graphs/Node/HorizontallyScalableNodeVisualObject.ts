@@ -132,14 +132,14 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
             };
 
             if (this._resizeSide === 'left') {
-                this.setCanvasPosition({ x: newX, y: this.canvasPosition.y });
+                this.setRealPosition({ x: newX, y: this.canvasPosition.y });
             }
 
             // Update content position
             const newContentPosition = this.getContentPosition();
             this.getContent().setRealPosition(newContentPosition);
 
-            this.redraw(true);
+            this.redraw(true, 'HorizontalResize');
         } else {
             super.drag(point);
         }

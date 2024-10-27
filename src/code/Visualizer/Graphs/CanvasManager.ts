@@ -5,7 +5,7 @@ import { HoverableVisualObject } from "./Node/HoverableVisualObject";
 import { VisualObject } from "./Node/VisualObject";
 
 export class CanvasManager {
-    private canvas: HTMLCanvasElement;
+    readonly canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private isDrawPending: boolean = false;
     private throttledDraw: () => void;
