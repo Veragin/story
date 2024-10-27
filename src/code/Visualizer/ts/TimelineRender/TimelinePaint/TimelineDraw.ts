@@ -18,6 +18,7 @@ export class TimelineDraw {
             throw new Error("canvasRef.getContext('2d') is null");
         }
         this.ctx = ctx;
+        this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
     }
 
     drawTimelineBorder = () => {
@@ -40,9 +41,5 @@ export class TimelineDraw {
         this.ctx.fillStyle = '#FFFFFF';
         this.ctx.font = '14px Roboto';
         this.ctx.fillText(label, xPosition - textWidht.width / 2, TEXT_Y_POSITION);
-    };
-
-    rescale = () => {
-        this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
     };
 }
