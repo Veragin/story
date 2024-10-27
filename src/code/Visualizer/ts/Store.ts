@@ -3,8 +3,30 @@ import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
+import { CanvasHandler } from './CanvasHandler';
 
 export class Store {
+    canvasHandler: CanvasHandler | null = null;
+    timelineRender: TimelineRender | null = null;
+    setTimeRenderer = (
+        mainRef: HTMLCanvasElement,
+        timelineRef: HTMLCanvasElement,
+        containerRef: HTMLDivElement,
+        markerRef: HTMLDivElement
+    ) => {
+        if (this.timelineRender !== null) {
+            this.timelineRender.destructor();
+        }
+        if (this.canvasHandler !== null) {
+            this.canvasHandler.destructor();
+        }
+
+        this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
+        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, () => {
+            this.timelineRender?.render();
+        });
+    };
+
     constructor(public timeManager: TimeManager) {
         makeObservable(this, {
             displayConnections: observable,
@@ -28,15 +50,6 @@ export class Store {
     get zoom() {
         return ZOOM_CONFIG[this.zoomLevel];
     }
-
-    timelineRender: TimelineRender | null = null;
-    setTimeRenderer = (canvasRef: HTMLCanvasElement, containerRef: HTMLDivElement, markerRef: HTMLDivElement) => {
-        if (this.timelineRender !== null) {
-            this.timelineRender.destructor();
-        }
-
-        this.timelineRender = new TimelineRender(canvasRef, containerRef, markerRef, this.timeManager, this);
-    };
 
     timelineStartTime = Time.fromS(0);
     setTimelineStartTime = (time: Time) => {
