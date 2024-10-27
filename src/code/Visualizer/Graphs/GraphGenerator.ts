@@ -2,8 +2,9 @@ import { TextContent } from "./Node/TextContent";
 import { CanvasManager } from "./CanvasManager";
 import { HorizontallyScalableNodeVisualObject } from "./Node/HorizontallyScalableNodeVisualObject";
 import { EdgeVisualObject } from "./EdgeVisualObject";
-import { Graph, CircularGraphLayoutManager } from "./GraphVisualObject";
+import { Graph } from "./Graph";
 import { FreeDragStrategy } from "./Node/dragAndDropMovingStrategies/FreeDragStrategy";
+import { SpringForceLayoutManager } from "./graphLayouts/SpringForceLayoutManager";
 
 type GraphGeneratorOptions = {
     nodeCount: number;
@@ -45,9 +46,9 @@ export class GraphGenerator {
 
         // Set layout manager based on options
         if (opts.layout === 'circular') {
-            this.graph.setLayoutManager(new CircularGraphLayoutManager(
-                opts.canvasWidth / 2,
-                opts.canvasHeight / 2,
+            this.graph.setLayoutManager(new SpringForceLayoutManager(
+                opts.canvasWidth / 1.5,
+                opts.canvasHeight,
                 Math.min(opts.canvasWidth, opts.canvasHeight) / 3
             ));
         }

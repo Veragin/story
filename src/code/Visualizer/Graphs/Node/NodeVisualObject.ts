@@ -12,6 +12,8 @@ export class NodeVisualObject extends DraggableVisualObject {
     private border: BorderConfig;
     private content: VisualObject;
     private backgroundColor: string;
+    private id: string;
+    private static idCounter: number = 0;
 
 
     constructor(
@@ -28,7 +30,7 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.border = border;
         this.content = content;
         this.backgroundColor = backgroundColor;
-
+        this.id = `node-${NodeVisualObject.idCounter++}`;
 
         // Set content position when node position changes
         const updateContentPosition = (args: TVisualObjectPropertyChangeArgs) => {
@@ -110,5 +112,9 @@ export class NodeVisualObject extends DraggableVisualObject {
         let change = this.backgroundColor !== backgroundColor;
         this.backgroundColor = backgroundColor;
         this.redraw(change, nodeVisualObjectProperties.backgroundColor);
+    }
+
+    getId(): string {
+        return this.id;
     }
 }
