@@ -1,7 +1,7 @@
-import { BorderConfig } from "./BorderConfig";
-import { NodeVisualObject } from "./NodeVisualObject";
-import { VisualObject } from "./VisualObject";
-import { Observer } from "code/Visualizer/Observer";
+import { BorderConfig } from './BorderConfig';
+import { NodeVisualObject } from './NodeVisualObject';
+import { VisualObject } from './VisualObject';
+import { Observer } from 'code/utils/Observer';
 
 export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
     private _isResizing: boolean = false;
@@ -20,7 +20,7 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
         size: TSize,
         border: BorderConfig,
         content: VisualObject,
-        backgroundColor: string = "#ffffff",
+        backgroundColor: string = '#ffffff',
         zIndex: number = 0
     ) {
         super(realPosition, size, border, content, backgroundColor, zIndex);
@@ -38,12 +38,7 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
 
         // Left handle
         if (this.isMouseOverResizeHandle(this._lastMousePosition)?.side === 'left') {
-            ctx.fillRect(
-                this.canvasPosition.x,
-                this.canvasPosition.y,
-                this._resizeHandleWidth,
-                this.size.height
-            );
+            ctx.fillRect(this.canvasPosition.x, this.canvasPosition.y, this._resizeHandleWidth, this.size.height);
         }
 
         // Right handle
@@ -115,10 +110,7 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
             let newX: number = this.canvasPosition.x;
 
             if (this._resizeSide === 'right') {
-                newWidth = Math.max(
-                    this._minWidth,
-                    point.x - this.canvasPosition.x
-                );
+                newWidth = Math.max(this._minWidth, point.x - this.canvasPosition.x);
             } else {
                 const rightEdge = this.canvasPosition.x + this.size.width;
                 newX = Math.min(point.x, rightEdge - this._minWidth);
@@ -128,7 +120,7 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
             // Update size and position
             this.size = {
                 width: newWidth,
-                height: this.size.height
+                height: this.size.height,
             };
 
             if (this._resizeSide === 'left') {

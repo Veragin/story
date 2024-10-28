@@ -1,19 +1,16 @@
-import { Observer } from "code/Visualizer/Observer";
-
+import { Observer } from 'code/utils/Observer';
 
 export type TVisualObjectPropertyChangeArgs = {
     property: string;
     VisualObject: VisualObject;
-}
-
+};
 
 export const visualObjectProperties = {
-    RealPosition: "RealPosition",
-    CanvasPosition: "CanvasPosition",
-    Size: "Size",
-    ZIndex: "ZIndex"
-}
-
+    RealPosition: 'RealPosition',
+    CanvasPosition: 'CanvasPosition',
+    Size: 'Size',
+    ZIndex: 'ZIndex',
+};
 
 /**
  * Base class for any visual object that can be drawn on canvas
@@ -25,7 +22,6 @@ export abstract class VisualObject {
     private automaticDraw: boolean = true;
     private _onPropertyChanged = new Observer<TVisualObjectPropertyChangeArgs>();
     private _zIndex: number = 0;
-
 
     get onPropertyChanged(): Observer<TVisualObjectPropertyChangeArgs> {
         return this._onPropertyChanged;
@@ -72,15 +68,13 @@ export abstract class VisualObject {
     }
 
     setCanvasPosition(position: TPoint): void {
-        let changed = this.canvasPosition.x !== position.x 
-            || this.canvasPosition.y !== position.y;
+        let changed = this.canvasPosition.x !== position.x || this.canvasPosition.y !== position.y;
         this.canvasPosition = position;
         this.redraw(changed, visualObjectProperties.CanvasPosition);
     }
 
     setSize(size: TSize): void {
-        let changed = this.size.width !== size.width 
-            || this.size.height !== size.height;
+        let changed = this.size.width !== size.width || this.size.height !== size.height;
         this.size = size;
         this.redraw(changed, visualObjectProperties.Size);
     }
@@ -88,18 +82,17 @@ export abstract class VisualObject {
     setAutomaticDraw(automaticDraw: boolean): void {
         this.automaticDraw = automaticDraw;
     }
-    
 
     /**
-     * @param change 
-     * @param reason why the redraw is called, name of the property that changed, 
+     * @param change
+     * @param reason why the redraw is called, name of the property that changed,
      * or name of event that triggered the redraw
      */
     protected redraw(change: boolean, reason: string): void {
-        if(this.automaticDraw && change) {
+        if (this.automaticDraw && change) {
             this.onPropertyChanged.notify({
                 property: reason,
-                VisualObject: this
+                VisualObject: this,
             });
         }
     }

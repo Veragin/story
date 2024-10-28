@@ -1,5 +1,5 @@
-import { Observer } from "code/Visualizer/Observer";
-import { VisualObject } from "./VisualObject";
+import { Observer } from 'code/utils/Observer';
+import { VisualObject } from './VisualObject';
 
 export abstract class HoverableVisualObject extends VisualObject {
     private _onHoverEnter = new Observer<HoverableVisualObject>();
@@ -19,15 +19,11 @@ export abstract class HoverableVisualObject extends VisualObject {
         const pos = this.getCanvasPosition();
         const size = this.getSize();
 
-        return point.x >= pos.x &&
-               point.x <= pos.x + size.width &&
-               point.y >= pos.y &&
-               point.y <= pos.y + size.height;
+        return point.x >= pos.x && point.x <= pos.x + size.width && point.y >= pos.y && point.y <= pos.y + size.height;
     }
 
     handleHover(point: TPoint): void {
-        if (!this._isHoverable) 
-            return;
+        if (!this._isHoverable) return;
 
         const isInside = this.isPointInside(point);
         if (isInside && !this._isHovered) {

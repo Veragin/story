@@ -1,5 +1,5 @@
-import { Observer } from "code/Visualizer/Observer";
-import { HoverableVisualObject } from "./HoverableVisualObject";
+import { Observer } from 'code/utils/Observer';
+import { HoverableVisualObject } from './HoverableVisualObject';
 
 export abstract class ClickableVisualObject extends HoverableVisualObject {
     private _onClick = new Observer<ClickableVisualObject>();
