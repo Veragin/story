@@ -7,18 +7,45 @@ export class TextContent extends VisualObject {
     private _text: string;
     private _font: string;
     private _color: string;
+    private _alignment: TTextAlignment;
 
-    constructor(position: TPoint, size: TSize, text: string, font: string = '14px Arial', color: string = '#000000') {
-        super(position, size);
-        this._text = text;
-        this._font = font;
-        this._color = color;
+    constructor(init: {
+        position: TPoint;
+        size: TSize;
+        text: string;
+        font?: string;
+        color?: string;
+        alignment?: TTextAlignment;
+    }) {
+        super(init.position, init.size);
+        this._text = init.text;
+        this._font = init.font ?? '14px Roboto';
+        this._color = init.color ?? '#000000';
+        this._alignment = init.alignment ?? 'top_left';
     }
 
     override draw(ctx: CanvasRenderingContext2D): void {
         ctx.font = this._font;
         ctx.fillStyle = this._color;
-        ctx.fillText(this._text, this.position.x, this.position.y + this.size.height);
+
+        const align = this._alignment.split('_');
+        ctx.textBaseline = align[0] as CanvasTextBaseline;
+        ctx.textAlign = align[1] as CanvasTextAlign;
+
+        const x =
+            align[1] === 'left'
+                ? this.position.x
+                : align[1] === 'center'
+                  ? this.position.x + this.size.width / 2
+                  : this.position.x + this.size.width;
+        const y =
+            align[0] === 'top'
+                ? this.position.y
+                : align[0] === 'middle'
+                  ? this.position.y + this.size.height / 2
+                  : this.position.y + this.size.height;
+
+        ctx.fillText(this._text, x, y);
     }
 
     setText(text: string): void {
@@ -50,4 +77,19 @@ export class TextContent extends VisualObject {
     getColor(): string {
         return this._color;
     }
+
+    getAlignment() {
+        return this._alignment;
+    }
 }
+
+type TTextAlignment =
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'middle_left'
+    | 'middle_center'
+    | 'middle_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right';

@@ -49,7 +49,7 @@ export class Store {
         this.displayConnections = value;
     };
 
-    zoomLevel = 1;
+    zoomLevel = 3;
     setZoomLevel = (value: number) => {
         this.zoomLevel = Math.min(ZOOM_CONFIG.length, Math.max(0, value));
         this.render();

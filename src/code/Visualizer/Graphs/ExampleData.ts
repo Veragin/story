@@ -71,14 +71,14 @@ const allNodes: [string, HorizontallyScalableNodeVisualObject][] = [];
 
 export const getExampleNodes = (manager: CanvasManager) =>
     SAMPLE_NODES.map((nodeData) => {
-        const textContent = new TextContent(
-            countLabelStart(nodeData),
-            {
+        const textContent = new TextContent({
+            position: countLabelStart(nodeData),
+            size: {
                 width: getWidthOfString(nodeData.label, 16),
                 height: getHeightsOfString(nodeData.label, 16),
             },
-            nodeData.label
-        );
+            text: nodeData.label,
+        });
 
         const node = new HorizontallyScalableNodeVisualObject(
             { x: nodeData.x, y: nodeData.y },

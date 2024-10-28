@@ -15,14 +15,15 @@ export class EventNodeBox<E extends TEventId> {
     constructor(public event: TEvent<E>) {}
 
     setupNodes = (manager: CanvasManager) => {
-        const textContent = new TextContent(
-            { x: 0, y: 0 },
-            {
+        const textContent = new TextContent({
+            position: { x: 0, y: 0 },
+            size: {
                 width: 100,
                 height: EVENT_NODE_HEIGHT,
             },
-            this.event.title
-        );
+            text: this.event.title,
+            alignment: 'middle_center',
+        });
 
         const node = new HorizontallyScalableNodeVisualObject(
             { x: 0, y: 0 },
@@ -75,6 +76,8 @@ export class EventNodeBox<E extends TEventId> {
 
         this.boxNode.setPosition({ x: data.x, y: data.y });
         this.boxNode.setSize({ width: data.width, height: data.height });
+        this.textContent.setPosition({ x: data.x, y: data.y });
+        this.textContent.setSize({ width: data.width, height: data.height });
         this.textContent.setText(data.title);
     };
 
