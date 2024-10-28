@@ -164,9 +164,22 @@ export class CanvasManager {
         this.clear();
         const sortedObjects = this.getSortedObjects();
         for (const obj of sortedObjects) {
+            if (!this.isObjVisible(obj)) continue;
             obj.draw(this.ctx);
         }
     }, 1000 / 60);
+
+    private isObjVisible = (obj: VisualObject): boolean => {
+        const pos = obj.getPosition();
+        const size = obj.getSize();
+
+        return (
+            pos.x + size.width >= 0 &&
+            pos.x <= this.canvas.width &&
+            pos.y + size.height >= 0 &&
+            pos.y <= this.canvas.height
+        );
+    };
 
     destroy = () => {
         // Clean up event listeners

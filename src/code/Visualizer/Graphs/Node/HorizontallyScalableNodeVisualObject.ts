@@ -38,14 +38,14 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
 
         // Left handle
         if (this.isMouseOverResizeHandle(this._lastMousePosition)?.side === 'left') {
-            ctx.fillRect(this.canvasPosition.x, this.canvasPosition.y, this._resizeHandleWidth, this.size.height);
+            ctx.fillRect(this.position.x, this.position.y, this._resizeHandleWidth, this.size.height);
         }
 
         // Right handle
         if (this.isMouseOverResizeHandle(this._lastMousePosition)?.side === 'right') {
             ctx.fillRect(
-                this.canvasPosition.x + this.size.width - this._resizeHandleWidth,
-                this.canvasPosition.y,
+                this.position.x + this.size.width - this._resizeHandleWidth,
+                this.position.y,
                 this._resizeHandleWidth,
                 this.size.height
             );
@@ -72,20 +72,20 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
 
         // Check left handle
         if (
-            point.x >= this.canvasPosition.x &&
-            point.x <= this.canvasPosition.x + this._resizeHandleWidth &&
-            point.y >= this.canvasPosition.y &&
-            point.y <= this.canvasPosition.y + this.size.height
+            point.x >= this.position.x &&
+            point.x <= this.position.x + this._resizeHandleWidth &&
+            point.y >= this.position.y &&
+            point.y <= this.position.y + this.size.height
         ) {
             return { side: 'left' };
         }
 
         // Check right handle
         if (
-            point.x >= this.canvasPosition.x + this.size.width - this._resizeHandleWidth &&
-            point.x <= this.canvasPosition.x + this.size.width &&
-            point.y >= this.canvasPosition.y &&
-            point.y <= this.canvasPosition.y + this.size.height
+            point.x >= this.position.x + this.size.width - this._resizeHandleWidth &&
+            point.x <= this.position.x + this.size.width &&
+            point.y >= this.position.y &&
+            point.y <= this.position.y + this.size.height
         ) {
             return { side: 'right' };
         }
@@ -107,12 +107,12 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
     override drag(point: TPoint): void {
         if (this._isResizing && this._resizeSide) {
             let newWidth: number;
-            let newX: number = this.canvasPosition.x;
+            let newX: number = this.position.x;
 
             if (this._resizeSide === 'right') {
-                newWidth = Math.max(this._minWidth, point.x - this.canvasPosition.x);
+                newWidth = Math.max(this._minWidth, point.x - this.position.x);
             } else {
-                const rightEdge = this.canvasPosition.x + this.size.width;
+                const rightEdge = this.position.x + this.size.width;
                 newX = Math.min(point.x, rightEdge - this._minWidth);
                 newWidth = rightEdge - newX;
             }
@@ -124,12 +124,12 @@ export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
             };
 
             if (this._resizeSide === 'left') {
-                this.setRealPosition({ x: newX, y: this.canvasPosition.y });
+                this.setPosition({ x: newX, y: this.position.y });
             }
 
             // Update content position
             const newContentPosition = this.getContentPosition();
-            this.getContent().setRealPosition(newContentPosition);
+            this.getContent().setPosition(newContentPosition);
 
             this.redraw(true, 'HorizontalResize');
         } else {

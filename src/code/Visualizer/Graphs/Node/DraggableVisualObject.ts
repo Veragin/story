@@ -69,7 +69,7 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     setDraggable(draggable: boolean): void {
         this._isDraggable = draggable;
         if (!draggable && this._isDragging) {
-            this.endDrag(this.canvasPosition);
+            this.endDrag(this.position);
         }
     }
 
@@ -77,17 +77,17 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
         if (!this._isDraggable) return;
 
         this._isDragging = true;
-        this._dragStartPosition = { ...this.canvasPosition };
+        this._dragStartPosition = { ...this.position };
 
         // Calculate offset between mouse position and object position
         this._mouseOffset = {
-            x: point.x - this.canvasPosition.x,
-            y: point.y - this.canvasPosition.y,
+            x: point.x - this.position.x,
+            y: point.y - this.position.y,
         };
 
         this._onDragStart.notify({
             object: this,
-            startPosition: { ...this.canvasPosition },
+            startPosition: { ...this.position },
             mouseOffset: { ...this._mouseOffset },
         });
     }
@@ -99,10 +99,10 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
             point,
             mouseOffset: this._mouseOffset,
             startPosition: this._dragStartPosition!,
-            currentPosition: this.canvasPosition,
+            currentPosition: this.position,
         });
 
-        this.setRealPosition(newPosition);
+        this.setPosition(newPosition);
 
         this._onDragMove.notify({
             object: this,
@@ -120,10 +120,10 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
             point,
             mouseOffset: this._mouseOffset,
             startPosition: this._dragStartPosition!,
-            currentPosition: this.canvasPosition,
+            currentPosition: this.position,
         });
 
-        this.setRealPosition(finalPosition);
+        this.setPosition(finalPosition);
 
         this._onDragEnd.notify({
             object: this,

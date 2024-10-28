@@ -3,7 +3,6 @@ import { ZOOM_SPEED_FACTOR } from './constants';
 import { Store } from '../Store';
 import { ZOOM_CONFIG } from './zoomConfig';
 import { DeltaTime, Time } from 'time/Time';
-import { DurationHelper } from './DurationHelper';
 import { TimelineMarker } from './TimelineMarker';
 
 export class TimelineMouseListener {
@@ -18,7 +17,6 @@ export class TimelineMouseListener {
     constructor(
         private container: HTMLCanvasElement,
         private store: Store,
-        private durationHelper: DurationHelper,
         private timelineMarker: TimelineMarker
     ) {
         this.container.addEventListener('mousedown', this.onMouseDown);
@@ -56,7 +54,7 @@ export class TimelineMouseListener {
     };
 
     private onMouseMove = throttle((e: MouseEvent) => {
-        const mouseTime = this.durationHelper.getTimestampFromDistance(e.clientX);
+        const mouseTime = this.store.durationHelper.getTimestampFromDistance(e.clientX);
         this.timelineMarker.update(e.clientX, mouseTime);
 
         if (this.isMouseDown) {
@@ -84,7 +82,7 @@ export class TimelineMouseListener {
         const zoomLevel = Math.round(this.zoomLevelProgress);
 
         if (zoomLevel !== this.store.zoomLevel) {
-            const newTime = this.durationHelper.computeStartForZoom(zoomLevel, e.clientX);
+            const newTime = this.store.durationHelper.computeStartForZoom(zoomLevel, e.clientX);
             this.store.setZoomLevel(zoomLevel);
             this.store.setTimelineStartTime(newTime);
         }

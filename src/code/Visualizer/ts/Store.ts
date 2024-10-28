@@ -6,13 +6,16 @@ import { TimeManager } from 'time/TimeManager';
 import { CanvasHandler } from './CanvasHandler';
 import { CanvasManager } from '../Graphs/CanvasManager';
 import { TimelineEvents } from './TimelineEvents/TimelineEvents';
+import { DurationHelper } from './DurationHelper';
 
 export class Store {
+    durationHelper: DurationHelper;
     timelineEvents: TimelineEvents | null = null;
     canvasHandler: CanvasHandler | null = null;
     timelineRender: TimelineRender | null = null;
 
     constructor(public timeManager: TimeManager) {
+        this.durationHelper = new DurationHelper(this);
         makeObservable(this, {
             displayConnections: observable,
             zoomLevel: observable,
@@ -32,10 +35,7 @@ export class Store {
         const canvasManager = new CanvasManager(mainRef);
         this.timelineEvents = new TimelineEvents(this, canvasManager);
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
-        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, () => {
-            this.timelineEvents?.render();
-            this.timelineRender?.render();
-        });
+        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, this);
     };
 
     deinit = () => {
@@ -52,6 +52,17 @@ export class Store {
     zoomLevel = 1;
     setZoomLevel = (value: number) => {
         this.zoomLevel = Math.min(ZOOM_CONFIG.length, Math.max(0, value));
+        this.render();
+    };
+
+    timelineStartTime = Time.fromS(0);
+    setTimelineStartTime = (time: Time) => {
+        this.timelineStartTime = Time.max(time, Time.fromS(0));
+        this.render();
+    };
+
+    render = () => {
+        this.timelineEvents?.render();
         this.timelineRender?.render();
     };
 
@@ -59,9 +70,7 @@ export class Store {
         return ZOOM_CONFIG[this.zoomLevel];
     }
 
-    timelineStartTime = Time.fromS(0);
-    setTimelineStartTime = (time: Time) => {
-        this.timelineStartTime = Time.max(time, Time.fromS(0));
-        this.timelineRender?.render();
-    };
+    get timelineEndTime() {
+        return this.timelineStartTime.moveToFutureBy(this.zoom.displayTime);
+    }
 }

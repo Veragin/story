@@ -1,5 +1,6 @@
 import { throttle } from 'code/utils/throttle';
 import { RESOLUTION_FACTOR } from './TimelineRender/constants';
+import { Store } from './Store';
 
 export class CanvasHandler {
     resizeObserver: ResizeObserver;
@@ -8,7 +9,7 @@ export class CanvasHandler {
         public mainCanvasRef: HTMLCanvasElement,
         public timelineRef: HTMLCanvasElement,
         public containerRef: HTMLDivElement,
-        private render: () => void
+        private store: Store
     ) {
         this.resizeObserver = new ResizeObserver(throttle<unknown>(() => this.onCanvasResize(), 10));
         this.resizeObserver.observe(containerRef);
@@ -24,7 +25,10 @@ export class CanvasHandler {
         this.timelineRef.width = rect2.width * RESOLUTION_FACTOR;
         this.timelineRef.height = rect2.height * RESOLUTION_FACTOR;
 
-        this.render();
+        this.store.durationHelper.size.width = rect1.width;
+        this.store.durationHelper.size.height = rect1.height;
+
+        this.store.render();
     };
 
     destroy = () => {

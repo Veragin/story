@@ -16,7 +16,7 @@ export abstract class HoverableVisualObject extends VisualObject {
     }
 
     isPointInside(point: TPoint): boolean {
-        const pos = this.getCanvasPosition();
+        const pos = this.getPosition();
         const size = this.getSize();
 
         return point.x >= pos.x && point.x <= pos.x + size.width && point.y >= pos.y && point.y <= pos.y + size.height;

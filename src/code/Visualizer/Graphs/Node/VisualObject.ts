@@ -6,8 +6,7 @@ export type TVisualObjectPropertyChangeArgs = {
 };
 
 export const visualObjectProperties = {
-    RealPosition: 'RealPosition',
-    CanvasPosition: 'CanvasPosition',
+    position: 'position',
     Size: 'Size',
     ZIndex: 'ZIndex',
 };
@@ -16,8 +15,7 @@ export const visualObjectProperties = {
  * Base class for any visual object that can be drawn on canvas
  */
 export abstract class VisualObject {
-    protected realPosition: TPoint;
-    protected canvasPosition: TPoint;
+    protected position: TPoint;
     protected size: TSize;
     private automaticDraw: boolean = true;
     private _onPropertyChanged = new Observer<TVisualObjectPropertyChangeArgs>();
@@ -31,9 +29,8 @@ export abstract class VisualObject {
         return this._zIndex;
     }
 
-    constructor(realPosition: TPoint, size: TSize, zIndex: number = 0) {
-        this.realPosition = realPosition;
-        this.canvasPosition = { ...realPosition };
+    constructor(position: TPoint, size: TSize, zIndex: number = 0) {
+        this.position = position;
         this.size = size;
         this._zIndex = zIndex;
     }
@@ -46,12 +43,8 @@ export abstract class VisualObject {
         this.redraw(changed, visualObjectProperties.ZIndex);
     }
 
-    getRealPosition(): TPoint {
-        return this.realPosition;
-    }
-
-    getCanvasPosition(): TPoint {
-        return this.canvasPosition;
+    getPosition(): TPoint {
+        return this.position;
     }
 
     getSize(): TSize {
@@ -62,15 +55,10 @@ export abstract class VisualObject {
         return this.automaticDraw;
     }
 
-    setRealPosition(position: TPoint): void {
-        this.realPosition = position;
-        this.setCanvasPosition(position);
-    }
-
-    setCanvasPosition(position: TPoint): void {
-        let changed = this.canvasPosition.x !== position.x || this.canvasPosition.y !== position.y;
-        this.canvasPosition = position;
-        this.redraw(changed, visualObjectProperties.CanvasPosition);
+    setPosition(position: TPoint): void {
+        let changed = this.position.x !== position.x || this.position.y !== position.y;
+        this.position = position;
+        this.redraw(changed, visualObjectProperties.position);
     }
 
     setSize(size: TSize): void {

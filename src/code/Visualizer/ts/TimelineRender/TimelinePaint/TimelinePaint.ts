@@ -1,7 +1,6 @@
 import { TimeManager } from 'time/TimeManager';
 import { Store } from '../../Store';
 import { TimelineDraw } from './TimelineDraw';
-import { DurationHelper } from '../DurationHelper';
 
 export class TimelinePaint {
     timelineDraw: TimelineDraw;
@@ -9,7 +8,6 @@ export class TimelinePaint {
     constructor(
         private store: Store,
         private timeManager: TimeManager,
-        private durationHelper: DurationHelper,
         canvas: HTMLCanvasElement
     ) {
         this.timelineDraw = new TimelineDraw(canvas);
@@ -25,7 +23,7 @@ export class TimelinePaint {
     private renderLabels = () => {
         const zoom = this.store.zoom;
         const start = this.store.timelineStartTime;
-        const end = this.store.timelineStartTime.moveToFutureBy(zoom.displayTime);
+        const end = this.store.timelineEndTime;
 
         const labelsTimes: Time[] = [];
         let time = this.timeManager.roundTo(start, zoom.labelsDistance);
@@ -39,7 +37,7 @@ export class TimelinePaint {
 
         for (const labelTime of labelsTimes) {
             const label = this.timeManager.renderTime(labelTime, zoom.renderedTimeFormat);
-            this.timelineDraw.drawTimelineLabel(this.durationHelper.getDistanceFromTimestamp(labelTime), label);
+            this.timelineDraw.drawTimelineLabel(this.store.durationHelper.getDistanceFromTimestamp(labelTime), label);
         }
     };
 }

@@ -33,10 +33,10 @@ export class NodeVisualObject extends DraggableVisualObject {
 
         // Set content position when node position changes
         const updateContentPosition = (args: TVisualObjectPropertyChangeArgs) => {
-            if (args.property === nodeVisualObjectProperties.CanvasPosition) {
+            if (args.property === nodeVisualObjectProperties.position) {
                 // Update content position maintaining the offset
                 const newContentPosition = this.getContentPosition();
-                this.content.setRealPosition(newContentPosition);
+                this.content.setPosition(newContentPosition);
             }
         };
         this.onPropertyChanged.subscribe(updateContentPosition);
@@ -50,15 +50,9 @@ export class NodeVisualObject extends DraggableVisualObject {
         ctx.fillStyle = this.backgroundColor;
         ctx.beginPath();
         if (this.border.radius) {
-            ctx.roundRect(
-                this.canvasPosition.x,
-                this.canvasPosition.y,
-                this.size.width,
-                this.size.height,
-                this.border.radius
-            );
+            ctx.roundRect(this.position.x, this.position.y, this.size.width, this.size.height, this.border.radius);
         } else {
-            ctx.rect(this.canvasPosition.x, this.canvasPosition.y, this.size.width, this.size.height);
+            ctx.rect(this.position.x, this.position.y, this.size.width, this.size.height);
         }
         ctx.fill();
 
@@ -80,8 +74,8 @@ export class NodeVisualObject extends DraggableVisualObject {
 
     getContentPosition(): TPoint {
         return {
-            x: this.canvasPosition.x + this.size.width / 2 - this.content.getSize().width / 2,
-            y: this.canvasPosition.y + this.size.height / 2 - this.content.getSize().height / 2,
+            x: this.position.x + this.size.width / 2 - this.content.getSize().width / 2,
+            y: this.position.y + this.size.height / 2 - this.content.getSize().height / 2,
         };
     }
 

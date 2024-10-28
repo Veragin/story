@@ -1,6 +1,5 @@
-import { NodeVisualObject } from "./Node/NodeVisualObject";
-import { ClickableVisualObject } from "./Node/ClickableVisualObject";
-
+import { NodeVisualObject } from './Node/NodeVisualObject';
+import { ClickableVisualObject } from './Node/ClickableVisualObject';
 
 export const edgeVisualObjectProperties = {
     source: 'source',
@@ -8,7 +7,7 @@ export const edgeVisualObjectProperties = {
     color: 'color',
     width: 'width',
     arrow: 'arrow',
-    zIndex: 'zIndex'
+    zIndex: 'zIndex',
 };
 
 export class EdgeVisualObject extends ClickableVisualObject {
@@ -36,8 +35,8 @@ export class EdgeVisualObject extends ClickableVisualObject {
             zIndex = target.zIndex - 1;
         }
 
-        super(source.getRealPosition(), { width: 0, height: 0 }, zIndex);
-        
+        super(source.getPosition(), { width: 0, height: 0 }, zIndex);
+
         this._source = source;
         this._target = target;
         this._color = color;
@@ -52,24 +51,24 @@ export class EdgeVisualObject extends ClickableVisualObject {
     private getPositionOfEndpointInSourceOrTargetNode(node: NodeVisualObject): TVec {
         return {
             x: node.getSize().width / 2,
-            y: node.getSize().height / 2
+            y: node.getSize().height / 2,
         };
     }
 
     override draw(ctx: CanvasRenderingContext2D): void {
         // Calculate source and target endpoint positions
-        const sourceRealPos = this._source.getRealPosition();
+        const sourceRealPos = this._source.getPosition();
         const sourceOffset = this.getPositionOfEndpointInSourceOrTargetNode(this._source);
         const sourcePos = {
             x: sourceRealPos.x + sourceOffset.x,
-            y: sourceRealPos.y + sourceOffset.y
+            y: sourceRealPos.y + sourceOffset.y,
         };
 
-        const targetRealPos = this._target.getRealPosition();
+        const targetRealPos = this._target.getPosition();
         const targetOffset = this.getPositionOfEndpointInSourceOrTargetNode(this._target);
         const targetPos = {
             x: targetRealPos.x + targetOffset.x,
-            y: targetRealPos.y + targetOffset.y
+            y: targetRealPos.y + targetOffset.y,
         };
 
         // Draw line
@@ -88,24 +87,21 @@ export class EdgeVisualObject extends ClickableVisualObject {
 
             ctx.beginPath();
             ctx.fillStyle = this._color;
-            
+
             // Calculate arrow points, 2/3 of the way from source to target
             const arrowTip = {
-                x: sourcePos.x + (2/3) * (targetPos.x - sourcePos.x),
-                y: sourcePos.y + (2/3) * (targetPos.y - sourcePos.y)
+                x: sourcePos.x + (2 / 3) * (targetPos.x - sourcePos.x),
+                y: sourcePos.y + (2 / 3) * (targetPos.y - sourcePos.y),
             };
-            
-            ctx.moveTo(
-                arrowTip.x,
-                arrowTip.y
+
+            ctx.moveTo(arrowTip.x, arrowTip.y);
+            ctx.lineTo(
+                arrowTip.x - arrowLength * Math.cos(angle - Math.PI / 6),
+                arrowTip.y - arrowLength * Math.sin(angle - Math.PI / 6)
             );
             ctx.lineTo(
-                arrowTip.x - arrowLength * Math.cos(angle - Math.PI/6),
-                arrowTip.y - arrowLength * Math.sin(angle - Math.PI/6)
-            );
-            ctx.lineTo(
-                arrowTip.x - arrowLength * Math.cos(angle + Math.PI/6),
-                arrowTip.y - arrowLength * Math.sin(angle + Math.PI/6)
+                arrowTip.x - arrowLength * Math.cos(angle + Math.PI / 6),
+                arrowTip.y - arrowLength * Math.sin(angle + Math.PI / 6)
             );
             ctx.closePath();
             ctx.fill();
@@ -139,7 +135,6 @@ export class EdgeVisualObject extends ClickableVisualObject {
     }
 
     override setZIndex(zIndex: number): void {
-
         // should be always less than source and target
         if (zIndex >= this._source.zIndex) {
             zIndex = this._source.zIndex - 1;
