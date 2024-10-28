@@ -30,7 +30,7 @@ export class TimelineRender {
         this.timelinePaint.render();
     };
 
-    destructor = () => {
+    destroy = () => {
         this.timelineListener.destructor();
         this.timelineMarker.destructor();
     };

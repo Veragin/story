@@ -27,7 +27,7 @@ export class CanvasHandler {
         this.render();
     };
 
-    destructor = () => {
+    destroy = () => {
         this.resizeObserver.disconnect();
     };
 }

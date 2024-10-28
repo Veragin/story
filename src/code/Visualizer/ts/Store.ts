@@ -5,9 +5,10 @@ import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
 import { CanvasHandler } from './CanvasHandler';
 import { CanvasManager } from '../Graphs/CanvasManager';
+import { TimelineEvents } from './TimelineEvents/TimelineEvents';
 
 export class Store {
-    canvasManager: CanvasManager | null = null;
+    timelineEvents: TimelineEvents | null = null;
     canvasHandler: CanvasHandler | null = null;
     timelineRender: TimelineRender | null = null;
 
@@ -28,18 +29,19 @@ export class Store {
     ) => {
         this.deinit();
 
-        this.canvasManager = new CanvasManager(mainRef);
+        const canvasManager = new CanvasManager(mainRef);
+        this.timelineEvents = new TimelineEvents(this, canvasManager);
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
         this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, () => {
-            this.canvasManager?.draw();
+            this.timelineEvents?.render();
             this.timelineRender?.render();
         });
     };
 
     deinit = () => {
-        this.canvasManager?.destroy();
-        this.timelineRender?.destructor();
-        this.canvasHandler?.destructor();
+        this.timelineEvents?.destroy();
+        this.timelineRender?.destroy();
+        this.canvasHandler?.destroy();
     };
 
     displayConnections = false;

@@ -8,7 +8,6 @@ import {
     MARKER_TIME_CLASS,
 } from './ts/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
-import { GraphGenerator } from './Graphs/GraphGenerator';
 import { assertNotNullish } from 'code/utils/typeguards';
 
 export const EventTimeline = () => {
@@ -31,15 +30,6 @@ export const EventTimeline = () => {
             containerRef.current,
             markerRef.current
         );
-
-        const generator = new GraphGenerator(store.canvasManager!);
-        generator.generate({
-            nodeCount: 300,
-            edgeCount: 1000,
-            layout: 'circular',
-            canvasWidth: 800,
-            canvasHeight: 600,
-        });
 
         return () => {
             store.deinit();
@@ -74,7 +64,6 @@ const SMainCanvas = styled('canvas')`
     overflow: hidden;
     border-top: 1px solid grey;
     border-bottom: 1px solid grey;
-    background-color: wheat;
 `;
 
 const STimelineCanvas = styled('canvas')`

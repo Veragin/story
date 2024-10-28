@@ -32,7 +32,9 @@ export const EventPassages = () => {
             markerRef.current
         );
 
-        const generator = new GraphGenerator(store.canvasManager!);
+        const generator = new GraphGenerator(
+            store.timelineEvents!.canvasManager!
+        );
         generator.generate({
             nodeCount: 300,
             edgeCount: 1000,
