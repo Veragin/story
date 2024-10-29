@@ -28,7 +28,7 @@ export class CanvasManager {
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
         this.canvas.addEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.addEventListener('click', this.handleMouseClick);
+        this.canvas.addEventListener('dblclick', this.handleMouseClick);
     }
 
     private getMousePoint(event: MouseEvent): TPoint {
@@ -187,6 +187,7 @@ export class CanvasManager {
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
         this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
+        this.canvas.removeEventListener('dblclick', this.handleMouseClick);
 
         // Clean up object subscriptions
         for (const obj of this.visualObjects) {
