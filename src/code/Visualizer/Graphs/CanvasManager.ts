@@ -199,6 +199,14 @@ export class CanvasManager {
         this.hoveredObjects.clear();
         this.draggedObject = null;
     };
+
+    getHeight(): number | undefined {
+        return this.canvas.height;
+    }
+    
+    getWidth(): number | undefined {
+        return this.canvas.width;
+    }
 }
 
 const isDraggableObject = (obj: any): obj is DraggableVisualObject => {

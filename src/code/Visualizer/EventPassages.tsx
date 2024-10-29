@@ -10,6 +10,8 @@ import {
 import { useEffect, useRef } from 'react';
 import { GraphGenerator } from './Graphs/GraphGenerator';
 import { assertNotNullish } from 'code/utils/typeguards';
+import { GraphAnimationHandler } from './Graphs/animation.ts/LayoutAnimationManager';
+import { KamadaKawaiLayoutManager } from './Graphs/graphLayouts/KamadaKawaiLayoutManager';
 
 export const EventPassages = () => {
     const store = useVisualizerStore();
@@ -35,13 +37,17 @@ export const EventPassages = () => {
         const generator = new GraphGenerator(
             store.timelineEvents!.canvasManager!
         );
-        generator.generate({
-            nodeCount: 300,
-            edgeCount: 1000,
+
+        const graph = generator.generate({
+            nodeCount: 20,
+            edgeCount: 40,
             layout: 'circular',
-            canvasWidth: 800,
-            canvasHeight: 600,
+            canvasWidth: store.timelineEvents!.canvasManager!.getWidth(),
+            canvasHeight: store.timelineEvents!.canvasManager!.getHeight(),
         });
+
+        const animationHandler = new GraphAnimationHandler(graph, graph.getLayoutManager() as KamadaKawaiLayoutManager);
+        animationHandler.startAnimation();
 
         return () => {
             store.deinit();
