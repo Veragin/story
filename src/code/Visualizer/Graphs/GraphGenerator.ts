@@ -48,8 +48,7 @@ export class GraphGenerator {
         if (opts.layout === 'circular') {
             this.graph.setLayoutManager(new SpringForceLayoutManager(
                 opts.canvasWidth / 1.5,
-                opts.canvasHeight,
-                Math.min(opts.canvasWidth, opts.canvasHeight) / 3
+                opts.canvasHeight
             ));
         }
 
@@ -107,16 +106,17 @@ export class GraphGenerator {
         const label = `Node ${index + 1}`;
         const position = { x: 0, y: 0 }; // Initial position will be set by layout manager
 
-        const textContent = new TextContent(
-            {
+        const textContent = new TextContent({
+            position: {
                 x: position.x + opts.nodeWidth / 2 - this.getWidthOfString(label, 16) / 2,
                 y: position.y + opts.nodeHeight / 2 - this.getHeightsOfString(label, 16) / 2
             },
-            {
+            size: {
                 width: this.getWidthOfString(label, 16),
                 height: this.getHeightsOfString(label, 16)
             },
-            label
+            text: label
+        }
         );
 
         const node = new HorizontallyScalableNodeVisualObject(

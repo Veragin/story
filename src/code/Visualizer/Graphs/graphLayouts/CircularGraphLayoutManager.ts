@@ -25,8 +25,12 @@ export class CircularGraphLayoutManager implements GraphLayoutManager {
             const x = this.centerX + this.radius * Math.cos(angle);
             const y = this.centerY + this.radius * Math.sin(angle);
 
-            node.setRealPosition({ x, y });
+            node.setPosition({ x, y });
             i++;
         }
+    }
+
+    performSingleIteration(graph: Graph): void {
+        throw new Error("Method not implemented.");
     }
 }

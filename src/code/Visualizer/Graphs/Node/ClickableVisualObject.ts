@@ -23,3 +23,20 @@ export abstract class ClickableVisualObject extends HoverableVisualObject {
         return this._isClickable;
     }
 }
+
+export const selectableVisualProperties = {
+    isSelected: 'isSelected',
+};
+
+export abstract class SelectableVisualObject extends ClickableVisualObject {
+    private _isSelected: boolean = false;
+
+    get isSelected(): boolean {
+        return this._isSelected;
+    }
+
+    setSelected(selected: boolean): void {
+        this._isSelected = selected;
+        this.redraw(true, selectableVisualProperties.isSelected);
+    }
+}

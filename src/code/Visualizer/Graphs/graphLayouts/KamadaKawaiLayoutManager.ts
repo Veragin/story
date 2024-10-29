@@ -102,8 +102,8 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
 
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
-                const pos1 = nodes[i].getRealPosition();
-                const pos2 = nodes[j].getRealPosition();
+                const pos1 = nodes[i].getPosition();
+                const pos2 = nodes[j].getPosition();
 
                 const dx = pos1.x - pos2.x;
                 const dy = pos1.y - pos2.y;
@@ -126,14 +126,14 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         springConstants: number[][],
         idealLengths: number[][]
     ): NodeGradient {
-        const pos = nodes[nodeIndex].getRealPosition();
+        const pos = nodes[nodeIndex].getPosition();
         let gradientX = 0;
         let gradientY = 0;
 
         for (let j = 0; j < nodes.length; j++) {
             if (j === nodeIndex) continue;
 
-            const posJ = nodes[j].getRealPosition();
+            const posJ = nodes[j].getPosition();
             const dx = pos.x - posJ.x;
             const dy = pos.y - posJ.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -157,7 +157,7 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         gradient: NodeGradient
     ): number {
         const node = nodes[nodeIndex];
-        const pos = node.getRealPosition();
+        const pos = node.getPosition();
 
         // Adaptive step size
         const stepSize = 0.5 / (1 + Math.sqrt(gradient.delta));
@@ -167,7 +167,7 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
             y: pos.y - stepSize * gradient.dy
         };
 
-        node.setRealPosition(newPos);
+        node.setPosition(newPos);
 
         const newGradient = this.calculateNodeGradient(
             nodeIndex,
@@ -222,12 +222,12 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     private adjustNodePositions(nodes: NodeVisualObject[]): void {
         const padding = Math.min(this.width, this.height) * 0.1;  // Relative padding
         nodes.forEach(node => {
-            const pos = node.getRealPosition();
+            const pos = node.getPosition();
             const adjustedPos = {
                 x: Math.max(padding, Math.min(this.width - padding, pos.x)),
                 y: Math.max(padding, Math.min(this.height - padding, pos.y))
             };
-            node.setRealPosition(adjustedPos);
+            node.setPosition(adjustedPos);
         });
     }
 
@@ -307,7 +307,7 @@ export class CircularInitializePositionStrategy implements InitializePositionStr
             const radius = Math.min(width, height) / 3;
             const x = width / 2 + radius * Math.cos(angle);
             const y = height / 2 + radius * Math.sin(angle);
-            node.setRealPosition({ x, y });
+            node.setPosition({ x, y });
         });
     }
 }

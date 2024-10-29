@@ -130,8 +130,8 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             for (let j = i + 1; j < this.nodes.length; j++) {
                 const node1 = this.nodes[i];
                 const node2 = this.nodes[j];
-                const pos1 = node1.getRealPosition();
-                const pos2 = node2.getRealPosition();
+                const pos1 = node1.getPosition();
+                const pos2 = node2.getPosition();
 
                 // Calculate distance and direction
                 const dx = pos2.x - pos1.x;
@@ -172,8 +172,8 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         graph.getAllEdges().forEach(edge => {
             const source = edge.getSource();
             const target = edge.getTarget();
-            const pos1 = source.getRealPosition();
-            const pos2 = target.getRealPosition();
+            const pos1 = source.getPosition();
+            const pos2 = target.getPosition();
 
             // Calculate distance and direction
             const dx = pos2.x - pos1.x;
@@ -219,7 +219,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             }
 
             const velocity = this.nodeVelocities.get(nodeId)!;
-            const pos = node.getRealPosition();
+            const pos = node.getPosition();
 
             // Update velocity with dampening for rapid changes
             velocity.vx = velocity.vx * this.friction + (force.dx * this.forceScale);
@@ -245,7 +245,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 y: pos.y + velocity.vy
             };
 
-            node.setRealPosition(newPos);
+            node.setPosition(newPos);
             totalMovement += Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
 
             // Store current force for next iteration
@@ -271,12 +271,12 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 }
 
             }
-            const pos = node.getRealPosition();
+            const pos = node.getPosition();
             const adjustedPos = {
                 x: Math.max(padding, Math.min(this.width - padding, pos.x)),
                 y: Math.max(padding, Math.min(this.height - padding, pos.y))
             };
-            node.setRealPosition(adjustedPos);
+            node.setPosition(adjustedPos);
         });
     }
 
