@@ -1,22 +1,29 @@
 import { TEvent } from 'types/TEvent';
 import { TEventId } from 'types/TIds';
 import { Store } from '../Store';
-import { EVENT_NODE_HEIGHT, EventNodeBox } from './EventNodeBox';
+import { EventNodeBox } from './EventNodeBox';
 
 export class EventNode<E extends TEventId> {
     box: EventNodeBox<E>;
+    rowIndexInLocation: number = 0;
 
     constructor(public event: TEvent<E>) {
         this.box = new EventNodeBox(event);
     }
 
-    update = (store: Store) => {
+    updateNodeByEvent = (store: Store) => {
         const x = (this.event.timeRange.start.s - store.timelineStartTime.s) * store.durationHelper.timeToLengthFactor;
         const width =
             (this.event.timeRange.end.s - this.event.timeRange.start.s) * store.durationHelper.timeToLengthFactor;
-        const height = EVENT_NODE_HEIGHT;
-        const y = 0;
 
-        this.box.update({ x, y, width, height, title: this.event.title });
+        this.box.update({ x, width, title: this.event.title });
+    };
+
+    updateEventFromPosition = (store: Store) => {
+        const start = store.durationHelper.getTimestampFromDistance(this.box.start);
+        const end = store.durationHelper.getTimestampFromDistance(this.box.end);
+
+        this.event.timeRange.start = start;
+        this.event.timeRange.end = end;
     };
 }

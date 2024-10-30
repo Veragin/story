@@ -10,11 +10,11 @@ export const EVENT_NODE_HEIGHT = 60;
 
 export class EventNodeBox<E extends TEventId> {
     private boxNode: HorizontallyScalableNodeVisualObject | null = null;
-    private textContent: TextContent | null = null;
+    private textNode: TextContent | null = null;
 
     constructor(public event: TEvent<E>) {}
 
-    setupNodes = (manager: CanvasManager) => {
+    setupNodes = (manager: CanvasManager, recompute: () => void) => {
         const textContent = new TextContent({
             position: { x: 0, y: 0 },
             size: {
@@ -57,6 +57,8 @@ export class EventNodeBox<E extends TEventId> {
             });
         });
 
+        node.onDragEnd.subscribe(recompute);
+
         // Add click handler
         node.onClick.subscribe(() => {
             console.log(`Clicked node: ${this.event.title}`);
@@ -66,35 +68,49 @@ export class EventNodeBox<E extends TEventId> {
         manager.addObject(textContent);
 
         this.boxNode = node;
-        this.textContent = textContent;
+        this.textNode = textContent;
         return node;
     };
 
     update = (data: TUpdateData) => {
         assertNotNullish(this.boxNode);
-        assertNotNullish(this.textContent);
+        assertNotNullish(this.textNode);
 
-        this.boxNode.setPosition({ x: data.x, y: data.y });
-        this.boxNode.setSize({ width: data.width, height: data.height });
-        this.textContent.setPosition({ x: data.x, y: data.y });
-        this.textContent.setSize({ width: data.width, height: data.height });
-        this.textContent.setText(data.title);
+        this.boxNode.setX(data.x);
+        this.textNode.setX(data.x);
+        this.boxNode.setW(data.width);
+        this.textNode.setW(data.width);
+        this.textNode.setText(data.title);
     };
+
+    updateRow = (row: number) => {
+        assertNotNullish(this.boxNode);
+        assertNotNullish(this.textNode);
+
+        this.boxNode.setY(row * EVENT_NODE_HEIGHT);
+        this.textNode.setY(row * EVENT_NODE_HEIGHT);
+    };
+
+    get start() {
+        return this.boxNode?.getPosition().x ?? 0;
+    }
+
+    get end() {
+        return this.start + (this.boxNode?.getSize().width ?? 0);
+    }
 
     destroyNodes = (manager: CanvasManager) => {
         if (this.boxNode) {
             manager.removeObject(this.boxNode);
         }
-        if (this.textContent) {
-            manager.removeObject(this.textContent);
+        if (this.textNode) {
+            manager.removeObject(this.textNode);
         }
     };
 }
 
 type TUpdateData = {
     x: number;
-    y: number;
     width: number;
-    height: number;
     title: string;
 };
