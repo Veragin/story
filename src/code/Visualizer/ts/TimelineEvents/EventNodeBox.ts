@@ -58,6 +58,7 @@ export class EventNodeBox<E extends TEventId> {
         });
 
         node.onDragEnd.subscribe(recompute);
+        node.onHorizontalResize.subscribe(recompute);
 
         // Add click handler
         node.onClick.subscribe(() => {
