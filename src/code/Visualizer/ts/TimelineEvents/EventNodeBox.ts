@@ -83,12 +83,13 @@ export class EventNodeBox<E extends TEventId> {
         this.textNode.setText(data.title);
     };
 
-    updateRow = (row: number) => {
+    updateRow = (row: number, color: string) => {
         assertNotNullish(this.boxNode);
         assertNotNullish(this.textNode);
 
         this.boxNode.setY(row * EVENT_NODE_HEIGHT);
         this.textNode.setY(row * EVENT_NODE_HEIGHT);
+        this.boxNode.setBackgroundColor(color);
     };
 
     get start() {

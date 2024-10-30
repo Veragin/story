@@ -10,6 +10,7 @@ type TLocationLayout = {
     events: TEvent<TEventId>[];
     rowCount: number;
     rowCountFromTop: number;
+    color: string;
 };
 
 export class TimelineEvents {
@@ -26,6 +27,7 @@ export class TimelineEvents {
     }
 
     private recompueLocationLayout = () => {
+        const old = this.locationLayout;
         this.locationLayout = {};
         const eventList = Object.values(register.events) as TEvent<TEventId>[];
 
@@ -42,6 +44,7 @@ export class TimelineEvents {
                     events: [event],
                     rowCount: 1,
                     rowCountFromTop: 0,
+                    color: old[event.location]?.color ?? getRandomColor(),
                 };
                 return;
             }
@@ -68,7 +71,7 @@ export class TimelineEvents {
             const data = this.locationLayout[event.event.location];
             if (data) {
                 const row = data.rowCountFromTop + event.rowIndexInLocation;
-                event.box.updateRow(row);
+                event.box.updateRow(row, data.color);
             }
         });
     };
@@ -112,4 +115,11 @@ const areEventsOverLaping = (event1: TEvent<TEventId>, event2: TEvent<TEventId>)
     return (
         !event1.timeRange.start.isAfter(event2.timeRange.end) && !event2.timeRange.start.isAfter(event1.timeRange.end)
     );
+};
+
+const getRandomColor = () => {
+    const red = Math.floor(Math.random() * 128) + 128;
+    const green = Math.floor(Math.random() * 128) + 128;
+    const blue = Math.floor(Math.random() * 128) + 128;
+    return `rgb(${red},${green},${blue})`;
 };
