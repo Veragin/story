@@ -9,6 +9,7 @@ import { TimelineEvents } from './TimelineEvents/TimelineEvents';
 import { DurationHelper } from './DurationHelper';
 
 export class Store {
+    canvasManager: CanvasManager | null = null;
     durationHelper: DurationHelper;
     timelineEvents: TimelineEvents | null = null;
     canvasHandler: CanvasHandler | null = null;
@@ -19,7 +20,9 @@ export class Store {
         makeObservable(this, {
             displayConnections: observable,
             zoomLevel: observable,
-            setDisplayConnections: action,
+            dragMode: observable,
+            toggleDragMode: action,
+            toggleDisplayConnections: action,
             setZoomLevel: action,
         });
     }
@@ -32,8 +35,8 @@ export class Store {
     ) => {
         this.deinit();
 
-        const canvasManager = new CanvasManager(mainRef);
-        this.timelineEvents = new TimelineEvents(this, canvasManager);
+        this.canvasManager = new CanvasManager(mainRef);
+        this.timelineEvents = new TimelineEvents(this, this.canvasManager);
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
         this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, this);
     };
@@ -45,8 +48,8 @@ export class Store {
     };
 
     displayConnections = false;
-    setDisplayConnections = (value: boolean) => {
-        this.displayConnections = value;
+    toggleDisplayConnections = () => {
+        this.displayConnections = !this.displayConnections;
     };
 
     zoomLevel = 3;
@@ -59,6 +62,14 @@ export class Store {
     setTimelineStartTime = (time: Time) => {
         this.timelineStartTime = Time.max(time, Time.fromS(0));
         this.render();
+    };
+
+    dragMode = true;
+    toggleDragMode = () => {
+        this.dragMode = !this.dragMode;
+        if (this.canvasManager) {
+            this.canvasManager.dragMode = this.dragMode;
+        }
     };
 
     render = () => {
