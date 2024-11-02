@@ -15,6 +15,7 @@ export class CanvasManager {
     private hoveredObjects: Set<HoverableVisualObject> = new Set();
     private nextInsertionOrder: number = 0;
     private draggedObject: DraggableVisualObject | null = null;
+    dragMode = true;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -41,6 +42,8 @@ export class CanvasManager {
     }
 
     private handleMouseDown = (event: MouseEvent) => {
+        if (!this.dragMode) return;
+
         const point = this.getMousePoint(event);
         const objectsAtPoint = this.getTopObjectsAtPoint(point);
 
@@ -80,7 +83,7 @@ export class CanvasManager {
         const point = this.getMousePoint(event);
 
         // Handle dragging
-        if (this.draggedObject) {
+        if (this.draggedObject && this.dragMode) {
             this.draggedObject.drag(point);
             return;
         }

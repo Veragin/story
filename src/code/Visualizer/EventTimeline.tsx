@@ -1,4 +1,4 @@
-import { Button, styled } from '@mui/material';
+import { IconButton, styled, Tooltip } from '@mui/material';
 import { Row, WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
@@ -9,8 +9,12 @@ import {
 } from './ts/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
+import { TimelineZoomSlider } from './TimelineZoomSlider';
+import EditIcon from '@mui/icons-material/Edit';
+import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
+import { observer } from 'mobx-react-lite';
 
-export const EventTimeline = () => {
+export const EventTimeline = observer(() => {
     const store = useVisualizerStore();
     const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,23 +44,53 @@ export const EventTimeline = () => {
         <WholeContainer ref={containerRef}>
             <SControlPanel>
                 <SmallText>{_('Event Timeline')}</SmallText>
-                <Button
-                    variant="contained"
-                    onClick={() => console.log('Add event')}
+
+                <Tooltip
+                    title={
+                        store.dragMode
+                            ? _('Disable drag mode')
+                            : _('Enable drag mode')
+                    }
                 >
-                    {_('Expand connections')}
-                </Button>
+                    <IconButton
+                        onClick={() => store.toggleDragMode()}
+                        color={store.dragMode ? 'primary' : 'secondary'}
+                    >
+                        <EditIcon />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip
+                    title={
+                        store.displayConnections
+                            ? _('Hide connections')
+                            : _('Show connections')
+                    }
+                >
+                    <IconButton
+                        onClick={() => store.toggleDisplayConnections()}
+                        color={
+                            store.displayConnections ? 'primary' : 'secondary'
+                        }
+                    >
+                        <SettingsInputComponentIcon />
+                    </IconButton>
+                </Tooltip>
+                <TimelineZoomSlider />
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
             <STimelineTimeMarker ref={markerRef} />
         </WholeContainer>
     );
-};
+});
 
 const SControlPanel = styled(Row)`
     gap: ${spacingCss(1)};
     align-items: center;
+
+    & > span:first-child {
+        flex: 1;
+    }
 `;
 
 const SMainCanvas = styled('canvas')`

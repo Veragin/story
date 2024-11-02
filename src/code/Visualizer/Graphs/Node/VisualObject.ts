@@ -55,6 +55,19 @@ export abstract class VisualObject {
         return this.automaticDraw;
     }
 
+    setX(x: number) {
+        this.position.x = x;
+    }
+    setY(y: number) {
+        this.position.y = y;
+    }
+    setW(w: number) {
+        this.size.width = w;
+    }
+    setH(h: number) {
+        this.size.height = h;
+    }
+
     setPosition(position: TPoint): void {
         let changed = this.position.x !== position.x || this.position.y !== position.y;
         this.position = position;
