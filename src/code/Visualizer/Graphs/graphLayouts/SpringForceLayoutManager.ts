@@ -28,16 +28,20 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private maxIterations: number = 1000;
     private attractionK: number = 0.1;
     private repulsionK: number = 50;
+    private centeringK: number = 50;
+    private baseDeadZone: number = 400;     // Base dead zone for minimal graphs
+    private maxDeadZone: number = 1000;     // Maximum dead zone size
+    private maxCenteringDistance: number = 300;
+    private stableThreshold: number = 0.1;
     private initializePositionStrategy: InitializePositionStrategy;
     private nodes: NodeVisualObject[] = [];
 
     // Physics parameters
     private nodeVelocities: Map<string, NodeVelocity> = new Map();
-    private minMovement: number = 0.05;    // Smaller minimum movement threshold
-    private maxSpeed: number = 5;           // Reduced maximum speed for smoother animation
-    private forceScale: number = 0.2;      // Reduced force scale for smaller steps
-    private damping: number = 0.15;        // Damping factor for smoother movements
-
+    private minMovement: number = 0.05;
+    private maxSpeed: number = 5;
+    private forceScale: number = 0.2;
+    private damping: number = 0.15;
 
     constructor(width: number, height: number) {
         this.width = width;
@@ -47,6 +51,14 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.temperature = this.initialTemp;
         this.initializePositionStrategy = new LeftToRightInitializePositionStrategy();
     }
+
+    private calculateDynamicDeadZone(): number {
+        // Calculate dead zone based on number of nodes
+        // More nodes = larger dead zone, but with a maximum limit
+        const nodeCountFactor = Math.sqrt(this.nodes.length) / 2;
+        return Math.min(this.baseDeadZone * nodeCountFactor, this.maxDeadZone);
+    }
+
     private initializeVelocities(): void {
         this.nodes.forEach(node => {
             this.nodeVelocities.set(node.getId(), { vx: 0, vy: 0 });
@@ -77,7 +89,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private normalizeForce(force: Force): Force {
         const magnitude = Math.sqrt(force.dx * force.dx + force.dy * force.dy);
         if (magnitude > 0) {
-            // Normalize and scale the force
             return {
                 dx: (force.dx / magnitude) * Math.min(magnitude, this.maxSpeed),
                 dy: (force.dy / magnitude) * Math.min(magnitude, this.maxSpeed)
@@ -87,28 +98,21 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     private getOptimalDistance(source: NodeVisualObject, target: NodeVisualObject): number {
-        // Base optimal distance
         const baseDistance = this.k;
-
-        // Add the sizes of both nodes to the optimal distance
         const sourceSize = this.getNodeSize(source);
         const targetSize = this.getNodeSize(target);
-
-        // Return base distance plus the radii of both nodes
         return baseDistance + sourceSize + targetSize;
     }
 
-    private readonly MAX_REPULSION_DISTANCE = 200; // Adjust this value based on your needs
+    private readonly MAX_REPULSION_DISTANCE = 200;
 
     private calculateRepulsiveForces(): Map<string, Force> {
         const forces = new Map<string, Force>();
 
-        // Initialize forces for all nodes
         this.nodes.forEach(node => {
             forces.set(node.getId(), { dx: 0, dy: 0 });
         });
 
-        // Calculate repulsive forces between all pairs of nodes
         for (let i = 0; i < this.nodes.length; i++) {
             for (let j = i + 1; j < this.nodes.length; j++) {
                 const node1 = this.nodes[i];
@@ -116,29 +120,22 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 const pos1 = node1.getPosition();
                 const pos2 = node2.getPosition();
 
-                // Calculate distance and direction
                 const dx = pos2.x - pos1.x;
                 const dy = pos2.y - pos1.y;
                 const distance = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
 
-                // Skip if nodes are too far apart
                 if (distance > this.MAX_REPULSION_DISTANCE) {
                     continue;
                 }
 
-                // Get optimal distance considering node sizes
                 const optimalDistance = this.getOptimalDistance(node1, node2);
-
-                // Calculate repulsive force using optimal distance
                 const force = this.repulsionK * optimalDistance * optimalDistance / (distance * distance);
                 const forceX = (dx / distance) * force;
                 const forceY = (dy / distance) * force;
 
-                // Get existing forces
                 const force1 = forces.get(node1.getId())!;
                 const force2 = forces.get(node2.getId())!;
 
-                // Update forces
                 force1.dx -= forceX;
                 force1.dy -= forceY;
                 force2.dx += forceX;
@@ -146,7 +143,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             }
         }
 
-        // Normalize all forces
         forces.forEach((force, nodeId) => {
             const normalizedForce = this.normalizeForce(force);
             forces.set(nodeId, normalizedForce);
@@ -156,27 +152,21 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     private calculateAttractiveForces(graph: Graph, forces: Map<string, Force>): void {
-        // Calculate attractive forces along edges
         graph.getAllEdges().forEach(edge => {
             const source = edge.getSource();
             const target = edge.getTarget();
             const pos1 = source.getPosition();
             const pos2 = target.getPosition();
 
-            // Calculate distance and direction
             const dx = pos2.x - pos1.x;
             const dy = pos2.y - pos1.y;
             const distance = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
 
-            // Get optimal distance considering node sizes
             const optimalDistance = this.getOptimalDistance(source, target);
-
-            // Calculate attractive force based on difference from optimal distance
             const force = this.attractionK * (distance - optimalDistance);
             const forceX = (dx / distance) * force;
             const forceY = (dy / distance) * force;
 
-            // Apply forces to both nodes
             const force1 = forces.get(source.getId())!;
             const force2 = forces.get(target.getId())!;
 
@@ -187,13 +177,56 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         });
     }
 
+    private calculateCenteringForces(forces: Map<string, Force>): void {
+        const centerX = this.width / 2;
+        const centerY = this.height / 2;
+        const deadZone = this.calculateDynamicDeadZone();
+
+        this.nodes.forEach(node => {
+            if (node instanceof PassageNodeVisualObject && (node as PassageNodeVisualObject).isMounted) {
+                return;
+            }
+            if (node instanceof DraggableVisualObject && (node as DraggableVisualObject).isDragging()) {
+                return;
+            }
+
+            const pos = node.getPosition();
+            const force = forces.get(node.getId())!;
+            const velocity = this.nodeVelocities.get(node.getId())!;
+            
+            const dx = centerX - pos.x;
+            const dy = centerY - pos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < deadZone) {
+                return;
+            }
+
+            let forceStrength = 0;
+            if (distance > deadZone) {
+                forceStrength = Math.min(
+                    (distance - deadZone) / 
+                    (this.maxCenteringDistance - deadZone),
+                    1
+                );
+                
+                forceStrength = forceStrength * forceStrength * (3 - 2 * forceStrength);
+            }
+
+            if (forceStrength > 0) {
+                const forceMagnitude = this.centeringK * forceStrength;
+                force.dx += (dx / distance) * forceMagnitude;
+                force.dy += (dy / distance) * forceMagnitude;
+            }
+        });
+    }
+
     private applyForces(forces: Map<string, Force>): number {
         let totalMovement = 0;
 
         this.nodes.forEach(node => {
             const nodeId = node.getId();
 
-            // Skip mounted or dragging nodes
             if (node instanceof PassageNodeVisualObject) {
                 const passageNode = node as PassageNodeVisualObject;
                 if (passageNode.isMounted) return;
@@ -206,15 +239,12 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             const velocity = this.nodeVelocities.get(nodeId)!;
             const pos = node.getPosition();
 
-            // Apply damping to current velocity
             velocity.vx *= this.damping;
             velocity.vy *= this.damping;
 
-            // Update velocity with new forces
             velocity.vx += force.dx * this.forceScale;
             velocity.vy += force.dy * this.forceScale;
 
-            // Limit velocity to max speed
             const speed = Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
             if (speed > this.maxSpeed) {
                 const scale = this.maxSpeed / speed;
@@ -222,7 +252,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 velocity.vy *= scale;
             }
 
-            // Apply velocity if it's above minimum threshold
             if (Math.abs(velocity.vx) > this.minMovement || Math.abs(velocity.vy) > this.minMovement) {
                 const newPos = {
                     x: pos.x + velocity.vx,
@@ -230,56 +259,43 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 };
                 node.setPosition(newPos);
                 totalMovement += Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
+            } else {
+                velocity.vx = 0;
+                velocity.vy = 0;
             }
         });
 
         return totalMovement;
     }
 
-
     private initializePositions(nodes: NodeVisualObject[], edges: EdgeVisualObject[]): void {
         this.initializePositionStrategy.initializePositions(nodes, edges, this.width, this.height);
     }
 
     private adjustNodePositions(): void {
-        // Calculate node sizes to account for their dimensions
         this.nodes.forEach(node => {
-            // Skip dragging nodes
-            if (node instanceof DraggableVisualObject) {
-                const draggable = node as DraggableVisualObject;
-                if (draggable.isDragging()) {
-                    return;
-                }
+            if (node instanceof DraggableVisualObject && (node as DraggableVisualObject).isDragging()) {
+                return;
             }
 
-            // Skip mounted nodes
-            if (node instanceof PassageNodeVisualObject) {
-                const mounted = node as PassageNodeVisualObject;
-                if (mounted.isMounted) {
-                    return;
-                }
+            if (node instanceof PassageNodeVisualObject && (node as PassageNodeVisualObject).isMounted) {
+                return;
             }
 
             const pos = node.getPosition();
             const size = node.getSize();
 
-            var x = Math.max(-size.width / 2, Math.min(this.width - size.width / 2, pos.x));
-            var y = Math.max(0, Math.min(this.height - size.height / 2, pos.y));
+            const x = Math.max(-size.width / 2, Math.min(this.width - size.width / 2, pos.x));
+            const y = Math.max(0, Math.min(this.height - size.height / 2, pos.y));
             node.setPosition({ x, y });
         });
     }
 
     private calculateSingleIteration(graph: Graph): boolean {
-        // Calculate repulsive forces between all nodes
         const forces = this.calculateRepulsiveForces();
-
-        // Calculate attractive forces along edges
         this.calculateAttractiveForces(graph, forces);
-
-        // Apply forces and get total movement
+        this.calculateCenteringForces(forces);
         const totalMovement = this.applyForces(forces);
-
-        // Return whether we should continue (significant movement occurred)
         return totalMovement > this.minTemp;
     }
 
@@ -290,14 +306,12 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
         const forces = this.calculateRepulsiveForces();
         this.calculateAttractiveForces(graph, forces);
+        this.calculateCenteringForces(forces);
         this.applyForces(forces);
         this.adjustNodePositions();
-
-
     }
 
     destroy(): void {
         // Nothing to destroy
     }
-
 }

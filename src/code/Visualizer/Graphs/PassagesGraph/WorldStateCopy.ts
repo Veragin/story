@@ -10,8 +10,6 @@ export class WorldStateCopy {
 
     constructor() {
         this.readOnlyState = this.createBaseState();
-        // Freeze the state to prevent accidental modifications
-        Object.freeze(this.readOnlyState);
     }
 
     /**
