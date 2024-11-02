@@ -10,8 +10,7 @@ import {
 import { useEffect, useRef } from 'react';
 import { GraphGenerator } from './Graphs/GraphGenerator';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { GraphAnimationHandler } from './Graphs/animation.ts/LayoutAnimationManager';
-import { KamadaKawaiLayoutManager } from './Graphs/graphLayouts/KamadaKawaiLayoutManager';
+import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
 
 export const EventPassages = () => {
     const store = useVisualizerStore();
@@ -20,7 +19,6 @@ export const EventPassages = () => {
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
 
-    // Set timeline canvas in store
     useEffect(() => {
         assertNotNullish(mainCanvasRef.current);
         assertNotNullish(timelineCanvasRef.current);
@@ -39,14 +37,14 @@ export const EventPassages = () => {
         );
 
         const graph = generator.generate({
-            nodeCount: 20,
-            edgeCount: 40,
+            nodeCount: 3,
+            edgeCount: 2,
             layout: 'circular',
             canvasWidth: store.timelineEvents!.canvasManager!.getWidth(),
             canvasHeight: store.timelineEvents!.canvasManager!.getHeight(),
         });
 
-        const animationHandler = new GraphAnimationHandler(graph, graph.getLayoutManager() as KamadaKawaiLayoutManager);
+        const animationHandler = new GraphAnimationHandler(graph, graph.getLayoutManager());
         animationHandler.startAnimation();
 
         return () => {

@@ -10,7 +10,7 @@ export class Graph {
     private nodes: Map<string, NodeVisualObject> = new Map();
     private edges: Map<string, EdgeVisualObject> = new Map();
     private layoutManager: GraphLayoutManager;
-    
+
     constructor(canvasManager: CanvasManager) {
         this.canvasManager = canvasManager;
         this.layoutManager = new CircularGraphLayoutManager(
@@ -77,6 +77,8 @@ export class Graph {
     }
 
     getNode(id: string): NodeVisualObject | undefined {
+        console.log("getNode", id);
+        console.log(this.nodes);
         return this.nodes.get(id);
     }
 
@@ -126,4 +128,5 @@ export class Graph {
     layout(): void {
         this.layoutManager.layout(this);
     }
+
 }

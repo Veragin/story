@@ -29,6 +29,7 @@ export class CanvasManager {
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
         this.canvas.addEventListener('mouseleave', this.handleMouseUp);
         this.canvas.addEventListener('dblclick', this.handleMouseClick);
+        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
     private getMousePoint(event: MouseEvent): TPoint {
@@ -43,22 +44,36 @@ export class CanvasManager {
         const point = this.getMousePoint(event);
         const objectsAtPoint = this.getTopObjectsAtPoint(point);
 
-        // Find the topmost draggable object
-        const draggableObject = objectsAtPoint.find((obj) => isDraggableObject(obj) && obj.isDraggable()) as
-            | DraggableVisualObject
-            | undefined;
+        if (event.button === 0) {
+            // Find the topmost draggable object
+            const draggableObject = objectsAtPoint.find((obj) => isDraggableObject(obj) && obj.isDraggable()) as
+                | DraggableVisualObject
+                | undefined;
 
-        if (draggableObject) {
-            this.draggedObject = draggableObject;
-            draggableObject.startDrag(point);
+            if (draggableObject) {
+                this.draggedObject = draggableObject;
+                draggableObject.startDrag(point);
 
-            // Increase z-index while dragging // TODO maybe just set to max z-index
-            const currentZIndex = draggableObject.zIndex;
-            const highestZIndex = Math.max(...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex));
-            if (currentZIndex <= highestZIndex) {
-                draggableObject.setZIndex(highestZIndex + 1);
+                // Increase z-index while dragging // TODO maybe just set to max z-index
+                const currentZIndex = draggableObject.zIndex;
+                const highestZIndex = Math.max(...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex));
+                if (currentZIndex <= highestZIndex) {
+                    draggableObject.setZIndex(highestZIndex + 1);
+                }
             }
         }
+
+        // Handle right button down events
+        if (event.button === 2) {
+            Array.from(this.visualObjects)
+                .reverse()
+                .forEach((obj) => {
+                    if (isClickableObject(obj[0])) {
+                        obj[0].handleRightDown(point);
+                    }
+                });
+        }
+
     };
 
     private handleMouseMove = (event: MouseEvent) => {
@@ -100,6 +115,7 @@ export class CanvasManager {
 
     private handleMouseClick = (event: MouseEvent) => {
         const point = this.getMousePoint(event);
+        event.preventDefault();
 
         if (this.draggedObject) {
             return;
@@ -113,7 +129,7 @@ export class CanvasManager {
                     obj[0].handleClick(point);
                 }
             });
-    };
+    }
 
     private handleMouseUp = (event: MouseEvent) => {
         if (this.draggedObject) {
@@ -121,6 +137,17 @@ export class CanvasManager {
             this.draggedObject.endDrag(point);
             this.draggedObject = null;
         }
+    };
+
+
+    private handleContextMenu = (event: MouseEvent) => {
+        event.preventDefault();
+        return false;
+    };
+
+
+    private handleVisualObjectChange = () => {
+        this.draw();
     };
 
     private getTopObjectsAtPoint = (point: TPoint): VisualObject[] => {
@@ -138,10 +165,6 @@ export class CanvasManager {
             // If z-index is the same, use insertion order
             return (this.visualObjects.get(a) ?? 0) - (this.visualObjects.get(b) ?? 0);
         });
-    };
-
-    private handleVisualObjectChange = () => {
-        this.draw();
     };
 
     addObject = (obj: VisualObject) => {
@@ -188,6 +211,7 @@ export class CanvasManager {
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
         this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
         this.canvas.removeEventListener('dblclick', this.handleMouseClick);
+        this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
 
         // Clean up object subscriptions
         for (const obj of this.visualObjects) {
@@ -203,7 +227,7 @@ export class CanvasManager {
     getHeight(): number | undefined {
         return this.canvas.height;
     }
-    
+
     getWidth(): number | undefined {
         return this.canvas.width;
     }

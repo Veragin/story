@@ -103,3 +103,4 @@ export class NodeVisualObject extends DraggableVisualObject {
         return this.id;
     }
 }
+

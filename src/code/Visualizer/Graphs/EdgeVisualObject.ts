@@ -83,7 +83,7 @@ export class EdgeVisualObject extends ClickableVisualObject {
         if (this._arrow) {
             const angle = Math.atan2(targetPos.y - sourcePos.y, targetPos.x - sourcePos.x);
             const arrowLength = 10;
-            const arrowWidth = 8; // TODO
+            //const arrowWidth = 8; // TODO
 
             ctx.beginPath();
             ctx.fillStyle = this._color;

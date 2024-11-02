@@ -1,4 +1,3 @@
-import { DurationHelper } from '../DurationHelper';
 import { TimeManager } from 'time/TimeManager';
 import { Store } from '../Store';
 import { TimelineMouseListener } from './TimelineMouseListener';

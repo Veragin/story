@@ -17,7 +17,6 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     private idealEdgeLength: number;                // Ideal edge length between nodes
     private springConstant: number;                // Spring constant
     private epsilon: number = 0.01;    // Threshold for convergence
-    private maxIterations: number = 1000;  // Max outer loop iterations
     private innerIterations: number = 10; // Max inner loop iterations for each node
     private initializePositionStrategy: InitializePositionStrategy;
     
@@ -79,7 +78,6 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         }
 
         // Perform layout adjustments by iterating until convergence or max iterations
-        let iteration = 0;
         this.prevEnergy = Infinity;
         this.currentEnergy = this.calculateTotalEnergy(this.nodes, this.springConstants, this.idealLengths);
 
@@ -283,6 +281,14 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     performSingleIteration(): void {
         this.calclateSingleIteration();
         this.adjustNodePositions(this.nodes);
+    }
+
+    stop(): void {
+        // No cleanup needed
+    }
+
+    destroy(): void {
+        // No cleanup needed
     }
 }
 

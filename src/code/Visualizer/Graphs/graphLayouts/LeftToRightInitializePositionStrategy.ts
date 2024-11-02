@@ -114,7 +114,7 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
             const angle = (2 * Math.PI * i) / nodes.length;
             const x = centerX + radius * Math.cos(angle);
             const y = centerY + radius * Math.sin(angle);
-            node.setRealPosition({ x, y });
+            node.setPosition({ x, y });
         });
     }
 
@@ -145,7 +145,7 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
         const incomingEdges = new Map<Set<NodeVisualObject>, number>();
         sccs.forEach(scc => incomingEdges.set(scc, 0));
 
-        sccsEdges.forEach((edges, sourceScc) => {
+        sccsEdges.forEach((edges) => {
             edges.forEach(edge => {
                 const targetScc = sccs.find(scc => scc.has(edge.getTarget()))!;
                 incomingEdges.set(targetScc, (incomingEdges.get(targetScc) || 0) + 1);
@@ -156,7 +156,6 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
         // Calculate positions for each SCC using a modified level-based layout
         const sccLevels = this.assignSCCLevels(sccs, sccsEdges, rootSccs);
-        const maxLevel = Math.max(...Array.from(sccLevels.values()));
 
         // Position SCCs by levels
         const levelGroups = new Map<number, Set<NodeVisualObject>[]>();

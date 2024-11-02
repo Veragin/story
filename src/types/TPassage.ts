@@ -5,7 +5,8 @@ export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId, TEvent
 
 export type TPassage<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> =
     | TPassageScreen<E, Ch, Ids>
-    | TPassageTransition<E, Ch>;
+    | TPassageTransition<E, Ch>
+    | TPassageLinear<E, Ch, Ids>;
 
 export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> = {
     eventId: E;
@@ -48,7 +49,7 @@ export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
 };
 
-export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids extends TEventPassageId<E>> = {
+export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> = {
     eventId: E;
     characterId: Ch;
     id: string;

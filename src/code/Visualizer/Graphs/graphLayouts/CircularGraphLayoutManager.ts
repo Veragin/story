@@ -30,7 +30,13 @@ export class CircularGraphLayoutManager implements GraphLayoutManager {
         }
     }
 
-    performSingleIteration(graph: Graph): void {
+    performSingleIteration(): void {
         throw new Error("Method not implemented.");
     }
+
+    destroy(): void {
+        // Nothing to do
+    }
+
+
 }

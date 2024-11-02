@@ -1,9 +1,10 @@
 import { TextContent } from "./Node/TextContent";
 import { CanvasManager } from "./CanvasManager";
 import { HorizontallyScalableNodeVisualObject } from "./Node/HorizontallyScalableNodeVisualObject";
-import { EdgeVisualObject } from "./EdgeVisualObject";
 import { Graph } from "./Graph";
 import { FreeDragStrategy } from "./Node/dragAndDropMovingStrategies/FreeDragStrategy";
+import { PassageEdgeVisualObject } from "./PassagesGraph/PassageEdgeVisualObject";
+import { PassageNodeVisualObject } from "./PassagesGraph/PassageNodeVisualObject";
 import { SpringForceLayoutManager } from "./graphLayouts/SpringForceLayoutManager";
 
 type GraphGeneratorOptions = {
@@ -20,6 +21,8 @@ type GraphGeneratorOptions = {
 
 export class GraphGenerator {
     private defaultColors = ['#e3f2fd', '#f3e5f5', '#e8f5e9', '#fff3e0', '#fce4ec'];
+    private onTargetSelectedColor = '#d32f2f';
+    private onSourceSelectedColor = '#1976d2';
     private defaultOptions: Required<GraphGeneratorOptions> = {
         nodeCount: 5,
         edgeCount: 6,
@@ -40,14 +43,14 @@ export class GraphGenerator {
 
     generate(options: GraphGeneratorOptions): Graph {
         const opts = { ...this.defaultOptions, ...options };
-        
+
         // Clear existing graph
         this.graph.clear();
 
         // Set layout manager based on options
         if (opts.layout === 'circular') {
             this.graph.setLayoutManager(new SpringForceLayoutManager(
-                opts.canvasWidth / 1.5,
+                opts.canvasWidth,
                 opts.canvasHeight
             ));
         }
@@ -67,10 +70,10 @@ export class GraphGenerator {
         while (edgeCount < targetEdgeCount) {
             const sourceIndex = Math.floor(Math.random() * opts.nodeCount);
             let targetIndex = Math.floor(Math.random() * opts.nodeCount);
-            
+
             // Avoid self-loops and duplicate edges
-            while (targetIndex === sourceIndex || 
-                   generatedEdges.has(`${sourceIndex}-${targetIndex}`)) {
+            while (targetIndex === sourceIndex ||
+                generatedEdges.has(`${sourceIndex}-${targetIndex}`)) {
                 targetIndex = Math.floor(Math.random() * opts.nodeCount);
                 if (generatedEdges.size >= maxPossibleEdges) break;
             }
@@ -78,19 +81,21 @@ export class GraphGenerator {
             if (generatedEdges.size >= maxPossibleEdges) break;
 
             generatedEdges.add(`${sourceIndex}-${targetIndex}`);
-            
+
             const sourceNode = this.graph.getNode(`node-${sourceIndex}`);
             const targetNode = this.graph.getNode(`node-${targetIndex}`);
 
             if (sourceNode && targetNode) {
-                const edge = new EdgeVisualObject(
+                const edge = new PassageEdgeVisualObject(
                     sourceNode,
                     targetNode,
                     '#999999',
                     1,
                     true
                 );
-                
+                edge.onTargetSelectedColor = this.onTargetSelectedColor;
+                edge.onSourceSelectedColor = this.onSourceSelectedColor;
+
                 this.graph.addEdge(edge, `edge-${edgeCount}`);
                 edgeCount++;
             }
@@ -108,18 +113,17 @@ export class GraphGenerator {
 
         const textContent = new TextContent({
             position: {
-                x: position.x + opts.nodeWidth / 2 - this.getWidthOfString(label, 16) / 2,
-                y: position.y + opts.nodeHeight / 2 - this.getHeightsOfString(label, 16) / 2
+                x: position.x + opts.nodeWidth / 2 - GraphGenerator.getWidthOfString(label, 16) / 2,
+                y: position.y + opts.nodeHeight / 2 - GraphGenerator.getHeightsOfString(label, 16) / 2
             },
             size: {
-                width: this.getWidthOfString(label, 16),
-                height: this.getHeightsOfString(label, 16)
+                width: GraphGenerator.getWidthOfString(label, 16),
+                height: GraphGenerator.getHeightsOfString(label, 16)
             },
             text: label
-        }
-        );
+        });
 
-        const node = new HorizontallyScalableNodeVisualObject(
+        const node = new PassageNodeVisualObject(
             position,
             { width: opts.nodeWidth, height: opts.nodeHeight },
             {
@@ -137,12 +141,12 @@ export class GraphGenerator {
 
         // Add hover effects
         this.addNodeInteractions(node);
-        
+
         this.canvasManager.addObject(textContent);
         return node;
     }
 
-    private addNodeInteractions(node: HorizontallyScalableNodeVisualObject) {
+    private addNodeInteractions(node: PassageNodeVisualObject) {
         node.onHoverEnter.subscribe(() => {
             node.setBorder({
                 ...node.getBorder(),
@@ -164,7 +168,7 @@ export class GraphGenerator {
         });
     }
 
-    private getWidthOfString(str: string, fontSize: number): number {
+    public static getWidthOfString(str: string, fontSize: number): number {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -174,7 +178,7 @@ export class GraphGenerator {
         return ctx.measureText(str).width;
     }
 
-    private getHeightsOfString(str: string, fontSize: number): number {
+    public static getHeightsOfString(str: string, fontSize: number): number {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
