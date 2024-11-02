@@ -1,16 +1,14 @@
 import { CanvasManager } from "../CanvasManager";
 import { Graph } from "../Graph";
-import { GraphGenerator } from "../GraphGenerator";
 import { SpringForceLayoutManager } from "../graphLayouts/SpringForceLayoutManager";
 import { FreeDragStrategy } from "../Node/dragAndDropMovingStrategies/FreeDragStrategy";
 import { TextContent } from "../Node/TextContent";
 import { PassageEdgeVisualObject } from "./PassageEdgeVisualObject";
 import { PassageNodeVisualObject } from "./PassageNodeVisualObject";
-import { Title } from '../../../Components/Text';
 import { TWorldState } from 'data/TWorldState';
-import { s } from "worldState";
-import { TPassage } from "types/TPassage";
+import { TPassage, TPassageTransition } from "types/TPassage";
 import { NodeVisualObject } from "../Node/NodeVisualObject";
+import { register } from "data/register";
 
 export class PassageGraphCreator {
     private readonly canvasManager: CanvasManager;
@@ -36,50 +34,53 @@ export class PassageGraphCreator {
         this.canvasHeight = canvasHeight;
     }
 
-    createGraph(passages: Record<string, any>): Graph {
+    async createGraph(passages: Record<string, any>): Promise<Graph> {
+        console.log('createGraph called with passages:', Object.keys(passages));
         this.initializeCharacterColors(passages);
-
+    
         const graph = new Graph(this.canvasManager);
-
+    
         graph.setLayoutManager(new SpringForceLayoutManager(
             this.canvasWidth,
             this.canvasHeight
         ));
-
+    
         // Create nodes for each passage
         for (const [passageId, passageData] of Object.entries(passages)) {
-            const node = this.createNode(passageId, passageData);
+            console.log('Creating node for passage:', passageId);
+            const passage = passageData({} as TWorldState);
+        
+            let node: NodeVisualObject | undefined;
+            switch (passage.type) {
+                case 'screen':
+                    console.log('Creating screen node:', passageId);
+                    node = await this.createScreenPassageNode(passageId, passage);
+                    break;
+                case 'transition':
+                    console.log('Creating transition node:', passageId);
+                    node = await this.createTransitionPassageNode(passageId, passage);
+                    break;
+                case 'linear':
+                    console.log('Creating linear node:', passageId);
+                    node = await this.createLinearPassageNode(passageId, passage);
+                    break;
+            }
+            if (!node)
+                continue;
+        
+            console.log('Adding node to graph:', passageId, node);
             graph.addNode(node, passageId);
         }
-
         // Create edges based on passage links
-        this.createEdges(graph, passages);
-
+        await this.createEdges(graph, passages);
+    
         // Apply layout
         graph.layout();
-
+    
         return graph;
     }
 
-    private initializeCharacterColors(passages: Record<string, any>): void {
-        // Extract unique character IDs from passage IDs
-        const characterIds = new Set<string>();
-
-        for (const passageId of Object.keys(passages)) {
-            const parts = passageId.split('-');
-            if (parts.length >= 2) {
-                characterIds.add(parts[1]);
-            }
-        }
-
-        // Assign colors to characters
-        Array.from(characterIds).forEach((characterId, index) => {
-            const colorIndex = index % this.colorPalette.length;
-            this.characterColors.set(characterId, this.colorPalette[colorIndex]);
-        });
-    }
-
-    private createNode(passageId: string, passage: any): PassageNodeVisualObject {
+    async createScreenPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
         const characterId = passageId.split('-')[1];
         const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
 
@@ -110,7 +111,7 @@ export class PassageGraphCreator {
                 x: position.x,
                 y: position.y
             },
-            size: size, 
+            size: size,
             text: title,
             font: FONT,
             color: '#000000',
@@ -137,11 +138,170 @@ export class PassageGraphCreator {
         return node;
     }
 
+    async createTransitionPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
+        // get link and get passage of the link
+        // show the title of link passage instead
+        const parts = passage.nextPassageId.split('-');
+        if (parts.length < 2) 
+            throw new Error('Invalid passageId');
+
+        const eventId = parts[0];
+        const characterId = parts[1];
+
+        // Try to get the title from the register
+        let title: string = passageId;
+        // Get the passage module
+        const linkPassageModule = await register.passages[eventId as keyof typeof register.passages]();
+        const linkPassages = linkPassageModule.default;
+
+        // Get the passage data
+        let linkPassageData = (linkPassages)[passageId as keyof typeof linkPassages];
+        if (typeof linkPassageData === 'function') {
+            const [linkPassageId, linkPassageDataFunction] = Object.entries(linkPassages)[0];
+            const linkPassage = linkPassageDataFunction({} as TWorldState);
+            const linkEventId = linkPassageId.split('-')[0];
+            const linkEvent = register.events[linkEventId as keyof typeof register.events];
+            if (linkEvent) {
+                title = linkEvent.title + ' - ' + linkPassage.title || linkPassageId;
+            } else {
+                title = linkPassage.title || linkPassageId;
+            }
+        }
+
+        let borderColor = '#666666';
+        if(!title){
+            title = passage.id;
+            borderColor = '#ff0000';
+        }
+    
+        const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
+        const minNodeWidth = 120;
+        const padding = 30;
+        const fontSize = 16;
+        const font = `${fontSize}px Roboto`;
+
+        const textWidth = PassageGraphCreator.getWidthOfString(title, font);
+        const textHeight = PassageGraphCreator.getHeightsOfString(font);
+
+        const size = {
+            width: Math.max(minNodeWidth, textWidth + padding),
+            height: textHeight + padding
+        };
+
+        const position = { x: 0, y: 0 };
+
+        const textContent = new TextContent({
+            position: {
+                x: position.x,
+                y: position.y
+            },
+            size: size,
+            text: title,
+            font: font,
+            color: '#666666',
+            alignment: 'middle_center'
+        });
+
+        const node = new PassageNodeVisualObject(
+            position,
+            size,
+            {
+                color: borderColor,
+                width: 1,
+                style: 'dashed',
+                radius: 8,
+            },
+            textContent,
+            backgroundColor
+        );
+
+        this.setupNodeInteractions(node);
+        this.canvasManager.addObject(textContent);
+
+        return node;
+    }
+
+    async createLinearPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
+        const characterId = passageId.split('-')[1];
+        const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
+
+        // Constants for node sizing
+        const MIN_NODE_WIDTH = 120;
+        const PADDING = 30;
+        const FONT_SIZE = 16;
+        const FONT = `${FONT_SIZE}px Roboto`;
+
+        const title = passage.title || passageId;
+
+        // Calculate text dimensions
+        const textWidth = PassageGraphCreator.getWidthOfString(title, FONT);
+        const textHeight = PassageGraphCreator.getHeightsOfString(FONT);
+
+        // Calculate node size with minimum width
+        const size = {
+            width: Math.max(MIN_NODE_WIDTH, textWidth + PADDING),
+            height: textHeight + PADDING
+        };
+
+        // Start with position at origin
+        const position = { x: 0, y: 0 };
+
+        // Create text content with middle_center alignment
+        const textContent = new TextContent({
+            position: {
+                x: position.x,
+                y: position.y
+            },
+            size: size,
+            text: title,
+            font: FONT,
+            color: '#000000',
+            alignment: 'middle_center'
+        });
+
+        // Create node
+        const node = new PassageNodeVisualObject(
+            position,
+            size,
+            {
+                color: '#999999',
+                width: 1,
+                style: 'solid',
+                radius: 8
+            },
+            textContent,
+            backgroundColor
+        );
+
+        this.setupNodeInteractions(node);
+        this.canvasManager.addObject(textContent);
+
+        return node;
+    }
+
+    private initializeCharacterColors(passages: Record<string, any>): void {
+        // Extract unique character IDs from passage IDs
+        const characterIds = new Set<string>();
+
+        for (const passageId of Object.keys(passages)) {
+            const parts = passageId.split('-');
+            if (parts.length >= 2) {
+                characterIds.add(parts[1]);
+            }
+        }
+
+        // Assign colors to characters
+        Array.from(characterIds).forEach((characterId, index) => {
+            const colorIndex = index % this.colorPalette.length;
+            this.characterColors.set(characterId, this.colorPalette[colorIndex]);
+        });
+    }
+
     // Helper methods for text measurement
     static getWidthOfString(text: string, font: string): number {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        if (!context) 
+        if (!context)
             return 0;
 
         context.font = font;
@@ -175,32 +335,32 @@ export class PassageGraphCreator {
         });
     }
 
-    private createEdges(graph: Graph, passages: Record<string, any>): void {
+    private async createEdges(graph: Graph, passages: Record<string, any>): Promise<void> {
         let edgeCounter = 0;
-    
+
         for (const [passageId, passageData] of Object.entries(passages)) {
             const sourceNode = graph.getNode(passageId);
-            if (!sourceNode) 
+            if (!sourceNode)
                 continue;
-    
+
             // Handle different passage types
             if (typeof passageData === 'function') {
                 // For function-based passages, we need to get the actual passage object
                 const passage = passageData({} as TWorldState);
-                this.createEdgesForPassage(passage, sourceNode, graph, edgeCounter);
+                edgeCounter = await this.createEdgesForPassage(passage, sourceNode, graph, edgeCounter);
                 continue;
             }
-    
+
             this.createEdgesForPassage(passageData, sourceNode, graph, edgeCounter);
         }
     }
-    
-    private createEdgesForPassage(
-        passage: TPassage<any, any, any>, 
-        sourceNode: NodeVisualObject, 
-        graph: Graph, 
+
+    private async createEdgesForPassage(
+        passage: TPassage<any, any, any>,
+        sourceNode: NodeVisualObject,
+        graph: Graph,
         edgeCounter: number
-    ): void {
+    ): Promise<number> {
         switch (passage.type) {
             case 'screen':
                 // Handle screen type passages
@@ -209,72 +369,63 @@ export class PassageGraphCreator {
                         section.links.forEach(link => {
                             const targetNode = graph.getNode(link.passageId);
                             if (!targetNode) return;
-    
+
+                            const zIndex = 1;
                             const edge = this.createPassageEdge(
                                 sourceNode,
                                 targetNode,
-                                link.autoPriortiy || 1
+                                zIndex
                             );
-    
+
                             graph.addEdge(edge, `edge-${edgeCounter++}`);
                         });
                     }
-    
+
                     // Handle redirects
                     if (section.redirect) {
                         const targetNode = graph.getNode(section.redirect);
                         if (!targetNode) return;
-    
+
+                        const zIndex = 0;
                         const edge = this.createPassageEdge(
                             sourceNode,
                             targetNode,
-                            0, // Lower priority for redirect edges
-                            '#666666' // Different color for redirect edges
+                            zIndex,
+                            '#ff0000'
                         );
-    
+
                         graph.addEdge(edge, `edge-${edgeCounter++}`);
                     }
                 });
                 break;
-    
+
             case 'transition':
-                // Handle transition type passages
-                const targetNode = graph.getNode(passage.nextPassageId);
-                if (!targetNode) return;
-    
-                const edge = this.createPassageEdge(
-                    sourceNode,
-                    targetNode,
-                    0,
-                    '#666666' // Different color for transition edges
-                );
-    
-                graph.addEdge(edge, `edge-${edgeCounter++}`);
+                // do nothing
                 break;
-    
             case 'linear':
-                // Handle linear type passages if nextPassageId exists
                 if (passage.nextPassageId) {
                     const targetNode = graph.getNode(passage.nextPassageId);
-                    if (!targetNode) return;
-    
+                    if (!targetNode)
+                        return edgeCounter;
+
                     const edge = this.createPassageEdge(
                         sourceNode,
                         targetNode,
                         0,
-                        '#666666' // Different color for linear edges
+                        '#666666'
                     );
-    
+
                     graph.addEdge(edge, `edge-${edgeCounter++}`);
                 }
                 break;
         }
+        return edgeCounter;
     }
-    
+
     private createPassageEdge(
         source: NodeVisualObject,
         target: NodeVisualObject,
-        priority: number = 1,
+        zIndex: number = 1,
         color: string = '#999999'
     ): PassageEdgeVisualObject {
         const edge = new PassageEdgeVisualObject(
@@ -284,14 +435,14 @@ export class PassageGraphCreator {
             1,
             true
         );
-    
+
         // Set colors for edge highlighting
         edge.onTargetSelectedColor = '#d32f2f';
         edge.onSourceSelectedColor = '#1976d2';
-    
+
         // Adjust z-index based on priority
-        edge.setZIndex(priority);
-    
+        edge.setZIndex(zIndex);
+
         return edge;
     }
 }

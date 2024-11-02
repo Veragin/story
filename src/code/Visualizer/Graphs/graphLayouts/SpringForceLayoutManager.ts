@@ -98,6 +98,8 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         return baseDistance + sourceSize + targetSize;
     }
 
+    private readonly MAX_REPULSION_DISTANCE = 200; // Adjust this value based on your needs
+
     private calculateRepulsiveForces(): Map<string, Force> {
         const forces = new Map<string, Force>();
 
@@ -118,6 +120,11 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 const dx = pos2.x - pos1.x;
                 const dy = pos2.y - pos1.y;
                 const distance = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
+
+                // Skip if nodes are too far apart
+                if (distance > this.MAX_REPULSION_DISTANCE) {
+                    continue;
+                }
 
                 // Get optimal distance considering node sizes
                 const optimalDistance = this.getOptimalDistance(node1, node2);
@@ -244,7 +251,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                     return;
                 }
             }
-    
+
             // Skip mounted nodes
             if (node instanceof PassageNodeVisualObject) {
                 const mounted = node as PassageNodeVisualObject;
@@ -252,10 +259,10 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                     return;
                 }
             }
-    
+
             const pos = node.getPosition();
             const size = node.getSize();
-            
+
             var x = Math.max(-size.width / 2, Math.min(this.width - size.width / 2, pos.x));
             var y = Math.max(0, Math.min(this.height - size.height / 2, pos.y));
             node.setPosition({ x, y });
@@ -286,8 +293,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.applyForces(forces);
         this.adjustNodePositions();
 
-        // Gradual temperature reduction for smoother cooling
-        this.temperature *= 0.99;
+
     }
 
     destroy(): void {

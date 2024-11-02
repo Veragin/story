@@ -51,7 +51,7 @@ export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObjec
         });
 
         this.onRightDown.subscribe(() => {
-            this.isMounted = !this.isMounted;
+            this.isMounted = false;
         });
 
         this.onDragEnd.subscribe(() => {

@@ -8,16 +8,19 @@ import {
     MARKER_TIME_CLASS,
 } from './ts/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
-import { GraphGenerator } from './Graphs/GraphGenerator';
 import { assertNotNullish } from 'code/utils/typeguards';
+import { PassageGraphCreator } from './Graphs/PassagesGraph/PassageGraphCreator';
+import { register } from 'data/register';
+import { CanvasManager } from './Graphs/CanvasManager';
+import { Store } from './ts/Store';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
-
 export const EventPassages = () => {
     const store = useVisualizerStore();
     const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
+    const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
 
     useEffect(() => {
         assertNotNullish(mainCanvasRef.current);
@@ -25,42 +28,67 @@ export const EventPassages = () => {
         assertNotNullish(containerRef.current);
         assertNotNullish(markerRef.current);
 
-        store.init(
-            mainCanvasRef.current,
-            timelineCanvasRef.current,
-            containerRef.current,
-            markerRef.current
-        );
+        let isActive = true;  // Flag to track if effect is still active
 
-        const generator = new GraphGenerator(
-            store.timelineEvents!.canvasManager!
-        );
+        const initGraph = async () => {
+            if (!isActive) return;  // Check if still active before proceeding
 
-        const graph = generator.generate({
-            nodeCount: 3,
-            edgeCount: 2,
-            layout: 'circular',
-            canvasWidth: store.timelineEvents!.canvasManager!.getWidth(),
-            canvasHeight: store.timelineEvents!.canvasManager!.getHeight(),
-        });
+            store.init(
+                mainCanvasRef.current!,
+                timelineCanvasRef.current!,
+                containerRef.current!,
+                markerRef.current!
+            );
 
-        const animationHandler = new GraphAnimationHandler(graph, graph.getLayoutManager());
-        animationHandler.startAnimation();
+            const canvasManager = store.timelineEvents?.canvasManager;
+            if (!canvasManager) return;
 
+            const canvasWidth = canvasManager.getWidth();
+            const canvasHeight = canvasManager.getHeight();
+            if (!canvasWidth || !canvasHeight) return;
+
+            const eventId = 'village';
+
+            // Create graph
+            if (register.passages[eventId]) {
+                const graphCreator = new PassageGraphCreator(
+                    canvasManager,
+                    canvasWidth,
+                    canvasHeight
+                );
+                const passages = await register.passages[eventId]();
+                if (!isActive) return;  // Check again after async operation
+
+                const graph = await graphCreator.createGraph(passages.default);
+                if (!isActive) return;  // Check again after async operation
+
+                graphAnimationHandlerRef.current = new GraphAnimationHandler(graph);
+                graphAnimationHandlerRef.current.startAnimation();
+            }
+        };
+
+        initGraph();
+
+        // Cleanup function
         return () => {
+            isActive = false;  // Mark effect as inactive
+            if (graphAnimationHandlerRef.current) {
+                graphAnimationHandlerRef.current.stopAnimation();
+                graphAnimationHandlerRef.current = null;
+            }
             store.deinit();
         };
-    }, []);
+    }, []); // Empty dependency array
 
     return (
         <WholeContainer ref={containerRef}>
             <SControlPanel>
-                <SmallText>{_('Event Timeline')}</SmallText>
+                <SmallText>Event Timeline</SmallText>
                 <Button
                     variant="contained"
                     onClick={() => console.log('Add event')}
                 >
-                    {_('Expand connections')}
+                    Expand connections
                 </Button>
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
@@ -69,6 +97,38 @@ export const EventPassages = () => {
         </WholeContainer>
     );
 };
+
+
+const createPassageGraph = async (
+    canvasManager: CanvasManager,
+    canvasWidth: number,
+    canvasHeight: number,
+    store: Store,
+    eventId: keyof typeof register.passages
+) => {
+    // Create graph from event passages
+    if (register.passages[eventId as keyof typeof register.passages]) {
+        const graphCreator = new PassageGraphCreator(
+            canvasManager,
+            canvasWidth,
+            canvasHeight
+        );
+        const passages = await register.passages[eventId]();
+        const graph = await  graphCreator.createGraph(passages.default);
+        const graphAnimationHandler = new GraphAnimationHandler(graph);
+        graphAnimationHandler.startAnimation();
+        
+
+    } else {
+        console.error(`No passages found for event '${eventId}'`);
+    }
+
+    return () => {
+        store.deinit();
+    };
+};
+
+
 
 const SControlPanel = styled(Row)`
     gap: ${spacingCss(1)};

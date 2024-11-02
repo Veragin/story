@@ -77,7 +77,6 @@ export class Graph {
     }
 
     getNode(id: string): NodeVisualObject | undefined {
-        console.log("getNode", id);
         console.log(this.nodes);
         return this.nodes.get(id);
     }

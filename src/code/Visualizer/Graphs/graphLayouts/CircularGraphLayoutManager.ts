@@ -38,5 +38,4 @@ export class CircularGraphLayoutManager implements GraphLayoutManager {
         // Nothing to do
     }
 
-
 }

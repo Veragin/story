@@ -10,9 +10,9 @@ export class GraphAnimationHandler {
     private readonly frameInterval: number = 1000 / 60; // For 60 FPS
     isAnimationRunning: boolean = false;
 
-    constructor(graph: Graph, layoutManager: GraphLayoutManager) {
+    constructor(graph: Graph) {
         this.graph = graph;
-        this.layoutManager = layoutManager;
+        this.layoutManager = graph.getLayoutManager();
     }
  
     public startAnimation(): void {
