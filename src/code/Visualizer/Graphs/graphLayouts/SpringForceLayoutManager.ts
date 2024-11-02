@@ -28,11 +28,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private maxIterations: number = 1000;
     private attractionK: number = 0.1;
     private repulsionK: number = 50;
-    private centeringK: number = 50;
-    private baseDeadZone: number = 400;     // Base dead zone for minimal graphs
-    private maxDeadZone: number = 1000;     // Maximum dead zone size
-    private maxCenteringDistance: number = 300;
-    private stableThreshold: number = 0.1;
+    private centeringK: number = 0.2;
     private initializePositionStrategy: InitializePositionStrategy;
     private nodes: NodeVisualObject[] = [];
 
@@ -50,13 +46,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.initialTemp = width / 10;
         this.temperature = this.initialTemp;
         this.initializePositionStrategy = new LeftToRightInitializePositionStrategy();
-    }
-
-    private calculateDynamicDeadZone(): number {
-        // Calculate dead zone based on number of nodes
-        // More nodes = larger dead zone, but with a maximum limit
-        const nodeCountFactor = Math.sqrt(this.nodes.length) / 2;
-        return Math.min(this.baseDeadZone * nodeCountFactor, this.maxDeadZone);
     }
 
     private initializeVelocities(): void {
@@ -180,9 +169,9 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private calculateCenteringForces(forces: Map<string, Force>): void {
         const centerX = this.width / 2;
         const centerY = this.height / 2;
-        const deadZone = this.calculateDynamicDeadZone();
 
         this.nodes.forEach(node => {
+            // Skip mounted or dragging nodes
             if (node instanceof PassageNodeVisualObject && (node as PassageNodeVisualObject).isMounted) {
                 return;
             }
@@ -192,31 +181,16 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
             const pos = node.getPosition();
             const force = forces.get(node.getId())!;
-            const velocity = this.nodeVelocities.get(node.getId())!;
             
+            // Calculate distance from center
             const dx = centerX - pos.x;
             const dy = centerY - pos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < deadZone) {
-                return;
-            }
-
-            let forceStrength = 0;
-            if (distance > deadZone) {
-                forceStrength = Math.min(
-                    (distance - deadZone) / 
-                    (this.maxCenteringDistance - deadZone),
-                    1
-                );
-                
-                forceStrength = forceStrength * forceStrength * (3 - 2 * forceStrength);
-            }
-
-            if (forceStrength > 0) {
-                const forceMagnitude = this.centeringK * forceStrength;
-                force.dx += (dx / distance) * forceMagnitude;
-                force.dy += (dy / distance) * forceMagnitude;
+            if (distance > 0) {
+                // Add centering force proportional to distance from center
+                force.dx += dx * this.centeringK;
+                force.dy += dy * this.centeringK;
             }
         });
     }
@@ -306,7 +280,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
         const forces = this.calculateRepulsiveForces();
         this.calculateAttractiveForces(graph, forces);
-        this.calculateCenteringForces(forces);
         this.applyForces(forces);
         this.adjustNodePositions();
     }
