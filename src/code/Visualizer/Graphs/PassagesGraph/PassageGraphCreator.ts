@@ -9,12 +9,14 @@ import { TWorldState } from 'data/TWorldState';
 import { TPassage, TPassageTransition } from "types/TPassage";
 import { NodeVisualObject } from "../Node/NodeVisualObject";
 import { register } from "data/register";
+import { worldStateCopy } from "./WorldStateCopy";
 
 export class PassageGraphCreator {
     private readonly canvasManager: CanvasManager;
     private readonly canvasWidth: number;
     private readonly canvasHeight: number;
     private characterColors: Map<string, string> = new Map();
+    
 
     // Pastel colors that work well for node backgrounds
     private readonly colorPalette = [
@@ -35,10 +37,10 @@ export class PassageGraphCreator {
     }
 
     async createGraph(passages: Record<string, any>): Promise<Graph> {
-        console.log('createGraph called with passages:', Object.keys(passages));
         this.initializeCharacterColors(passages);
     
         const graph = new Graph(this.canvasManager);
+        const readOnlyState = worldStateCopy.getReadOnlyState();
     
         graph.setLayoutManager(new SpringForceLayoutManager(
             this.canvasWidth,
@@ -47,39 +49,34 @@ export class PassageGraphCreator {
     
         // Create nodes for each passage
         for (const [passageId, passageData] of Object.entries(passages)) {
-            console.log('Creating node for passage:', passageId);
-            const passage = passageData({} as TWorldState);
+            const passage = passageData(readOnlyState);
         
             let node: NodeVisualObject | undefined;
             switch (passage.type) {
                 case 'screen':
-                    console.log('Creating screen node:', passageId);
                     node = await this.createScreenPassageNode(passageId, passage);
                     break;
                 case 'transition':
-                    console.log('Creating transition node:', passageId);
                     node = await this.createTransitionPassageNode(passageId, passage);
                     break;
                 case 'linear':
-                    console.log('Creating linear node:', passageId);
                     node = await this.createLinearPassageNode(passageId, passage);
                     break;
             }
             if (!node)
                 continue;
         
-            console.log('Adding node to graph:', passageId, node);
             graph.addNode(node, passageId);
         }
+
         // Create edges based on passage links
         await this.createEdges(graph, passages);
     
-        // Apply layout
         graph.layout();
     
         return graph;
     }
-
+    
     async createScreenPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
         const characterId = passageId.split('-')[1];
         const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
@@ -337,6 +334,7 @@ export class PassageGraphCreator {
 
     private async createEdges(graph: Graph, passages: Record<string, any>): Promise<void> {
         let edgeCounter = 0;
+        const readOnlyState = worldStateCopy.getReadOnlyState();
 
         for (const [passageId, passageData] of Object.entries(passages)) {
             const sourceNode = graph.getNode(passageId);
@@ -345,8 +343,7 @@ export class PassageGraphCreator {
 
             // Handle different passage types
             if (typeof passageData === 'function') {
-                // For function-based passages, we need to get the actual passage object
-                const passage = passageData({} as TWorldState);
+                const passage = passageData(readOnlyState);
                 edgeCounter = await this.createEdgesForPassage(passage, sourceNode, graph, edgeCounter);
                 continue;
             }

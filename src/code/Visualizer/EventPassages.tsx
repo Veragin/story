@@ -11,8 +11,6 @@ import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { PassageGraphCreator } from './Graphs/PassagesGraph/PassageGraphCreator';
 import { register } from 'data/register';
-import { CanvasManager } from './Graphs/CanvasManager';
-import { Store } from './ts/Store';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
 export const EventPassages = () => {
     const store = useVisualizerStore();
@@ -57,10 +55,12 @@ export const EventPassages = () => {
                     canvasHeight
                 );
                 const passages = await register.passages[eventId]();
-                if (!isActive) return;  // Check again after async operation
+                if (!isActive) 
+                    return;
 
                 const graph = await graphCreator.createGraph(passages.default);
-                if (!isActive) return;  // Check again after async operation
+                if (!isActive) 
+                    return;
 
                 graphAnimationHandlerRef.current = new GraphAnimationHandler(graph);
                 graphAnimationHandlerRef.current.startAnimation();
@@ -97,37 +97,6 @@ export const EventPassages = () => {
         </WholeContainer>
     );
 };
-
-
-const createPassageGraph = async (
-    canvasManager: CanvasManager,
-    canvasWidth: number,
-    canvasHeight: number,
-    store: Store,
-    eventId: keyof typeof register.passages
-) => {
-    // Create graph from event passages
-    if (register.passages[eventId as keyof typeof register.passages]) {
-        const graphCreator = new PassageGraphCreator(
-            canvasManager,
-            canvasWidth,
-            canvasHeight
-        );
-        const passages = await register.passages[eventId]();
-        const graph = await  graphCreator.createGraph(passages.default);
-        const graphAnimationHandler = new GraphAnimationHandler(graph);
-        graphAnimationHandler.startAnimation();
-        
-
-    } else {
-        console.error(`No passages found for event '${eventId}'`);
-    }
-
-    return () => {
-        store.deinit();
-    };
-};
-
 
 
 const SControlPanel = styled(Row)`
