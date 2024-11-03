@@ -3,6 +3,7 @@ import { introPassage } from './annie.passages/intro';
 import { palacePassage } from './annie.passages/palace';
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
+import { visitPassage } from './thomas.passages/visit.screen';
 
 export type TKingdomPassageId = TKingdomAnniePassageId | TKingdomThomasPassageId;
 
@@ -10,9 +11,9 @@ export type TKingdomAnniePassageId = 'kingdom-annie-intro' | 'kingdom-annie-pala
 export type TKingdomThomasPassageId = 'kingdom-thomas-visit';
 
 const kingdomEventPassages: Record<TKingdomPassageId, (s: TWorldState, e: Engine) => TEventPassage<'kingdom'>> = {
-    'kingdom-annie-intro': introPassage,
+	'kingdom-annie-intro': introPassage,
     'kingdom-annie-palace': palacePassage,
-    'kingdom-thomas-visit': introPassage,
+    'kingdom-thomas-visit': visitPassage,
 };
 
 export default kingdomEventPassages;
