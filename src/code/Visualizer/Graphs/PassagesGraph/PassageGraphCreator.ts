@@ -10,6 +10,7 @@ import { TPassage, TPassageTransition } from "types/TPassage";
 import { NodeVisualObject } from "../Node/NodeVisualObject";
 import { register } from "data/register";
 import { worldStateCopy } from "./WorldStateCopy";
+import { TLineType } from "../EdgeVisualObject";
 
 export class PassageGraphCreator {
     private readonly canvasManager: CanvasManager;
@@ -365,13 +366,19 @@ export class PassageGraphCreator {
                     if (section.links) {
                         section.links.forEach(link => {
                             const targetNode = graph.getNode(link.passageId);
-                            if (!targetNode) return;
+                            if (!targetNode) 
+                                return;
+
+                            // if target node is Transition, set style to dashed
+                            const style = targetNode instanceof PassageNodeVisualObject ? 'solid' : 'dashed';
 
                             const zIndex = 1;
                             const edge = this.createPassageEdge(
                                 sourceNode,
                                 targetNode,
-                                zIndex
+                                zIndex,
+                                '#999999',
+                                style
                             );
 
                             graph.addEdge(edge, `edge-${edgeCounter++}`);
@@ -409,7 +416,7 @@ export class PassageGraphCreator {
                         sourceNode,
                         targetNode,
                         0,
-                        '#666666'
+                        '#666666',
                     );
 
                     graph.addEdge(edge, `edge-${edgeCounter++}`);
@@ -423,22 +430,22 @@ export class PassageGraphCreator {
         source: NodeVisualObject,
         target: NodeVisualObject,
         zIndex: number = 1,
-        color: string = '#999999'
+        color: string = '#999999',
+        style: TLineType = 'solid'
     ): PassageEdgeVisualObject {
         const edge = new PassageEdgeVisualObject(
             source,
             target,
             color,
             1,
-            true
+            true,
+            zIndex,
+            style
         );
 
         // Set colors for edge highlighting
-        edge.onTargetSelectedColor = '#d32f2f';
+        edge.onTargetSelectedColor = 'black';
         edge.onSourceSelectedColor = '#1976d2';
-
-        // Adjust z-index based on priority
-        edge.setZIndex(zIndex);
 
         return edge;
     }

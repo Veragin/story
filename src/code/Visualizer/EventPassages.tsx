@@ -1,4 +1,4 @@
-import { Button, styled } from '@mui/material';
+import { styled, FormControl, Autocomplete, TextField } from '@mui/material';
 import { Row, WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
@@ -7,11 +7,12 @@ import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
 } from './ts/TimelineRender/TimelineMarker';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { PassageGraphCreator } from './Graphs/PassagesGraph/PassageGraphCreator';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
+import { PassageEventsGraphStorageManager as EventPassagesGraphStorageManager } from './Graphs/store/EventPassagesGraphStorageManager';
+
 export const EventPassages = () => {
     const store = useVisualizerStore();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -19,6 +20,13 @@ export const EventPassages = () => {
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
     const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<string>('village');
+
+    // Get all available events from register
+    const events = Object.entries(register.events).map(([id, event]) => ({
+        id,
+        title: event.title
+    }));
 
     useEffect(() => {
         assertNotNullish(mainCanvasRef.current);
@@ -26,70 +34,96 @@ export const EventPassages = () => {
         assertNotNullish(containerRef.current);
         assertNotNullish(markerRef.current);
 
-        let isActive = true;  // Flag to track if effect is still active
+        let isActive = true;
 
         const initGraph = async () => {
-            if (!isActive) return;  // Check if still active before proceeding
-
+            if (!isActive) 
+                return;
+        
             store.init(
                 mainCanvasRef.current!,
                 timelineCanvasRef.current!,
                 containerRef.current!,
                 markerRef.current!
             );
-
+        
             const canvasManager = store.timelineEvents?.canvasManager;
-            if (!canvasManager) return;
-
+            if (!canvasManager) 
+                return;
+        
             const canvasWidth = canvasManager.getWidth();
             const canvasHeight = canvasManager.getHeight();
             if (!canvasWidth || !canvasHeight) return;
-
-            const eventId = 'village';
-
-            // Create graph
-            if (register.passages[eventId]) {
-                const graphCreator = new PassageGraphCreator(
-                    canvasManager,
-                    canvasWidth,
-                    canvasHeight
-                );
-                const passages = await register.passages[eventId]();
-                if (!isActive) 
-                    return;
-
-                const graph = await graphCreator.createGraph(passages.default);
-                if (!isActive) 
-                    return;
-
-                graphAnimationHandlerRef.current = new GraphAnimationHandler(graph);
-                graphAnimationHandlerRef.current.startAnimation();
+        
+            // Clear previous graph and animation
+            if (graphAnimationHandlerRef.current) {
+                graphAnimationHandlerRef.current.stopAnimation();
+                graphAnimationHandlerRef.current = null;
+            }
+        
+            if (register.passages[selectedEvent as keyof typeof register.passages]) {
+                try {
+                    const graph = await EventPassagesGraphStorageManager.getGraph(
+                        selectedEvent,
+                        canvasManager,
+                        canvasWidth,
+                        canvasHeight
+                    );
+        
+                    if (!isActive) 
+                        return;
+        
+                    graphAnimationHandlerRef.current = new GraphAnimationHandler(graph, canvasManager);
+                    graphAnimationHandlerRef.current.isAnimating();
+                    graphAnimationHandlerRef.current.startAnimation();
+                } catch (error) {
+                    console.error('Failed to initialize graph:', error);
+                }
             }
         };
 
         initGraph();
 
-        // Cleanup function
         return () => {
-            isActive = false;  // Mark effect as inactive
+            isActive = false;
             if (graphAnimationHandlerRef.current) {
                 graphAnimationHandlerRef.current.stopAnimation();
                 graphAnimationHandlerRef.current = null;
             }
             store.deinit();
         };
-    }, []); // Empty dependency array
+    }, [selectedEvent, store]);
 
     return (
         <WholeContainer ref={containerRef}>
             <SControlPanel>
-                <SmallText>Event Timeline</SmallText>
-                <Button
-                    variant="contained"
-                    onClick={() => console.log('Add event')}
-                >
-                    Expand connections
-                </Button>
+                <SmallText>Event Passages</SmallText>
+                <SFormControl size="small">
+                    <Autocomplete
+                        value={events.find(event => event.id === selectedEvent) || null}
+                        onChange={(_, newValue) => {
+                            if (newValue) {
+                                setSelectedEvent(newValue.id);
+                            }
+                        }}
+                        options={events}
+                        getOptionLabel={(option) => option.title || option.id}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Select Event"
+                                variant="outlined"
+                            />
+                        )}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        sx={{
+                            minWidth: 300,
+                            '& .MuiOutlinedInput-root': {
+                                backgroundColor: 'gray'
+                            }
+                        }}
+                    />
+                </SFormControl>
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
@@ -98,10 +132,106 @@ export const EventPassages = () => {
     );
 };
 
-
 const SControlPanel = styled(Row)`
-    gap: ${spacingCss(1)};
+    gap: ${spacingCss(2)};
     align-items: center;
+    padding: ${spacingCss(0.5)}; // Reduced from 1 to 0.5
+    background-color: gray;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    height: 52px; 
+    padding-left: ${spacingCss(2)};
+`;
+
+const SFormControl = styled(FormControl)`
+    min-width: 200px;
+    margin: 0; // Removed vertical margin
+    
+    // Style for text field and autocomplete
+    & .MuiAutocomplete-root {
+        & .MuiOutlinedInput-root {
+            background-color: gray;
+            height: 40px;
+            padding: 0 ${spacingCss(2)}; 
+            
+            & input {
+                color: rgba(0, 0, 0, 0.87);
+                padding: 0; 
+                height: 100%;
+            }
+
+            & .MuiAutocomplete-endAdornment {
+                color: rgba(0, 0, 0, 0.54);
+                top: 50%; // Center vertically
+                transform: translateY(-50%);
+            }
+        }
+    }
+
+    // Adjust label position for the smaller height
+    & .MuiInputLabel-root {
+        color: white;
+        background-color: black;
+        border-radius: 4px;
+        padding: 0 ${spacingCss(0.5)};
+        transform: translate(14px, -6px) scale(0.75); // Adjusted position
+        
+        &.Mui-focused {
+            color: white;
+        }
+    }
+    
+    & .MuiOutlinedInput-notchedOutline {
+        border-color: rgba(0, 0, 0, 0.23);
+    }
+
+    // Improve hover and focus states
+    & .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+        border-color: rgba(0, 0, 0, 0.87);
+    }
+    
+    & .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+        border-color: black;
+    }
+
+    // Style for the label
+    & .MuiInputLabel-root {
+        color: white;
+        background-color: black;
+        border-radius: 4px;
+        padding: 0 ${spacingCss(0.5)};
+        
+        &.Mui-focused {
+            color: white;
+        }
+    }
+
+    // Style for the dropdown menu
+    & .MuiAutocomplete-popper {
+        & .MuiPaper-root {
+            background-color: gray;
+            color: rgba(0, 0, 0, 0.87);
+            margin-top: 4px;
+        }
+
+        & .MuiAutocomplete-option {
+            padding: ${spacingCss(1)};
+            
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+            }
+            &[aria-selected="true"] {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+            &[aria-selected="true"].Mui-focused {
+                background-color: rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        & .MuiAutocomplete-noOptions {
+            padding: ${spacingCss(1)};
+            color: rgba(0, 0, 0, 0.6);
+        }
+    }
 `;
 
 const SMainCanvas = styled('canvas')`

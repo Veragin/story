@@ -1,3 +1,4 @@
+import { CanvasManager } from "../CanvasManager";
 import { Graph } from "../Graph";
 import { GraphLayoutManager } from "../graphLayouts/GraphLayoutManager";
 
@@ -6,13 +7,14 @@ export class GraphAnimationHandler {
     private layoutManager: GraphLayoutManager;
     private animationFrameId: number | null = null;
     private lastFrameTime: number = 0;
-    private readonly targetFPS: number = 60;
     private readonly frameInterval: number = 1000 / 60; // For 60 FPS
     isAnimationRunning: boolean = false;
+    private canvasManager: CanvasManager;
 
-    constructor(graph: Graph) {
+    constructor(graph: Graph, canvasManager: CanvasManager) {
         this.graph = graph;
         this.layoutManager = graph.getLayoutManager();
+        this.canvasManager = canvasManager;
     }
  
     public startAnimation(): void {
@@ -37,7 +39,7 @@ export class GraphAnimationHandler {
             this.lastFrameTime = currentTime - (deltaTime % this.frameInterval);
 
             // Perform layout iteration
-            this.layoutManager.performSingleIteration(this.graph);
+            this.layoutManager.performSingleIteration(this.graph, this.canvasManager.canvasSize);
         }
 
         // Request next frame

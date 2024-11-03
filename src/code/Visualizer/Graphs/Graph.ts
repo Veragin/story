@@ -1,22 +1,27 @@
 import { CanvasManager } from "./CanvasManager";
-import { CircularGraphLayoutManager } from "./graphLayouts/CircularGraphLayoutManager";
 import { EdgeVisualObject } from "./EdgeVisualObject";
 import { GraphLayoutManager } from "./graphLayouts/GraphLayoutManager";
 import { NodeVisualObject } from "./Node/NodeVisualObject";
+import { Observer } from "code/utils/Observer";
+import { SpringForceLayoutManager } from "./graphLayouts/SpringForceLayoutManager";
 
 
 export class Graph {
     private canvasManager: CanvasManager;
     private nodes: Map<string, NodeVisualObject> = new Map();
     private edges: Map<string, EdgeVisualObject> = new Map();
+    readonly onNodeAdded = new Observer<NodeVisualObject>();
+    readonly onNodeRemoved = new Observer<NodeVisualObject>();
+    readonly onEdgeAdded = new Observer<EdgeVisualObject>();
+    readonly onEdgeRemoved = new Observer<EdgeVisualObject>();
+
     private layoutManager: GraphLayoutManager;
 
     constructor(canvasManager: CanvasManager) {
         this.canvasManager = canvasManager;
-        this.layoutManager = new CircularGraphLayoutManager(
+        this.layoutManager = new SpringForceLayoutManager(
             canvasManager.canvas.width / 2,
             canvasManager.canvas.height / 2,
-            Math.min(canvasManager.canvas.width, canvasManager.canvas.height) / 3
         );
     }
 
@@ -31,6 +36,9 @@ export class Graph {
 
         this.nodes.set(id, node);
         this.canvasManager.addObject(node);
+
+        this.onNodeAdded.notify(node);
+
         return node;
     }
 
@@ -45,6 +53,9 @@ export class Graph {
 
         this.edges.set(id, edge);
         this.canvasManager.addObject(edge);
+
+        this.onEdgeAdded.notify(edge);
+
         return edge;
     }
 
@@ -64,6 +75,8 @@ export class Graph {
         // Remove the node
         this.nodes.delete(id);
         this.canvasManager.removeObject(node);
+
+        this.onNodeRemoved.notify(node);
     }
 
     removeEdge(id: string): void {
@@ -74,6 +87,8 @@ export class Graph {
 
         this.edges.delete(id);
         this.canvasManager.removeObject(edge);
+
+        this.onEdgeRemoved.notify(edge);
     }
 
     getNode(id: string): NodeVisualObject | undefined {

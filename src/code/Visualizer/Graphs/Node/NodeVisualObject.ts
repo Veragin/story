@@ -93,6 +93,9 @@ export class NodeVisualObject extends DraggableVisualObject {
         this.redraw(change, nodeVisualObjectProperties.border);
     }
 
+    getBackgroundColor(): string {
+        return this.backgroundColor;
+    }
     setBackgroundColor(backgroundColor: string): void {
         let change = this.backgroundColor !== backgroundColor;
         this.backgroundColor = backgroundColor;

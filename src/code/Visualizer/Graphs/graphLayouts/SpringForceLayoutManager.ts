@@ -56,7 +56,8 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
     layout(graph: Graph): void {
         this.nodes = graph.getAllNodes();
-        if (this.nodes.length === 0) return;
+        if (this.nodes.length === 0) 
+            return;
 
         this.initializePositions(this.nodes, graph.getAllEdges());
         this.initializeVelocities();
@@ -273,7 +274,12 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         return totalMovement > this.minTemp;
     }
 
-    performSingleIteration(graph: Graph): void {
+    performSingleIteration(graph: Graph, screenSize: TSize): void {
+        this.width = screenSize.width;
+        this.height = screenSize.height;
+        this.nodes = graph.getAllNodes();
+        this.initializeVelocities();
+
         if (this.temperature <= this.minTemp) {
             this.temperature = this.minTemp;
         }

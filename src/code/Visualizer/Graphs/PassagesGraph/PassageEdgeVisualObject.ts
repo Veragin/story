@@ -1,5 +1,5 @@
 
-import { EdgeVisualObject } from '../EdgeVisualObject';
+import { EdgeVisualObject, TLineType } from '../EdgeVisualObject';
 import { NodeVisualObject } from '../Node/NodeVisualObject';
 import { PassageNodeVisualObject, selectableVisualProperties } from './PassageNodeVisualObject';
 
@@ -24,9 +24,10 @@ export class PassageEdgeVisualObject extends EdgeVisualObject {
         color: string = '#000000',
         width: number = 1,
         arrow: boolean = true,
-        zIndex: number = 0
+        zIndex: number = 0,
+        style: TLineType = 'solid'
     ) {
-        super(source, target, color, width, arrow, zIndex);
+        super(source, target, color, width, arrow, zIndex, style);
 
         this._defaultColor = color;
 

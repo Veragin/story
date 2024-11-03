@@ -10,12 +10,15 @@ export const edgeVisualObjectProperties = {
     zIndex: 'zIndex',
 };
 
+export type TLineType = 'solid' | 'dotted' | 'dashed';
+
 export class EdgeVisualObject extends ClickableVisualObject {
     private _source: NodeVisualObject;
     private _target: NodeVisualObject;
     private _color: string;
     private _width: number;
     private _arrow: boolean;
+    private _style: TLineType;
 
     constructor(
         source: NodeVisualObject,
@@ -23,7 +26,8 @@ export class EdgeVisualObject extends ClickableVisualObject {
         color: string = '#000000',
         width: number = 1,
         arrow: boolean = true,
-        zIndex: number = 0
+        zIndex: number = 0,
+        style: TLineType = 'solid'
     ) {
         // Initialize with source position
 
@@ -42,6 +46,8 @@ export class EdgeVisualObject extends ClickableVisualObject {
         this._color = color;
         this._width = width;
         this._arrow = arrow;
+        this._style = style;
+
 
         // Subscribe to node position changes
         this._source.onPropertyChanged.subscribe(() => this.redraw(true, edgeVisualObjectProperties.source));
@@ -75,9 +81,25 @@ export class EdgeVisualObject extends ClickableVisualObject {
         ctx.beginPath();
         ctx.strokeStyle = this._color;
         ctx.lineWidth = this._width;
+
+        // Set line style
+        switch (this._style) {
+            case 'dashed':
+                ctx.setLineDash([8, 4]);
+                break;
+            case 'dotted':
+                ctx.setLineDash([2, 2]);
+                break;
+            case 'solid':
+            default:
+                ctx.setLineDash([]);
+                break;
+        }
+
         ctx.moveTo(sourcePos.x, sourcePos.y);
         ctx.lineTo(targetPos.x, targetPos.y);
         ctx.stroke();
+        ctx.setLineDash([]);
 
         // Draw arrow if enabled
         if (this._arrow) {
@@ -143,5 +165,21 @@ export class EdgeVisualObject extends ClickableVisualObject {
             zIndex = this._target.zIndex - 1;
         }
         super.setZIndex(zIndex);
+    }
+
+    getColor(): string {
+        return this._color;
+    }
+
+    getWidth(): number {
+        return this._width;
+    }
+
+    hasArrow(): boolean {
+        return this._arrow;
+    }
+
+    getStyle(): TLineType {
+        return this._style;
     }
 }

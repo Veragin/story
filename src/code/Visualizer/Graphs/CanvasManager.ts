@@ -5,6 +5,7 @@ import { HoverableVisualObject } from './Node/HoverableVisualObject';
 import { VisualObject } from './Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../ts/TimelineRender/constants';
+import { Observer } from 'code/utils/Observer';
 
 export class CanvasManager {
     readonly canvas: HTMLCanvasElement;
@@ -15,6 +16,12 @@ export class CanvasManager {
     private hoveredObjects: Set<HoverableVisualObject> = new Set();
     private nextInsertionOrder: number = 0;
     private draggedObject: DraggableVisualObject | null = null;
+    readonly onCanvasResize = new Observer<TSize>();
+
+    get canvasSize(): TSize {
+        return { width: this.canvas.width, height: this.canvas.height };
+    }
+
     dragMode = true;
 
     constructor(canvas: HTMLCanvasElement) {
@@ -31,6 +38,14 @@ export class CanvasManager {
         this.canvas.addEventListener('mouseleave', this.handleMouseUp);
         this.canvas.addEventListener('dblclick', this.handleMouseClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+        this.canvas.addEventListener('resize', this.handleResize);
+    }
+
+    private handleResize = () => {
+        this.onCanvasResize.notify({ 
+            width: this.canvas.width, 
+            height: this.canvas.height 
+        });
     }
 
     private getMousePoint(event: MouseEvent): TPoint {
