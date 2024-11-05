@@ -29,19 +29,24 @@ export class EventPassagesGraphStorageManager {
             }
             return inMemoryGraph;
         }
-        
+
         // Try to load from localStorage
         const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
         if (storedGraph) {
-            // Verify stored graph data matches current passages
-            const verifiedGraph = await GraphActualizer.verifyGraphData(eventId, storedGraph, canvasManager);
+            // Verify and update stored graph data using GraphActualizer
+            const verifiedGraph = await GraphActualizer.verifyGraphData(
+                eventId,
+                storedGraph,
+                canvasManager,
+                canvasWidth,
+                canvasHeight
+            );
             this.setupGraphAutoSave(eventId, storedGraph);
             this.graphs.set(eventId, storedGraph);
             return storedGraph;
         }
 
-
-        // Create new graph if not found in storage
+        // Create new empty graph and let GraphActualizer populate it
         const newGraph = await this.createNewGraph(eventId, canvasManager, canvasWidth, canvasHeight);
         this.setupGraphAutoSave(eventId, newGraph);
         this.graphs.set(eventId, newGraph);
