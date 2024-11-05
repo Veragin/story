@@ -14,7 +14,7 @@ export const visitPassage = (s: TWorldState, e: Engine): TPassage<'kingdom', 'th
         id: 'visit',
 
         type: 'screen',
-        title: _(''),
+        title: _('visit'),
         image: '',
 
         body: [

@@ -31,3 +31,5 @@ export const register = {
         village_under_attack: village_under_attackHappening,
     }
 } as const;
+
+export type TRegisterPassageId = keyof typeof register.passages;

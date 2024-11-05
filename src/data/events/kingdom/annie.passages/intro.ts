@@ -10,7 +10,7 @@ export const introPassage = (s: TWorldState): TPassage<'kingdom', 'annie', TKing
         id: 'intro',
 
         type: 'screen',
-        title: 'title',
+        title: 'Intro',
         image: 'image',
 
         body: [

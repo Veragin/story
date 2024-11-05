@@ -1,12 +1,15 @@
+import { TRegisterPassageId } from "data/register";
 import { TLineType } from "../EdgeVisualObject";
 import { Graph } from "../Graph";
 import { BorderConfig } from "../Node/BorderConfig";
 import { NodeVisualObject } from "../Node/NodeVisualObject";
 import { TextContent } from "../Node/TextContent";
 import { PassageNodeVisualObject } from "../PassagesGraph/PassageNodeVisualObject";
+import { PassageEdgeVisualObject } from "../PassagesGraph/PassageEdgeVisualObject";
 
 export type SerializedNode = {
     id: string;
+    passageId: TRegisterPassageId;
     position: TPoint;
     size: TSize;
     backgroundColor: string;
@@ -30,6 +33,8 @@ export type SerializedEdge = {
     arrow: boolean;
     zIndex: number;
     style: TLineType;
+    onTargetSelectedColor: string;
+    onSourceSelectedColor: string;
 }
 
 export type SerializedGraph = {
@@ -55,6 +60,7 @@ export class GraphSerializer {
             
             nodes.push({
                 id,
+                passageId: node.passageId,
                 position: node.getPosition(),
                 size: node.getSize(),
                 backgroundColor: node.getBackgroundColor(),
@@ -71,7 +77,8 @@ export class GraphSerializer {
         }
 
         // Serialize edges
-        for (const [id, edge] of Object.entries(graph.getAllEdges())) {
+        for (const [id, edgeS] of Object.entries(graph.getAllEdges())) {
+            const edge = edgeS as PassageEdgeVisualObject;
             edges.push({
                 id,
                 sourceId: this.findNodeId(graph, edge.getSource()),
@@ -81,6 +88,8 @@ export class GraphSerializer {
                 arrow: edge.hasArrow(),
                 style: edge.getStyle(),
                 zIndex: edge.zIndex,
+                onTargetSelectedColor: edge.onTargetSelectedColor,
+                onSourceSelectedColor: edge.onSourceSelectedColor,
             });
         }
 

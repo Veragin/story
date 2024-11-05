@@ -18,6 +18,14 @@ export class PassageEdgeVisualObject extends EdgeVisualObject {
         this._onSourceSelectedColor = color;
     }
 
+    get onTargetSelectedColor() {
+        return this._onTargetSelectedColor;
+    }
+
+    get onSourceSelectedColor() {
+        return this._onSourceSelectedColor;
+    }
+
     constructor(
         source: NodeVisualObject,
         target: NodeVisualObject,

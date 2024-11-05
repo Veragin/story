@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
-import { PassageEventsGraphStorageManager as EventPassagesGraphStorageManager } from './Graphs/store/EventPassagesGraphStorageManager';
+import { EventPassagesGraphStorageManager as EventPassagesGraphStorageManager } from './Graphs/store/EventPassagesGraphStorageManager';
 
 export const EventPassages = () => {
     const store = useVisualizerStore();

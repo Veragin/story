@@ -6,19 +6,6 @@ import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 
 export class WorldStateCopy {
-    private readonly readOnlyState: TWorldState;
-
-    constructor() {
-        this.readOnlyState = this.createBaseState();
-    }
-
-    /**
-     * Gets the read-only reference state for passages
-     * @returns Reference to the immutable base world state
-     */
-    getReadOnlyState(): TWorldState {
-        return this.readOnlyState;
-    }
 
     /**
      * Creates the initial base state with all required properties

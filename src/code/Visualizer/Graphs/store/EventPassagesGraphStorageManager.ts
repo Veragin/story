@@ -4,9 +4,10 @@ import { Graph } from "../Graph";
 import { PassageGraphCreator } from "../PassagesGraph/PassageGraphCreator";
 import { GraphDeserializer } from "./GraphDeserializer";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
+import { GraphActualizer } from "./GraphActualizer";
 
 
-export class PassageEventsGraphStorageManager {
+export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
     private static readonly STORAGE_PREFIX = 'passage-graph-';
 
@@ -28,17 +29,15 @@ export class PassageEventsGraphStorageManager {
             }
             return inMemoryGraph;
         }
-
-        // Try to load from localStorage
         
+        // Try to load from localStorage
         const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
         if (storedGraph) {
             // Verify stored graph data matches current passages
-            if (await this.verifyGraphData(eventId, storedGraph)) {
-                this.setupGraphAutoSave(eventId, storedGraph);
-                this.graphs.set(eventId, storedGraph);
-                return storedGraph;
-            }
+            const verifiedGraph = await GraphActualizer.verifyGraphData(eventId, storedGraph, canvasManager);
+            this.setupGraphAutoSave(eventId, storedGraph);
+            this.graphs.set(eventId, storedGraph);
+            return storedGraph;
         }
 
 
@@ -53,36 +52,36 @@ export class PassageEventsGraphStorageManager {
         const saveGraphCallback = () => {
             this.saveGraphToStorage(eventId, graph);
         };
-    
+
         graph.onNodeAdded.subscribe((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
             this.saveGraphToStorage(eventId, graph);
         });
-    
+
         graph.onNodeRemoved.subscribe((node) => {
             node.onPropertyChanged.unsubscribe(saveGraphCallback);
             this.saveGraphToStorage(eventId, graph);
         });
-    
+
         graph.onEdgeAdded.subscribe((edge) => {
             edge.onPropertyChanged.subscribe(saveGraphCallback);
             this.saveGraphToStorage(eventId, graph);
         });
-    
+
         graph.onEdgeRemoved.subscribe((edge) => {
             edge.onPropertyChanged.unsubscribe(saveGraphCallback);
             this.saveGraphToStorage(eventId, graph);
         });
-    
+
         // Setup initial subscriptions for existing nodes and edges
         const nodes = graph.getAllNodes();
         const edges = graph.getAllEdges();
-    
+
         // Watch node changes
         nodes.forEach(node => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
         });
-    
+
         // Watch edge changes
         edges.forEach(edge => {
             edge.onPropertyChanged.subscribe(saveGraphCallback);
@@ -111,7 +110,8 @@ export class PassageEventsGraphStorageManager {
             }
 
             const graphData: SerializedGraph = JSON.parse(serializedData);
-            return GraphDeserializer.deserialize(graphData, canvasManager);
+            const graph = GraphDeserializer.deserialize(graphData, canvasManager);
+            return graph;
         } catch (error) {
             console.error('Failed to load graph from storage:', error);
             return null;
@@ -147,7 +147,7 @@ export class PassageEventsGraphStorageManager {
         // 3. Add missing nodes/edges
         // 4. Remove obsolete nodes/edges
         // 5. Return updated graph
-        
+
         // For now, just return the original graph
         return graph;
     }

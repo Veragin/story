@@ -27,6 +27,7 @@ export class GraphDeserializer {
             });
 
             const node = new PassageNodeVisualObject(
+                nodeData.passageId,
                 nodeData.position,
                 nodeData.size,
                 nodeData.borderConfig,
@@ -41,7 +42,7 @@ export class GraphDeserializer {
             
             // Add to graph and store reference
             nodeMap.set(nodeData.id, node);
-            graph.addNode(node, nodeData.id);
+            graph.addNode(node, nodeData.passageId);
             canvasManager.addObject(textContent);
         }
 
@@ -64,6 +65,8 @@ export class GraphDeserializer {
                 edgeData.zIndex,
                 edgeData.style
             );
+            edge.onTargetSelectedColor = edgeData.onTargetSelectedColor;
+            edge.onSourceSelectedColor = edgeData.onSourceSelectedColor;
 
             graph.addEdge(edge, edgeData.id);
         }

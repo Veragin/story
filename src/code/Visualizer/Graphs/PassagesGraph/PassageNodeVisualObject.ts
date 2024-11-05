@@ -2,6 +2,7 @@ import { BorderConfig } from "../Node/BorderConfig";
 import { HorizontallyScalableNodeVisualObject } from "../Node/HorizontallyScalableNodeVisualObject";
 import { nodeVisualObjectProperties } from "../Node/NodeVisualObject";
 import { VisualObject } from "../Node/VisualObject";
+import { TRegisterPassageId } from "data/register";
 
 export const selectableVisualProperties = {
     isSelected: 'isSelected',
@@ -11,6 +12,7 @@ export const selectableVisualProperties = {
 
 export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObject {
     private _isSelected: boolean = false;
+    readonly passageId: TRegisterPassageId;
 
     get isSelected(): boolean {
         return this._isSelected;
@@ -33,14 +35,16 @@ export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObjec
     }
 
     constructor(
+        passageId: TRegisterPassageId,
         realPosition: TPoint,
         size: TSize,
         border: BorderConfig,
         content: VisualObject,
         backgroundColor: string = '#ffffff',
-        zIndex: number = 0
+        zIndex: number = 0,
     ) {
         super(realPosition, size, border, content, backgroundColor, zIndex);
+        this.passageId = passageId;
 
         this.onHoverEnter.subscribe(() => {
             this.isSelected = true;

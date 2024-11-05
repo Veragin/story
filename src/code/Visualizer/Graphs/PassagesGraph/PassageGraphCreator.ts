@@ -6,9 +6,9 @@ import { TextContent } from "../Node/TextContent";
 import { PassageEdgeVisualObject } from "./PassageEdgeVisualObject";
 import { PassageNodeVisualObject } from "./PassageNodeVisualObject";
 import { TWorldState } from 'data/TWorldState';
-import { TPassage, TPassageTransition } from "types/TPassage";
+import { TPassage } from "types/TPassage";
 import { NodeVisualObject } from "../Node/NodeVisualObject";
-import { register } from "data/register";
+import { register, TRegisterPassageId } from "data/register";
 import { worldStateCopy } from "./WorldStateCopy";
 import { TLineType } from "../EdgeVisualObject";
 
@@ -41,7 +41,7 @@ export class PassageGraphCreator {
         this.initializeCharacterColors(passages);
     
         const graph = new Graph(this.canvasManager);
-        const readOnlyState = worldStateCopy.getReadOnlyState();
+        const worldState = worldStateCopy;
     
         graph.setLayoutManager(new SpringForceLayoutManager(
             this.canvasWidth,
@@ -49,8 +49,9 @@ export class PassageGraphCreator {
         ));
     
         // Create nodes for each passage
-        for (const [passageId, passageData] of Object.entries(passages)) {
-            const passage = passageData(readOnlyState);
+        for (const [passageIdS, passageData] of Object.entries(passages)) {
+            let passageId = passageIdS as TRegisterPassageId;
+            const passage = passageData(worldState);
         
             let node: NodeVisualObject | undefined;
             switch (passage.type) {
@@ -78,7 +79,7 @@ export class PassageGraphCreator {
         return graph;
     }
     
-    async createScreenPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
+    async createScreenPassageNode(passageId: TRegisterPassageId, passage: any): Promise<NodeVisualObject> {
         const characterId = passageId.split('-')[1];
         const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
 
@@ -118,6 +119,7 @@ export class PassageGraphCreator {
 
         // Create node
         const node = new PassageNodeVisualObject(
+            passageId,
             position,
             size,
             {
@@ -127,7 +129,7 @@ export class PassageGraphCreator {
                 radius: 8
             },
             textContent,
-            backgroundColor
+            backgroundColor,
         );
 
         this.setupNodeInteractions(node);
@@ -136,7 +138,7 @@ export class PassageGraphCreator {
         return node;
     }
 
-    async createTransitionPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
+    async createTransitionPassageNode(passageId: TRegisterPassageId, passage: any): Promise<NodeVisualObject> {
         // get link and get passage of the link
         // show the title of link passage instead
         const parts = passage.nextPassageId.split('-');
@@ -201,6 +203,7 @@ export class PassageGraphCreator {
         });
 
         const node = new PassageNodeVisualObject(
+            passageId,
             position,
             size,
             {
@@ -219,7 +222,7 @@ export class PassageGraphCreator {
         return node;
     }
 
-    async createLinearPassageNode(passageId: string, passage: any): Promise<NodeVisualObject> {
+    async createLinearPassageNode(passageId: TRegisterPassageId, passage: any): Promise<NodeVisualObject> {
         const characterId = passageId.split('-')[1];
         const backgroundColor = this.characterColors.get(characterId) || '#ffffff';
 
@@ -259,6 +262,7 @@ export class PassageGraphCreator {
 
         // Create node
         const node = new PassageNodeVisualObject(
+            passageId,
             position,
             size,
             {
@@ -335,7 +339,6 @@ export class PassageGraphCreator {
 
     private async createEdges(graph: Graph, passages: Record<string, any>): Promise<void> {
         let edgeCounter = 0;
-        const readOnlyState = worldStateCopy.getReadOnlyState();
 
         for (const [passageId, passageData] of Object.entries(passages)) {
             const sourceNode = graph.getNode(passageId);
@@ -344,7 +347,7 @@ export class PassageGraphCreator {
 
             // Handle different passage types
             if (typeof passageData === 'function') {
-                const passage = passageData(readOnlyState);
+                const passage = passageData(worldStateCopy);
                 edgeCounter = await this.createEdgesForPassage(passage, sourceNode, graph, edgeCounter);
                 continue;
             }
