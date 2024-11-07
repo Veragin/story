@@ -4,7 +4,7 @@ import { Graph } from "../Graph";
 import { EdgeVisualObject } from "../EdgeVisualObject";
 import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";
 import { DraggableVisualObject } from "../Node/DraggableVisualObject";
-import { InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
+import { CircularInitializePositionStrategy, InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
 import { PassageNodeVisualObject } from "../PassagesGraph/PassageNodeVisualObject";
 
 interface Force {
@@ -25,7 +25,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private initialTemp: number;
     private minTemp: number = 1;
     private cooling: number = 0.95;
-    private maxIterations: number = 1000;
+    private maxIterations: number = 100000;
     private attractionK: number = 0.1;
     private repulsionK: number = 50;
     private centeringK: number = 0.2;
@@ -43,9 +43,9 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.width = width;
         this.height = height;
         this.k = Math.sqrt((width * height) / 100);
-        this.initialTemp = width / 10;
+        this.initialTemp = width / 2;
         this.temperature = this.initialTemp;
-        this.initializePositionStrategy = new LeftToRightInitializePositionStrategy();
+        this.initializePositionStrategy = new CircularInitializePositionStrategy();
     }
 
     private initializeVelocities(): void {
@@ -59,6 +59,16 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         if (this.nodes.length === 0) 
             return;
 
+        this.initialTemp = 1000;
+        this.minMovement = 1;
+        this.maxSpeed = 15;
+        this.damping = 4;
+        this.forceScale = 1;
+        this.centeringK = 0.001;
+        this.repulsionK = 0.01;
+        this.attractionK = 0.01;
+
+
         this.initializePositions(this.nodes, graph.getAllEdges());
         this.initializeVelocities();
 
@@ -68,7 +78,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 break;
             }
             this.temperature *= this.cooling;
-            this.adjustNodePositions();
+            this.adjustNodePositionsToMoveInBounderiesOnly();
         }
     }
 
@@ -96,7 +106,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
     private readonly MAX_REPULSION_DISTANCE = 200;
 
-    private calculateRepulsiveForces(): Map<string, Force> {
+    private calculateRepulsiveForces(maxRepulsionDistance = 1000): Map<string, Force> {
         const forces = new Map<string, Force>();
 
         this.nodes.forEach(node => {
@@ -114,7 +124,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 const dy = pos2.y - pos1.y;
                 const distance = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
 
-                if (distance > this.MAX_REPULSION_DISTANCE) {
+                if (distance > maxRepulsionDistance) {
                     continue;
                 }
 
@@ -247,7 +257,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.initializePositionStrategy.initializePositions(nodes, edges, this.width, this.height);
     }
 
-    private adjustNodePositions(): void {
+    private adjustNodePositionsToMoveInBounderiesOnly(): void {
         this.nodes.forEach(node => {
             if (node instanceof DraggableVisualObject && (node as DraggableVisualObject).isDragging()) {
                 return;
@@ -275,6 +285,17 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     performSingleIteration(graph: Graph, screenSize: TSize): void {
+        this.minTemp = 1;
+        this.cooling = 0.95;
+        this.maxIterations = 1;
+        this.attractionK = 0.1;
+        this.repulsionK = 50;
+        this.centeringK = 0.2;
+        this.damping = 0.15;
+        this.minMovement = 0.05;
+        this.maxSpeed = 5;
+        this.forceScale = 0.2;
+
         this.width = screenSize.width;
         this.height = screenSize.height;
         this.nodes = graph.getAllNodes();
@@ -284,10 +305,10 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             this.temperature = this.minTemp;
         }
 
-        const forces = this.calculateRepulsiveForces();
+        const forces = this.calculateRepulsiveForces(this.MAX_REPULSION_DISTANCE);
         this.calculateAttractiveForces(graph, forces);
         this.applyForces(forces);
-        this.adjustNodePositions();
+        this.adjustNodePositionsToMoveInBounderiesOnly();
     }
 
     destroy(): void {

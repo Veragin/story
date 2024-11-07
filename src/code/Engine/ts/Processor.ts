@@ -47,7 +47,8 @@ export class Processor {
             return;
         }
 
-        const redirect = this.e.activePassage.body.find(
+        const activeScreenPassage = this.e.activePassage as TUnkownPassageScreen;
+        const redirect = activeScreenPassage.body.find(
             (b) => b.condition !== false && b.redirect !== undefined
         )?.redirect;
         if (redirect !== undefined) {
@@ -60,12 +61,12 @@ export class Processor {
         }
 
         if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
-            this.autoProcess(this.e.activePassage);
+            this.autoProcess(activeScreenPassage);
             void this.continue();
             return;
         }
 
-        this.e.store.setPassage(this.e.activePassage);
+        this.e.store.setPassage(activeScreenPassage);
     };
 
     private autoProcess = (p: TUnkownPassageScreen) => {

@@ -1,10 +1,9 @@
-import { register } from "data/register";
 import { CanvasManager } from "../CanvasManager";
 import { Graph } from "../Graph";
-import { PassageGraphCreator } from "../PassagesGraph/PassageGraphCreator";
 import { GraphDeserializer } from "./GraphDeserializer";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
 import { GraphActualizer } from "./GraphActualizer";
+import { SpringForceLayoutManager } from "../graphLayouts/SpringForceLayoutManager";
 
 
 export class EventPassagesGraphStorageManager {
@@ -129,32 +128,31 @@ export class EventPassagesGraphStorageManager {
         canvasWidth: number,
         canvasHeight: number
     ): Promise<Graph> {
-        const graphCreator = new PassageGraphCreator(
-            canvasManager,
-            canvasWidth,
-            canvasHeight
-        );
+        // Create empty graph with appropriate layout manager
+        const graph = new Graph(canvasManager);
+        
+        try {
+            // Let GraphActualizer populate the graph
+            const populatedGraph = await GraphActualizer.verifyGraphData(
+                eventId,
+                graph,
+                canvasManager,
+                canvasWidth,
+                canvasHeight
+            );
 
-        // Get passages for the event
-        const passages = await register.passages[eventId as keyof typeof register.passages]();
-        const graph = await graphCreator.createGraph(passages.default);
+            graph.setLayoutManager(new SpringForceLayoutManager(
+                canvasWidth,
+                canvasHeight
+            ));
+            graph.layout();
 
-        this.saveGraphToStorage(eventId, graph);
-
-        return graph;
-    }
-
-    private static async verifyGraphData(eventId: string, graph: Graph): Promise<Graph> {
-        // TODO: Implement verification logic that checks if the stored graph structure
-        // matches the current passage structure in the register:
-        // 1. Load current passages from register
-        // 2. Compare nodes and edges with current passages
-        // 3. Add missing nodes/edges
-        // 4. Remove obsolete nodes/edges
-        // 5. Return updated graph
-
-        // For now, just return the original graph
-        return graph;
+            this.saveGraphToStorage(eventId, populatedGraph);
+            return populatedGraph;
+        } catch (error) {
+            console.error('Failed to create new graph:', error);
+            throw new Error(`Failed to create graph for event ${eventId}`);
+        }
     }
 
     static clearStorage(eventId?: string): void {

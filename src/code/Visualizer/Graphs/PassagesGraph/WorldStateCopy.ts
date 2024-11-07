@@ -5,13 +5,13 @@ import { TLocationId } from 'types/TLocation';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 
-export class WorldStateCopy {
+class WorldStateCopy {
 
     /**
      * Creates the initial base state with all required properties
      * @returns The initialized base state
      */
-    private createBaseState(): TWorldState {
+    createBaseState(): TWorldState {
         // Create initial state structure
         const baseState = {
             time: register.events.village.timeRange.start,
@@ -70,4 +70,4 @@ export class WorldStateCopy {
 }
 
 // Create a singleton instance for easy access
-export const worldStateCopy = new WorldStateCopy();
+export const worldStateCopy = new WorldStateCopy().createBaseState();

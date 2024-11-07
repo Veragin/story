@@ -41,7 +41,7 @@ export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObjec
         border: BorderConfig,
         content: VisualObject,
         backgroundColor: string = '#ffffff',
-        zIndex: number = 0,
+        zIndex: number = 0
     ) {
         super(realPosition, size, border, content, backgroundColor, zIndex);
         this.passageId = passageId;
