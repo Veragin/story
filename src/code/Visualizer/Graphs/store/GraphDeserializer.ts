@@ -59,14 +59,15 @@ export class GraphDeserializer {
             const edge = new PassageEdgeVisualObject(
                 sourceNode,
                 targetNode,
-                edgeData.color,
+                edgeData.defaultColor,
                 edgeData.width,
                 edgeData.arrow,
                 edgeData.zIndex,
-                edgeData.style
+                edgeData.style,
             );
             edge.onTargetSelectedColor = edgeData.onTargetSelectedColor;
             edge.onSourceSelectedColor = edgeData.onSourceSelectedColor;
+            edge.defaultColor = edgeData.defaultColor;
 
             graph.addEdge(edge, edgeData.id);
         }

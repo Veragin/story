@@ -4,6 +4,7 @@ import { GraphDeserializer } from "./GraphDeserializer";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
 import { GraphActualizer } from "./GraphActualizer";
 import { SpringForceLayoutManager } from "../graphLayouts/SpringForceLayoutManager";
+import { throttle } from "code/utils/throttle";
 
 
 export class EventPassagesGraphStorageManager {
@@ -93,16 +94,20 @@ export class EventPassagesGraphStorageManager {
     }
 
     private static saveGraphToStorage(eventId: string, graph: Graph): void {
+        this.throttleSavingGraphToStorage({ eventId, graph });
+    }
+
+    private static throttleSavingGraphToStorage = throttle((args: { eventId: string, graph: Graph }) => {
         try {
-            const serializedGraph = GraphSerializer.serialize(graph);
+            const serializedGraph = GraphSerializer.serialize(args.graph);
             localStorage.setItem(
-                this.STORAGE_PREFIX + eventId,
+                this.STORAGE_PREFIX + args.eventId,
                 JSON.stringify(serializedGraph)
             );
         } catch (error) {
             console.error('Failed to save graph to storage:', error);
         }
-    }
+    }, 500);
 
     private static loadGraphFromStorage(eventId: string, canvasManager: CanvasManager): Graph | null {
         try {
@@ -130,7 +135,7 @@ export class EventPassagesGraphStorageManager {
     ): Promise<Graph> {
         // Create empty graph with appropriate layout manager
         const graph = new Graph(canvasManager);
-        
+
         try {
             // Let GraphActualizer populate the graph
             const populatedGraph = await GraphActualizer.verifyGraphData(

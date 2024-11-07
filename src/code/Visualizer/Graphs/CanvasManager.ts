@@ -205,7 +205,8 @@ export class CanvasManager {
         this.clear();
         const sortedObjects = this.getSortedObjects();
         for (const obj of sortedObjects) {
-            if (!this.isObjVisible(obj)) continue;
+            if (!this.isObjVisible(obj)) 
+                continue;
             obj.draw(this.ctx);
         }
     }, 1000 / 60);

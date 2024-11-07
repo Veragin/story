@@ -35,6 +35,7 @@ export type SerializedEdge = {
     style: TLineType;
     onTargetSelectedColor: string;
     onSourceSelectedColor: string;
+    defaultColor: string;
 }
 
 export type SerializedGraph = {
@@ -90,6 +91,7 @@ export class GraphSerializer {
                 zIndex: edge.zIndex,
                 onTargetSelectedColor: edge.onTargetSelectedColor,
                 onSourceSelectedColor: edge.onSourceSelectedColor,
+                defaultColor: edge.defaultColor
             });
         }
 
