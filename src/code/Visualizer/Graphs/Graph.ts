@@ -33,6 +33,7 @@ export class Graph {
 
         this.nodes.set(id, node);
         this.canvasManager.addObject(node);
+        this.canvasManager.addObject(node.getContent());
 
         this.onNodeAdded.notify(node);
 

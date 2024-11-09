@@ -1,10 +1,10 @@
-import { CanvasManager } from "../CanvasManager";
-import { Graph } from "../Graph";
-import { FreeDragStrategy } from "../Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { NodeVisualObject } from "../Node/NodeVisualObject";
-import { TextContent } from "../Node/TextContent";
-import { PassageEdgeVisualObject } from "../PassagesGraph/PassageEdgeVisualObject";
-import { PassageNodeVisualObject } from "../PassagesGraph/PassageNodeVisualObject";
+import { CanvasManager } from "../../CanvasManager";
+import { Graph } from "../../Graph";
+import { FreeDragStrategy } from "../../Node/dragAndDropMovingStrategies/FreeDragStrategy";
+import { NodeVisualObject } from "../../Node/NodeVisualObject";
+import { TextContent } from "../../Node/TextContent";
+import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
+import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
 
 export class GraphDeserializer {

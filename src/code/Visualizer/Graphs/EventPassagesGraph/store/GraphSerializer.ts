@@ -1,11 +1,11 @@
 import { TRegisterPassageId } from "data/register";
-import { TLineType } from "../EdgeVisualObject";
-import { Graph } from "../Graph";
-import { BorderConfig } from "../Node/BorderConfig";
-import { NodeVisualObject } from "../Node/NodeVisualObject";
-import { TextContent } from "../Node/TextContent";
-import { PassageNodeVisualObject } from "../PassagesGraph/PassageNodeVisualObject";
-import { PassageEdgeVisualObject } from "../PassagesGraph/PassageEdgeVisualObject";
+import { TLineType } from "../../EdgeVisualObject";
+import { Graph } from "../../Graph";
+import { BorderConfig } from "../../Node/BorderConfig";
+import { NodeVisualObject } from "../../Node/NodeVisualObject";
+import { TextContent } from "../../Node/TextContent";
+import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
+import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
 
 export type SerializedNode = {
     id: string;

@@ -1,15 +1,16 @@
-import { CanvasManager } from "../CanvasManager";
-import { Graph } from "../Graph";
+import { CanvasManager } from "../../CanvasManager";
+import { Graph } from "../../Graph";
 import { GraphDeserializer } from "./GraphDeserializer";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
-import { GraphActualizer } from "./GraphActualizer";
-import { SpringForceLayoutManager } from "../graphLayouts/SpringForceLayoutManager";
+import { GraphActualizer } from "../actualizer/GraphActualizer";
+import { SpringForceLayoutManager } from "../../graphLayouts/SpringForceLayoutManager";
 import { throttle } from "code/utils/throttle";
 
 
 export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
     private static readonly STORAGE_PREFIX = 'passage-graph-';
+    private static graphActualizer: GraphActualizer = new GraphActualizer();
 
     static async getGraph(
         eventId: string,
@@ -34,10 +35,9 @@ export class EventPassagesGraphStorageManager {
         const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
         if (storedGraph) {
             // Verify and update stored graph data using GraphActualizer
-            const verifiedGraph = await GraphActualizer.verifyGraphData(
+            const verifiedGraph = await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
                 eventId,
                 storedGraph,
-                canvasManager,
                 canvasWidth,
                 canvasHeight
             );
@@ -138,10 +138,9 @@ export class EventPassagesGraphStorageManager {
 
         try {
             // Let GraphActualizer populate the graph
-            const populatedGraph = await GraphActualizer.verifyGraphData(
+            const populatedGraph = await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
                 eventId,
                 graph,
-                canvasManager,
                 canvasWidth,
                 canvasHeight
             );
