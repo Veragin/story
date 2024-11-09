@@ -83,7 +83,7 @@ export class TextContent extends VisualObject {
     }
 }
 
-type TTextAlignment =
+export type TTextAlignment =
     | 'top_left'
     | 'top_center'
     | 'top_right'

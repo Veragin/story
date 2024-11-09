@@ -1,8 +1,20 @@
 import { FreeDragStrategy } from "../../../Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { TextContent } from "../../../Node/TextContent";
+import { TextContent, TTextAlignment } from "../../../Node/TextContent";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
 import { ColorManager } from "../ColorManager";
-import { NodeDimensions, NodeTextConfig } from "./NodeConfig";
+
+
+type NodeTextConfig = {
+    font: string;
+    color: string;
+    alignment: TTextAlignment;
+}
+
+type NodeDimensions = {
+    width: number;
+    height: number;
+}
+
 
 export abstract class AbstractPassageNodeCreator {
     protected static readonly MIN_NODE_WIDTH = 120;

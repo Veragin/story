@@ -11,7 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
-import { EventPassagesGraphStorageManager as EventPassagesGraphStorageManager } from './Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
+import { EventPassagesGraphStorageManager } from './Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
+
 
 export const EventPassages = () => {
     const store = useVisualizerStore();
@@ -47,13 +48,14 @@ export const EventPassages = () => {
                 markerRef.current!
             );
         
-            const canvasManager = store.timelineEvents?.canvasManager;
+            const canvasManager = store.canvasManager;
             if (!canvasManager) 
                 return;
         
             const canvasWidth = canvasManager.getWidth();
             const canvasHeight = canvasManager.getHeight();
-            if (!canvasWidth || !canvasHeight) return;
+            if (!canvasWidth || !canvasHeight) 
+                return;
         
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
@@ -126,8 +128,8 @@ export const EventPassages = () => {
                 </SFormControl>
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
-            <STimelineCanvas ref={timelineCanvasRef} />
-            <STimelineTimeMarker ref={markerRef} />
+            <STimelineCanvas ref={timelineCanvasRef} style={{ visibility: 'hidden' }} />
+            <STimelineTimeMarker ref={markerRef} style={{ visibility: 'hidden' }} />
         </WholeContainer>
     );
 };
