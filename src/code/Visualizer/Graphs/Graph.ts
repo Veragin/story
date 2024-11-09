@@ -73,6 +73,7 @@ export class Graph {
         // Remove the node
         this.nodes.delete(id);
         this.canvasManager.removeObject(node);
+        this.canvasManager.removeObject(node.getContent());
 
         this.onNodeRemoved.notify(node);
     }

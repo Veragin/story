@@ -49,7 +49,7 @@ export class NodeActualizer {
 
             if (passageIdsPresented.has(passageNode.passageId) ||
                 !currentPassageIds.has(passageNode.passageId)) {
-                nodesToRemove.add(nodeId);
+                nodesToRemove.add(passageNode.passageId);
                 continue;
             }
 
