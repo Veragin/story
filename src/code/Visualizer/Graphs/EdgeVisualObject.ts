@@ -13,12 +13,12 @@ export const edgeVisualObjectProperties = {
 export type TLineType = 'solid' | 'dotted' | 'dashed';
 
 export class EdgeVisualObject extends ClickableVisualObject {
-    private _source: NodeVisualObject;
-    private _target: NodeVisualObject;
-    private _color: string;
-    private _width: number;
-    private _arrow: boolean;
-    private _style: TLineType;
+    protected _source: NodeVisualObject;
+    protected _target: NodeVisualObject;
+    protected _color: string;
+    protected _width: number;
+    protected _arrow: boolean;
+    protected _style: TLineType;
 
     constructor(
         source: NodeVisualObject,
@@ -47,7 +47,6 @@ export class EdgeVisualObject extends ClickableVisualObject {
         this._width = width;
         this._arrow = arrow;
         this._style = style;
-
 
         // Subscribe to node position changes
         this._source.onPropertyChanged.subscribe(() => this.redraw(true, edgeVisualObjectProperties.source));
@@ -101,7 +100,10 @@ export class EdgeVisualObject extends ClickableVisualObject {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Draw arrow if enabled
+        this.drawArrow(ctx, sourcePos, targetPos);
+    }
+
+    protected drawArrow(ctx: CanvasRenderingContext2D, sourcePos: TVec, targetPos: TVec): void {
         if (this._arrow) {
             const angle = Math.atan2(targetPos.y - sourcePos.y, targetPos.x - sourcePos.x);
             const arrowLength = 10;

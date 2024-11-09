@@ -5,6 +5,7 @@ import { TEventId } from 'types/TIds';
 import { TEvent } from 'types/TEvent';
 import { EventNode } from './EventNode';
 import { TLocationId } from 'types/TLocation';
+import { Graph } from 'code/Visualizer/Graphs/Graph';
 
 type TLocationLayout = {
     events: TEvent<TEventId>[];
@@ -17,10 +18,13 @@ export class TimelineEvents {
     locationLayout: Partial<Record<TLocationId, TLocationLayout>> = {};
     mapping = new Map<TEventId, EventNode<TEventId>>();
 
+    graph: Graph;
+
     constructor(
         public store: Store,
-        public canvasManager: CanvasManager
+        private canvasManager: CanvasManager
     ) {
+        this.graph = new Graph(canvasManager);
         const eventList = Object.values(register.events) as TEvent<TEventId>[];
         eventList.forEach((event) => this.addEvent(event));
         this.recompueLocationLayout();
@@ -73,12 +77,14 @@ export class TimelineEvents {
                 const row = data.rowCountFromTop + event.rowIndexInLocation;
                 event.box.updateRow(row, data.color);
             }
+
+            event.box.setUpEdges(this.graph);
         });
     };
 
     addEvent = (event: TEvent<TEventId>) => {
         const node = new EventNode(event);
-        node.box.setupNodes(this.canvasManager, () => {
+        node.box.setupNodes(this.graph, () => {
             node.updateEventFromPosition(this.store);
             this.recompueLocationLayout();
         });
@@ -90,7 +96,7 @@ export class TimelineEvents {
     removeEvent = (eventId: TEventId) => {
         const node = this.mapping.get(eventId);
         if (node) {
-            node.box.destroyNodes(this.canvasManager);
+            node.box.destroyNodes(this.graph);
             this.mapping.delete(eventId);
         }
     };
@@ -105,7 +111,7 @@ export class TimelineEvents {
     destroy = () => {
         this.canvasManager.destroy();
         this.mapping.forEach((node) => {
-            node.box.destroyNodes(this.canvasManager);
+            node.box.destroyNodes(this.graph);
         });
         this.mapping.clear();
     };

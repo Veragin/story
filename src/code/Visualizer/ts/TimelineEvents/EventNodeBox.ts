@@ -1,5 +1,6 @@
 import { assertNotNullish } from 'code/utils/typeguards';
-import { CanvasManager } from 'code/Visualizer/Graphs/CanvasManager';
+import { EdgeFromSide } from 'code/Visualizer/Graphs/EdgeFromSide';
+import { Graph } from 'code/Visualizer/Graphs/Graph';
 import { HorizontalDragStrategy } from 'code/Visualizer/Graphs/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
 import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/Graphs/Node/HorizontallyScalableNodeVisualObject';
 import { TextContent } from 'code/Visualizer/Graphs/Node/TextContent';
@@ -14,7 +15,7 @@ export class EventNodeBox<E extends TEventId> {
 
     constructor(public event: TEvent<E>) {}
 
-    setupNodes = (manager: CanvasManager, recompute: () => void) => {
+    setupNodes = (graph: Graph, recompute: () => void) => {
         const textContent = new TextContent({
             position: { x: 0, y: 0 },
             size: {
@@ -65,12 +66,21 @@ export class EventNodeBox<E extends TEventId> {
             console.log(`Clicked node: ${this.event.title}`);
         });
 
-        manager.addObject(node);
-        manager.addObject(textContent);
+        graph.addNode(node, this.event.eventId);
+        graph.canvasManager.addObject(textContent);
 
         this.boxNode = node;
         this.textNode = textContent;
         return node;
+    };
+
+    setUpEdges = (graph: Graph) => {
+        for (const e of this.event.children) {
+            const childNode = graph.getNode(e.event.eventId);
+            const edge = new EdgeFromSide(this.boxNode!, childNode!, '#ff0000');
+            edge.id = `${this.event.eventId}-${e.event.eventId}`;
+            graph.addEdge(edge, edge.id);
+        }
     };
 
     update = (data: TUpdateData) => {
@@ -101,12 +111,12 @@ export class EventNodeBox<E extends TEventId> {
         return this.start + (this.boxNode?.getSize().width ?? 0);
     }
 
-    destroyNodes = (manager: CanvasManager) => {
+    destroyNodes = (graph: Graph) => {
         if (this.boxNode) {
-            manager.removeObject(this.boxNode);
+            graph.removeNode(this.event.eventId);
         }
         if (this.textNode) {
-            manager.removeObject(this.textNode);
+            graph.canvasManager.removeObject(this.textNode);
         }
     };
 }

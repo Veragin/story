@@ -1,13 +1,11 @@
-import { CanvasManager } from "./CanvasManager";
-import { EdgeVisualObject } from "./EdgeVisualObject";
-import { GraphLayoutManager } from "./graphLayouts/GraphLayoutManager";
-import { NodeVisualObject } from "./Node/NodeVisualObject";
-import { Observer } from "code/utils/Observer";
-import { SpringForceLayoutManager } from "./graphLayouts/SpringForceLayoutManager";
-
+import { CanvasManager } from './CanvasManager';
+import { EdgeVisualObject } from './EdgeVisualObject';
+import { GraphLayoutManager } from './graphLayouts/GraphLayoutManager';
+import { NodeVisualObject } from './Node/NodeVisualObject';
+import { Observer } from 'code/utils/Observer';
+import { SpringForceLayoutManager } from './graphLayouts/SpringForceLayoutManager';
 
 export class Graph {
-    private canvasManager: CanvasManager;
     private nodes: Map<string, NodeVisualObject> = new Map();
     private edges: Map<string, EdgeVisualObject> = new Map();
     readonly onNodeAdded = new Observer<NodeVisualObject>();
@@ -17,11 +15,10 @@ export class Graph {
 
     private layoutManager: GraphLayoutManager;
 
-    constructor(canvasManager: CanvasManager) {
-        this.canvasManager = canvasManager;
+    constructor(public canvasManager: CanvasManager) {
         this.layoutManager = new SpringForceLayoutManager(
             canvasManager.canvas.width / 2,
-            canvasManager.canvas.height / 2,
+            canvasManager.canvas.height / 2
         );
     }
 
@@ -109,9 +106,7 @@ export class Graph {
             return [];
         }
 
-        return Array.from(this.edges.values()).filter(
-            edge => edge.getSource() === node || edge.getTarget() === node
-        );
+        return Array.from(this.edges.values()).filter((edge) => edge.getSource() === node || edge.getTarget() === node);
     }
 
     /**
@@ -142,5 +137,4 @@ export class Graph {
     layout(): void {
         this.layoutManager.layout(this);
     }
-
 }
