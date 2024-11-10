@@ -65,3 +65,45 @@ MVP:
 -   passage in event (bez time modu)
     -   same as in twine
 -   display map location
+
+## UX
+
+-   Event Timeline
+
+    -   button with modla window => add new event file in VS (API PUT `/event/<eventId>`)
+    -   single click select open info window
+        -   open event file in VS (API POST `/event/<eventId>/open`)
+        -   open event file in VS (API DELETE `/event/<eventId>`)
+    -   holding ctrl will open event file instead
+    -   by drag and drop edit start/end time (API POST `/event/<eventId>/setTime`)
+    -   double-click opens Event pasage view
+
+-   Event pasage view
+    -   button with modla window => add new passage file in VS (API PUT `/passage/<passageId>`)
+    -   single click select open info window
+        -   open passage file in VS (API POST `/passage/<passageId>/open`)
+        -   open passage file in VS (API DELETE `/passage/<passageId>`)
+    -   holding ctrl will open event file instead
+
+## API
+
+-   data sent as JSON body
+
+-   PUT `/event/<eventId>`
+    -   title: String
+    -   description: String
+    -   location: String
+    -   startTime: TimeString
+    -   endTime: TimeString
+-   POST `/event/<eventId>/open`
+-   DELETE `/event/<eventId>`
+-   POST `/event/<eventId>/setTime`
+
+    -   startTime: TimeString
+    -   endTime: TimeString
+
+-   PUT `/passage/<passageId>`
+    -   title: String
+    -   type: 'screen' | 'linear' | 'transition'
+-   POST `/passage/<passageId>/open`
+-   DELETE `/passage/<passageId>`
