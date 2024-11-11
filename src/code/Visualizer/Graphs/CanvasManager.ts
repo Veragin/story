@@ -38,14 +38,6 @@ export class CanvasManager {
         this.canvas.addEventListener('mouseleave', this.handleMouseUp);
         this.canvas.addEventListener('dblclick', this.handleMouseClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
-        this.canvas.addEventListener('resize', this.handleResize);
-    }
-
-    private handleResize = () => {
-        this.onCanvasResize.notify({ 
-            width: this.canvas.width, 
-            height: this.canvas.height 
-        });
     }
 
     private getMousePoint(event: MouseEvent): TPoint {
@@ -91,7 +83,6 @@ export class CanvasManager {
                     }
                 });
         }
-
     };
 
     private handleMouseMove = (event: MouseEvent) => {
@@ -147,7 +138,7 @@ export class CanvasManager {
                     obj[0].handleClick(point);
                 }
             });
-    }
+    };
 
     private handleMouseUp = (event: MouseEvent) => {
         if (this.draggedObject) {
@@ -157,12 +148,10 @@ export class CanvasManager {
         }
     };
 
-
     private handleContextMenu = (event: MouseEvent) => {
         event.preventDefault();
         return false;
     };
-
 
     private handleVisualObjectChange = () => {
         this.draw();
@@ -205,8 +194,7 @@ export class CanvasManager {
         this.clear();
         const sortedObjects = this.getSortedObjects();
         for (const obj of sortedObjects) {
-            if (!this.isObjVisible(obj)) 
-                continue;
+            if (!this.isObjVisible(obj)) continue;
             obj.draw(this.ctx);
         }
     }, 1000 / 60);
