@@ -1,6 +1,6 @@
 import { throttle } from 'code/utils/throttle';
 import { ZOOM_SPEED_FACTOR } from './constants';
-import { Store } from '../Store';
+import { EventStore } from '../EventStore';
 import { ZOOM_CONFIG } from './zoomConfig';
 import { DeltaTime, Time } from 'time/Time';
 import { TimelineMarker } from './TimelineMarker';
@@ -16,7 +16,7 @@ export class TimelineMouseListener {
 
     constructor(
         private container: HTMLCanvasElement,
-        private store: Store,
+        private store: EventStore,
         private timelineMarker: TimelineMarker
     ) {
         this.container.addEventListener('mousedown', this.onMouseDown);

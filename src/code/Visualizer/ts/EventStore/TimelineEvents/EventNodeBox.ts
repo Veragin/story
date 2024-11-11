@@ -15,7 +15,7 @@ export class EventNodeBox<E extends TEventId> {
 
     constructor(public event: TEvent<E>) {}
 
-    setupNodes = (graph: Graph, recompute: () => void) => {
+    setupNodes = (graph: Graph, recompute: () => void, open: (id: TEventId) => void) => {
         const textContent = new TextContent({
             position: { x: 0, y: 0 },
             size: {
@@ -63,7 +63,7 @@ export class EventNodeBox<E extends TEventId> {
 
         // Add click handler
         node.onClick.subscribe(() => {
-            console.log(`Clicked node: ${this.event.title}`);
+            open(this.event.eventId);
         });
 
         graph.addNode(node, this.event.eventId);

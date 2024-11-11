@@ -1,15 +1,14 @@
-import { useState } from 'react';
 import { EventTimeline } from './EventTimeline';
 import { EventPassages } from './EventPassages';
+import { useVisualizerStore } from 'code/Context';
+import { observer } from 'mobx-react-lite';
 
-type TService = 'event-timeline' | 'event-passages';
+export const Visualizer = observer(() => {
+    const store = useVisualizerStore();
 
-export const Visualizer = () => {
-    const [service] = useState<TService>('event-passages');
-
-    if (service === 'event-passages') {
-        return <EventPassages />;
+    if (store.activeEvent === null) {
+        return <EventTimeline />;
     }
 
-    return <EventTimeline />;
-};
+    return <EventPassages />;
+});

@@ -6,16 +6,15 @@ import { useVisualizerStore } from 'code/Context';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
-} from './ts/TimelineRender/TimelineMarker';
+} from './ts/EventStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef, useState } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
 import { EventPassagesGraphStorageManager } from './Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
 
-
 export const EventPassages = () => {
-    const store = useVisualizerStore();
+    const store = useVisualizerStore().eventStore;
     const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,7 +25,7 @@ export const EventPassages = () => {
     // Get all available events from register
     const events = Object.entries(register.events).map(([id, event]) => ({
         id,
-        title: event.title
+        title: event.title,
     }));
 
     useEffect(() => {
@@ -38,44 +37,46 @@ export const EventPassages = () => {
         let isActive = true;
 
         const initGraph = async () => {
-            if (!isActive) 
-                return;
-        
+            if (!isActive) return;
+
             store.init(
                 mainCanvasRef.current!,
                 timelineCanvasRef.current!,
                 containerRef.current!,
                 markerRef.current!
             );
-        
+
             const canvasManager = store.canvasManager;
-            if (!canvasManager) 
-                return;
-        
+            if (!canvasManager) return;
+
             const canvasWidth = canvasManager.getWidth();
             const canvasHeight = canvasManager.getHeight();
-            if (!canvasWidth || !canvasHeight) 
-                return;
-        
+            if (!canvasWidth || !canvasHeight) return;
+
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
                 graphAnimationHandlerRef.current.stopAnimation();
                 graphAnimationHandlerRef.current = null;
             }
-        
-            if (register.passages[selectedEvent as keyof typeof register.passages]) {
+
+            if (
+                register.passages[
+                    selectedEvent as keyof typeof register.passages
+                ]
+            ) {
                 try {
-                    const graph = await EventPassagesGraphStorageManager.getGraph(
-                        selectedEvent,
-                        canvasManager,
-                        canvasWidth,
-                        canvasHeight
-                    );
-        
-                    if (!isActive) 
-                        return;
-        
-                    graphAnimationHandlerRef.current = new GraphAnimationHandler(graph, canvasManager);
+                    const graph =
+                        await EventPassagesGraphStorageManager.getGraph(
+                            selectedEvent,
+                            canvasManager,
+                            canvasWidth,
+                            canvasHeight
+                        );
+
+                    if (!isActive) return;
+
+                    graphAnimationHandlerRef.current =
+                        new GraphAnimationHandler(graph, canvasManager);
                     graphAnimationHandlerRef.current.isAnimating();
                     graphAnimationHandlerRef.current.startAnimation();
                 } catch (error) {
@@ -102,7 +103,11 @@ export const EventPassages = () => {
                 <SmallText>Event Passages</SmallText>
                 <SFormControl size="small">
                     <Autocomplete
-                        value={events.find(event => event.id === selectedEvent) || null}
+                        value={
+                            events.find(
+                                (event) => event.id === selectedEvent
+                            ) || null
+                        }
                         onChange={(_, newValue) => {
                             if (newValue) {
                                 setSelectedEvent(newValue.id);
@@ -117,19 +122,19 @@ export const EventPassages = () => {
                                 variant="outlined"
                             />
                         )}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        isOptionEqualToValue={(option, value) =>
+                            option.id === value.id
+                        }
                         sx={{
-                            minWidth: 300,
+                            'minWidth': 300,
                             '& .MuiOutlinedInput-root': {
-                                backgroundColor: 'gray'
-                            }
+                                backgroundColor: 'gray',
+                            },
                         }}
                     />
                 </SFormControl>
             </SControlPanel>
             <SMainCanvas ref={mainCanvasRef} />
-            <STimelineCanvas ref={timelineCanvasRef} style={{ visibility: 'hidden' }} />
-            <STimelineTimeMarker ref={markerRef} style={{ visibility: 'hidden' }} />
         </WholeContainer>
     );
 };
@@ -140,24 +145,24 @@ const SControlPanel = styled(Row)`
     padding: ${spacingCss(0.5)}; // Reduced from 1 to 0.5
     background-color: gray;
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    height: 52px; 
+    height: 52px;
     padding-left: ${spacingCss(2)};
 `;
 
 const SFormControl = styled(FormControl)`
     min-width: 200px;
     margin: 0; // Removed vertical margin
-    
+
     // Style for text field and autocomplete
     & .MuiAutocomplete-root {
         & .MuiOutlinedInput-root {
             background-color: gray;
             height: 40px;
-            padding: 0 ${spacingCss(2)}; 
-            
+            padding: 0 ${spacingCss(2)};
+
             & input {
                 color: rgba(0, 0, 0, 0.87);
-                padding: 0; 
+                padding: 0;
                 height: 100%;
             }
 
@@ -176,12 +181,12 @@ const SFormControl = styled(FormControl)`
         border-radius: 4px;
         padding: 0 ${spacingCss(0.5)};
         transform: translate(14px, -6px) scale(0.75); // Adjusted position
-        
+
         &.Mui-focused {
             color: white;
         }
     }
-    
+
     & .MuiOutlinedInput-notchedOutline {
         border-color: rgba(0, 0, 0, 0.23);
     }
@@ -190,7 +195,7 @@ const SFormControl = styled(FormControl)`
     & .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
         border-color: rgba(0, 0, 0, 0.87);
     }
-    
+
     & .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
         border-color: black;
     }
@@ -201,7 +206,7 @@ const SFormControl = styled(FormControl)`
         background-color: black;
         border-radius: 4px;
         padding: 0 ${spacingCss(0.5)};
-        
+
         &.Mui-focused {
             color: white;
         }
@@ -217,14 +222,14 @@ const SFormControl = styled(FormControl)`
 
         & .MuiAutocomplete-option {
             padding: ${spacingCss(1)};
-            
+
             &:hover {
                 background-color: rgba(0, 0, 0, 0.1);
             }
-            &[aria-selected="true"] {
+            &[aria-selected='true'] {
                 background-color: rgba(0, 0, 0, 0.2);
             }
-            &[aria-selected="true"].Mui-focused {
+            &[aria-selected='true'].Mui-focused {
                 background-color: rgba(0, 0, 0, 0.3);
             }
         }

@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { visualizerStoreContext } from '../Context';
-import { Store } from './ts/Store';
+import { EventStore } from './ts/EventStore/EventStore';
 import { TimeManager } from 'time/TimeManager';
+import { Store } from './ts/Store';
 
 type Props = {
     children: ReactNode;

@@ -1,5 +1,5 @@
 import { CanvasManager } from 'code/Visualizer/Graphs/CanvasManager';
-import { Store } from '../Store';
+import { EventStore } from '../EventStore';
 import { register } from 'data/register';
 import { TEventId } from 'types/TIds';
 import { TEvent } from 'types/TEvent';
@@ -21,8 +21,9 @@ export class TimelineEvents {
     graph: Graph;
 
     constructor(
-        public store: Store,
-        private canvasManager: CanvasManager
+        public store: EventStore,
+        private canvasManager: CanvasManager,
+        private openEvent: (id: TEventId) => void
     ) {
         this.graph = new Graph(canvasManager);
         const eventList = Object.values(register.events) as TEvent<TEventId>[];
@@ -84,10 +85,14 @@ export class TimelineEvents {
 
     addEvent = (event: TEvent<TEventId>) => {
         const node = new EventNode(event);
-        node.box.setupNodes(this.graph, () => {
-            node.updateEventFromPosition(this.store);
-            this.recompueLocationLayout();
-        });
+        node.box.setupNodes(
+            this.graph,
+            () => {
+                node.updateEventFromPosition(this.store);
+                this.recompueLocationLayout();
+            },
+            this.openEvent
+        );
 
         this.mapping.set(event.eventId, node);
         return node;

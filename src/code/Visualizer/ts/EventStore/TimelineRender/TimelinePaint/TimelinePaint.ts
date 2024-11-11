@@ -1,12 +1,12 @@
 import { TimeManager } from 'time/TimeManager';
-import { Store } from '../../Store';
+import { EventStore } from '../../EventStore';
 import { TimelineDraw } from './TimelineDraw';
 
 export class TimelinePaint {
     timelineDraw: TimelineDraw;
 
     constructor(
-        private store: Store,
+        private store: EventStore,
         private timeManager: TimeManager,
         canvas: HTMLCanvasElement
     ) {

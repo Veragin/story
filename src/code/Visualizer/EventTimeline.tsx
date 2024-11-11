@@ -6,7 +6,7 @@ import { useVisualizerStore } from 'code/Context';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
-} from './ts/TimelineRender/TimelineMarker';
+} from './ts/EventStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { TimelineZoomSlider } from './TimelineZoomSlider';
@@ -15,7 +15,7 @@ import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputCompone
 import { observer } from 'mobx-react-lite';
 
 export const EventTimeline = observer(() => {
-    const store = useVisualizerStore();
+    const store = useVisualizerStore().eventStore;
     const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);

@@ -1,6 +1,6 @@
 import { TEvent } from 'types/TEvent';
 import { TEventId } from 'types/TIds';
-import { Store } from '../Store';
+import { EventStore } from '../EventStore';
 import { EventNodeBox } from './EventNodeBox';
 
 export class EventNode<E extends TEventId> {
@@ -11,7 +11,7 @@ export class EventNode<E extends TEventId> {
         this.box = new EventNodeBox(event);
     }
 
-    updateNodeByEvent = (store: Store) => {
+    updateNodeByEvent = (store: EventStore) => {
         const x = (this.event.timeRange.start.s - store.timelineStartTime.s) * store.durationHelper.timeToLengthFactor;
         const width =
             (this.event.timeRange.end.s - this.event.timeRange.start.s) * store.durationHelper.timeToLengthFactor;
@@ -19,7 +19,7 @@ export class EventNode<E extends TEventId> {
         this.box.update({ x, width, title: this.event.title });
     };
 
-    updateEventFromPosition = (store: Store) => {
+    updateEventFromPosition = (store: EventStore) => {
         const start = store.durationHelper.getTimestampFromDistance(this.box.start);
         const end = store.durationHelper.getTimestampFromDistance(this.box.end);
 
