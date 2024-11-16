@@ -3,7 +3,6 @@ import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
-import { CanvasHandler } from './CanvasHandler';
 import { CanvasManager } from '../../Graphs/CanvasManager';
 import { TimelineEvents } from './TimelineEvents/TimelineEvents';
 import { DurationHelper } from './DurationHelper';
@@ -13,7 +12,6 @@ export class EventStore {
     canvasManager: CanvasManager | null = null;
     durationHelper: DurationHelper;
     timelineEvents: TimelineEvents | null = null;
-    canvasHandler: CanvasHandler | null = null;
     timelineRender: TimelineRender | null = null;
 
     constructor(
@@ -31,24 +29,26 @@ export class EventStore {
         });
     }
 
-    init = (
-        mainRef: HTMLCanvasElement,
-        timelineRef: HTMLCanvasElement,
-        containerRef: HTMLDivElement,
-        markerRef: HTMLDivElement
-    ) => {
+    init = (mainRef: HTMLCanvasElement, timelineRef: HTMLCanvasElement, markerRef: HTMLDivElement) => {
         this.deinit();
 
         this.canvasManager = new CanvasManager(mainRef);
         this.timelineEvents = new TimelineEvents(this, this.canvasManager, (id) => this.store.setActiveEvent(id));
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
-        this.canvasHandler = new CanvasHandler(mainRef, timelineRef, containerRef, this);
+        this.store.canvasHandler.registerCanvas('timeline', timelineRef);
+        this.store.canvasHandler.registerCanvas('main', mainRef);
     };
 
     deinit = () => {
         this.timelineEvents?.destroy();
         this.timelineRender?.destroy();
-        this.canvasHandler?.destroy();
+        this.canvasManager?.destroy();
+        this.store.canvasHandler.unregisterCanvas('timeline');
+        this.store.canvasHandler.unregisterCanvas('main');
+
+        this.timelineEvents = null;
+        this.timelineRender = null;
+        this.canvasManager = null;
     };
 
     displayConnections = false;

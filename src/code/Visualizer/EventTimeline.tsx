@@ -1,5 +1,5 @@
 import { IconButton, styled, Tooltip } from '@mui/material';
-import { Row, WholeContainer } from 'code/Components/Basic';
+import { WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
@@ -9,14 +9,14 @@ import {
 } from './ts/EventStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { TimelineZoomSlider } from './TimelineZoomSlider';
+import { TimelineZoomSlider } from './components/TimelineZoomSlider';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
 import { observer } from 'mobx-react-lite';
+import { Nav } from './components/Nav';
 
 export const EventTimeline = observer(() => {
     const store = useVisualizerStore().eventStore;
-    const containerRef = useRef<HTMLDivElement>(null);
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
@@ -25,13 +25,11 @@ export const EventTimeline = observer(() => {
     useEffect(() => {
         assertNotNullish(mainCanvasRef.current);
         assertNotNullish(timelineCanvasRef.current);
-        assertNotNullish(containerRef.current);
         assertNotNullish(markerRef.current);
 
         store.init(
             mainCanvasRef.current,
             timelineCanvasRef.current,
-            containerRef.current,
             markerRef.current
         );
 
@@ -41,8 +39,8 @@ export const EventTimeline = observer(() => {
     }, []);
 
     return (
-        <WholeContainer ref={containerRef}>
-            <SControlPanel>
+        <WholeContainer>
+            <Nav>
                 <SmallText>{_('Event Timeline')}</SmallText>
 
                 <Tooltip
@@ -76,22 +74,13 @@ export const EventTimeline = observer(() => {
                     </IconButton>
                 </Tooltip>
                 <TimelineZoomSlider />
-            </SControlPanel>
+            </Nav>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
             <STimelineTimeMarker ref={markerRef} />
         </WholeContainer>
     );
 });
-
-const SControlPanel = styled(Row)`
-    gap: ${spacingCss(1)};
-    align-items: center;
-
-    & > span:first-child {
-        flex: 1;
-    }
-`;
 
 const SMainCanvas = styled('canvas')`
     flex: 1;

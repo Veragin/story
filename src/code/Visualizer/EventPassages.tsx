@@ -1,57 +1,47 @@
-import { styled, FormControl, Autocomplete, TextField } from '@mui/material';
-import { Row, WholeContainer } from 'code/Components/Basic';
+import {
+    styled,
+    FormControl,
+    Autocomplete,
+    TextField,
+    Button,
+} from '@mui/material';
+import { WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
 import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
-import {
-    MARKER_LINE_CLASS,
-    MARKER_TIME_CLASS,
-} from './ts/EventStore/TimelineRender/TimelineMarker';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
 import { EventPassagesGraphStorageManager } from './Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
+import { Nav } from './components/Nav';
+import { TEventId } from 'types/TIds';
+import { CanvasManager } from './Graphs/CanvasManager';
 
 export const EventPassages = () => {
-    const store = useVisualizerStore().eventStore;
-    const containerRef = useRef<HTMLDivElement>(null);
+    const store = useVisualizerStore();
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
-    const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
-    const markerRef = useRef<HTMLDivElement>(null);
     const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
-    const [selectedEvent, setSelectedEvent] = useState<string>('village');
 
     // Get all available events from register
     const events = Object.entries(register.events).map(([id, event]) => ({
-        id,
+        id: id as TEventId,
         title: event.title,
     }));
 
     useEffect(() => {
-        assertNotNullish(mainCanvasRef.current);
-        assertNotNullish(timelineCanvasRef.current);
-        assertNotNullish(containerRef.current);
-        assertNotNullish(markerRef.current);
-
         let isActive = true;
 
         const initGraph = async () => {
             if (!isActive) return;
 
-            store.init(
-                mainCanvasRef.current!,
-                timelineCanvasRef.current!,
-                containerRef.current!,
-                markerRef.current!
+            assertNotNullish(mainCanvasRef.current);
+            assertNotNullish(store.activeEvent);
+            store.canvasHandler.registerCanvas(
+                'passages',
+                mainCanvasRef.current
             );
-
-            const canvasManager = store.canvasManager;
-            if (!canvasManager) return;
-
-            const canvasWidth = canvasManager.getWidth();
-            const canvasHeight = canvasManager.getHeight();
-            if (!canvasWidth || !canvasHeight) return;
+            const canvasManager = new CanvasManager(mainCanvasRef.current);
 
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
@@ -61,16 +51,14 @@ export const EventPassages = () => {
 
             if (
                 register.passages[
-                    selectedEvent as keyof typeof register.passages
+                    store.activeEvent as keyof typeof register.passages
                 ]
             ) {
                 try {
                     const graph =
                         await EventPassagesGraphStorageManager.getGraph(
-                            selectedEvent,
-                            canvasManager,
-                            canvasWidth,
-                            canvasHeight
+                            store.activeEvent,
+                            canvasManager
                         );
 
                     if (!isActive) return;
@@ -89,29 +77,34 @@ export const EventPassages = () => {
 
         return () => {
             isActive = false;
+            store.canvasHandler.unregisterCanvas('passages');
             if (graphAnimationHandlerRef.current) {
                 graphAnimationHandlerRef.current.stopAnimation();
                 graphAnimationHandlerRef.current = null;
             }
-            store.deinit();
         };
-    }, [selectedEvent, store]);
+    }, [store.activeEvent, store]);
 
     return (
-        <WholeContainer ref={containerRef}>
-            <SControlPanel>
-                <SmallText>Event Passages</SmallText>
+        <WholeContainer>
+            <Nav>
+                <Button
+                    variant={'text'}
+                    onClick={() => store.setActiveEvent(null)}
+                >
+                    {_('Back')}
+                </Button>
+                <SmallText>{_('Event Passages')}</SmallText>
+
                 <SFormControl size="small">
                     <Autocomplete
                         value={
                             events.find(
-                                (event) => event.id === selectedEvent
-                            ) || null
+                                (event) => event.id === store.activeEvent
+                            ) ?? null
                         }
                         onChange={(_, newValue) => {
-                            if (newValue) {
-                                setSelectedEvent(newValue.id);
-                            }
+                            store.setActiveEvent(newValue?.id ?? null);
                         }}
                         options={events}
                         getOptionLabel={(option) => option.title || option.id}
@@ -133,21 +126,11 @@ export const EventPassages = () => {
                         }}
                     />
                 </SFormControl>
-            </SControlPanel>
+            </Nav>
             <SMainCanvas ref={mainCanvasRef} />
         </WholeContainer>
     );
 };
-
-const SControlPanel = styled(Row)`
-    gap: ${spacingCss(2)};
-    align-items: center;
-    padding: ${spacingCss(0.5)}; // Reduced from 1 to 0.5
-    background-color: gray;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    height: 52px;
-    padding-left: ${spacingCss(2)};
-`;
 
 const SFormControl = styled(FormControl)`
     min-width: 200px;
@@ -247,44 +230,4 @@ const SMainCanvas = styled('canvas')`
     border-top: 1px solid grey;
     border-bottom: 1px solid grey;
     background-color: wheat;
-`;
-
-const STimelineCanvas = styled('canvas')`
-    width: 100%;
-    height: 80px;
-    user-select: none;
-    cursor: grab;
-
-    &.grabbing {
-        cursor: grabbing;
-    }
-`;
-
-const STimelineTimeMarker = styled('div')`
-    position: absolute;
-    bottom: 42px;
-    left: 0;
-    width: 150px;
-    align-items: center;
-    display: none;
-    flex-direction: column;
-    pointer-events: none;
-    gap: ${spacingCss(1)};
-    translate: -50%;
-
-    & > .${MARKER_TIME_CLASS} {
-        background-color: #171a1e;
-        padding: ${spacingCss(0.5)} ${spacingCss(1)};
-        border-radius: 6px;
-        font-size: 14px;
-        line-height: 14px;
-        align-self: stretch;
-        text-align: center;
-    }
-
-    & > .${MARKER_LINE_CLASS} {
-        background-color: red;
-        width: 2px;
-        height: 30px;
-    }
 `;

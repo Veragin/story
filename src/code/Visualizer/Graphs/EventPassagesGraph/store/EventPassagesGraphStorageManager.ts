@@ -1,23 +1,17 @@
-import { CanvasManager } from "../../CanvasManager";
-import { Graph } from "../../Graph";
-import { GraphDeserializer } from "./GraphDeserializer";
-import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
-import { GraphActualizer } from "../actualizer/GraphActualizer";
-import { SpringForceLayoutManager } from "../../graphLayouts/SpringForceLayoutManager";
-import { throttle } from "code/utils/throttle";
-
+import { CanvasManager } from '../../CanvasManager';
+import { Graph } from '../../Graph';
+import { GraphDeserializer } from './GraphDeserializer';
+import { GraphSerializer, SerializedGraph } from './GraphSerializer';
+import { GraphActualizer } from '../actualizer/GraphActualizer';
+import { SpringForceLayoutManager } from '../../graphLayouts/SpringForceLayoutManager';
+import { throttle } from 'code/utils/throttle';
 
 export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
     private static readonly STORAGE_PREFIX = 'passage-graph-';
     private static graphActualizer: GraphActualizer = new GraphActualizer();
 
-    static async getGraph(
-        eventId: string,
-        canvasManager: CanvasManager,
-        canvasWidth: number,
-        canvasHeight: number
-    ): Promise<Graph> {
+    static async getGraph(eventId: string, canvasManager: CanvasManager): Promise<Graph> {
         // Check if graph is in memory
         const inMemoryGraph = this.graphs.get(eventId);
         if (inMemoryGraph) {
@@ -31,11 +25,14 @@ export class EventPassagesGraphStorageManager {
             return inMemoryGraph;
         }
 
+        const canvasWidth = canvasManager.getWidth() ?? 0;
+        const canvasHeight = canvasManager.getHeight() ?? 0;
+
         // Try to load from localStorage
         const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
         if (storedGraph) {
             // Verify and update stored graph data using GraphActualizer
-            const verifiedGraph = await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
+            await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
                 eventId,
                 storedGraph,
                 canvasWidth,
@@ -83,12 +80,12 @@ export class EventPassagesGraphStorageManager {
         const edges = graph.getAllEdges();
 
         // Watch node changes
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
         });
 
         // Watch edge changes
-        edges.forEach(edge => {
+        edges.forEach((edge) => {
             edge.onPropertyChanged.subscribe(saveGraphCallback);
         });
     }
@@ -97,13 +94,10 @@ export class EventPassagesGraphStorageManager {
         this.throttleSavingGraphToStorage({ eventId, graph });
     }
 
-    private static throttleSavingGraphToStorage = throttle((args: { eventId: string, graph: Graph }) => {
+    private static throttleSavingGraphToStorage = throttle((args: { eventId: string; graph: Graph }) => {
         try {
             const serializedGraph = GraphSerializer.serialize(args.graph);
-            localStorage.setItem(
-                this.STORAGE_PREFIX + args.eventId,
-                JSON.stringify(serializedGraph)
-            );
+            localStorage.setItem(this.STORAGE_PREFIX + args.eventId, JSON.stringify(serializedGraph));
         } catch (error) {
             console.error('Failed to save graph to storage:', error);
         }
@@ -145,10 +139,7 @@ export class EventPassagesGraphStorageManager {
                 canvasHeight
             );
 
-            graph.setLayoutManager(new SpringForceLayoutManager(
-                canvasWidth,
-                canvasHeight
-            ));
+            graph.setLayoutManager(new SpringForceLayoutManager(canvasWidth, canvasHeight));
             graph.layout();
 
             this.saveGraphToStorage(eventId, populatedGraph);

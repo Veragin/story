@@ -1,6 +1,5 @@
 import { ReactNode, useState } from 'react';
 import { visualizerStoreContext } from '../Context';
-import { EventStore } from './ts/EventStore/EventStore';
 import { TimeManager } from 'time/TimeManager';
 import { Store } from './ts/Store';
 

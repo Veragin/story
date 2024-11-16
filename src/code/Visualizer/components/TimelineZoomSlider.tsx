@@ -1,11 +1,11 @@
 import { Slider, styled, Tooltip } from '@mui/material';
 import { useVisualizerStore } from 'code/Context';
 import { observer } from 'mobx-react-lite';
-import { ZOOM_CONFIG } from './ts/EventStore/TimelineRender/zoomConfig';
+import { ZOOM_CONFIG } from '../ts/EventStore/TimelineRender/zoomConfig';
 import { Row } from 'code/Components/Basic';
 
 export const TimelineZoomSlider = observer(() => {
-    const store = useVisualizerStore();
+    const store = useVisualizerStore().eventStore;
     return (
         <SRow>
             <Tooltip title={_('Zoom level')}>

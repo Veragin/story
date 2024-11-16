@@ -28,6 +28,9 @@ export class TimelineEvents {
         this.graph = new Graph(canvasManager);
         const eventList = Object.values(register.events) as TEvent<TEventId>[];
         eventList.forEach((event) => this.addEvent(event));
+        this.mapping.forEach((event) => {
+            event.box.setUpEdges(this.graph);
+        });
         this.recompueLocationLayout();
     }
 
@@ -78,8 +81,6 @@ export class TimelineEvents {
                 const row = data.rowCountFromTop + event.rowIndexInLocation;
                 event.box.updateRow(row, data.color);
             }
-
-            event.box.setUpEdges(this.graph);
         });
     };
 
