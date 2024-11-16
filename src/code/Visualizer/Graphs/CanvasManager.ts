@@ -180,6 +180,10 @@ export class CanvasManager {
         this.draw();
     };
 
+    hasObject = (obj: VisualObject) => {
+        return this.visualObjects.has(obj);
+    };
+
     removeObject = (obj: VisualObject) => {
         this.visualObjects.delete(obj);
         obj.onPropertyChanged.unsubscribe(this.handleVisualObjectChange);

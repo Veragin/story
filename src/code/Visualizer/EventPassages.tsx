@@ -7,7 +7,6 @@ import {
 } from '@mui/material';
 import { WholeContainer } from 'code/Components/Basic';
 import { spacingCss } from 'code/Components/css';
-import { SmallText } from 'code/Components/Text';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
@@ -89,12 +88,12 @@ export const EventPassages = () => {
         <WholeContainer>
             <Nav>
                 <Button
+                    color="inherit"
                     variant={'text'}
                     onClick={() => store.setActiveEvent(null)}
                 >
                     {_('Back')}
                 </Button>
-                <SmallText>{_('Event Passages')}</SmallText>
 
                 <SFormControl size="small">
                     <Autocomplete
@@ -109,20 +108,13 @@ export const EventPassages = () => {
                         options={events}
                         getOptionLabel={(option) => option.title || option.id}
                         renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Select Event"
-                                variant="outlined"
-                            />
+                            <TextField {...params} variant="outlined" />
                         )}
                         isOptionEqualToValue={(option, value) =>
                             option.id === value.id
                         }
                         sx={{
-                            'minWidth': 300,
-                            '& .MuiOutlinedInput-root': {
-                                backgroundColor: 'gray',
-                            },
+                            minWidth: 300,
                         }}
                     />
                 </SFormControl>
@@ -139,7 +131,7 @@ const SFormControl = styled(FormControl)`
     // Style for text field and autocomplete
     & .MuiAutocomplete-root {
         & .MuiOutlinedInput-root {
-            background-color: gray;
+            background-color: lightgray;
             height: 40px;
             padding: 0 ${spacingCss(2)};
 

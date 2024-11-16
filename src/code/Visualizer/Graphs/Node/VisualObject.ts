@@ -65,11 +65,11 @@ export abstract class VisualObject {
     }
     setW(w: number) {
         this.size.width = w;
-        this.redraw(true, visualObjectProperties.position);
+        this.redraw(true, visualObjectProperties.Size);
     }
     setH(h: number) {
         this.size.height = h;
-        this.redraw(true, visualObjectProperties.position);
+        this.redraw(true, visualObjectProperties.Size);
     }
 
     setPosition(position: TPoint): void {

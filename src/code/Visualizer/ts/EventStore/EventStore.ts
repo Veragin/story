@@ -37,6 +37,8 @@ export class EventStore {
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
         this.store.canvasHandler.registerCanvas('timeline', timelineRef);
         this.store.canvasHandler.registerCanvas('main', mainRef);
+
+        this.render();
     };
 
     deinit = () => {
@@ -51,9 +53,15 @@ export class EventStore {
         this.canvasManager = null;
     };
 
-    displayConnections = false;
+    displayConnections = true;
     toggleDisplayConnections = () => {
         this.displayConnections = !this.displayConnections;
+        if (this.displayConnections) {
+            this.timelineEvents?.graph.showEdges();
+        } else {
+            this.timelineEvents?.graph.hideEdges();
+        }
+        this.timelineEvents?.render();
     };
 
     zoomLevel = 3;

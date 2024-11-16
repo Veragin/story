@@ -138,4 +138,16 @@ export class Graph {
     layout(): void {
         this.layoutManager.layout(this);
     }
+
+    hideEdges() {
+        this.edges.forEach((edge) => this.canvasManager.removeObject(edge));
+    }
+
+    showEdges() {
+        this.edges.forEach((edge) => {
+            if (!this.canvasManager.hasObject(edge)) {
+                this.canvasManager.addObject(edge);
+            }
+        });
+    }
 }
