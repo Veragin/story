@@ -36,7 +36,8 @@ export class CanvasManager {
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
         this.canvas.addEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.addEventListener('dblclick', this.handleMouseClick);
+        this.canvas.addEventListener('click', this.handleMouseClick);
+        this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
@@ -140,6 +141,24 @@ export class CanvasManager {
             });
     };
 
+    private handleMouseDbClick = (event: MouseEvent) => {
+        const point = this.getMousePoint(event);
+        event.preventDefault();
+
+        if (this.draggedObject) {
+            return;
+        }
+
+        // Handle clicks in reverse order (top-most object first)
+        Array.from(this.visualObjects)
+            .reverse()
+            .forEach((obj) => {
+                if (isClickableObject(obj[0])) {
+                    obj[0].handleDbClick(point);
+                }
+            });
+    };
+
     private handleMouseUp = (event: MouseEvent) => {
         if (this.draggedObject) {
             const point = this.getMousePoint(event);
@@ -221,7 +240,8 @@ export class CanvasManager {
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
         this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.removeEventListener('dblclick', this.handleMouseClick);
+        this.canvas.removeEventListener('click', this.handleMouseClick);
+        this.canvas.removeEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
 
         // Clean up object subscriptions

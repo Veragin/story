@@ -1,0 +1,114 @@
+import { showToast } from 'code/GlobalWrapper';
+import { TLocationId } from 'types/TLocation';
+import { TEventPassageType } from 'types/TPassage';
+
+export class Agent {
+    constructor(public url: string) {}
+
+    addEvent = async (eventId: string, data: TEventData) => {
+        try {
+            await fetch(`${this.url}/event/${eventId}`, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            showToast(_('Event %s added', eventId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to add event %s', eventId), { variant: 'error' });
+        }
+    };
+
+    openEvent = async (eventId: string) => {
+        try {
+            await fetch(`${this.url}/event/${eventId}/open`, {
+                method: 'POST',
+            });
+            showToast(_('Event %s opened', eventId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to open event %s', eventId), { variant: 'error' });
+        }
+    };
+
+    deleteEvent = async (eventId: string) => {
+        try {
+            await fetch(`${this.url}/event/${eventId}`, {
+                method: 'DELETE',
+            });
+            showToast(_('Event %s deleted', eventId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to delete event %S', eventId), { variant: 'error' });
+        }
+    };
+
+    setEventTime = async (eventId: string, data: { startTime: string; endTime: string }) => {
+        try {
+            await fetch(`${this.url}/event/${eventId}/setTime`, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    addPassage = async (passageId: string, data: TPassageData) => {
+        try {
+            await fetch(`${this.url}/passage/${passageId}`, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            showToast(_('Passage %s added', passageId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to add passage', passageId), { variant: 'error' });
+        }
+    };
+
+    openPassage = async (passageId: string) => {
+        try {
+            await fetch(`${this.url}/passage/${passageId}/open`, {
+                method: 'POST',
+            });
+            showToast(_('Passage %s opened', passageId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to open passage %s', passageId), { variant: 'error' });
+        }
+    };
+
+    deletePassage = async (passageId: string) => {
+        try {
+            await fetch(`${this.url}/passage/${passageId}`, {
+                method: 'DELETE',
+            });
+            showToast(_('Passage %s deleted', passageId), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to delete passage %s'), { variant: 'error' });
+        }
+    };
+}
+
+type TEventData = {
+    title: string;
+    description: string;
+    location: TLocationId;
+    startTime: string;
+    endTime: string;
+};
+
+type TPassageData = {
+    title: string;
+    type: TEventPassageType;
+};

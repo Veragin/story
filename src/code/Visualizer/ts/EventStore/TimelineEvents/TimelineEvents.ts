@@ -23,7 +23,8 @@ export class TimelineEvents {
     constructor(
         public store: EventStore,
         private canvasManager: CanvasManager,
-        private openEvent: (id: TEventId) => void
+        private openEvent: (id: TEventId) => void,
+        private openModal: (event: TEvent<TEventId>) => void
     ) {
         this.graph = new Graph(canvasManager);
         const eventList = Object.values(register.events) as TEvent<TEventId>[];
@@ -92,6 +93,7 @@ export class TimelineEvents {
                 node.updateEventFromPosition(this.store);
                 this.recompueLocationLayout();
             },
+            this.openModal,
             this.openEvent
         );
 

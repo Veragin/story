@@ -15,7 +15,12 @@ export class EventNodeBox<E extends TEventId> {
 
     constructor(public event: TEvent<E>) {}
 
-    setupNodes = (graph: Graph, recompute: () => void, open: (id: TEventId) => void) => {
+    setupNodes = (
+        graph: Graph,
+        recompute: () => void,
+        click: (event: TEvent<TEventId>) => void,
+        dbclick: (id: TEventId) => void
+    ) => {
         const textContent = new TextContent({
             position: { x: 0, y: 0 },
             size: {
@@ -62,8 +67,12 @@ export class EventNodeBox<E extends TEventId> {
         node.onHorizontalResize.subscribe(recompute);
 
         // Add click handler
+        node.onDbClick.subscribe(() => {
+            dbclick(this.event.eventId);
+        });
+
         node.onClick.subscribe(() => {
-            open(this.event.eventId);
+            click(this.event);
         });
 
         graph.addNode(node, this.event.eventId);

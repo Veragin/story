@@ -3,11 +3,16 @@ import { HoverableVisualObject } from './HoverableVisualObject';
 
 export abstract class ClickableVisualObject extends HoverableVisualObject {
     private _onClick = new Observer<ClickableVisualObject>();
+    private _onDbClick = new Observer<ClickableVisualObject>();
     private _isClickable: boolean = true;
     private _onRightDown = new Observer<ClickableVisualObject>();
 
     get onClick(): Observer<ClickableVisualObject> {
         return this._onClick;
+    }
+
+    get onDbClick(): Observer<ClickableVisualObject> {
+        return this._onDbClick;
     }
 
     get onRightDown(): Observer<ClickableVisualObject> {
@@ -17,6 +22,12 @@ export abstract class ClickableVisualObject extends HoverableVisualObject {
     handleClick(point: TPoint): void {
         if (this._isClickable && this.isPointInside(point)) {
             this._onClick.notify(this);
+        }
+    }
+
+    handleDbClick(point: TPoint): void {
+        if (this._isClickable && this.isPointInside(point)) {
+            this._onDbClick.notify(this);
         }
     }
 

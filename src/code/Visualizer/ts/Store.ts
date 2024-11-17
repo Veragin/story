@@ -3,18 +3,24 @@ import { EventStore } from './EventStore/EventStore';
 import { action, makeObservable, observable } from 'mobx';
 import { TEventId } from 'types/TIds';
 import { CanvasHandler } from './CanvasHandler';
+import { Agent } from './Agent';
+import { ReactNode } from 'react';
 
 export class Store {
     eventStore: EventStore;
     canvasHandler: CanvasHandler;
+    agent: Agent;
 
     constructor(public timeManager: TimeManager) {
+        this.agent = new Agent('http://localhost:3000');
         this.eventStore = new EventStore(timeManager, this);
         this.canvasHandler = new CanvasHandler(document.body, this);
 
         makeObservable(this, {
             activeEvent: observable,
+            modalContent: observable.ref,
             setActiveEvent: action,
+            setModalContent: action,
         });
     }
 
@@ -28,5 +34,10 @@ export class Store {
         this.eventStore.durationHelper.size.height = height;
 
         this.eventStore.render();
+    };
+
+    modalContent: ReactNode | null = null;
+    setModalContent = (content: ReactNode | null) => {
+        this.modalContent = content;
     };
 }
