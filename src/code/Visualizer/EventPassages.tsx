@@ -30,17 +30,15 @@ export const EventPassages = () => {
 
     useEffect(() => {
         let isActive = true;
+        const canvas = mainCanvasRef.current;
+
+        assertNotNullish(canvas);
+        store.canvasHandler.registerCanvas('passages', canvas);
+        const canvasManager = new CanvasManager(canvas);
 
         const initGraph = async () => {
             if (!isActive) return;
-
-            assertNotNullish(mainCanvasRef.current);
             assertNotNullish(store.activeEvent);
-            store.canvasHandler.registerCanvas(
-                'passages',
-                mainCanvasRef.current
-            );
-            const canvasManager = new CanvasManager(mainCanvasRef.current);
 
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
@@ -57,7 +55,8 @@ export const EventPassages = () => {
                     const graph =
                         await EventPassagesGraphStorageManager.getGraph(
                             store.activeEvent,
-                            canvasManager
+                            canvasManager,
+                            store
                         );
 
                     if (!isActive) return;
@@ -77,6 +76,8 @@ export const EventPassages = () => {
         return () => {
             isActive = false;
             store.canvasHandler.unregisterCanvas('passages');
+            canvasManager.destroy();
+
             if (graphAnimationHandlerRef.current) {
                 graphAnimationHandlerRef.current.stopAnimation();
                 graphAnimationHandlerRef.current = null;

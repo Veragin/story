@@ -27,6 +27,7 @@ export class Store {
     activeEvent: TEventId | null = null;
     setActiveEvent = (id: TEventId | null) => {
         this.activeEvent = id;
+        this.modalContent = null;
     };
 
     updateSize = (width: number, height: number) => {

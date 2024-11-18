@@ -58,3 +58,4 @@ export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids exte
     nextPassageId?: Ids & TEventCharacterPassageId<E, Ch>;
 };
 
+export type TEventPassageType = TEventPassage<TEventId>['type'];

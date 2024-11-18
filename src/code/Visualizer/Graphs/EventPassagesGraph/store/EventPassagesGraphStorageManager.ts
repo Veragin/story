@@ -5,13 +5,15 @@ import { GraphSerializer, SerializedGraph } from './GraphSerializer';
 import { GraphActualizer } from '../actualizer/GraphActualizer';
 import { SpringForceLayoutManager } from '../../graphLayouts/SpringForceLayoutManager';
 import { throttle } from 'code/utils/throttle';
+import { Store } from 'code/Visualizer/ts/Store';
+import { createPassageModalContent } from 'code/Visualizer/createPassageModalContent';
 
 export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
     private static readonly STORAGE_PREFIX = 'passage-graph-';
     private static graphActualizer: GraphActualizer = new GraphActualizer();
 
-    static async getGraph(eventId: string, canvasManager: CanvasManager): Promise<Graph> {
+    static async getGraph(eventId: string, canvasManager: CanvasManager, store: Store): Promise<Graph> {
         // Check if graph is in memory
         const inMemoryGraph = this.graphs.get(eventId);
         if (inMemoryGraph) {
@@ -32,25 +34,20 @@ export class EventPassagesGraphStorageManager {
         const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
         if (storedGraph) {
             // Verify and update stored graph data using GraphActualizer
-            await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
-                eventId,
-                storedGraph,
-                canvasWidth,
-                canvasHeight
-            );
-            this.setupGraphAutoSave(eventId, storedGraph);
+            await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(eventId, storedGraph);
+            this.setupGraphAutoSave(eventId, storedGraph, store);
             this.graphs.set(eventId, storedGraph);
             return storedGraph;
         }
 
         // Create new empty graph and let GraphActualizer populate it
         const newGraph = await this.createNewGraph(eventId, canvasManager, canvasWidth, canvasHeight);
-        this.setupGraphAutoSave(eventId, newGraph);
+        this.setupGraphAutoSave(eventId, newGraph, store);
         this.graphs.set(eventId, newGraph);
         return newGraph;
     }
 
-    private static setupGraphAutoSave(eventId: string, graph: Graph): void {
+    private static setupGraphAutoSave(eventId: string, graph: Graph, store: Store): void {
         const saveGraphCallback = () => {
             this.saveGraphToStorage(eventId, graph);
         };
@@ -82,6 +79,8 @@ export class EventPassagesGraphStorageManager {
         // Watch node changes
         nodes.forEach((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
+            const passage = await register;
+            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.id)));
         });
 
         // Watch edge changes
@@ -134,9 +133,7 @@ export class EventPassagesGraphStorageManager {
             // Let GraphActualizer populate the graph
             const populatedGraph = await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
                 eventId,
-                graph,
-                canvasWidth,
-                canvasHeight
+                graph
             );
 
             graph.setLayoutManager(new SpringForceLayoutManager(canvasWidth, canvasHeight));

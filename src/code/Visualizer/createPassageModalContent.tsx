@@ -2,30 +2,33 @@ import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Row } from 'code/Components/Basic';
 import { useVisualizerStore } from 'code/Context';
 import { ReactNode, useState } from 'react';
-import { TEvent } from 'types/TEvent';
 import { TEventId } from 'types/TIds';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import { Text } from 'code/Components/Text';
 import { spacingCss } from 'code/Components/css';
 import { Modal } from 'code/Components/Modal';
+import { TEventPassage } from 'types/TPassage';
 
-export const createEventModalContent = (event: TEvent<TEventId>): ReactNode => (
-    <EventModalContent event={event} />
-);
+export const createPassageModalContent = (
+    passage: TEventPassage<TEventId>
+): ReactNode => <PassageModalContent passage={passage} />;
 
-const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
+const PassageModalContent = ({
+    passage,
+}: {
+    passage: TEventPassage<TEventId>;
+}) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();
 
     return (
-        <>
+        <SColumn>
             <Tooltip title={_('Copy to clipboard')} placement="top">
                 <SText
-                    onClick={() => navigator.clipboard.writeText(event.eventId)}
+                    onClick={() => navigator.clipboard.writeText(passage.id)}
                 >
-                    {event.eventId}
+                    {passage.id}
                 </SText>
             </Tooltip>
             <SRow>
@@ -33,21 +36,12 @@ const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openEvent(event.eventId)}
+                        onClick={() => store.agent.openPassage(passage.id)}
                     >
                         <OpenInBrowserIcon />
                     </Button>
                 </Tooltip>
-                <Tooltip title={_('Set time of the event')}>
-                    <Button
-                        variant="outlined"
-                        color="inherit"
-                        onClick={() => store.agent.openEvent(event.eventId)}
-                    >
-                        <AccessTimeFilledIcon />
-                    </Button>
-                </Tooltip>
-                <Tooltip title={_('Delete event')}>
+                <Tooltip title={_('Delete passage')}>
                     <Button
                         color="error"
                         variant="outlined"
@@ -58,15 +52,15 @@ const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
                 </Tooltip>
             </SRow>
             <Modal
-                title={_('Delete event %s', event.title)}
+                title={_('Delete passage %s', passage.id)}
                 open={open}
                 onClose={() => setOpen(false)}
             >
                 <SColumn>
                     <Text>
                         {_(
-                            'Are you sure that you want to delete %s event?',
-                            event.title
+                            'Are you sure that you want to delete %s passage?',
+                            passage.id
                         )}
                     </Text>
                     <SRow>
@@ -83,7 +77,7 @@ const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
                     </SRow>
                 </SColumn>
             </Modal>
-        </>
+        </SColumn>
     );
 };
 
@@ -97,8 +91,9 @@ const SText = styled(Text)`
 const SRow = styled(Row)`
     gap: ${spacingCss(1)};
     justify-content: end;
+    min-width: 260px;
 `;
 
 const SColumn = styled(Column)`
-    gap: ${spacingCss(1)};
+    gap: ${spacingCss(2)};
 `;

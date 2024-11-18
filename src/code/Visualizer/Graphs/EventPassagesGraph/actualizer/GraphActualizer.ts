@@ -1,24 +1,17 @@
-import { Graph } from "../../Graph";
-import { ColorManager } from "./ColorManager";
-import { EdgeActualizer } from "./edges/EdgeActualizer";
-import { NodeActualizer } from "./nodes/NodeActualizer";
-import { NodeFactory } from "./nodes/NodeFactory";
-import { PassageLoader } from "./PassageLoader";
+import { Graph } from '../../Graph';
+import { ColorManager } from './ColorManager';
+import { EdgeActualizer } from './edges/EdgeActualizer';
+import { NodeActualizer } from './nodes/NodeActualizer';
+import { NodeFactory } from './nodes/NodeFactory';
+import { PassageLoader } from './PassageLoader';
 
 export class GraphActualizer {
     private readonly colorManager: ColorManager = new ColorManager();
-    private readonly nodeActualizer: NodeActualizer = new NodeActualizer(
-        new NodeFactory(this.colorManager)
-    );
+    private readonly nodeActualizer: NodeActualizer = new NodeActualizer(new NodeFactory(this.colorManager));
     private readonly edgeActualizer: EdgeActualizer = new EdgeActualizer();
     private readonly passageLoader: PassageLoader = new PassageLoader();
 
-    async actualizeGraphData(
-        eventId: string, 
-        graph: Graph,   
-        canvasWidth: number,
-        canvasHeight: number
-    ): Promise<Graph> {
+    async actualizeGraphData(eventId: string, graph: Graph): Promise<Graph> {
         // Load current passages
         const currentPassages = await this.passageLoader.loadPassages(eventId);
         if (!currentPassages) {
@@ -31,11 +24,7 @@ export class GraphActualizer {
 
         const nodeResult = await this.nodeActualizer.actualizeNodes(graph, currentPassages);
 
-        await this.edgeActualizer.actualizeEdges(
-            graph, 
-            currentPassages, 
-            nodeResult.existingNodes
-        );
+        await this.edgeActualizer.actualizeEdges(graph, currentPassages, nodeResult.existingNodes);
 
         return graph;
     }

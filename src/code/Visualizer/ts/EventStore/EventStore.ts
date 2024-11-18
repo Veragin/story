@@ -7,7 +7,7 @@ import { CanvasManager } from '../../Graphs/CanvasManager';
 import { TimelineEvents } from './TimelineEvents/TimelineEvents';
 import { DurationHelper } from './DurationHelper';
 import { Store } from '../Store';
-import { createEventModalContent } from 'code/Visualizer/createModalContent';
+import { createEventModalContent } from 'code/Visualizer/createEventModalContent';
 
 export class EventStore {
     canvasManager: CanvasManager | null = null;
