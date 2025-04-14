@@ -1,5 +1,5 @@
 import { TimeManager } from 'time/TimeManager';
-import { EventStore } from './EventStore/EventStore';
+import { EventStore } from '../Events/EventStore/EventStore';
 import { action, makeObservable, observable } from 'mobx';
 import { TEventId } from 'types/TIds';
 import { CanvasHandler } from './CanvasHandler';
@@ -17,16 +17,16 @@ export class Store {
         this.canvasHandler = new CanvasHandler(document.body, this);
 
         makeObservable(this, {
-            activeEvent: observable,
+            activeTab: observable,
             modalContent: observable.ref,
-            setActiveEvent: action,
+            setActiveTab: action,
             setModalContent: action,
         });
     }
 
-    activeEvent: TEventId | null = null;
-    setActiveEvent = (id: TEventId | null) => {
-        this.activeEvent = id;
+    activeTab: TActiveTab = null;
+    setActiveTab = (tab: TActiveTab | null) => {
+        this.activeTab = tab;
         this.modalContent = null;
     };
 
@@ -41,4 +41,20 @@ export class Store {
     setModalContent = (content: ReactNode | null) => {
         this.modalContent = content;
     };
+
+    destroy = () => {
+        this.canvasHandler.destroy();
+        this.eventStore.deinit();
+    };
 }
+
+type TActiveTab =
+    | null
+    | {
+          tab: 'event';
+          eventId: TEventId;
+      }
+    | {
+          tab: 'map';
+          mapId: string;
+      };

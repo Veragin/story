@@ -1,7 +1,7 @@
 import { Button, styled } from '@mui/material';
-import { Column, WholeContainer } from 'code/Components/Basic';
-import { spacingCss } from 'code/Components/css';
-import { Title } from 'code/Components/Text';
+import { Column, WholeContainer } from 'code/components/Basic';
+import { spacingCss } from 'code/components/css';
+import { Title } from 'code/components/Text';
 import { useEngine } from 'code/Context';
 
 export const CharacterPicker = () => {

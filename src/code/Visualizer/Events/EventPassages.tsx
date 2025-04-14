@@ -5,19 +5,23 @@ import {
     TextField,
     Button,
 } from '@mui/material';
-import { WholeContainer } from 'code/Components/Basic';
-import { spacingCss } from 'code/Components/css';
+import { WholeContainer } from 'code/components/Basic';
+import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
-import { GraphAnimationHandler } from './Graphs/animation.ts/GraphAnimationHandler';
-import { EventPassagesGraphStorageManager } from './Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
-import { Nav } from './components/Nav';
+import { GraphAnimationHandler } from '../Graphs/animation.ts/GraphAnimationHandler';
+import { EventPassagesGraphStorageManager } from '../Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
+import { Nav } from '../components/Nav';
 import { TEventId } from 'types/TIds';
-import { CanvasManager } from './Graphs/CanvasManager';
+import { CanvasManager } from '../Graphs/CanvasManager';
 
-export const EventPassages = () => {
+type Props = {
+    eventId: TEventId;
+};
+
+export const EventPassages = ({ eventId }: Props) => {
     const store = useVisualizerStore();
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
@@ -38,7 +42,7 @@ export const EventPassages = () => {
 
         const initGraph = async () => {
             if (!isActive) return;
-            assertNotNullish(store.activeEvent);
+            assertNotNullish(store.activeTab);
 
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
@@ -46,15 +50,11 @@ export const EventPassages = () => {
                 graphAnimationHandlerRef.current = null;
             }
 
-            if (
-                register.passages[
-                    store.activeEvent as keyof typeof register.passages
-                ]
-            ) {
+            if (register.passages[eventId]) {
                 try {
                     const graph =
                         await EventPassagesGraphStorageManager.getGraph(
-                            store.activeEvent,
+                            eventId,
                             canvasManager,
                             store
                         );
@@ -83,7 +83,7 @@ export const EventPassages = () => {
                 graphAnimationHandlerRef.current = null;
             }
         };
-    }, [store.activeEvent, store]);
+    }, [store.activeTab, store]);
 
     return (
         <WholeContainer>
@@ -91,7 +91,7 @@ export const EventPassages = () => {
                 <Button
                     color="inherit"
                     variant={'text'}
-                    onClick={() => store.setActiveEvent(null)}
+                    onClick={() => store.setActiveTab(null)}
                 >
                     {_('Back')}
                 </Button>
@@ -99,12 +99,17 @@ export const EventPassages = () => {
                 <SFormControl size="small">
                     <Autocomplete
                         value={
-                            events.find(
-                                (event) => event.id === store.activeEvent
-                            ) ?? null
+                            events.find((event) => event.id === eventId) ?? null
                         }
                         onChange={(_, newValue) => {
-                            store.setActiveEvent(newValue?.id ?? null);
+                            store.setActiveTab(
+                                newValue === null
+                                    ? null
+                                    : {
+                                          tab: 'event',
+                                          eventId: newValue.id,
+                                      }
+                            );
                         }}
                         options={events}
                         getOptionLabel={(option) => option.title || option.id}

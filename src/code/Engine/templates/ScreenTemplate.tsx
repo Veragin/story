@@ -1,10 +1,10 @@
 import { styled } from '@mui/material';
-import { WholeContainer } from 'code/Components/Basic';
+import { WholeContainer } from 'code/components/Basic';
 import { StatusBar } from './Components/StatusBar';
-import { Row } from 'code/Components/Basic';
-import { spacingCss } from 'code/Components/css';
+import { Row } from 'code/components/Basic';
+import { spacingCss } from 'code/components/css';
 import { PassageLink } from './Components/PassageLink';
-import { Header, Text } from 'code/Components/Text';
+import { Header, Text } from 'code/components/Text';
 import { TUnkownPassageScreen } from '../ts/const';
 
 type Props = {

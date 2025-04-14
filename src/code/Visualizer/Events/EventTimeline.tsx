@@ -1,19 +1,18 @@
 import { IconButton, styled, Tooltip } from '@mui/material';
-import { WholeContainer } from 'code/Components/Basic';
-import { spacingCss } from 'code/Components/css';
-import { SmallText } from 'code/Components/Text';
+import { WholeContainer } from 'code/components/Basic';
+import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
-} from './ts/EventStore/TimelineRender/TimelineMarker';
+} from './EventStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { TimelineZoomSlider } from './components/TimelineZoomSlider';
+import { ZoomSlider } from '../components/ZoomSlider';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
 import { observer } from 'mobx-react-lite';
-import { Nav } from './components/Nav';
+import { Nav, NavPicker } from '../components/Nav';
 
 export const EventTimeline = observer(() => {
     const store = useVisualizerStore().eventStore;
@@ -41,7 +40,7 @@ export const EventTimeline = observer(() => {
     return (
         <WholeContainer>
             <Nav>
-                <SmallText>{_('Event Timeline')}</SmallText>
+                <NavPicker />
 
                 <Tooltip
                     title={
@@ -73,7 +72,10 @@ export const EventTimeline = observer(() => {
                         <SettingsInputComponentIcon />
                     </IconButton>
                 </Tooltip>
-                <TimelineZoomSlider />
+                <ZoomSlider
+                    zoomLevel={store.zoomLevel}
+                    setZoomLevel={store.setZoomLevel}
+                />
             </Nav>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />

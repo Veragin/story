@@ -6,8 +6,8 @@ import { TimeManager } from 'time/TimeManager';
 import { CanvasManager } from '../../Graphs/CanvasManager';
 import { TimelineEvents } from './TimelineEvents/TimelineEvents';
 import { DurationHelper } from './DurationHelper';
-import { Store } from '../Store';
-import { createEventModalContent } from 'code/Visualizer/createEventModalContent';
+import { Store } from '../../stores/Store';
+import { createEventModalContent } from 'code/Visualizer/Events/createEventModalContent';
 
 export class EventStore {
     canvasManager: CanvasManager | null = null;
@@ -37,7 +37,7 @@ export class EventStore {
         this.timelineEvents = new TimelineEvents(
             this,
             this.canvasManager,
-            (id) => this.store.setActiveEvent(id),
+            (id) => this.store.setActiveTab({ tab: 'event', eventId: id }),
             (event) => this.store.setModalContent(createEventModalContent(event))
         );
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);

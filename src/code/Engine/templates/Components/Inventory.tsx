@@ -1,6 +1,6 @@
 import { Button, styled } from '@mui/material';
-import { spacingCss } from 'code/Components/css';
-import { SmallText, Text } from 'code/Components/Text';
+import { spacingCss } from 'code/components/css';
+import { SmallText, Text } from 'code/components/Text';
 import { useEngine, useWorldState } from 'code/Context';
 import { observer } from 'mobx-react-lite';
 import React from 'react';

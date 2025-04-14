@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { visualizerStoreContext } from '../Context';
 import { TimeManager } from 'time/TimeManager';
-import { Store } from './ts/Store';
+import { Store } from './stores/Store';
 import { InfoModal } from './components/InfoModal';
 
 type Props = {

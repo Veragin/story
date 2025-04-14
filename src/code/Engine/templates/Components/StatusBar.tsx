@@ -1,7 +1,7 @@
 import { Button, styled, Tooltip } from '@mui/material';
-import { spacingCss } from 'code/Components/css';
-import { Row } from 'code/Components/Basic';
-import { Text } from 'code/Components/Text';
+import { spacingCss } from 'code/components/css';
+import { Row } from 'code/components/Basic';
+import { Text } from 'code/components/Text';
 import { s } from 'worldState';
 import { register } from 'data/register';
 import { useState } from 'react';
@@ -12,7 +12,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import { observer } from 'mobx-react-lite';
 import { useEngine } from 'code/Context';
-import { Modal } from 'code/Components/Modal';
+import { Modal } from 'code/components/Modal';
 
 export const StatusBar = observer(() => {
     const e = useEngine();

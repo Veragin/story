@@ -1,5 +1,5 @@
 import { throttle } from 'code/utils/throttle';
-import { RESOLUTION_FACTOR } from './EventStore/TimelineRender/constants';
+import { RESOLUTION_FACTOR } from '../Events/EventStore/TimelineRender/constants';
 import { Store } from './Store';
 
 export class CanvasHandler {
