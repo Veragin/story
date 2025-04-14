@@ -4,7 +4,7 @@ import { DraggableVisualObject } from './Node/DraggableVisualObject';
 import { HoverableVisualObject } from './Node/HoverableVisualObject';
 import { VisualObject } from './Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { RESOLUTION_FACTOR } from '../ts/EventStore/TimelineRender/constants';
+import { RESOLUTION_FACTOR } from '../Events/EventStore/TimelineRender/constants';
 import { Observer } from 'code/utils/Observer';
 
 export class CanvasManager {

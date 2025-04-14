@@ -1,6 +1,7 @@
 import { showToast } from 'code/GlobalWrapper';
 import { TLocationId } from 'types/TLocation';
 import { TEventPassageType } from 'types/TPassage';
+import { TMapData } from '../MapEditor/types';
 
 export class Agent {
     constructor(public url: string) {}
@@ -96,6 +97,36 @@ export class Agent {
         } catch (e) {
             console.error(e);
             showToast(_('Failed to delete passage %s'), { variant: 'error' });
+        }
+    };
+
+    getMap = async (mapId: string): Promise<TMapData> => {
+        try {
+            const response = await fetch(`${this.url}/map/${mapId}`, {
+                method: 'GET',
+            });
+            const data = await response.json();
+            return data;
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to get map %s', mapId), { variant: 'error' });
+            throw e;
+        }
+    };
+
+    saveMap = async (mapData: TMapData) => {
+        try {
+            await fetch(`${this.url}/map/${mapData.mapId}`, {
+                method: 'PUT',
+                body: JSON.stringify(mapData),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            showToast(_('Map %s saved', mapData.title), { variant: 'success' });
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to save map %s', mapData.title), { variant: 'error' });
         }
     };
 }

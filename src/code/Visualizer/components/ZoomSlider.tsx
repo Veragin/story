@@ -4,7 +4,7 @@ import { Row } from 'code/components/Basic';
 
 type Props = {
     zoomLevel: number;
-    setZoomLevel: (zoomLevel: number) => void;
+    setZoomLevel?: (zoomLevel: number) => void;
 };
 
 export const ZoomSlider = ({ zoomLevel, setZoomLevel }: Props) => {
@@ -18,7 +18,7 @@ export const ZoomSlider = ({ zoomLevel, setZoomLevel }: Props) => {
                     marks
                     step={1}
                     onChange={(_, l) =>
-                        setZoomLevel(Array.isArray(l) ? l[0] : l)
+                        setZoomLevel?.(Array.isArray(l) ? l[0] : l)
                     }
                 />
             </Tooltip>

@@ -2,6 +2,7 @@ import { EventTimeline } from './Events/EventTimeline';
 import { EventPassages } from './Events/EventPassages';
 import { useVisualizerStore } from 'code/Context';
 import { observer } from 'mobx-react-lite';
+import { MapWrapper } from './MapEditor/MapWrapper';
 
 export const Visualizer = observer(() => {
     const store = useVisualizerStore();
@@ -15,7 +16,7 @@ export const Visualizer = observer(() => {
     }
 
     if (store.activeTab.tab === 'map') {
-        return <EventPassages eventId={store.activeTab.mapId} />;
+        return <MapWrapper mapId={store.activeTab.mapId} />;
     }
 
     return null;
