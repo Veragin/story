@@ -1,5 +1,6 @@
 import { TEvent } from 'types/TEvent';
 import { Time } from 'time/Time';
+import { villageEvent } from '../village/village.event';
 
 export const kingdomEvent: TEvent<'kingdom'> = {
     eventId: 'kingdom',
@@ -11,7 +12,12 @@ export const kingdomEvent: TEvent<'kingdom'> = {
     },
     location: 'village',
 
-    children: [],
+    children: [
+        {
+            condition: 'asdasd',
+            event: villageEvent,
+        },
+    ],
 
     triggers: [],
 

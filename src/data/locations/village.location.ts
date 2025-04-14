@@ -12,9 +12,6 @@ export const villageLocation: TLocation<'village'> = {
         },
     ],
 
-    x: 0,
-    y: 0,
-
     init: {},
 };
 

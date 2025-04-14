@@ -79,8 +79,7 @@ export class EventPassagesGraphStorageManager {
         // Watch node changes
         nodes.forEach((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
-            const passage = await register;
-            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.id)));
+            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId())));
         });
 
         // Watch edge changes

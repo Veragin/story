@@ -1,3 +1,5 @@
+import { TKingdomLocationData } from './locations/kingdom.location';
+import { TWeddingEventData } from './events/wedding/wedding.event';
 import { TVillageEventData } from './events/village/village.event';
 import { TCharacter, TCharacterData, TSideCharacter, TSideCharacterData } from '../types/TCharacter';
 import { TThomasCharacterData } from './characters/thomas';
@@ -27,11 +29,13 @@ export type TWorldState = {
     };
 
     events: {
-        village: { ref: TEvent<'village'> } & TVillageEventData;
+    	village: { ref: TEvent<'village'> } & TVillageEventData;
         kingdom: { ref: TEvent<'kingdom'> } & TKingdomEventData;
+    	wedding: { ref: TEvent <'wedding'> } & TWeddingEventData;
     };
     locations: {
-        village: { ref: TLocation<'village'> } & TVillageLocationData;
+    	village: { ref: TLocation<'village'> } & TVillageLocationData;
+    	kingdom: { ref: TLocation<'kingdom'> } & Partial<TKingdomLocationData>;
     };
     happenings: {
         village_under_attack: { ref: THappening<'village_under_attack'> };

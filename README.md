@@ -8,28 +8,8 @@ The goal is to create a program that allows the creation of a playable gamebook.
     -   a set of changes in the properties of the world's objects
     -   a set of pairs ("condition", event). The condition describes under what circumstances the next event should occur.
     -   a time interval that indicates within which time range the event can happen.
--   **linear event** is an event extended with a duration. It may contain sub-events that have a fixed time offset from the start of the event. It is used to describe a non-branching part of the story. It can display sub-events on a timeline.
 -   **passage** describes the state the player is currently in and also describes the options available to the player, allowing them to transition to a different passage. In the case of a playable gamebook, it refers to the code for rendering buttons to transition to another passage.
     -   each passage can be assigned an event it relates to.
-
-## Insights
-
-### Objekty sveta
-
-Samotne objekty sveta muzeme vyjadrit jako singletony.
-Typy pro definovani spolecnych vlastnosti vice objektu pak mohou rozsirovat tyto objekty.
-
-Staticka vlastnost singletonu lze vyuzit primym odkazem v nejake pasazi. Zaroven by takovy objekt vlastnil
-svuj typ, coz by znamenalo, ze pri spatnem napsani vlastnosti by se kompilator mohl ozvat pri kontrole.
-
-Hodilo by se, kdybychom mohli rikat z pohledu uzivatele, ve kterych udalostech je pro nas dana vlastnost, respektive mnozina vlastnosti
-daneho objektu dulezita.
-
-Realne, pri psani zmen vlastnosti v pasazi by naseptavac naseptaval vlastnosti podle udalosti, ktere se tyka.
-
-### Typy pasazi
-
-Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim frameworkem.
 
 ## Visualizer
 
@@ -97,6 +77,7 @@ MVP:
     -   endTime: TimeString
 -   POST `/event/<eventId>/open`
 -   DELETE `/event/<eventId>`
+
 -   POST `/event/<eventId>/setTime`
 
     -   startTime: TimeString
@@ -107,3 +88,31 @@ MVP:
     -   type: 'screen' | 'linear' | 'transition'
 -   POST `/passage/<passageId>/open`
 -   DELETE `/passage/<passageId>`
+
+-   PUT `/map/<mapId>`
+    -   title: String
+    -   width: Int
+    -   height: Int
+    -   data: { tile: String; title?: String }[][]
+    -   locations: { i: Int; j: Int; locationId: String }[]
+    -   maps: { i: Int; j: Int; mapId: String }[]
+-   GET `/map/<mapId>`
+
+## Insights
+
+### Objekty sveta
+
+Samotne objekty sveta muzeme vyjadrit jako singletony.
+Typy pro definovani spolecnych vlastnosti vice objektu pak mohou rozsirovat tyto objekty.
+
+Staticka vlastnost singletonu lze vyuzit primym odkazem v nejake pasazi. Zaroven by takovy objekt vlastnil
+svuj typ, coz by znamenalo, ze pri spatnem napsani vlastnosti by se kompilator mohl ozvat pri kontrole.
+
+Hodilo by se, kdybychom mohli rikat z pohledu uzivatele, ve kterych udalostech je pro nas dana vlastnost, respektive mnozina vlastnosti
+daneho objektu dulezita.
+
+Realne, pri psani zmen vlastnosti v pasazi by naseptavac naseptaval vlastnosti podle udalosti, ktere se tyka.
+
+### Typy pasazi
+
+Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim frameworkem.

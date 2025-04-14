@@ -1,3 +1,5 @@
+import { kingdomLocation } from './locations/kingdom.location';
+import { weddingEvent } from './events/wedding/wedding.event';
 import { Annie } from './characters/annie';
 import { Thomas } from './characters/thomas';
 import { kingdomEvent } from './events/kingdom/kingdom.event';
@@ -17,15 +19,18 @@ export const register = {
         nobleMan: NobleMan,
     },
     events: {
-        village: villageEvent,
+    	village: villageEvent,
         kingdom: kingdomEvent,
+    	wedding: weddingEvent,
     },
     locations: {
-        village: villageLocation,
+    	village: villageLocation,
+    	kingdom: kingdomLocation,
     },
     passages: {
-        village: () => import('./events/village/village.passages'),
+    	village: () => import('./events/village/village.passages'),
         kingdom: () => import('./events/kingdom/kingdom.passages'),
+    	wedding: () => import('./events/wedding/wedding.passages'),
     },
     happenings: {
         village_under_attack: village_under_attackHappening,
