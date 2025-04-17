@@ -1,0 +1,67 @@
+import { TMapData } from '../types';
+import { computeRealPos, MAP_BORDER } from './constants';
+
+export class User {
+    zoom = 1;
+    pos = { x: 0, y: 0, spdX: 0, spdY: 0 };
+    spdMax = 15;
+    mouse = {
+        pos: { x: 0, y: 0 },
+        size: 3,
+        poinTo: { i: 0, j: 0 },
+        pointingTo: 0,
+        hold: false,
+        last: { x: 0, y: 0 },
+        selectTopL: { x: 0, y: 0 },
+        selectBotR: { x: 0, y: 0 },
+        multiselect: false,
+    };
+    key = {
+        pressingRight: false,
+        pressingLeft: false,
+        pressingUp: false,
+        pressingDown: false,
+        pressingShift: false,
+    };
+    bounds = {
+        left: 0,
+        up: 0,
+        right: 0,
+        down: 0,
+    };
+    activeColor = 'none';
+
+    updateSpd = () => {
+        if (this.key.pressingRight && this.key.pressingLeft) this.pos.spdX = 0;
+        else if (this.key.pressingRight) this.pos.spdX = this.spdMax;
+        else if (this.key.pressingLeft) this.pos.spdX = -this.spdMax;
+        else this.pos.spdX = 0;
+
+        if (this.key.pressingUp && this.key.pressingDown) this.pos.spdY = 0;
+        else if (this.key.pressingDown) this.pos.spdY = this.spdMax;
+        else if (this.key.pressingUp) this.pos.spdY = -this.spdMax;
+        else this.pos.spdY = 0;
+    };
+
+    update = () => {
+        this.updateSpd();
+        this.move(this.pos.x + this.pos.spdX, this.pos.y + this.pos.spdY);
+    };
+
+    move = (posX: number, posY: number) => {
+        if (posX < this.bounds.left * this.zoom) posX = this.bounds.left * this.zoom;
+        if (posY < this.bounds.up * this.zoom) posY = this.bounds.up * this.zoom;
+        if (posX > this.bounds.right * this.zoom) posX = this.bounds.right * this.zoom;
+        if (posY > this.bounds.down * this.zoom) posY = this.bounds.down * this.zoom;
+        this.pos.x = posX;
+        this.pos.y = posY;
+    };
+
+    updateBounds = (map: TMapData, canvas: HTMLCanvasElement) => {
+        this.bounds.left = canvas.width / 2 - MAP_BORDER;
+        this.bounds.up = canvas.height / 2 - MAP_BORDER;
+        const { realX, realY } = computeRealPos(map.width, map.height, this.zoom);
+        this.bounds.right = realX - canvas.width / 2 + MAP_BORDER;
+        this.bounds.down = realY - canvas.height / 2 + MAP_BORDER;
+    };
+}

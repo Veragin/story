@@ -1,9 +1,16 @@
 import { action, makeObservable, observable } from 'mobx';
-import { ZOOM_CONFIG } from '../Events/EventStore/TimelineRender/zoomConfig';
 import { CanvasHandler } from '../stores/CanvasHandler';
 import { TMapData } from './types';
+import { User } from './MapEngine/User';
+import { Draw } from './MapEngine/Draw';
+import { Process } from './MapEngine/Process';
+import { MAX_ZOOM } from './MapEngine/constants';
 
 export class MapStore {
+    user = new User();
+    draw: Draw | null = null;
+    process = new Process(this.user);
+
     constructor(
         private canvasHandler: CanvasHandler,
         public data: TMapData
@@ -16,10 +23,12 @@ export class MapStore {
         });
     }
 
-    init = (mainRef: HTMLCanvasElement) => {
+    init = (canvas: HTMLCanvasElement, infoRef: HTMLDivElement) => {
         this.deinit();
 
-        this.canvasHandler.registerCanvas('map', mainRef);
+        this.canvasHandler.registerCanvas('map', canvas);
+        this.user.updateBounds(this.data, canvas);
+        this.draw = new Draw(this, canvas);
 
         this.render();
     };
@@ -30,7 +39,8 @@ export class MapStore {
 
     zoomLevel = 3;
     setZoomLevel = (value: number) => {
-        this.zoomLevel = Math.min(ZOOM_CONFIG.length, Math.max(0, value));
+        this.zoomLevel = Math.min(MAX_ZOOM, Math.max(0, value));
+        this.user.zoom = 0.6 + value * 0.2;
         this.render();
     };
 
@@ -40,9 +50,7 @@ export class MapStore {
         this.render();
     };
 
-    render = () => {};
-
-    get zoom() {
-        return ZOOM_CONFIG[this.zoomLevel];
-    }
+    render = () => {
+        this.draw?.render();
+    };
 }

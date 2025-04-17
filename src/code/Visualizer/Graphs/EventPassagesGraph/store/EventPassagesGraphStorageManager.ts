@@ -5,8 +5,8 @@ import { GraphSerializer, SerializedGraph } from './GraphSerializer';
 import { GraphActualizer } from '../actualizer/GraphActualizer';
 import { SpringForceLayoutManager } from '../../graphLayouts/SpringForceLayoutManager';
 import { throttle } from 'code/utils/throttle';
-import { Store } from 'code/Visualizer/ts/Store';
-import { createPassageModalContent } from 'code/Visualizer/createPassageModalContent';
+import { Store } from 'code/Visualizer/stores/Store';
+import { createPassageModalContent } from 'code/Visualizer/Events/createPassageModalContent';
 
 export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
@@ -79,7 +79,7 @@ export class EventPassagesGraphStorageManager {
         // Watch node changes
         nodes.forEach((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
-            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId())));
+            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId() as any)));
         });
 
         // Watch edge changes
