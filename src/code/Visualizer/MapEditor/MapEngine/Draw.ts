@@ -49,7 +49,7 @@ export class Draw {
     private drawTile = (i: number, j: number) => {
         const tile = this.map.data[i][j].tile;
         if (tile === 'none') return;
-        this.ctx.fillStyle = this.map.palette[tile];
+        this.ctx.fillStyle = this.map.palette[tile].color ?? '#000000';
 
         const { x, y } = this.getTilePos(i, j);
         this.ctx.beginPath();

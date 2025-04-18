@@ -42,7 +42,7 @@ const SRow = styled(Row)`
     bottom: 0;
     left: 0;
     right: 0;
-    height: 50px;
+    height: 30px;
     background-color: grey;
     z-index: 100;
     padding: 4px;

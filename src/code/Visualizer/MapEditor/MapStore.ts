@@ -20,6 +20,8 @@ export class MapStore {
             setEditMode: action,
             zoomLevel: observable,
             setZoomLevel: action,
+            openNewMapModal: observable,
+            setOpenNewMapModal: action,
         });
     }
 
@@ -52,5 +54,10 @@ export class MapStore {
 
     render = () => {
         this.draw?.render();
+    };
+
+    openNewMapModal: string | null = null;
+    setOpenNewMapModal = (mapId: string | null) => {
+        this.openNewMapModal = mapId;
     };
 }

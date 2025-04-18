@@ -105,6 +105,9 @@ export class Agent {
             const response = await fetch(`${this.url}/map/${mapId}`, {
                 method: 'GET',
             });
+            if (response.status !== 200) {
+                throw new Error(`Failed to fetch map: ${response.statusText}`);
+            }
             const data = await response.json();
             return data;
         } catch (e) {
