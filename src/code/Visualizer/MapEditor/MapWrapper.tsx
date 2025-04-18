@@ -1,4 +1,4 @@
-import { WholeContainer } from 'code/components/Basic';
+import { Column, WholeContainer } from 'code/components/Basic';
 import { useEffect, useState } from 'react';
 import { MapStore } from './MapStore';
 import { useVisualizerStore } from 'code/Context';
@@ -7,6 +7,9 @@ import { ModalContent } from './components/ModalContent';
 import { createDefaultMapData } from './createDefaultMapData';
 import { TopBar } from './components/TopBar';
 import { CircularProgress } from '@mui/material';
+import { Header } from 'code/components/Text';
+import styled from '@emotion/styled';
+import { spacingCss } from 'code/components/css';
 
 type Props = {
     mapId: string;
@@ -34,38 +37,39 @@ export const MapWrapper = ({ mapId }: Props) => {
         })();
     }, [mapId]);
 
+    const createNewMap = async (
+        id: string,
+        name: string,
+        w: number,
+        h: number
+    ) => {
+        const data = createDefaultMapData(id, name, w, h);
+        await store.agent.saveMap(data);
+        const newMapStore = new MapStore(store.canvasHandler, data);
+        setMapStore(newMapStore);
+    };
+
     return (
         <WholeContainer>
             <TopBar mapStore={mapStore} />
 
             {mapStore === undefined && <CircularProgress />}
             {mapStore && (
-                <MapEditor
-                    mapStore={mapStore}
-                    openMap={(mapId) =>
-                        store.setActiveTab({ mapId, tab: 'map' })
-                    }
-                />
+                <MapEditor mapStore={mapStore} createNewMap={createNewMap} />
             )}
 
             {mapStore === null && (
-                <ModalContent
-                    initId={mapId}
-                    onSubmit={(
-                        id: string,
-                        name: string,
-                        w: number,
-                        h: number
-                    ) => {
-                        const data = createDefaultMapData(id, name, w, h);
-                        const newMapStore = new MapStore(
-                            store.canvasHandler,
-                            data
-                        );
-                        setMapStore(newMapStore);
-                    }}
-                />
+                <SColumn>
+                    <Header>{_('Create map: %s', mapId)}</Header>
+                    <ModalContent initId={mapId} onSubmit={createNewMap} />
+                </SColumn>
             )}
         </WholeContainer>
     );
 };
+
+const SColumn = styled(Column)`
+    gap: ${spacingCss(10)};
+    width: 500px;
+    margin: auto;
+`;

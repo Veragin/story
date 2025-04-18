@@ -2,13 +2,15 @@ import { Row } from 'code/components/Basic';
 import styled from '@emotion/styled';
 import { MapStore } from './MapStore';
 import { useEffect, useRef } from 'react';
+import { Modal } from 'code/components/Modal';
+import { ModalContent } from './components/ModalContent';
 
 type Props = {
     mapStore: MapStore;
-    createNewMap: () => void;
+    createNewMap: (id: string, name: string, w: number, h: number) => void;
 };
 
-export const MapEditor = ({ mapStore }: Props) => {
+export const MapEditor = ({ mapStore, createNewMap }: Props) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const infoRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +28,23 @@ export const MapEditor = ({ mapStore }: Props) => {
         <>
             <SCanvas ref={canvasRef} />
             <SRow ref={infoRef} />
+
+            <Modal
+                title={_('Create new map')}
+                open={mapStore.openNewMapModal !== null}
+                onClose={() => mapStore.setOpenNewMapModal(null)}
+            >
+                <ModalContent
+                    onSubmit={(
+                        id: string,
+                        name: string,
+                        w: number,
+                        h: number
+                    ) => {
+                        createNewMap(id, name, w, h);
+                    }}
+                />
+            </Modal>
         </>
     );
 };
@@ -38,10 +57,7 @@ const SCanvas = styled.canvas`
 `;
 
 const SRow = styled(Row)`
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    width: 100%;
     height: 30px;
     background-color: grey;
     z-index: 100;

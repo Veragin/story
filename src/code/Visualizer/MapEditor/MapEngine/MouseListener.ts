@@ -81,9 +81,9 @@ export class MouseListener {
 
         this.user.mouse.hold = false;
         if (this.user.mouse.pointingTo === -2) {
-            this.process.minimapMove(this.map, this.canvas);
+            this.process?.minimapMove(this.map, this.canvas);
         } else {
-            this.process.fillColorToPointing(this.map);
+            this.process?.fillColorToPointing(this.map);
         }
     };
 
@@ -97,13 +97,13 @@ export class MouseListener {
         if (event.clientX < minimapWidth && event.clientY > this.canvas.height - minimapHeight) {
             this.user.mouse.pointingTo = -2;
             if (this.user.mouse.hold) {
-                this.process.minimapMove(this.map, this.canvas);
+                this.process?.minimapMove(this.map, this.canvas);
             }
         } else {
             this.user.mouse.pointingTo = 0;
-            this.process.findSelectedTile();
+            this.process?.findSelectedTile();
             if (this.user.mouse.hold) {
-                this.process.fillColorToPointing(this.map);
+                this.process?.fillColorToPointing(this.map);
                 this.mapStore.render();
             }
         }

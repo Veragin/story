@@ -15,7 +15,7 @@ export const MINIMAP_RATIO = 1 / 8;
 export const MAX_ZOOM = 4;
 
 export const computeRealPos = (i: number, j: number, zoom: number) => {
-    const realX = (i * MAP_TILE_WIDTH + MAP_TILE_WIDTH / 2 + ((i % 2) * MAP_TILE_WIDTH) / 2) * zoom;
-    const realY = (j * MAP_TILE_HEIGHT + MAP_TILE_HEIGHT / 2) * zoom;
+    const realX = (j * MAP_TILE_WIDTH + MAP_TILE_WIDTH / 2 + ((i % 2) * MAP_TILE_WIDTH) / 2) * zoom;
+    const realY = (i * MAP_TILE_HEIGHT + MAP_TILE_HEIGHT / 2) * zoom;
     return { realX, realY };
 };

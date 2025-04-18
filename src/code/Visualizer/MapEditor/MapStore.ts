@@ -5,16 +5,19 @@ import { User } from './MapEngine/User';
 import { Draw } from './MapEngine/Draw';
 import { Process } from './MapEngine/Process';
 import { MAX_ZOOM } from './MapEngine/constants';
+import { MouseListener } from './MapEngine/MouseListener';
 
 export class MapStore {
     user = new User();
     draw: Draw | null = null;
-    process = new Process(this.user);
+    process: Process | null = null;
+    mouseListener: MouseListener;
 
     constructor(
         private canvasHandler: CanvasHandler,
         public data: TMapData
     ) {
+        this.mouseListener = new MouseListener(this);
         makeObservable(this, {
             editMode: observable,
             setEditMode: action,
@@ -31,12 +34,15 @@ export class MapStore {
         this.canvasHandler.registerCanvas('map', canvas);
         this.user.updateBounds(this.data, canvas);
         this.draw = new Draw(this, canvas);
+        this.process = new Process(this.user, this.draw);
+        this.mouseListener.init(canvas);
 
         this.render();
     };
 
     deinit = () => {
         this.canvasHandler.unregisterCanvas('map');
+        this.mouseListener.deinit();
     };
 
     zoomLevel = 3;

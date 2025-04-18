@@ -32,6 +32,7 @@ export class Draw {
     }
 
     render = () => {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         let d = this.findStartEndPos(this.user.pos.x, this.user.pos.y, this.canvas.width, this.canvas.height);
         for (let i = d.startI; i <= d.iTo; i++) {
             for (let j = d.startJ; j <= d.jTo; j++) {

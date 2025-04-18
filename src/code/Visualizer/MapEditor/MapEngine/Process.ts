@@ -1,9 +1,18 @@
 import { TMapData } from '../types';
 import { computeRealPos, MAP_TILE_HEIGHT, MAP_TILE_WIDTH, MINIMAP_RATIO } from './constants';
+import { Draw } from './Draw';
 import { User } from './User';
 
 export class Process {
-    constructor(private user: User) {}
+    constructor(
+        private user: User,
+        draw: Draw
+    ) {
+        setInterval(function () {
+            user.update();
+            draw.render();
+        }, 40);
+    }
 
     minimapMove = (map: TMapData, canvas: HTMLCanvasElement) => {
         const { realX, realY } = computeRealPos(map.width, map.height, this.user.zoom);
