@@ -1,5 +1,5 @@
 import { MapStore } from '../MapStore';
-import { MINIMAP_RATIO } from './constants';
+import { minimapSize } from './utils';
 
 export class MouseListener {
     canvas: HTMLCanvasElement | null = null;
@@ -80,17 +80,18 @@ export class MouseListener {
         } else {
             this.process?.fillColorToPointing(this.map);
         }
+        this.mapStore.render();
     };
 
     onMouseMove = (event: MouseEvent) => {
         if (this.canvas === null) return;
+
         const rect = this.canvas.getBoundingClientRect();
         this.user.mouse.pos.x = event.clientX - rect.left;
         this.user.mouse.pos.y = event.clientY - rect.top;
 
-        const minimapWidth = this.canvas.width * MINIMAP_RATIO;
-        const minimapHeight = this.canvas.height * MINIMAP_RATIO;
-        if (event.clientX < minimapWidth && event.clientY > this.canvas.height - minimapHeight) {
+        const minimap = minimapSize(this.canvas);
+        if (event.clientX < minimap.width && event.clientY > this.canvas.height - minimap.height) {
             this.user.mouse.pointingTo = -2;
             if (this.user.mouse.hold) {
                 this.process?.minimapMove(this.map, this.canvas);
@@ -104,6 +105,7 @@ export class MouseListener {
             }
             this.process?.displayInfo();
         }
+        this.mapStore.render();
     };
 
     onResize = () => {
@@ -111,6 +113,7 @@ export class MouseListener {
         const rect = this.canvas.getBoundingClientRect();
         this.canvas.width = rect.width;
         this.canvas.height = rect.height;
+        this.mapStore.render();
     };
 
     onContextMenu = (event: MouseEvent) => {
@@ -123,5 +126,6 @@ export class MouseListener {
             return;
         }
         this.user.mouse.size = Math.max(1, this.user.mouse.size + Math.sign(e.deltaY));
+        this.mapStore.render();
     };
 }

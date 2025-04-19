@@ -41,8 +41,7 @@ export class User {
         else this.pos.spdY = 0;
     };
 
-    update = () => {
-        this.updateSpd();
+    moveBySpeed = () => {
         this.move(this.pos.x + this.pos.spdX, this.pos.y + this.pos.spdY);
     };
 

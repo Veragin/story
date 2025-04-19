@@ -13,6 +13,7 @@ export class Draw {
         const ctx = canvas.getContext('2d');
         assertNotNullish(ctx, 'CanvasRenderingContext2D not supported');
         this.ctx = ctx;
+        this.run();
     }
 
     private get user() {
@@ -23,7 +24,20 @@ export class Draw {
         return this.mapStore.data;
     }
 
+    shouldRender = false;
     render = () => {
+        this.shouldRender = true;
+    };
+
+    private run = () => {
+        if (this.shouldRender) {
+            this.doRender();
+            this.shouldRender = false;
+        }
+        requestAnimationFrame(this.run);
+    };
+
+    private doRender = () => {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         this.ctx.translate(-this.user.pos.x, -this.user.pos.y);
