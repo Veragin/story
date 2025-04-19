@@ -79,6 +79,7 @@ export class MouseListener {
             this.process?.minimapMove(this.map, this.canvas);
         } else {
             this.process?.fillColorToPointing(this.map);
+            this.process?.displayInfo();
         }
         this.mapStore.render();
     };

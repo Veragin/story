@@ -106,9 +106,9 @@ export class Draw {
     private prepareTilePath = (i: number, j: number) => {
         const { x, y } = computeTilePos(i, j);
         this.ctx.beginPath();
-        this.ctx.moveTo(x + HEX_POINTS[0].x * this.user.zoom, y + HEX_POINTS[0].y * this.user.zoom);
+        this.ctx.moveTo(x + HEX_POINTS[0].x, y + HEX_POINTS[0].y);
         for (let i = 1; i < HEX_POINTS.length; i++) {
-            this.ctx.lineTo(x + HEX_POINTS[i].x * this.user.zoom, y + HEX_POINTS[i].y * this.user.zoom);
+            this.ctx.lineTo(x + HEX_POINTS[i].x, y + HEX_POINTS[i].y);
         }
         this.ctx.closePath();
     };
