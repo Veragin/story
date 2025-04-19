@@ -4,6 +4,7 @@ import { MapStore } from './MapStore';
 import { useEffect, useRef } from 'react';
 import { Modal } from 'code/components/Modal';
 import { ModalContent } from './components/ModalContent';
+import { spacingCss } from 'code/components/css';
 
 type Props = {
     mapStore: MapStore;
@@ -58,8 +59,8 @@ const SCanvas = styled.canvas`
 
 const SRow = styled(Row)`
     width: 100%;
-    height: 30px;
     background-color: grey;
     z-index: 100;
-    padding: 4px;
+    padding: ${spacingCss(1)};
+    gap: ${spacingCss(1)};
 `;

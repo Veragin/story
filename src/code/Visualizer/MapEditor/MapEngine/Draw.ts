@@ -1,7 +1,7 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
 import { HEX_POINTS, MAP_TILE_HEIGHT, MAP_TILE_WIDTH } from './constants';
-import { computeTileIndex, computeTilePos } from './utils';
+import { computeTileIndex, computeTilePos, findNeighbor } from './utils';
 
 export class Draw {
     private ctx: CanvasRenderingContext2D;
@@ -44,13 +44,20 @@ export class Draw {
         this.ctx.scale(this.user.zoom, this.user.zoom);
 
         let d = this.findStartEndPos(this.user.pos.x, this.user.pos.y, this.canvas.width, this.canvas.height);
+        this.ctx.lineWidth = 3;
         for (let i = d.startI; i <= d.iTo; i++) {
             for (let j = d.startJ; j <= d.jTo; j++) {
                 this.drawTile(i, j);
             }
         }
         if (this.user.mouse.pointingTo == 0) {
-            const pack = this.findNeighbor(this.user.mouse.poinTo.i, this.user.mouse.poinTo.j, this.user.mouse.size);
+            const pack = findNeighbor(
+                this.user.mouse.poinTo.i,
+                this.user.mouse.poinTo.j,
+                this.user.mouse.size,
+                this.map.height,
+                this.map.width
+            );
             for (let k in pack) {
                 this.drawTileBorder(pack[k].i, pack[k].j);
             }
@@ -91,10 +98,13 @@ export class Draw {
     private drawTile = (i: number, j: number) => {
         const tile = this.map.data[i][j].tile;
         if (tile === 'none') return;
-        this.ctx.fillStyle = this.map.palette[tile].color ?? '#000000';
+        const color = this.map.palette[tile].color ?? '#000000';
+        this.ctx.fillStyle = color;
+        this.ctx.strokeStyle = color;
 
         this.prepareTilePath(i, j);
         this.ctx.fill();
+        this.ctx.stroke();
     };
 
     private drawTileBorder = (i: number, j: number) => {
@@ -129,27 +139,6 @@ export class Draw {
         pack.iTo = Math.min(Math.max(0, pack.iTo), this.map.height - 1);
         pack.jTo = Math.min(Math.max(0, pack.jTo), this.map.width - 1);
 
-        return pack;
-    };
-
-    private findNeighbor = (si: number, sj: number, size: number) => {
-        const pack = [];
-        const isOdd = si % 2;
-        for (let j = sj - size + 1; j < sj + size; j++) {
-            if (si >= 0 && j >= 0 && si < this.map.height && j < this.map.width) pack.push({ i: si, j: j });
-        }
-        for (let i = 1; i < size; i++) {
-            for (
-                let j = sj - size + 1 + (i % 2) * (2 * isOdd - 1) + (i - isOdd + ((i - isOdd) % 2)) / 2;
-                j < sj + size - (i - isOdd + ((i - isOdd) % 2)) / 2;
-                j++
-            ) {
-                if (si + i >= 0 && j >= 0 && si + i < this.map.height && j < this.map.width)
-                    pack.push({ i: si + i, j: j });
-                if (si - i >= 0 && j >= 0 && si - i < this.map.height && j < this.map.width)
-                    pack.push({ i: si - i, j: j });
-            }
-        }
         return pack;
     };
 }

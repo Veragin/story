@@ -1,6 +1,6 @@
 import { MapStore } from '../MapStore';
 import { TMapData } from '../types';
-import { computeTilePos, computeTileIndex, minimapSize } from './utils';
+import { computeTilePos, computeTileIndex, minimapSize, findNeighbor } from './utils';
 export class Process {
     constructor(
         private mapStore: MapStore,
@@ -21,7 +21,7 @@ export class Process {
 
     update = () => {
         this.user.updateSpd();
-        if (this.user.pos.spdX === 0 || this.user.pos.spdY === 0) {
+        if (this.user.pos.spdX === 0 && this.user.pos.spdY === 0) {
             return;
         }
         this.user.moveBySpeed();
@@ -45,12 +45,25 @@ export class Process {
         );
     };
 
-    fillColorToPointing = (map: TMapData) => {
-        map.data[this.user.mouse.poinTo.i][this.user.mouse.poinTo.j].tile = this.user.activeColor;
+    fillColorToPointing = () => {
+        const pack = findNeighbor(
+            this.user.mouse.poinTo.i,
+            this.user.mouse.poinTo.j,
+            this.user.mouse.size,
+            this.map.height,
+            this.map.width
+        );
+        pack.forEach((tile) => {
+            this.map.data[tile.i][tile.j].tile = this.user.activeColor;
+        });
     };
 
     displayInfo = () => {
         const { i, j } = this.user.mouse.poinTo;
-        this.infoDiv.innerHTML = `i: ${i}, j: ${j}, color: ${this.map.data[i]?.[j]?.tile ?? '-'}`;
+        this.infoDiv.innerHTML = `
+            <span>i: ${i}</span>
+            <span>j: ${j}</span>
+            <span>tile: ${this.map.data[i]?.[j]?.tile ?? '-'}</span>
+            <span>active: ${this.user.activeColor}</span>`;
     };
 }

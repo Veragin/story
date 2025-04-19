@@ -61,7 +61,7 @@ export class MouseListener {
     };
 
     private onMouseDown = (event: MouseEvent) => {
-        if (event.button !== 1) {
+        if (event.button !== 0) {
             return;
         }
         this.user.mouse.hold = true;
@@ -69,7 +69,7 @@ export class MouseListener {
 
     onMouseUp = (event: MouseEvent) => {
         if (this.canvas === null) return;
-        if (event.button !== 1) {
+        if (event.button !== 0) {
             return;
         }
         if (!this.user.mouse.hold) return;
@@ -78,7 +78,7 @@ export class MouseListener {
         if (this.user.mouse.pointingTo === -2) {
             this.process?.minimapMove(this.map, this.canvas);
         } else {
-            this.process?.fillColorToPointing(this.map);
+            this.process?.fillColorToPointing();
             this.process?.displayInfo();
         }
         this.mapStore.render();
@@ -101,7 +101,7 @@ export class MouseListener {
             this.user.mouse.pointingTo = 0;
             this.process?.findSelectedTile();
             if (this.user.mouse.hold) {
-                this.process?.fillColorToPointing(this.map);
+                this.process?.fillColorToPointing();
                 this.mapStore.render();
             }
             this.process?.displayInfo();

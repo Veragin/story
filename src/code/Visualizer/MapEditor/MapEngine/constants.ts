@@ -8,6 +8,7 @@ export const HEX_POINTS = [0, 1, 2, 3, 4, 5].map((i) => ({
 
 export const MAP_TILE_WIDTH = HEX_POINTS[1].x - HEX_POINTS[5].x;
 export const MAP_TILE_HEIGHT = HEX_POINTS[0].y - HEX_POINTS[3].y;
+export const MAP_TILE_AVG_HEIGHT = (MAP_TILE_HEIGHT + HEX_RADIUS) / 2;
 
 export const MAP_BORDER = 100;
 export const MINIMAP_RATIO = 1 / 8;
