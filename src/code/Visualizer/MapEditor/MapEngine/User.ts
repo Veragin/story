@@ -1,6 +1,6 @@
 import { TMapData } from '../types';
 import { MAP_BORDER } from './constants';
-import { computeRealPos } from './utils';
+import { computeTilePos } from './utils';
 
 export class User {
     zoom = 1;
@@ -55,11 +55,11 @@ export class User {
         this.pos.y = posY;
     };
 
-    updateBounds = (map: TMapData, canvas: HTMLCanvasElement) => {
-        this.bounds.left = canvas.width / 2 - MAP_BORDER;
-        this.bounds.up = canvas.height / 2 - MAP_BORDER;
-        const { realX, realY } = computeRealPos(map.width, map.height, this.zoom);
-        this.bounds.right = realX - canvas.width / 2 + MAP_BORDER;
-        this.bounds.down = realY - canvas.height / 2 + MAP_BORDER;
+    updateBounds = (map: TMapData) => {
+        this.bounds.left = -MAP_BORDER;
+        this.bounds.up = -MAP_BORDER;
+        const { x, y } = computeTilePos(map.width, map.height);
+        this.bounds.right = x + MAP_BORDER;
+        this.bounds.down = y + MAP_BORDER;
     };
 }

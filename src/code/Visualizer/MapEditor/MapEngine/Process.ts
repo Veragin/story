@@ -1,6 +1,6 @@
 import { MapStore } from '../MapStore';
 import { TMapData } from '../types';
-import { computeRealPos, computeTileInedx, minimapSize } from './utils';
+import { computeTilePos, computeTileIndex, minimapSize } from './utils';
 export class Process {
     constructor(
         private mapStore: MapStore,
@@ -21,22 +21,19 @@ export class Process {
     }
 
     minimapMove = (map: TMapData, canvas: HTMLCanvasElement) => {
-        const { realX, realY } = computeRealPos(map.width, map.height, this.user.zoom);
+        const { x, y } = computeTilePos(map.width, map.height);
         const minimap = minimapSize(canvas);
         this.user.move(
-            ((this.user.mouse.pos.x + canvas.width / 2) * realX) / minimap.width,
-            ((this.user.mouse.pos.y - canvas.height / 2 + minimap.height) * realY) / minimap.height
+            ((this.user.mouse.pos.x + canvas.width / 2) * x) / minimap.width,
+            ((this.user.mouse.pos.y - canvas.height / 2 + minimap.height) * y) / minimap.height
         );
     };
 
     findSelectedTile = () => {
-        const { i, j } = computeTileInedx(
-            this.user.mouse.pos.x + this.user.pos.x,
-            this.user.mouse.pos.y + this.user.pos.y,
-            this.user.zoom
+        this.user.mouse.poinTo = computeTileIndex(
+            this.user.mouse.pos.x + this.user.pos.x * this.user.zoom,
+            this.user.mouse.pos.y + this.user.pos.y * this.user.zoom
         );
-        this.user.mouse.poinTo.i = i;
-        this.user.mouse.poinTo.j = j;
     };
 
     fillColorToPointing = (map: TMapData) => {

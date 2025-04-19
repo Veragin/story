@@ -1,7 +1,7 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
 import { HEX_POINTS, MAP_TILE_HEIGHT, MAP_TILE_WIDTH } from './constants';
-import { computeRealPos } from './utils';
+import { computeTileIndex, computeTilePos } from './utils';
 
 export class Draw {
     private ctx: CanvasRenderingContext2D;
@@ -25,6 +25,10 @@ export class Draw {
 
     render = () => {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.save();
+        this.ctx.translate(-this.user.pos.x, -this.user.pos.y);
+        this.ctx.scale(this.user.zoom, this.user.zoom);
+
         let d = this.findStartEndPos(this.user.pos.x, this.user.pos.y, this.canvas.width, this.canvas.height);
         for (let i = d.startI; i <= d.iTo; i++) {
             for (let j = d.startJ; j <= d.jTo; j++) {
@@ -37,6 +41,7 @@ export class Draw {
                 this.drawTileBorder(pack[k].i, pack[k].j);
             }
         }
+        this.ctx.restore();
     };
     /*
     renderMinimap = () => {
@@ -85,20 +90,13 @@ export class Draw {
     };
 
     private prepareTilePath = (i: number, j: number) => {
-        const { x, y } = this.getTilePos(i, j);
+        const { x, y } = computeTilePos(i, j);
         this.ctx.beginPath();
         this.ctx.moveTo(x + HEX_POINTS[0].x * this.user.zoom, y + HEX_POINTS[0].y * this.user.zoom);
         for (let i = 1; i < HEX_POINTS.length; i++) {
             this.ctx.lineTo(x + HEX_POINTS[i].x * this.user.zoom, y + HEX_POINTS[i].y * this.user.zoom);
         }
         this.ctx.closePath();
-    };
-
-    private getTilePos = (i: number, j: number) => {
-        const { realX, realY } = computeRealPos(i, j, this.user.zoom);
-        const x = realX - this.user.pos.x;
-        const y = realY - this.user.pos.y;
-        return { x, y };
     };
 
     private findStartEndPos = (x: number, y: number, width: number, height: number) => {
@@ -108,44 +106,28 @@ export class Draw {
             iTo: 0,
             jTo: 0,
         };
-        pack.startI = Math.floor((y - height / 2) / (MAP_TILE_HEIGHT * this.user.zoom)) - 1;
-        pack.startJ = Math.floor((x - width / 2) / (MAP_TILE_WIDTH * this.user.zoom)) - 1;
-        pack.iTo = pack.startI + Math.ceil(height / (MAP_TILE_HEIGHT * this.user.zoom)) + 5;
-        pack.jTo = pack.startJ + Math.ceil(width / (MAP_TILE_WIDTH * this.user.zoom)) + 5;
+        const { i, j } = computeTileIndex(x, y);
+        pack.startI = Math.min(Math.max(0, i - 1), this.map.height - 1);
+        pack.startJ = Math.min(Math.max(0, j - 1), this.map.width - 1);
 
-        if (pack.startI >= this.map.height) {
-            pack.startI = this.map.height - 1;
-            pack.iTo = this.map.height - 1;
-        } else if (pack.iTo >= this.map.height) pack.iTo = this.map.height - 1;
-        if (pack.startJ >= this.map.width) {
-            pack.startJ = this.map.width - 1;
-            pack.jTo = this.map.width - 1;
-        } else if (pack.jTo >= this.map.width) pack.jTo = this.map.width - 1;
-
-        if (pack.iTo < 0) {
-            pack.startI = 0;
-            pack.iTo = 0;
-        }
-        if (pack.startI < 0) pack.startI = 0;
-        if (pack.jTo < 0) {
-            pack.startJ = 0;
-            pack.jTo = 0;
-        }
-        if (pack.startJ < 0) pack.startJ = 0;
+        pack.iTo = pack.startI + Math.ceil(height / (MAP_TILE_HEIGHT * this.user.zoom)) + 1;
+        pack.jTo = pack.startJ + Math.ceil(width / (MAP_TILE_WIDTH * this.user.zoom)) + 1;
+        pack.iTo = Math.min(Math.max(0, pack.iTo), this.map.height - 1);
+        pack.jTo = Math.min(Math.max(0, pack.jTo), this.map.width - 1);
 
         return pack;
     };
 
     private findNeighbor = (si: number, sj: number, size: number) => {
         const pack = [];
-        for (let j = sj - size + 1 - (si % 2); j < sj + size - (si % 2); j++) {
+        const isOdd = si % 2;
+        for (let j = sj - size + 1; j < sj + size; j++) {
             if (si >= 0 && j >= 0 && si < this.map.height && j < this.map.width) pack.push({ i: si, j: j });
         }
         for (let i = 1; i < size; i++) {
             for (
-                let j =
-                    sj - size + 1 - (si % 2) + (i % 2) * (2 * (si % 2) - 1) + (i - (si % 2) + ((i - (si % 2)) % 2)) / 2;
-                j < sj + size - (si % 2) - (i - (si % 2) + ((i - (si % 2)) % 2)) / 2;
+                let j = sj - size + 1 + (i % 2) * (2 * isOdd - 1) + (i - isOdd + ((i - isOdd) % 2)) / 2;
+                j < sj + size - (i - isOdd + ((i - isOdd) % 2)) / 2;
                 j++
             ) {
                 if (si + i >= 0 && j >= 0 && si + i < this.map.height && j < this.map.width)
