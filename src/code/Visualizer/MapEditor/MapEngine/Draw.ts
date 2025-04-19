@@ -1,6 +1,6 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
-import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_HEIGHT, MAP_TILE_WIDTH } from './constants';
+import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH } from './constants';
 import { computeTileIndex, computeTilePos, findNeighbor } from './utils';
 
 export class Draw {
@@ -130,12 +130,12 @@ export class Draw {
             iTo: 0,
             jTo: 0,
         };
-        const { i, j } = computeTileIndex(x, y);
+        const { i, j } = computeTileIndex(x / this.user.zoom, y / this.user.zoom);
         pack.startI = Math.min(Math.max(0, i - 1), this.map.height - 1);
         pack.startJ = Math.min(Math.max(0, j - 1), this.map.width - 1);
 
-        pack.iTo = pack.startI + Math.ceil(height / (MAP_TILE_AVG_HEIGHT * this.user.zoom)) + 2;
-        pack.jTo = pack.startJ + Math.ceil(width / (MAP_TILE_WIDTH * this.user.zoom)) + 2;
+        pack.iTo = pack.startI + Math.ceil(height / MAP_TILE_AVG_HEIGHT / this.user.zoom) + 2;
+        pack.jTo = pack.startJ + Math.ceil(width / MAP_TILE_WIDTH / this.user.zoom) + 2;
         pack.iTo = Math.min(Math.max(0, pack.iTo), this.map.height - 1);
         pack.jTo = Math.min(Math.max(0, pack.jTo), this.map.width - 1);
 
