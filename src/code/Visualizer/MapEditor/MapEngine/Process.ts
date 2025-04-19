@@ -40,8 +40,8 @@ export class Process {
 
     findSelectedTile = () => {
         this.user.mouse.poinTo = computeTileIndex(
-            this.user.pos.x + this.user.mouse.pos.x / this.user.zoom,
-            this.user.pos.y + this.user.mouse.pos.y / this.user.zoom
+            (this.user.pos.x + this.user.mouse.pos.x) / this.user.zoom,
+            (this.user.pos.y + this.user.mouse.pos.y) / this.user.zoom
         );
     };
 
