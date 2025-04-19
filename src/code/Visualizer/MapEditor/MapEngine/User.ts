@@ -1,5 +1,6 @@
 import { TMapData } from '../types';
-import { computeRealPos, MAP_BORDER } from './constants';
+import { MAP_BORDER } from './constants';
+import { computeRealPos } from './utils';
 
 export class User {
     zoom = 1;
@@ -11,17 +12,14 @@ export class User {
         poinTo: { i: 0, j: 0 },
         pointingTo: 0,
         hold: false,
-        last: { x: 0, y: 0 },
-        selectTopL: { x: 0, y: 0 },
-        selectBotR: { x: 0, y: 0 },
-        multiselect: false,
     };
     key = {
-        pressingRight: false,
-        pressingLeft: false,
-        pressingUp: false,
-        pressingDown: false,
-        pressingShift: false,
+        right: false,
+        left: false,
+        up: false,
+        down: false,
+        shift: false,
+        ctrl: false,
     };
     bounds = {
         left: 0,
@@ -32,14 +30,14 @@ export class User {
     activeColor = 'none';
 
     updateSpd = () => {
-        if (this.key.pressingRight && this.key.pressingLeft) this.pos.spdX = 0;
-        else if (this.key.pressingRight) this.pos.spdX = this.spdMax;
-        else if (this.key.pressingLeft) this.pos.spdX = -this.spdMax;
+        if (this.key.right && this.key.left) this.pos.spdX = 0;
+        else if (this.key.right) this.pos.spdX = this.spdMax;
+        else if (this.key.left) this.pos.spdX = -this.spdMax;
         else this.pos.spdX = 0;
 
-        if (this.key.pressingUp && this.key.pressingDown) this.pos.spdY = 0;
-        else if (this.key.pressingDown) this.pos.spdY = this.spdMax;
-        else if (this.key.pressingUp) this.pos.spdY = -this.spdMax;
+        if (this.key.up && this.key.down) this.pos.spdY = 0;
+        else if (this.key.down) this.pos.spdY = this.spdMax;
+        else if (this.key.up) this.pos.spdY = -this.spdMax;
         else this.pos.spdY = 0;
     };
 

@@ -34,7 +34,7 @@ export class MapStore {
         this.canvasHandler.registerCanvas('map', canvas);
         this.user.updateBounds(this.data, canvas);
         this.draw = new Draw(this, canvas);
-        this.process = new Process(this.user, this.draw);
+        this.process = new Process(this, infoRef);
         this.mouseListener.init(canvas);
 
         this.render();

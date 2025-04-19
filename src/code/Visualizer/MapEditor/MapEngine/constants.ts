@@ -1,21 +1,14 @@
-export const ANGLE_BASE = Math.PI / 2;
-export const MAP_TILE_WIDTH = 62;
-export const MAP_TILE_HEIGHT = 53;
+export const HEX_RADIUS = 36;
+const HEX_ANGLE = (2 * Math.PI) / 6;
+
+export const HEX_POINTS = [0, 1, 2, 3, 4, 5].map((i) => ({
+    x: HEX_RADIUS * Math.sin(HEX_ANGLE * i),
+    y: HEX_RADIUS * Math.cos(HEX_ANGLE * i),
+}));
+
+export const MAP_TILE_WIDTH = HEX_POINTS[1].x - HEX_POINTS[5].x;
+export const MAP_TILE_HEIGHT = HEX_POINTS[0].y - HEX_POINTS[3].y;
+
 export const MAP_BORDER = 100;
-
-export const HEXAGON_ANGLE = 0.523598776; // 30 degrees in radians
-export const SIDE_LENGTH = 36;
-
-export const HEX_HEIGHT = Math.sin(HEXAGON_ANGLE) * SIDE_LENGTH;
-export const HEX_RADIUS = Math.cos(HEXAGON_ANGLE) * SIDE_LENGTH;
-export const HEX_RECT_HEIGHT = SIDE_LENGTH + 2 * HEX_HEIGHT;
-export const HEX_RECT_WIDTH = 2 * HEX_RADIUS;
-
 export const MINIMAP_RATIO = 1 / 8;
 export const MAX_ZOOM = 4;
-
-export const computeRealPos = (i: number, j: number, zoom: number) => {
-    const realX = (j * MAP_TILE_WIDTH + MAP_TILE_WIDTH / 2 + ((i % 2) * MAP_TILE_WIDTH) / 2) * zoom;
-    const realY = (i * MAP_TILE_HEIGHT + MAP_TILE_HEIGHT / 2) * zoom;
-    return { realX, realY };
-};

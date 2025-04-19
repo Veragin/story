@@ -1,15 +1,7 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
-import {
-    computeRealPos,
-    HEX_HEIGHT,
-    HEX_RADIUS,
-    HEX_RECT_HEIGHT,
-    HEX_RECT_WIDTH,
-    MAP_TILE_HEIGHT,
-    MAP_TILE_WIDTH,
-    SIDE_LENGTH,
-} from './constants';
+import { HEX_POINTS, MAP_TILE_HEIGHT, MAP_TILE_WIDTH } from './constants';
+import { computeRealPos } from './utils';
 
 export class Draw {
     private ctx: CanvasRenderingContext2D;
@@ -46,42 +38,66 @@ export class Draw {
             }
         }
     };
+    /*
+    renderMinimap = () => {
+        if(map.minimapMinimal)
+            return;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, HEIGHT - MINIMAP_HEIGHT, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+        var distanceBetweenTiles = MINIMAP_WIDTH/map.width;
+        var mapSizeX = map.data[0][map.width-1].x;
+        var mapSizeY = map.data[map.height-1][0].y;
+        for(var i = 0; i < map.height; i++){
+            for(var j = 0; j < map.width; j++){
+                if(map.data[i][j].map === 'none'){
+                    continue;
+                }
+                ctx.fillStyle = palete.MAP_TILES_COLOR[map.data[i][j].map];
+                ctx.fillRect(j*distanceBetweenTiles, HEIGHT - MINIMAP_HEIGHT + i * distanceBetweenTiles, MINIMAP_WIDTH / map.width +1, MINIMAP_HEIGHT / map.height+ 1);
+            }
+        }
+        
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = "#FFDE04";
+        this.ctx.lineWidth=1;
+        this.ctx.rect((user.pos.x-WHAT_PLAYER_CAN_SEE_WIDTH/2)*MINIMAP_WIDTH/mapSizeX, HEIGHT - MINIMAP_HEIGHT + (user.pos.y-WHAT_PLAYER_CAN_SEE_HEIGHT/2)*MINIMAP_WIDTH/mapSizeY, WHAT_PLAYER_CAN_SEE_WIDTH*MINIMAP_WIDTH/mapSizeX, WHAT_PLAYER_CAN_SEE_HEIGHT*MINIMAP_HEIGHT/mapSizeY);
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.lineWidth=4;
+        this.ctx.strokeStyle = "#C6A288";
+        this.ctx.rect(0, HEIGHT - MINIMAP_HEIGHT, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+        this.ctx.stroke();
+    }*/
 
     private drawTile = (i: number, j: number) => {
         const tile = this.map.data[i][j].tile;
         if (tile === 'none') return;
         this.ctx.fillStyle = this.map.palette[tile].color ?? '#000000';
 
-        const { x, y } = this.getTilePos(i, j);
-        this.ctx.beginPath();
-        this.ctx.moveTo(x + HEX_RADIUS * this.user.zoom, y);
-        this.ctx.lineTo(x + HEX_RECT_WIDTH * this.user.zoom, y + HEX_HEIGHT * this.user.zoom);
-        this.ctx.lineTo(x + HEX_RECT_WIDTH * this.user.zoom, y + (HEX_HEIGHT + SIDE_LENGTH) * this.user.zoom);
-        this.ctx.lineTo(x + HEX_RADIUS * this.user.zoom, y + HEX_RECT_HEIGHT * this.user.zoom);
-        this.ctx.lineTo(x, y + (SIDE_LENGTH + HEX_HEIGHT) * this.user.zoom);
-        this.ctx.lineTo(x, y + HEX_HEIGHT * this.user.zoom);
-        this.ctx.closePath();
+        this.prepareTilePath(i, j);
         this.ctx.fill();
     };
 
     private drawTileBorder = (i: number, j: number) => {
         this.ctx.strokeStyle = '#FF0000';
+        this.prepareTilePath(i, j);
+        this.ctx.stroke();
+    };
+
+    private prepareTilePath = (i: number, j: number) => {
         const { x, y } = this.getTilePos(i, j);
         this.ctx.beginPath();
-        this.ctx.moveTo(x + HEX_RADIUS * this.user.zoom, y);
-        this.ctx.lineTo(x + HEX_RECT_WIDTH * this.user.zoom, y + HEX_HEIGHT * this.user.zoom);
-        this.ctx.lineTo(x + HEX_RECT_WIDTH * this.user.zoom, y + (HEX_HEIGHT + SIDE_LENGTH) * this.user.zoom);
-        this.ctx.lineTo(x + HEX_RADIUS * this.user.zoom, y + HEX_RECT_HEIGHT * this.user.zoom);
-        this.ctx.lineTo(x, y + (SIDE_LENGTH + HEX_HEIGHT) * this.user.zoom);
-        this.ctx.lineTo(x, y + HEX_HEIGHT * this.user.zoom);
+        this.ctx.moveTo(x + HEX_POINTS[0].x * this.user.zoom, y + HEX_POINTS[0].y * this.user.zoom);
+        for (let i = 1; i < HEX_POINTS.length; i++) {
+            this.ctx.lineTo(x + HEX_POINTS[i].x * this.user.zoom, y + HEX_POINTS[i].y * this.user.zoom);
+        }
         this.ctx.closePath();
-        this.ctx.stroke();
     };
 
     private getTilePos = (i: number, j: number) => {
         const { realX, realY } = computeRealPos(i, j, this.user.zoom);
-        const x = realX - this.user.pos.x + this.canvas.width / 2 - HEX_RECT_WIDTH / 2;
-        const y = realY - this.user.pos.y + this.canvas.height / 2 - HEX_RECT_HEIGHT / 2;
+        const x = realX - this.user.pos.x;
+        const y = realY - this.user.pos.y;
         return { x, y };
     };
 

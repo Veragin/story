@@ -43,33 +43,28 @@ export class MouseListener {
     };
 
     private onKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'd') this.user.key.pressingRight = true;
-        else if (event.key === 'a') this.user.key.pressingLeft = true;
-        else if (event.key === 'w') this.user.key.pressingUp = true;
-        else if (event.key === 's') this.user.key.pressingDown = true;
-        else if (event.key === 'Ctrl') this.user.mouse.multiselect = true;
-        else if (event.key === 'Shift') this.user.key.pressingShift = true;
+        if (event.key === 'd') this.user.key.right = true;
+        else if (event.key === 'a') this.user.key.left = true;
+        else if (event.key === 'w') this.user.key.up = true;
+        else if (event.key === 's') this.user.key.down = true;
+        else if (event.key === 'Ctrl') this.user.key.ctrl = true;
+        else if (event.key === 'Shift') this.user.key.shift = true;
     };
 
     private onKeyUp = (event: KeyboardEvent) => {
-        if (event.key === 'd') this.user.key.pressingRight = false;
-        else if (event.key === 'a') this.user.key.pressingLeft = false;
-        else if (event.key === 'w') this.user.key.pressingUp = false;
-        else if (event.key === 's') this.user.key.pressingDown = false;
-        else if (event.key === 'ctrl')
-            //ctrl
-            this.user.mouse.multiselect = false;
-        else if (event.key === 'Shift') this.user.key.pressingShift = false;
+        if (event.key === 'd') this.user.key.right = false;
+        else if (event.key === 'a') this.user.key.left = false;
+        else if (event.key === 'w') this.user.key.up = false;
+        else if (event.key === 's') this.user.key.down = false;
+        else if (event.key === 'ctrl') this.user.key.ctrl = false;
+        else if (event.key === 'Shift') this.user.key.shift = false;
     };
 
     private onMouseDown = (event: MouseEvent) => {
         if (event.button !== 1) {
             return;
         }
-
         this.user.mouse.hold = true;
-        this.user.mouse.last.x = this.user.mouse.pos.x + this.user.pos.x;
-        this.user.mouse.last.y = this.user.mouse.pos.y + this.user.pos.y;
     };
 
     onMouseUp = (event: MouseEvent) => {
@@ -89,8 +84,9 @@ export class MouseListener {
 
     onMouseMove = (event: MouseEvent) => {
         if (this.canvas === null) return;
-        this.user.mouse.pos.x = event.clientX - this.canvas.width / 2;
-        this.user.mouse.pos.y = event.clientY - this.canvas.height / 2;
+        const rect = this.canvas.getBoundingClientRect();
+        this.user.mouse.pos.x = event.clientX - rect.left;
+        this.user.mouse.pos.y = event.clientY - rect.top;
 
         const minimapWidth = this.canvas.width * MINIMAP_RATIO;
         const minimapHeight = this.canvas.height * MINIMAP_RATIO;
@@ -106,6 +102,7 @@ export class MouseListener {
                 this.process?.fillColorToPointing(this.map);
                 this.mapStore.render();
             }
+            this.process?.displayInfo();
         }
     };
 
@@ -121,7 +118,7 @@ export class MouseListener {
     };
 
     onWheel = (e: WheelEvent) => {
-        if (this.user.key.pressingShift) {
+        if (this.user.key.shift) {
             this.mapStore.setZoomLevel(this.mapStore.zoomLevel + Math.sign(e.deltaY));
             return;
         }

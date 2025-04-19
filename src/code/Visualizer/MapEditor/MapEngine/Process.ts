@@ -1,40 +1,50 @@
+import { MapStore } from '../MapStore';
 import { TMapData } from '../types';
-import { computeRealPos, MAP_TILE_HEIGHT, MAP_TILE_WIDTH, MINIMAP_RATIO } from './constants';
-import { Draw } from './Draw';
-import { User } from './User';
-
+import { computeRealPos, computeTileInedx, minimapSize } from './utils';
 export class Process {
     constructor(
-        private user: User,
-        draw: Draw
+        private mapStore: MapStore,
+        private infoDiv: HTMLDivElement
     ) {
-        setInterval(function () {
-            user.update();
-            draw.render();
+        setInterval(() => {
+            this.user.update();
+            this.mapStore.draw?.render();
         }, 40);
+    }
+
+    private get user() {
+        return this.mapStore.user;
+    }
+
+    private get map() {
+        return this.mapStore.data;
     }
 
     minimapMove = (map: TMapData, canvas: HTMLCanvasElement) => {
         const { realX, realY } = computeRealPos(map.width, map.height, this.user.zoom);
-        const minimapWidth = canvas.width * MINIMAP_RATIO;
-        const minimapHeight = canvas.height * MINIMAP_RATIO;
+        const minimap = minimapSize(canvas);
         this.user.move(
-            ((this.user.mouse.pos.x + canvas.width / 2) * realX) / minimapWidth,
-            ((this.user.mouse.pos.y - canvas.height / 2 + minimapHeight) * realY) / minimapHeight
+            ((this.user.mouse.pos.x + canvas.width / 2) * realX) / minimap.width,
+            ((this.user.mouse.pos.y - canvas.height / 2 + minimap.height) * realY) / minimap.height
         );
     };
 
     findSelectedTile = () => {
-        this.user.mouse.poinTo.i = Math.floor(
-            (this.user.mouse.pos.y + this.user.pos.y) / (MAP_TILE_HEIGHT * this.user.zoom)
+        const { i, j } = computeTileInedx(
+            this.user.mouse.pos.x + this.user.pos.x,
+            this.user.mouse.pos.y + this.user.pos.y,
+            this.user.zoom
         );
-        this.user.mouse.poinTo.j = Math.floor(
-            (this.user.mouse.pos.x + this.user.pos.x) / (MAP_TILE_WIDTH * this.user.zoom) +
-                0.5 * (this.user.mouse.poinTo.i % 2)
-        );
+        this.user.mouse.poinTo.i = i;
+        this.user.mouse.poinTo.j = j;
     };
 
     fillColorToPointing = (map: TMapData) => {
         map.data[this.user.mouse.poinTo.i][this.user.mouse.poinTo.j].tile = this.user.activeColor;
+    };
+
+    displayInfo = () => {
+        const { i, j } = this.user.mouse.poinTo;
+        this.infoDiv.innerHTML = `i: ${i}, j: ${j}, color: ${this.map.data[i][j].tile}`;
     };
 }
