@@ -30,7 +30,7 @@ export class Process {
 
     minimapMove = (map: TMapData, canvas: HTMLCanvasElement) => {
         const { x, y } = computeTilePos(map.width, map.height);
-        const minimap = minimapSize(canvas);
+        const minimap = minimapSize(canvas, map);
         this.user.move(
             ((this.user.mouse.pos.x + canvas.width / 2) * x) / minimap.width,
             ((this.user.mouse.pos.y - canvas.height / 2 + minimap.height) * y) / minimap.height

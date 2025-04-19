@@ -91,7 +91,7 @@ export class MouseListener {
         this.user.mouse.pos.x = event.clientX - rect.left;
         this.user.mouse.pos.y = event.clientY - rect.top;
 
-        const minimap = minimapSize(this.canvas);
+        const minimap = minimapSize(this.canvas, this.map);
         if (event.clientX < minimap.width && event.clientY > this.canvas.height - minimap.height) {
             this.user.mouse.pointingTo = -2;
             if (this.user.mouse.hold) {

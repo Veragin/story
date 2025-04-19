@@ -1,7 +1,7 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
 import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH } from './constants';
-import { computeTileIndex, computeTilePos, findNeighbor } from './utils';
+import { computeTileIndex, computeTilePos, findNeighbor, minimapSize } from './utils';
 
 export class Draw {
     private ctx: CanvasRenderingContext2D;
@@ -63,37 +63,53 @@ export class Draw {
             }
         }
         this.ctx.restore();
+        this.renderMinimap();
     };
-    /*
+
     renderMinimap = () => {
-        if(map.minimapMinimal)
-            return;
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, HEIGHT - MINIMAP_HEIGHT, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        var distanceBetweenTiles = MINIMAP_WIDTH/map.width;
-        var mapSizeX = map.data[0][map.width-1].x;
-        var mapSizeY = map.data[map.height-1][0].y;
-        for(var i = 0; i < map.height; i++){
-            for(var j = 0; j < map.width; j++){
-                if(map.data[i][j].map === 'none'){
+        this.ctx.fillStyle = '#000';
+        const size = minimapSize(this.canvas, this.map);
+        this.ctx.clearRect(0, this.canvas.height - size.height, size.width, size.height);
+
+        const distanceBetweenTilesJ = size.width / this.map.width;
+        const distanceBetweenTilesI = size.height / this.map.height;
+        for (let i = 0; i < this.map.height; i++) {
+            for (let j = 0; j < this.map.width; j++) {
+                const tile = this.map.data[i]?.[j]?.tile;
+                if (tile === 'none' || tile === undefined) {
                     continue;
                 }
-                ctx.fillStyle = palete.MAP_TILES_COLOR[map.data[i][j].map];
-                ctx.fillRect(j*distanceBetweenTiles, HEIGHT - MINIMAP_HEIGHT + i * distanceBetweenTiles, MINIMAP_WIDTH / map.width +1, MINIMAP_HEIGHT / map.height+ 1);
+                const color = this.map.palette[tile].color ?? '#000000';
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(
+                    j * distanceBetweenTilesJ,
+                    this.canvas.height - size.height + i * distanceBetweenTilesI,
+                    size.width / this.map.width + 1,
+                    size.height / this.map.height + 1
+                );
             }
         }
-        
+
+        // window
+        const { x: mapSizeX, y: mapSizeY } = computeTilePos(this.map.height, this.map.width);
         this.ctx.beginPath();
-        this.ctx.strokeStyle = "#FFDE04";
-        this.ctx.lineWidth=1;
-        this.ctx.rect((user.pos.x-WHAT_PLAYER_CAN_SEE_WIDTH/2)*MINIMAP_WIDTH/mapSizeX, HEIGHT - MINIMAP_HEIGHT + (user.pos.y-WHAT_PLAYER_CAN_SEE_HEIGHT/2)*MINIMAP_WIDTH/mapSizeY, WHAT_PLAYER_CAN_SEE_WIDTH*MINIMAP_WIDTH/mapSizeX, WHAT_PLAYER_CAN_SEE_HEIGHT*MINIMAP_HEIGHT/mapSizeY);
+        this.ctx.strokeStyle = '#FFDE04';
+        this.ctx.lineWidth = 1;
+        this.ctx.rect(
+            ((this.user.pos.x / this.user.zoom) * size.width) / mapSizeX,
+            this.canvas.height - size.height + ((this.user.pos.y / this.user.zoom) * size.width) / mapSizeY,
+            ((this.canvas.width / this.user.zoom) * size.width) / mapSizeX,
+            ((this.canvas.height / this.user.zoom) * size.height) / mapSizeY
+        );
         this.ctx.stroke();
+
+        // border
         this.ctx.beginPath();
-        this.ctx.lineWidth=4;
-        this.ctx.strokeStyle = "#C6A288";
-        this.ctx.rect(0, HEIGHT - MINIMAP_HEIGHT, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = '#C6A288';
+        this.ctx.rect(0, this.canvas.height - size.height, size.width, size.height);
         this.ctx.stroke();
-    }*/
+    };
 
     private drawTile = (i: number, j: number) => {
         const tile = this.map.data[i][j].tile;

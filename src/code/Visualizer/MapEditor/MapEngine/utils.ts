@@ -1,3 +1,4 @@
+import { TMapData } from '../types';
 import { MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH, MINIMAP_RATIO } from './constants';
 
 export const computeTilePos = (i: number, j: number) => {
@@ -13,9 +14,10 @@ export const computeTileIndex = (x: number, y: number) => {
     return { i, j };
 };
 
-export const minimapSize = (canvas: HTMLCanvasElement) => {
+export const minimapSize = (canvas: HTMLCanvasElement, map: TMapData) => {
+    const aspectRatio = map.width / map.height;
     return {
-        width: canvas.width * MINIMAP_RATIO,
+        width: aspectRatio * canvas.height * MINIMAP_RATIO,
         height: canvas.height * MINIMAP_RATIO,
     };
 };
