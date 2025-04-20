@@ -37,7 +37,8 @@ export class Process {
         const minimap = minimapSize(canvas, this.map);
         this.user.move(
             (this.user.mouse.pos.x / minimap.width) * x * this.user.zoom - canvas.width / 2,
-            ((this.user.mouse.pos.y - canvas.height + minimap.height) / minimap.height) * y * this.user.zoom
+            ((this.user.mouse.pos.y - canvas.height + minimap.height) / minimap.height) * y * this.user.zoom -
+                canvas.height / 2
         );
         this.mapStore.render();
     };

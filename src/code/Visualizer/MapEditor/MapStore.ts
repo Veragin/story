@@ -25,6 +25,8 @@ export class MapStore {
             setZoomLevel: action,
             openNewMapModal: observable,
             setOpenNewMapModal: action,
+            showMinimap: observable,
+            toggleShowMinimap: action,
         });
     }
 
@@ -68,5 +70,11 @@ export class MapStore {
     openNewMapModal: string | null = null;
     setOpenNewMapModal = (mapId: string | null) => {
         this.openNewMapModal = mapId;
+    };
+
+    showMinimap = true;
+    toggleShowMinimap = () => {
+        this.showMinimap = !this.showMinimap;
+        this.render();
     };
 }

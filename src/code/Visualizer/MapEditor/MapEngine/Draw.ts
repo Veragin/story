@@ -63,7 +63,10 @@ export class Draw {
             }
         }
         this.ctx.restore();
-        this.renderMinimap();
+
+        if (this.mapStore.showMinimap) {
+            this.renderMinimap();
+        }
     };
 
     renderMinimap = () => {

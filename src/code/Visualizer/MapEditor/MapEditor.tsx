@@ -5,13 +5,17 @@ import { useEffect, useRef } from 'react';
 import { Modal } from 'code/components/Modal';
 import { ModalContent } from './components/ModalContent';
 import { spacingCss } from 'code/components/css';
+import { IconButton, Tooltip } from '@mui/material';
+import MapIcon from '@mui/icons-material/Map';
+import PaletteIcon from '@mui/icons-material/Palette';
+import { observer } from 'mobx-react-lite';
 
 type Props = {
     mapStore: MapStore;
     createNewMap: (id: string, name: string, w: number, h: number) => void;
 };
 
-export const MapEditor = ({ mapStore, createNewMap }: Props) => {
+export const MapEditor = observer(({ mapStore, createNewMap }: Props) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const infoRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +32,23 @@ export const MapEditor = ({ mapStore, createNewMap }: Props) => {
     return (
         <>
             <SCanvas ref={canvasRef} />
-            <SRow ref={infoRef} />
+            <SRow>
+                <Tooltip title={_('Minimap')}>
+                    <IconButton
+                        size="small"
+                        color={mapStore.showMinimap ? 'secondary' : 'inherit'}
+                        onClick={() => mapStore.toggleShowMinimap()}
+                    >
+                        <MapIcon />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title={_('Show palette')}>
+                    <IconButton size="small" color="inherit">
+                        <PaletteIcon />
+                    </IconButton>
+                </Tooltip>
+                <Row ref={infoRef}></Row>
+            </SRow>
 
             <Modal
                 title={_('Create new map')}
@@ -48,7 +68,7 @@ export const MapEditor = ({ mapStore, createNewMap }: Props) => {
             </Modal>
         </>
     );
-};
+});
 
 const SCanvas = styled.canvas`
     width: 100%;
@@ -61,6 +81,6 @@ const SRow = styled(Row)`
     width: 100%;
     background-color: grey;
     z-index: 100;
-    padding: ${spacingCss(1)};
+    padding: 0 ${spacingCss(1)};
     gap: ${spacingCss(1)};
 `;
