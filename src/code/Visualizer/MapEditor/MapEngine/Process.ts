@@ -25,6 +25,10 @@ export class Process {
             return;
         }
         this.user.moveBySpeed();
+        this.findSelectedTile();
+        if (this.user.mouse.hold) {
+            this.fillColorToPointing();
+        }
         this.mapStore.render();
     };
 
