@@ -32,12 +32,12 @@ export class Process {
         this.mapStore.render();
     };
 
-    minimapMove = (map: TMapData, canvas: HTMLCanvasElement) => {
-        const { x, y } = computeTilePos(map.width, map.height);
-        const minimap = minimapSize(canvas, map);
+    minimapMove = (canvas: HTMLCanvasElement) => {
+        const { x, y } = computeTilePos(this.map.width, this.map.height);
+        const minimap = minimapSize(canvas, this.map);
         this.user.move(
-            ((this.user.mouse.pos.x + canvas.width / 2) * x) / minimap.width,
-            ((this.user.mouse.pos.y - canvas.height / 2 + minimap.height) * y) / minimap.height
+            (this.user.mouse.pos.x / minimap.width) * x * this.user.zoom - canvas.width / 2,
+            ((this.user.mouse.pos.y - canvas.height + minimap.height) / minimap.height) * y * this.user.zoom
         );
         this.mapStore.render();
     };

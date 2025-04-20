@@ -76,7 +76,7 @@ export class MouseListener {
 
         this.user.mouse.hold = false;
         if (this.user.mouse.pointingTo === -2) {
-            this.process?.minimapMove(this.map, this.canvas);
+            this.process?.minimapMove(this.canvas);
         } else {
             this.process?.fillColorToPointing();
             this.process?.displayInfo();
@@ -95,7 +95,7 @@ export class MouseListener {
         if (event.clientX < minimap.width && event.clientY > this.canvas.height - minimap.height) {
             this.user.mouse.pointingTo = -2;
             if (this.user.mouse.hold) {
-                this.process?.minimapMove(this.map, this.canvas);
+                this.process?.minimapMove(this.canvas);
             }
         } else {
             this.user.mouse.pointingTo = 0;
