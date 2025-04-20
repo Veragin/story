@@ -46,19 +46,19 @@ export class User {
     };
 
     move = (posX: number, posY: number) => {
-        if (posX < this.bounds.left * this.zoom) posX = this.bounds.left * this.zoom;
-        if (posY < this.bounds.up * this.zoom) posY = this.bounds.up * this.zoom;
-        if (posX > this.bounds.right * this.zoom) posX = this.bounds.right * this.zoom;
-        if (posY > this.bounds.down * this.zoom) posY = this.bounds.down * this.zoom;
+        if (posX < this.bounds.left) posX = this.bounds.left;
+        if (posY < this.bounds.up) posY = this.bounds.up;
+        if (posX > this.bounds.right) posX = this.bounds.right;
+        if (posY > this.bounds.down) posY = this.bounds.down;
         this.pos.x = posX;
         this.pos.y = posY;
     };
 
-    updateBounds = (map: TMapData) => {
+    updateBounds = (map: TMapData, canvas: HTMLCanvasElement) => {
         this.bounds.left = -MAP_BORDER;
         this.bounds.up = -MAP_BORDER;
         const { x, y } = computeTilePos(map.width, map.height);
-        this.bounds.right = x + MAP_BORDER;
-        this.bounds.down = y + MAP_BORDER;
+        this.bounds.right = x * this.zoom - canvas.width + MAP_BORDER;
+        this.bounds.down = y * this.zoom - canvas.height + MAP_BORDER;
     };
 }

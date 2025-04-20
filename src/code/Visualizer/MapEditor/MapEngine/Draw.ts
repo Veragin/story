@@ -8,7 +8,7 @@ export class Draw {
 
     constructor(
         private mapStore: MapStore,
-        private canvas: HTMLCanvasElement
+        public canvas: HTMLCanvasElement
     ) {
         const ctx = canvas.getContext('2d');
         assertNotNullish(ctx, 'CanvasRenderingContext2D not supported');

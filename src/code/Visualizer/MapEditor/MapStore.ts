@@ -32,7 +32,7 @@ export class MapStore {
         this.deinit();
 
         this.canvasHandler.registerCanvas('map', canvas);
-        this.user.updateBounds(this.data);
+        this.user.updateBounds(this.data, canvas);
         this.draw = new Draw(this, canvas);
         this.process = new Process(this, infoRef);
         this.mouseListener.init(canvas);
@@ -49,6 +49,9 @@ export class MapStore {
     setZoomLevel = (value: number) => {
         this.zoomLevel = Math.min(MAX_ZOOM, Math.max(0, value));
         this.user.zoom = 0.6 + value * 0.2;
+        if (this.draw) {
+            this.user.updateBounds(this.data, this.draw.canvas);
+        }
         this.render();
     };
 

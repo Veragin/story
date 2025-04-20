@@ -5,12 +5,13 @@ import { ZoomSlider } from 'code/Visualizer/components/ZoomSlider';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import EditIcon from '@mui/icons-material/Edit';
 import { MapStore } from '../MapStore';
+import { observer } from 'mobx-react-lite';
 
 type Props = {
     mapStore?: MapStore | null;
 };
 
-export const TopBar = ({ mapStore }: Props) => {
+export const TopBar = observer(({ mapStore }: Props) => {
     const store = useVisualizerStore();
 
     return (
@@ -47,4 +48,4 @@ export const TopBar = ({ mapStore }: Props) => {
             />
         </Nav>
     );
-};
+});
