@@ -6,7 +6,8 @@ export const TextField = styled(MuiTextField)`
     border-color: white;
     & *,
     & *:hover,
-    & *:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline {
+    & *:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline,
+    & .MuiInputLabel-root {
         color: white;
         border-color: white;
     }

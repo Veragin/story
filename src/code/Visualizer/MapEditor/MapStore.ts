@@ -27,6 +27,10 @@ export class MapStore {
             setOpenNewMapModal: action,
             showMinimap: observable,
             toggleShowMinimap: action,
+            showPalette: observable,
+            toggleShowPalette: action,
+            selectedColorId: observable,
+            setSelectedColorId: action,
         });
     }
 
@@ -76,5 +80,16 @@ export class MapStore {
     toggleShowMinimap = () => {
         this.showMinimap = !this.showMinimap;
         this.render();
+    };
+
+    showPalette = true;
+    toggleShowPalette = () => {
+        this.showPalette = !this.showPalette;
+        this.render();
+    };
+
+    selectedColorId = 'none';
+    setSelectedColorId = (colorId: string) => {
+        this.selectedColorId = colorId;
     };
 }

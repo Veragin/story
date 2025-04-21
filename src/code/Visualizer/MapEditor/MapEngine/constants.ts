@@ -13,3 +13,6 @@ export const MAP_TILE_AVG_HEIGHT = (MAP_TILE_HEIGHT + HEX_RADIUS) / 2;
 export const MAP_BORDER = 120;
 export const MINIMAP_RATIO = 1 / 6;
 export const MAX_ZOOM = 4;
+
+export const WIDGET_BORDER_COLOR = '#c6a288';
+export const WIDGET_BORDER_WIDTH = 3;

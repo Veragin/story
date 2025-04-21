@@ -9,6 +9,7 @@ import { IconButton, Tooltip } from '@mui/material';
 import MapIcon from '@mui/icons-material/Map';
 import PaletteIcon from '@mui/icons-material/Palette';
 import { observer } from 'mobx-react-lite';
+import { Palette } from './components/Palette/Palette';
 
 type Props = {
     mapStore: MapStore;
@@ -43,12 +44,18 @@ export const MapEditor = observer(({ mapStore, createNewMap }: Props) => {
                     </IconButton>
                 </Tooltip>
                 <Tooltip title={_('Show palette')}>
-                    <IconButton size="small" color="inherit">
+                    <IconButton
+                        size="small"
+                        color={mapStore.showPalette ? 'secondary' : 'inherit'}
+                        onClick={() => mapStore.toggleShowPalette()}
+                    >
                         <PaletteIcon />
                     </IconButton>
                 </Tooltip>
                 <Row ref={infoRef}></Row>
             </SRow>
+
+            <Palette mapStore={mapStore} />
 
             <Modal
                 title={_('Create new map')}
@@ -79,7 +86,7 @@ const SCanvas = styled.canvas`
 
 const SRow = styled(Row)`
     width: 100%;
-    background-color: grey;
+    background-color: #999;
     z-index: 100;
     padding: 0 ${spacingCss(1)};
     gap: ${spacingCss(1)};

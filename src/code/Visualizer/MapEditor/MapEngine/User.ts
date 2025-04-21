@@ -27,7 +27,6 @@ export class User {
         right: 0,
         down: 0,
     };
-    activeColor = 'grass';
 
     updateSpd = () => {
         if (this.key.right && this.key.left) this.pos.spdX = 0;

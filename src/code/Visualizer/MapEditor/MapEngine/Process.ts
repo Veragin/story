@@ -1,5 +1,4 @@
 import { MapStore } from '../MapStore';
-import { TMapData } from '../types';
 import { computeTilePos, computeTileIndex, minimapSize, findNeighbor } from './utils';
 export class Process {
     constructor(
@@ -59,7 +58,7 @@ export class Process {
             this.map.width
         );
         pack.forEach((tile) => {
-            this.map.data[tile.i][tile.j].tile = this.user.activeColor;
+            this.map.data[tile.i][tile.j].tile = this.mapStore.selectedColorId;
         });
     };
 
@@ -68,7 +67,6 @@ export class Process {
         this.infoDiv.innerHTML = `
             <span>i: ${i}</span>
             <span>j: ${j}</span>
-            <span>tile: ${this.map.data[i]?.[j]?.tile ?? '-'}</span>
-            <span>active: ${this.user.activeColor}</span>`;
+            <span>tile: ${this.map.data[i]?.[j]?.tile ?? '-'}</span>`;
     };
 }

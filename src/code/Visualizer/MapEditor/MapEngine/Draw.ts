@@ -1,6 +1,6 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { MapStore } from '../MapStore';
-import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH } from './constants';
+import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH, WIDGET_BORDER_COLOR, WIDGET_BORDER_WIDTH } from './constants';
 import { computeTileIndex, computeTilePos, findNeighbor, minimapSize } from './utils';
 
 export class Draw {
@@ -108,9 +108,9 @@ export class Draw {
 
         // border
         this.ctx.beginPath();
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeStyle = '#C6A288';
-        this.ctx.rect(0, this.canvas.height - size.height, size.width, size.height);
+        this.ctx.lineWidth = WIDGET_BORDER_WIDTH;
+        this.ctx.strokeStyle = WIDGET_BORDER_COLOR;
+        this.ctx.roundRect(1, this.canvas.height - size.height, size.width, size.height - 1, 6);
         this.ctx.stroke();
     };
 
