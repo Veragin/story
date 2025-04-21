@@ -25,47 +25,43 @@ export const createDefaultMapData = (id: string, name: string, w: number, h: num
 
 export const DEFAULT_PALETTE: TMapData['palette'] = {
     none: {
-        name: 'None',
+        name: _('None'),
         color: '#000000',
     },
     grass: {
-        name: 'Grass',
-        color: '#00FF00',
+        name: _('Grass'),
+        color: '#D3E671',
     },
     water: {
-        name: 'Water',
-        color: '#0000FF',
+        name: _('Water'),
+        color: '#9EC6F3',
     },
     sand: {
-        name: 'Sand',
-        color: '#FFFF00',
-    },
-    rock: {
-        name: 'Rock',
-        color: '#808080',
+        name: _('Sand'),
+        color: '#F0F1C5',
     },
     forest: {
-        name: 'Forest',
-        color: '#228B22',
+        name: _('Forest'),
+        color: '#89AC46',
     },
     mountain: {
-        name: 'Mountain',
-        color: '#A9A9A9',
+        name: _('Mountain'),
+        color: '#B7B7B7',
     },
     snow: {
-        name: 'Snow',
-        color: '#FFFFFF',
+        name: _('Snow'),
+        color: '#eee',
     },
     lava: {
-        name: 'Lava',
-        color: '#FF4500',
+        name: _('Lava'),
+        color: '#E16A54',
     },
     city: {
-        name: 'City',
-        color: '#FF69B4',
+        name: _('City'),
+        color: '#9F5255',
     },
     road: {
-        name: 'Road',
-        color: '#A52A2A',
+        name: _('Road'),
+        color: '#BF9264',
     },
 };

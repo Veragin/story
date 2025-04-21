@@ -52,7 +52,7 @@ export const MapEditor = observer(({ mapStore, createNewMap }: Props) => {
                         <PaletteIcon />
                     </IconButton>
                 </Tooltip>
-                <Row ref={infoRef}></Row>
+                <SSRow ref={infoRef}></SSRow>
             </SRow>
 
             <Palette mapStore={mapStore} />
@@ -90,4 +90,10 @@ const SRow = styled(Row)`
     z-index: 100;
     padding: 0 ${spacingCss(1)};
     gap: ${spacingCss(1)};
+    align-items: center;
+`;
+
+const SSRow = styled(Row)`
+    gap: ${spacingCss(1.5)};
+    align-items: center;
 `;
