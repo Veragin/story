@@ -92,4 +92,21 @@ export class MapStore {
     setSelectedColorId = (colorId: string) => {
         this.selectedColorId = colorId;
     };
+
+    deleteColor = () => {
+        const colorId = this.selectedColorId;
+        if (colorId === 'none') {
+            return;
+        }
+        delete this.data.palette[colorId];
+        for (const row of this.data.data) {
+            for (const tile of row) {
+                if (tile.tile === colorId) {
+                    tile.tile = 'none';
+                }
+            }
+        }
+        this.setSelectedColorId('none');
+        this.render();
+    };
 }

@@ -52,6 +52,7 @@ export const ColorPicker = observer(
                             color={'error'}
                             onClick={onDeleteColor}
                             fullWidth
+                            disabled={mapStore.selectedColorId === 'none'}
                         >
                             <DeleteRoundedIcon />
                         </SButton>
@@ -102,7 +103,8 @@ const Color = ({ color, isActive, name, onClick }: TColorProps) => {
 };
 
 const SRow = styled(Row)<{ $isActive: boolean }>`
-    background-color: ${({ $isActive }) => ($isActive ? '#333' : '#000')};
+    background-color: ${({ $isActive }) => ($isActive ? '#444' : '#000')};
+    color: ${({ $isActive }) => ($isActive ? '#fff' : '#ddd')};
     &:hover {
         background-color: #333;
     }

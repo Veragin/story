@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 import { ColorPicker } from './ColorPicker';
 import { AddNewColor } from './AddNewColor';
+import { DeleteAlert } from './DeleteAlert';
 
 type Props = {
     mapStore: MapStore;
@@ -29,6 +30,12 @@ export const Palette = observer(({ mapStore }: Props) => {
                     mapStore={mapStore}
                     onBack={() => setAddNewColor(null)}
                     initId={addNewColor}
+                />
+            )}
+            {addDeleteColor && (
+                <DeleteAlert
+                    mapStore={mapStore}
+                    onBack={() => setDeleteColor(false)}
                 />
             )}
             {addNewColor === null && !addDeleteColor && (
