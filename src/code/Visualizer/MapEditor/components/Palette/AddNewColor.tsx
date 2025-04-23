@@ -2,7 +2,7 @@ import { Row } from 'code/components/Basic';
 import { MapStore } from '../../MapStore';
 import { Button, Tooltip } from '@mui/material';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { List } from './List';
 import { TextField } from 'code/Visualizer/components/TextField';
 import { useState } from 'react';
@@ -82,7 +82,7 @@ export const AddNewColor = ({ mapStore, onBack, initId }: Props) => {
                         onClick={onAdd}
                         fullWidth
                     >
-                        <AddRoundedIcon />
+                        <CheckRoundedIcon />
                     </Button>
                 </Tooltip>
             </Row>

@@ -50,7 +50,7 @@ export class Draw {
                 this.drawTile(i, j);
             }
         }
-        if (this.user.mouse.pointingTo == 0) {
+        if (this.user.mouse.pointingTo === 'map') {
             const pack = findNeighbor(
                 this.user.mouse.poinTo.i,
                 this.user.mouse.poinTo.j,

@@ -5,7 +5,7 @@ import {
     TextField,
     Button,
 } from '@mui/material';
-import { WholeContainer } from 'code/components/Basic';
+import { Column, Row, WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
@@ -88,47 +88,55 @@ export const EventPassages = ({ eventId }: Props) => {
     return (
         <WholeContainer>
             <Nav>
-                <Button
-                    color="inherit"
-                    variant={'text'}
-                    onClick={() => store.setActiveTab(null)}
-                >
-                    {_('Back')}
-                </Button>
-
-                <SFormControl size="small">
-                    <Autocomplete
-                        value={
-                            events.find((event) => event.id === eventId) ?? null
-                        }
-                        onChange={(_, newValue) => {
-                            store.setActiveTab(
-                                newValue === null
-                                    ? null
-                                    : {
-                                          tab: 'event',
-                                          eventId: newValue.id,
-                                      }
-                            );
-                        }}
-                        options={events}
-                        getOptionLabel={(option) => option.title || option.id}
-                        renderInput={(params) => (
-                            <TextField {...params} variant="outlined" />
-                        )}
-                        isOptionEqualToValue={(option, value) =>
-                            option.id === value.id
-                        }
-                        sx={{
-                            minWidth: 300,
-                        }}
-                    />
-                </SFormControl>
+                <SRow>
+                    <Button
+                        color="inherit"
+                        variant={'text'}
+                        onClick={() => store.setActiveTab(null)}
+                    >
+                        {_('Back')}
+                    </Button>
+                    <SFormControl size="small">
+                        <Autocomplete
+                            value={
+                                events.find((event) => event.id === eventId) ??
+                                null
+                            }
+                            onChange={(_, newValue) => {
+                                store.setActiveTab(
+                                    newValue === null
+                                        ? null
+                                        : {
+                                              tab: 'event',
+                                              eventId: newValue.id,
+                                          }
+                                );
+                            }}
+                            options={events}
+                            getOptionLabel={(option) =>
+                                option.title || option.id
+                            }
+                            renderInput={(params) => (
+                                <TextField {...params} variant="outlined" />
+                            )}
+                            isOptionEqualToValue={(option, value) =>
+                                option.id === value.id
+                            }
+                            sx={{
+                                minWidth: 300,
+                            }}
+                        />
+                    </SFormControl>
+                </SRow>
             </Nav>
             <SMainCanvas ref={mainCanvasRef} />
         </WholeContainer>
     );
 };
+
+const SRow = styled(Row)`
+    gap: ${spacingCss(2)};
+`;
 
 const SFormControl = styled(FormControl)`
     min-width: 200px;

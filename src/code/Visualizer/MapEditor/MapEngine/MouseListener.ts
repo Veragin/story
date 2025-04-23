@@ -65,6 +65,7 @@ export class MouseListener {
             return;
         }
         this.user.mouse.hold = true;
+        this.user.mouse.pointingTo = this.isOnMinimap() ? 'minimap' : 'map';
     };
 
     onMouseUp = (event: MouseEvent) => {
@@ -75,7 +76,7 @@ export class MouseListener {
         if (!this.user.mouse.hold) return;
 
         this.user.mouse.hold = false;
-        if (this.user.mouse.pointingTo === -2) {
+        if (this.user.mouse.pointingTo === 'minimap') {
             this.process?.minimapMove(this.canvas);
         } else {
             this.process?.fillColorToPointing();
@@ -91,18 +92,11 @@ export class MouseListener {
         this.user.mouse.pos.x = event.clientX - rect.left;
         this.user.mouse.pos.y = event.clientY - rect.top;
 
-        const minimap = minimapSize(this.canvas, this.map);
-        if (
-            this.mapStore.showMinimap &&
-            event.clientX < minimap.width &&
-            event.clientY > this.canvas.height - minimap.height
-        ) {
-            this.user.mouse.pointingTo = -2;
-            if (this.user.mouse.hold) {
+        if (this.user.mouse.pointingTo === 'minimap') {
+            if (this.user.mouse.hold && this.isOnMinimap()) {
                 this.process?.minimapMove(this.canvas);
             }
         } else {
-            this.user.mouse.pointingTo = 0;
             this.process?.findSelectedTile();
             if (this.user.mouse.hold) {
                 this.process?.fillColorToPointing();
@@ -111,6 +105,17 @@ export class MouseListener {
             this.process?.displayInfo();
         }
         this.mapStore.render();
+    };
+
+    private isOnMinimap = () => {
+        if (this.canvas === null) return false;
+        const minimap = minimapSize(this.canvas, this.map);
+
+        return (
+            this.mapStore.showMinimap &&
+            this.user.mouse.pos.x < minimap.width &&
+            this.user.mouse.pos.y > this.canvas.height - minimap.height
+        );
     };
 
     onResize = () => {

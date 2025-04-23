@@ -1,4 +1,4 @@
-import { TMapData } from '../types';
+import { TMapData, TMouseData } from '../types';
 import { MAP_BORDER } from './constants';
 import { computeTilePos } from './utils';
 
@@ -6,11 +6,11 @@ export class User {
     zoom = 1;
     pos = { x: 0, y: 0, spdX: 0, spdY: 0 };
     spdMax = 15;
-    mouse = {
+    mouse: TMouseData = {
         pos: { x: 0, y: 0 },
         size: 3,
         poinTo: { i: 0, j: 0 },
-        pointingTo: 0,
+        pointingTo: 'map',
         hold: false,
     };
     key = {
