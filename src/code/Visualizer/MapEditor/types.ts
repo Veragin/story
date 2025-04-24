@@ -20,7 +20,11 @@ export type TMapData = {
 export type TMouseData = {
     pos: TPoint;
     size: number;
-    poinTo: { i: number; j: number };
+    poinTo: TTile;
     pointingTo: 'minimap' | 'map';
     hold: boolean;
 };
+
+export type TMode = 'palette' | 'presentation' | 'edit';
+
+export type TTile = { i: number; j: number };

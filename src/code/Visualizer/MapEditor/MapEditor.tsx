@@ -10,6 +10,9 @@ import MapIcon from '@mui/icons-material/Map';
 import PaletteIcon from '@mui/icons-material/Palette';
 import { observer } from 'mobx-react-lite';
 import { Palette } from './components/Palette/Palette';
+import PresentToAllIcon from '@mui/icons-material/PresentToAll';
+import EditIcon from '@mui/icons-material/Edit';
+import { EditWidget } from './components/EditWidget';
 
 type Props = {
     mapStore: MapStore;
@@ -43,19 +46,48 @@ export const MapEditor = observer(({ mapStore, createNewMap }: Props) => {
                         <MapIcon />
                     </IconButton>
                 </Tooltip>
-                <Tooltip title={_('Show palette')}>
+                <Tooltip title={_('Palette mode')}>
                     <IconButton
                         size="small"
-                        color={mapStore.showPalette ? 'secondary' : 'inherit'}
-                        onClick={() => mapStore.toggleShowPalette()}
+                        color={
+                            mapStore.mode === 'palette'
+                                ? 'secondary'
+                                : 'inherit'
+                        }
+                        onClick={() => mapStore.setMode('palette')}
                     >
                         <PaletteIcon />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title={_('Edit mode')}>
+                    <IconButton
+                        size="small"
+                        color={
+                            mapStore.mode === 'edit' ? 'secondary' : 'inherit'
+                        }
+                        onClick={() => mapStore.setMode('edit')}
+                    >
+                        <EditIcon />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title={_('Presentation mode')}>
+                    <IconButton
+                        size="small"
+                        color={
+                            mapStore.mode === 'presentation'
+                                ? 'secondary'
+                                : 'inherit'
+                        }
+                        onClick={() => mapStore.setMode('presentation')}
+                    >
+                        <PresentToAllIcon />
                     </IconButton>
                 </Tooltip>
                 <SSRow ref={infoRef}></SSRow>
             </SRow>
 
             <Palette mapStore={mapStore} />
+            <EditWidget mapStore={mapStore} />
 
             <Modal
                 title={_('Create new map')}

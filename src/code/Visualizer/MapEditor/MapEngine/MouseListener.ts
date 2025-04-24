@@ -79,8 +79,12 @@ export class MouseListener {
         if (this.user.mouse.pointingTo === 'minimap') {
             this.process?.minimapMove(this.canvas);
         } else {
-            this.process?.fillColorToPointing();
-            this.process?.displayInfo();
+            if (this.mapStore.mode === 'palette') {
+                this.process?.fillColorToPointing();
+                this.process?.displayInfo();
+            } else {
+                this.mapStore.setSelectedTile(this.user.mouse.poinTo);
+            }
         }
         this.mapStore.render();
     };

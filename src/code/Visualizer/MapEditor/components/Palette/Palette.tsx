@@ -21,7 +21,7 @@ export const Palette = observer(({ mapStore }: Props) => {
     );
     const [addDeleteColor, setDeleteColor] = useState(false);
 
-    if (mapStore.showPalette === false) return null;
+    if (mapStore.mode !== 'palette') return null;
 
     return (
         <SContainer>

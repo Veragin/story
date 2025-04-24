@@ -1,6 +1,6 @@
 import { action, makeObservable, observable } from 'mobx';
 import { CanvasHandler } from '../stores/CanvasHandler';
-import { TMapData } from './types';
+import { TMapData, TMode, TTile } from './types';
 import { User } from './MapEngine/User';
 import { Draw } from './MapEngine/Draw';
 import { Process } from './MapEngine/Process';
@@ -19,18 +19,18 @@ export class MapStore {
     ) {
         this.mouseListener = new MouseListener(this);
         makeObservable(this, {
-            editMode: observable,
-            setEditMode: action,
+            mode: observable,
+            setMode: action,
             zoomLevel: observable,
             setZoomLevel: action,
             openNewMapModal: observable,
             setOpenNewMapModal: action,
             showMinimap: observable,
             toggleShowMinimap: action,
-            showPalette: observable,
-            toggleShowPalette: action,
             selectedColorId: observable,
             setSelectedColorId: action,
+            selectedTile: observable,
+            setSelectedTile: action,
         });
     }
 
@@ -61,9 +61,9 @@ export class MapStore {
         this.render();
     };
 
-    editMode = true;
-    setEditMode = (value: boolean) => {
-        this.editMode = value;
+    mode: TMode = 'palette';
+    setMode = (mode: TMode) => {
+        this.mode = mode;
         this.render();
     };
 
@@ -82,15 +82,14 @@ export class MapStore {
         this.render();
     };
 
-    showPalette = true;
-    toggleShowPalette = () => {
-        this.showPalette = !this.showPalette;
-        this.render();
-    };
-
     selectedColorId = 'none';
     setSelectedColorId = (colorId: string) => {
         this.selectedColorId = colorId;
+    };
+
+    selectedTile: TTile | null = null;
+    setSelectedTile = (tile: TTile | null) => {
+        this.selectedTile = tile;
     };
 
     deleteColor = () => {
