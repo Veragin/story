@@ -12,7 +12,7 @@ export class Store {
     agent: Agent;
 
     constructor(public timeManager: TimeManager) {
-        this.agent = new Agent('http://localhost:3000');
+        this.agent = new Agent('http://localhost:3123');
         this.eventStore = new EventStore(timeManager, this);
         this.canvasHandler = new CanvasHandler(document.body, this);
 
