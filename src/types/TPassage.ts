@@ -36,10 +36,10 @@ export type TLink<Ids extends TPassageId> = {
 export type TLinkCost =
     | DeltaTime
     | {
-          time?: DeltaTime;
-          items?: { id: TItemId; amount: number }[];
-          tools?: TItemId[];
-      };
+        time?: DeltaTime;
+        items?: { id: TItemId; amount: number }[];
+        tools?: TItemId[];
+    };
 
 export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
     eventId: E;
@@ -59,3 +59,9 @@ export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids exte
 };
 
 export type TEventPassageType = TEventPassage<TEventId>['type'];
+
+export const getWholePassageId = <E extends TEventId, Ch extends TCharacterId>(
+        passage: TEventPassage<E>
+    ): TEventCharacterPassageId<E, Ch> => {
+    return `${passage.eventId}-${passage.characterId}-${passage.id}` as TEventCharacterPassageId<E, Ch>;
+};

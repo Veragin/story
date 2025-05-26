@@ -8,7 +8,10 @@ import { Store } from 'code/Visualizer/stores/Store';
 import { createPassageModalContent } from 'code/Visualizer/Events/createPassageModalContent';
 import { EventPassagesGraphStorageManager } from './EventPassagesGraphStorageManager';
 import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
-import { register } from 'data/register';
+import { register, TRegisterPassageId } from 'data/register';
+import { worldStateCopy } from '../../PassagesGraph/WorldStateCopy';
+import { PassageResolver } from './PassageResolver';
+import { e } from 'worldState';
 
 export class GraphProvider {
     private static readonly STORAGE_PREFIX = 'passage-graph-';
@@ -31,25 +34,25 @@ export class GraphProvider {
         if (storedGraph) {
             // Verify and update stored graph data using GraphActualizer
             await this.graphActualizer.actualizeGraphData(eventId, storedGraph);
-            
+
             // Setup the graph since it came from storage
             this.setupGraph(eventId, storedGraph, store);
-            
+
             // Store in memory for next time
             EventPassagesGraphStorageManager.storeInMemory(eventId, storedGraph);
-            
+
             return storedGraph;
         }
 
         // Create new empty graph and let GraphActualizer populate it
         const newGraph = await this.createNewGraph(eventId, canvasManager, canvasWidth, canvasHeight);
-        
+
         this.setupGraph(eventId, newGraph, store);
-        
+
         // Store in memory and localStorage
         EventPassagesGraphStorageManager.storeInMemory(eventId, newGraph);
         this.saveGraphToStorage(eventId, newGraph);
-        
+
         return newGraph;
     }
 
@@ -65,14 +68,35 @@ export class GraphProvider {
 
     private static setupGraph(eventId: string, graph: Graph, store: Store): void {
         this.setupGraphAutoSave(eventId, graph);
-        this.setupToolsWindow(graph, store);
+        this.setupToolsWindow(eventId, graph, store);
     }
 
-    private static setupToolsWindow(graph: Graph, store: Store): void {
+    private static async setupToolsWindow(eventId: string, graph: Graph, store: Store): Promise<void> {
+        // Validate eventId is a valid passage key
+        if (!(eventId in register.passages)) {
+            console.error(`Event '${eventId}' not found in register.passages`);
+            return;
+        }
+
+        const typedEventId = eventId as TRegisterPassageId;
+
+        // Preload all passages for this event
+        await PassageResolver.preloadEventPassages(typedEventId);
+
         for (const node of graph.getAllNodes()) {
             if (node instanceof PassageNodeVisualObject) {
-                const passageNode = node as PassageNodeVisualObject;
-                passageNode.onClick.subscribe(() => store.setModalContent(createPassageModalContent(register.passages[passageNode.passageId] as any)));
+                const passageNodeRef = node as PassageNodeVisualObject;
+
+                passageNodeRef.onClick.subscribe(async () => {
+                    const passage = await PassageResolver.getPassage(
+                        typedEventId,
+                        passageNodeRef.passageId,
+                        worldStateCopy,
+                        e
+                    );
+                    store.setModalContent(createPassageModalContent(passage));
+                });
+
             }
         }
     }

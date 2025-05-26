@@ -9,6 +9,7 @@ import { Text } from 'code/components/Text';
 import { spacingCss } from 'code/components/css';
 import { Modal } from 'code/components/Modal';
 import { TEventPassage } from 'types/TPassage';
+import { getWholePassageId } from '../../../types/TPassage';
 
 export const createPassageModalContent = (
     passage: TEventPassage<TEventId>
@@ -21,7 +22,7 @@ const PassageModalContent = ({
 }) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();
-
+    const passageId = getWholePassageId(passage);
     return (
         <SColumn>
             <Tooltip title={_('Copy to clipboard')} placement="top">
@@ -36,7 +37,7 @@ const PassageModalContent = ({
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openPassage(passage.id)}
+                        onClick={() => store.agent.openPassage(passageId)}
                     >
                         <OpenInBrowserIcon />
                     </Button>
