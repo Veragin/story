@@ -35,16 +35,26 @@ export class EventPassagesGraphStorageManager {
         if (storedGraph) {
             // Verify and update stored graph data using GraphActualizer
             await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(eventId, storedGraph);
-            this.setupGraphAutoSave(eventId, storedGraph, store);
-            this.graphs.set(eventId, storedGraph);
+            this.oneTimeGraphSetup(eventId, storedGraph, store);
             return storedGraph;
         }
 
         // Create new empty graph and let GraphActualizer populate it
         const newGraph = await this.createNewGraph(eventId, canvasManager, canvasWidth, canvasHeight);
-        this.setupGraphAutoSave(eventId, newGraph, store);
-        this.graphs.set(eventId, newGraph);
+        this.oneTimeGraphSetup(eventId, newGraph, store);
         return newGraph;
+    }
+
+    private static oneTimeGraphSetup(eventId: string, graph: Graph, store: Store): void {
+        this.setupGraphAutoSave(eventId, graph, store);
+        this.setupToolsWindow(graph, store);
+        this.graphs.set(eventId, graph);
+    } 
+
+    static setupToolsWindow(graph: Graph, store: Store) {
+        for (const node of graph.getAllNodes()) {
+            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId() as any)));
+        }
     }
 
     private static setupGraphAutoSave(eventId: string, graph: Graph, store: Store): void {
@@ -79,7 +89,6 @@ export class EventPassagesGraphStorageManager {
         // Watch node changes
         nodes.forEach((node) => {
             node.onPropertyChanged.subscribe(saveGraphCallback);
-            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId() as any)));
         });
 
         // Watch edge changes
