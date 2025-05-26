@@ -42,11 +42,11 @@ export class Agent {
             showToast(_('Event %s deleted', eventId), { variant: 'success' });
         } catch (e) {
             console.error(e);
-            showToast(_('Failed to delete event %S', eventId), { variant: 'error' });
+            showToast(_('Failed to delete event %s', eventId), { variant: 'error' });
         }
     };
 
-    setEventTime = async (eventId: string, data: { startTime: string; endTime: string }) => {
+    setEventTime = async (eventId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
             await fetch(`${this.url}/event/${eventId}/setTime`, {
                 method: 'POST',
@@ -62,7 +62,7 @@ export class Agent {
 
     addPassage = async (passageId: string, data: TPassageData) => {
         try {
-            await fetch(`${this.url}/passage/${passageId}`, {
+            await fetch(`${this.url}/passage/screen/${passageId}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
                 headers: {
@@ -72,13 +72,13 @@ export class Agent {
             showToast(_('Passage %s added', passageId), { variant: 'success' });
         } catch (e) {
             console.error(e);
-            showToast(_('Failed to add passage', passageId), { variant: 'error' });
+            showToast(_('Failed to add passage %s', passageId), { variant: 'error' });
         }
     };
 
     openPassage = async (passageId: string) => {
         try {
-            await fetch(`${this.url}/passage/${passageId}/open`, {
+            await fetch(`${this.url}/passage/screen/${passageId}/open`, {
                 method: 'POST',
             });
             showToast(_('Passage %s opened', passageId), { variant: 'success' });
@@ -90,13 +90,27 @@ export class Agent {
 
     deletePassage = async (passageId: string) => {
         try {
-            await fetch(`${this.url}/passage/${passageId}`, {
+            await fetch(`${this.url}/passage/screen/${passageId}`, {
                 method: 'DELETE',
             });
             showToast(_('Passage %s deleted', passageId), { variant: 'success' });
         } catch (e) {
             console.error(e);
-            showToast(_('Failed to delete passage %s'), { variant: 'error' });
+            showToast(_('Failed to delete passage %s', passageId), { variant: 'error' });
+        }
+    };
+
+    setPassageTime = async (passageId: string, data: { timeRange: { start: string; end: string } }) => {
+        try {
+            await fetch(`${this.url}/passage/screen/${passageId}/setTime`, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+        } catch (e) {
+            console.error(e);
         }
     };
 
@@ -138,11 +152,13 @@ type TEventData = {
     title: string;
     description: string;
     location: TLocationId;
-    startTime: string;
-    endTime: string;
+    timeRange: {
+        start: string;
+        end: string;
+    };
 };
 
 type TPassageData = {
-    title: string;
     type: TEventPassageType;
+    title?: string;
 };
