@@ -8,7 +8,7 @@ export class Agent {
 
     addEvent = async (eventId: string, data: TEventData) => {
         try {
-            await fetch(`${this.url}/event/${eventId}`, {
+            await fetch(`${this.url}/api/event/${eventId}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
                 headers: {
@@ -24,7 +24,7 @@ export class Agent {
 
     openEvent = async (eventId: string) => {
         try {
-            await fetch(`${this.url}/event/${eventId}/open`, {
+            await fetch(`${this.url}/api/event/${eventId}/open`, {
                 method: 'POST',
             });
             showToast(_('Event %s opened', eventId), { variant: 'success' });
@@ -36,7 +36,7 @@ export class Agent {
 
     deleteEvent = async (eventId: string) => {
         try {
-            await fetch(`${this.url}/event/${eventId}`, {
+            await fetch(`${this.url}/api/event/${eventId}`, {
                 method: 'DELETE',
             });
             showToast(_('Event %s deleted', eventId), { variant: 'success' });
@@ -48,7 +48,7 @@ export class Agent {
 
     setEventTime = async (eventId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
-            await fetch(`${this.url}/event/${eventId}/setTime`, {
+            await fetch(`${this.url}/api/event/${eventId}/setTime`, {
                 method: 'POST',
                 body: JSON.stringify(data),
                 headers: {
@@ -62,7 +62,7 @@ export class Agent {
 
     addPassage = async (passageId: string, data: TPassageData) => {
         try {
-            await fetch(`${this.url}/passage/screen/${passageId}`, {
+            await fetch(`${this.url}/api/passage/screen/${passageId}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
                 headers: {
@@ -78,7 +78,7 @@ export class Agent {
 
     openPassage = async (passageId: string) => {
         try {
-            await fetch(`${this.url}/passage/screen/${passageId}/open`, {
+            await fetch(`${this.url}/api/passage/screen/${passageId}/open`, {
                 method: 'POST',
             });
             showToast(_('Passage %s opened', passageId), { variant: 'success' });
@@ -90,7 +90,7 @@ export class Agent {
 
     deletePassage = async (passageId: string) => {
         try {
-            await fetch(`${this.url}/passage/screen/${passageId}`, {
+            await fetch(`${this.url}/api/passage/screen/${passageId}`, {
                 method: 'DELETE',
             });
             showToast(_('Passage %s deleted', passageId), { variant: 'success' });
@@ -102,7 +102,7 @@ export class Agent {
 
     setPassageTime = async (passageId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
-            await fetch(`${this.url}/passage/screen/${passageId}/setTime`, {
+            await fetch(`${this.url}/api/passage/screen/${passageId}/setTime`, {
                 method: 'POST',
                 body: JSON.stringify(data),
                 headers: {
@@ -116,7 +116,7 @@ export class Agent {
 
     getMap = async (mapId: string): Promise<TMapData> => {
         try {
-            const response = await fetch(`${this.url}/map/${mapId}`, {
+            const response = await fetch(`${this.url}/api/map/${mapId}`, {
                 method: 'GET',
             });
             if (response.status !== 200) {
@@ -133,7 +133,7 @@ export class Agent {
 
     saveMap = async (mapData: TMapData) => {
         try {
-            await fetch(`${this.url}/map/${mapData.mapId}`, {
+            await fetch(`${this.url}/api/map/${mapData.mapId}`, {
                 method: 'PUT',
                 body: JSON.stringify(mapData),
                 headers: {
