@@ -1,103 +1,50 @@
-import { CanvasManager } from '../../CanvasManager';
 import { Graph } from '../../Graph';
-import { GraphDeserializer } from './GraphDeserializer';
-import { GraphSerializer, SerializedGraph } from './GraphSerializer';
-import { GraphActualizer } from '../actualizer/GraphActualizer';
-import { SpringForceLayoutManager } from '../../graphLayouts/SpringForceLayoutManager';
+import { GraphSerializer } from './GraphSerializer';
 import { throttle } from 'code/utils/throttle';
-import { Store } from 'code/Visualizer/stores/Store';
-import { createPassageModalContent } from 'code/Visualizer/Events/createPassageModalContent';
 
 export class EventPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();
     private static readonly STORAGE_PREFIX = 'passage-graph-';
-    private static graphActualizer: GraphActualizer = new GraphActualizer();
 
-    static async getGraph(eventId: string, canvasManager: CanvasManager, store: Store): Promise<Graph> {
-        // Check if graph is in memory
-        const inMemoryGraph = this.graphs.get(eventId);
-        if (inMemoryGraph) {
-            // add to canvas manager
-            for (const node of inMemoryGraph.getAllNodes()) {
-                canvasManager.addObject(node);
-            }
-            for (const edge of inMemoryGraph.getAllEdges()) {
-                canvasManager.addObject(edge);
-            }
-            return inMemoryGraph;
-        }
-
-        const canvasWidth = canvasManager.getWidth() ?? 0;
-        const canvasHeight = canvasManager.getHeight() ?? 0;
-
-        // Try to load from localStorage
-        const storedGraph = this.loadGraphFromStorage(eventId, canvasManager);
-        if (storedGraph) {
-            // Verify and update stored graph data using GraphActualizer
-            await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(eventId, storedGraph);
-            this.oneTimeGraphSetup(eventId, storedGraph, store);
-            return storedGraph;
-        }
-
-        // Create new empty graph and let GraphActualizer populate it
-        const newGraph = await this.createNewGraph(eventId, canvasManager, canvasWidth, canvasHeight);
-        this.oneTimeGraphSetup(eventId, newGraph, store);
-        return newGraph;
+    /**
+     * Retrieves a graph from in-memory storage
+     * @param eventId The event ID to retrieve the graph for
+     * @returns The graph if found in memory, null otherwise
+     */
+    static getInMemoryGraph(eventId: string): Graph | null {
+        return this.graphs.get(eventId) || null;
     }
 
-    private static oneTimeGraphSetup(eventId: string, graph: Graph, store: Store): void {
-        this.setupGraphAutoSave(eventId, graph, store);
-        this.setupToolsWindow(graph, store);
+    /**
+     * Stores a graph in memory
+     * @param eventId The event ID to store the graph for
+     * @param graph The graph to store
+     */
+    static storeInMemory(eventId: string, graph: Graph): void {
         this.graphs.set(eventId, graph);
-    } 
-
-    static setupToolsWindow(graph: Graph, store: Store) {
-        for (const node of graph.getAllNodes()) {
-            node.onClick.subscribe(() => store.setModalContent(createPassageModalContent(node.getId() as any)));
-        }
     }
 
-    private static setupGraphAutoSave(eventId: string, graph: Graph, store: Store): void {
-        const saveGraphCallback = () => {
-            this.saveGraphToStorage(eventId, graph);
-        };
-
-        graph.onNodeAdded.subscribe((node) => {
-            node.onPropertyChanged.subscribe(saveGraphCallback);
-            this.saveGraphToStorage(eventId, graph);
-        });
-
-        graph.onNodeRemoved.subscribe((node) => {
-            node.onPropertyChanged.unsubscribe(saveGraphCallback);
-            this.saveGraphToStorage(eventId, graph);
-        });
-
-        graph.onEdgeAdded.subscribe((edge) => {
-            edge.onPropertyChanged.subscribe(saveGraphCallback);
-            this.saveGraphToStorage(eventId, graph);
-        });
-
-        graph.onEdgeRemoved.subscribe((edge) => {
-            edge.onPropertyChanged.unsubscribe(saveGraphCallback);
-            this.saveGraphToStorage(eventId, graph);
-        });
-
-        // Setup initial subscriptions for existing nodes and edges
-        const nodes = graph.getAllNodes();
-        const edges = graph.getAllEdges();
-
-        // Watch node changes
-        nodes.forEach((node) => {
-            node.onPropertyChanged.subscribe(saveGraphCallback);
-        });
-
-        // Watch edge changes
-        edges.forEach((edge) => {
-            edge.onPropertyChanged.subscribe(saveGraphCallback);
-        });
+    /**
+     * Removes a specific graph from memory
+     * @param eventId The event ID to remove from memory
+     */
+    static clearFromMemory(eventId: string): void {
+        this.graphs.delete(eventId);
     }
 
-    private static saveGraphToStorage(eventId: string, graph: Graph): void {
+    /**
+     * Clears all graphs from memory
+     */
+    static clearAllFromMemory(): void {
+        this.graphs.clear();
+    }
+
+    /**
+     * Saves a graph to localStorage with throttling
+     * @param eventId The event ID to save the graph for
+     * @param graph The graph to save
+     */
+    static saveToStorage(eventId: string, graph: Graph): void {
         this.throttleSavingGraphToStorage({ eventId, graph });
     }
 
@@ -110,64 +57,24 @@ export class EventPassagesGraphStorageManager {
         }
     }, 500);
 
-    private static loadGraphFromStorage(eventId: string, canvasManager: CanvasManager): Graph | null {
-        try {
-            const storageKey = this.STORAGE_PREFIX + eventId;
-            const serializedData = localStorage.getItem(storageKey);
-
-            if (!serializedData) {
-                return null;
-            }
-
-            const graphData: SerializedGraph = JSON.parse(serializedData);
-            const graph = GraphDeserializer.deserialize(graphData, canvasManager);
-            return graph;
-        } catch (error) {
-            console.error('Failed to load graph from storage:', error);
-            return null;
-        }
+    /**
+     * Gets the storage key prefix for passage graphs
+     */
+    static getStoragePrefix(): string {
+        return this.STORAGE_PREFIX;
     }
 
-    private static async createNewGraph(
-        eventId: string,
-        canvasManager: CanvasManager,
-        canvasWidth: number,
-        canvasHeight: number
-    ): Promise<Graph> {
-        // Create empty graph with appropriate layout manager
-        const graph = new Graph(canvasManager);
-
-        try {
-            // Let GraphActualizer populate the graph
-            const populatedGraph = await EventPassagesGraphStorageManager.graphActualizer.actualizeGraphData(
-                eventId,
-                graph
-            );
-
-            graph.setLayoutManager(new SpringForceLayoutManager(canvasWidth, canvasHeight));
-            graph.layout();
-
-            this.saveGraphToStorage(eventId, populatedGraph);
-            return populatedGraph;
-        } catch (error) {
-            console.error('Failed to create new graph:', error);
-            throw new Error(`Failed to create graph for event ${eventId}`);
-        }
+    /**
+     * Checks if there are any graphs currently stored in memory
+     */
+    static hasGraphsInMemory(): boolean {
+        return this.graphs.size > 0;
     }
 
-    static clearStorage(eventId?: string): void {
-        if (eventId) {
-            // Clear specific event graph
-            localStorage.removeItem(this.STORAGE_PREFIX + eventId);
-            this.graphs.delete(eventId);
-        } else {
-            // Clear all graphs
-            for (const key of Object.keys(localStorage)) {
-                if (key.startsWith(this.STORAGE_PREFIX)) {
-                    localStorage.removeItem(key);
-                }
-            }
-            this.graphs.clear();
-        }
+    /**
+     * Gets all event IDs that have graphs currently stored in memory
+     */
+    static getInMemoryEventIds(): string[] {
+        return Array.from(this.graphs.keys());
     }
 }

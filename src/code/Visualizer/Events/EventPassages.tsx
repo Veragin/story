@@ -12,10 +12,10 @@ import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from '../Graphs/animation.ts/GraphAnimationHandler';
-import { EventPassagesGraphStorageManager } from '../Graphs/EventPassagesGraph/store/EventPassagesGraphStorageManager';
 import { Nav } from '../components/Nav';
 import { TEventId } from 'types/TIds';
 import { CanvasManager } from '../Graphs/CanvasManager';
+import { GraphProvider } from '../Graphs/EventPassagesGraph/store/EventPassageGraphProvider';
 
 type Props = {
     eventId: TEventId;
@@ -52,12 +52,11 @@ export const EventPassages = ({ eventId }: Props) => {
 
             if (register.passages[eventId]) {
                 try {
-                    const graph =
-                        await EventPassagesGraphStorageManager.getGraph(
-                            eventId,
-                            canvasManager,
-                            store
-                        );
+                    const graph = await GraphProvider.getGraph(
+                        eventId,
+                        canvasManager,
+                        store
+                    );
 
                     if (!isActive) return;
 
