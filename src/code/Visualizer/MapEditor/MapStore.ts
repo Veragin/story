@@ -12,6 +12,7 @@ export class MapStore {
     draw: Draw | null = null;
     process: Process | null = null;
     mouseListener: MouseListener;
+    editMode: boolean = false;
 
     constructor(
         private canvasHandler: CanvasHandler,
@@ -45,6 +46,10 @@ export class MapStore {
 
         this.render();
     };
+
+    setEditMode = (editMode: boolean) => {
+        this.editMode = editMode;
+    }
 
     deinit = () => {
         this.canvasHandler.unregisterCanvas('map');

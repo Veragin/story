@@ -2,15 +2,18 @@ import { showToast } from 'code/GlobalWrapper';
 import { TLocationId } from 'types/TLocation';
 import { TEventPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';
+import { TypeConverters } from './TypeConverters';
+import { MapResponse, TEventData, TPassageData as TScreenPassageData } from './ nodeServerTypes';
 
 export class Agent {
     constructor(public url: string) {}
 
     addEvent = async (eventId: string, data: TEventData) => {
         try {
+            const serverData = TypeConverters.eventDataToUpdateRequest(data);
             await fetch(`${this.url}/api/event/${eventId}`, {
                 method: 'PUT',
-                body: JSON.stringify(data),
+                body: JSON.stringify(serverData),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -48,9 +51,10 @@ export class Agent {
 
     setEventTime = async (eventId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
+            const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
             await fetch(`${this.url}/api/event/${eventId}/setTime`, {
                 method: 'POST',
-                body: JSON.stringify(data),
+                body: JSON.stringify(serverData),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -60,11 +64,12 @@ export class Agent {
         }
     };
 
-    addPassage = async (passageId: string, data: TPassageData) => {
+    addScreenPassage = async (passageId: string, data: TScreenPassageData) => {
         try {
+            const serverData = TypeConverters.passageDataToUpdateRequest(data);
             await fetch(`${this.url}/api/passage/screen/${passageId}`, {
                 method: 'PUT',
-                body: JSON.stringify(data),
+                body: JSON.stringify(serverData),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -102,9 +107,10 @@ export class Agent {
 
     setPassageTime = async (passageId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
+            const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
             await fetch(`${this.url}/api/passage/screen/${passageId}/setTime`, {
                 method: 'POST',
-                body: JSON.stringify(data),
+                body: JSON.stringify(serverData),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -122,8 +128,8 @@ export class Agent {
             if (response.status !== 200) {
                 throw new Error(`Failed to fetch map: ${response.statusText}`);
             }
-            const data = await response.json();
-            return data;
+            const mapResponse: MapResponse = await response.json();
+            return TypeConverters.serverTypeToMapData(mapResponse.data);
         } catch (e) {
             console.error(e);
             showToast(_('Failed to get map %s', mapId), { variant: 'error' });
@@ -131,11 +137,29 @@ export class Agent {
         }
     };
 
+    getMapList = async (): Promise<string[]> => {
+        try {
+            const response = await fetch(`${this.url}/api/map`, {
+                method: 'GET',
+            });
+            if (response.status !== 200) {
+                throw new Error(`Failed to fetch map list: ${response.statusText}`);
+            }
+            const mapListResponse = await response.json();
+            return mapListResponse.data;
+        } catch (e) {
+            console.error(e);
+            showToast(_('Failed to get map list'), { variant: 'error' });
+            throw e;
+        }
+    };
+
     saveMap = async (mapData: TMapData) => {
         try {
+            const serverData = TypeConverters.mapDataToServerType(mapData);
             await fetch(`${this.url}/api/map/${mapData.mapId}`, {
                 method: 'PUT',
-                body: JSON.stringify(mapData),
+                body: JSON.stringify(serverData),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -148,17 +172,3 @@ export class Agent {
     };
 }
 
-type TEventData = {
-    title: string;
-    description: string;
-    location: TLocationId;
-    timeRange: {
-        start: string;
-        end: string;
-    };
-};
-
-type TPassageData = {
-    type: TEventPassageType;
-    title?: string;
-};
