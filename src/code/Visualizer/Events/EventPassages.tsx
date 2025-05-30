@@ -8,23 +8,102 @@ import {
 import { Column, Row, WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
-import { useEffect, useRef } from 'react';
-import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
-import { GraphAnimationHandler } from '../Graphs/animation.ts/GraphAnimationHandler';
 import { Nav } from '../components/Nav';
 import { TEventId } from 'types/TIds';
-import { CanvasManager } from '../Graphs/CanvasManager';
-import { GraphProvider } from '../Graphs/EventPassagesGraph/store/EventPassageGraphProvider';
+import { ResizableSplitter } from '../Passages/ResizableSplitter';
+import { ScreenPassageCreationForm } from '../Passages/CreatePassageForm';
+import { EventPassagesGraph } from '../Passages/EventPassagesGraph';
 
+// We need to create a dark-themed wrapper for the form
+const DarkThemedForm = styled('div')`
+    height: 100%;
+    
+    /* Dark theme overrides for Material-UI components */
+    & .MuiPaper-root {
+        background-color: rgba(40, 40, 40, 0.9) !important;
+        color: #ffffff !important;
+    }
+    
+    & .MuiTypography-root {
+        color: #ffffff !important;
+    }
+    
+    & .MuiTypography-colorTextSecondary {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    & .MuiOutlinedInput-root {
+        background-color: rgba(50, 50, 50, 0.8) !important;
+        color: #ffffff !important;
+        
+        & .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        &:hover .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }
+        
+        &.Mui-focused .MuiOutlinedInput-notchedOutline {
+            border-color: #64b5f6 !important;
+        }
+    }
+    
+    & .MuiInputLabel-root {
+        color: rgba(255, 255, 255, 0.7) !important;
+        
+        &.Mui-focused {
+            color: #64b5f6 !important;
+        }
+    }
+    
+    & .MuiFormHelperText-root {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+    
+    & .MuiSelect-root {
+        color: #ffffff !important;
+    }
+    
+    & .MuiMenuItem-root {
+        color: #ffffff !important;
+        background-color: rgba(40, 40, 40, 0.9) !important;
+        
+        &:hover {
+            background-color: rgba(60, 60, 60, 0.9) !important;
+        }
+    }
+    
+    & .MuiButton-root {
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        
+        &.MuiButton-contained {
+            background-color: #64b5f6 !important;
+            color: #ffffff !important;
+            
+            &:hover {
+                background-color: #42a5f5 !important;
+            }
+        }
+        
+        &.MuiButton-outlined:hover {
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+    }
+    
+    & .MuiDivider-root {
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+`;
 type Props = {
     eventId: TEventId;
 };
 
 export const EventPassages = ({ eventId }: Props) => {
     const store = useVisualizerStore();
-    const mainCanvasRef = useRef<HTMLCanvasElement>(null);
-    const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
 
     // Get all available events from register
     const events = Object.entries(register.events).map(([id, event]) => ({
@@ -32,57 +111,10 @@ export const EventPassages = ({ eventId }: Props) => {
         title: event.title,
     }));
 
-    useEffect(() => {
-        let isActive = true;
-        const canvas = mainCanvasRef.current;
-
-        assertNotNullish(canvas);
-        store.canvasHandler.registerCanvas('passages', canvas);
-        const canvasManager = new CanvasManager(canvas);
-
-        const initGraph = async () => {
-            if (!isActive) return;
-            assertNotNullish(store.activeTab);
-
-            // Clear previous graph and animation
-            if (graphAnimationHandlerRef.current) {
-                graphAnimationHandlerRef.current.stopAnimation();
-                graphAnimationHandlerRef.current = null;
-            }
-
-            if (register.passages[eventId]) {
-                try {
-                    const graph = await GraphProvider.getGraph(
-                        eventId,
-                        canvasManager,
-                        store
-                    );
-
-                    if (!isActive) return;
-
-                    graphAnimationHandlerRef.current =
-                        new GraphAnimationHandler(graph, canvasManager);
-                    graphAnimationHandlerRef.current.isAnimating();
-                    graphAnimationHandlerRef.current.startAnimation();
-                } catch (error) {
-                    console.error('Failed to initialize graph:', error);
-                }
-            }
-        };
-
-        initGraph();
-
-        return () => {
-            isActive = false;
-            store.canvasHandler.unregisterCanvas('passages');
-            canvasManager.destroy();
-
-            if (graphAnimationHandlerRef.current) {
-                graphAnimationHandlerRef.current.stopAnimation();
-                graphAnimationHandlerRef.current = null;
-            }
-        };
-    }, [store.activeTab, store]);
+    const handlePassageCreated = (passageId: string) => {
+        // Handle passage creation - you might want to refresh the graph or perform other actions
+        console.log('Passage created:', passageId);
+    };
 
     return (
         <WholeContainer>
@@ -128,7 +160,26 @@ export const EventPassages = ({ eventId }: Props) => {
                     </SFormControl>
                 </SRow>
             </Nav>
-            <SMainCanvas ref={mainCanvasRef} />
+            
+            <SContentArea>
+                <ResizableSplitter
+                    leftContent={<EventPassagesGraph eventId={eventId} />}
+                    rightContent={
+                        <SFormContainer>
+                            <DarkThemedForm>
+                                <ScreenPassageCreationForm
+                                    eventId={eventId}
+                                    agent={store.agent}
+                                    onPassageCreated={handlePassageCreated}
+                                />
+                            </DarkThemedForm>
+                        </SFormContainer>
+                    }
+                    initialLeftWidth={75}
+                    minLeftWidth={30}
+                    maxLeftWidth={85}
+                />
+            </SContentArea>
         </WholeContainer>
     );
 };
@@ -229,10 +280,35 @@ const SFormControl = styled(FormControl)`
     }
 `;
 
-const SMainCanvas = styled('canvas')`
+const SContentArea = styled('div')`
     flex: 1;
     overflow: hidden;
     border-top: 1px solid grey;
     border-bottom: 1px solid grey;
-    background-color: wheat;
+`;
+
+const SFormContainer = styled('div')`
+    height: 100%;
+    overflow-y: auto;
+    padding: ${spacingCss(2)};
+    background-color: transparent;
+    
+    /* Custom scrollbar for dark theme */
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        
+        &:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    }
 `;
