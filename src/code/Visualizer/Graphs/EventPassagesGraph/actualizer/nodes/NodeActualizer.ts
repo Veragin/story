@@ -2,7 +2,7 @@ import { TRegisterPassageId } from "data/register";
 import { Graph } from "../../../Graph";
 import { NodeVisualObject } from "../../../Node/NodeVisualObject";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
-import { worldStateCopy } from "../../../PassagesGraph/WorldStateCopy";
+import { worldStateCopy } from "../../WorldStateCopy";
 import { NodeFactory } from "./NodeFactory";
 
 interface NodeActualizationResult {

@@ -93,7 +93,7 @@ export const LinkSection = ({
                         variant="outlined"
                         size="small"
                         type="number"
-                        sx={{ width: 80 }}
+                        sx={{ width: 70 }}
                     />
                     <IconButton
                         onClick={() => onRemoveLink(bodyIndex, linkIndex)}
@@ -112,7 +112,7 @@ export const LinkSection = ({
                             {_('Link Cost')}
                         </Typography>
                         {hasCost && (
-                            <Typography variant="caption" color="primary" sx={{ ml: 1 }}>
+                            <Typography variant="caption" color="primary" sx={{ ml: 1, fontSize: '0.7rem' }}>
                                 (configured)
                             </Typography>
                         )}

@@ -8,11 +8,12 @@ import {
     InputLabel,
     IconButton,
     InputAdornment,
+    Tooltip,
 } from '@mui/material';
-import { FolderOpen } from '@mui/icons-material';
+import { FolderOpen, HelpOutline } from '@mui/icons-material';
 import { showToast } from 'code/GlobalWrapper';
-import { CharacterResolver } from '../../Graphs/EventPassagesGraph/store/CharacterResolver';
 import { SFormRow, SFormControl } from '../styles';
+import { CharacterResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/CharacterResolver';
 
 type Props = {
     passageId: string;
@@ -66,14 +67,21 @@ export const BasicInfoSection = ({
 
     return (
         <Box>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 500, mb: 1 }}>
                 {_('Basic Information')}
             </Typography>
 
             <SFormRow>
                 <SFormControl fullWidth>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                            {_('Passage ID')} *
+                        </Typography>
+                        <Tooltip title="Enter a unique identifier for this passage" arrow>
+                            <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                        </Tooltip>
+                    </Box>
                     <TextField
-                        label={_('Passage ID')}
                         value={passageId}
                         onChange={(e) => setPassageId(e.target.value)}
                         variant="outlined"
@@ -84,7 +92,7 @@ export const BasicInfoSection = ({
                         helperText={
                             passageId.trim() !== '' && existingPassageIds.includes(passageId.trim())
                                 ? _('This passage ID already exists')
-                                : _('Enter a unique identifier for this passage')
+                                : ''
                         }
                     />
                 </SFormControl>
@@ -92,40 +100,55 @@ export const BasicInfoSection = ({
 
             <SFormRow>
                 <SFormControl fullWidth>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                            {_('Title')}
+                        </Typography>
+                        <Tooltip title="Display title for the screen passage" arrow>
+                            <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                        </Tooltip>
+                    </Box>
                     <TextField
-                        label={_('Title')}
                         value={formData.title}
                         onChange={(e) => handleInputChange('title', e.target.value)}
                         variant="outlined"
                         size="small"
                         placeholder="Screen passage title"
-                        helperText={_('Display title for the screen passage')}
                     />
                 </SFormControl>
             </SFormRow>
 
             <SFormRow>
                 <SFormControl fullWidth>
-                    <InputLabel id="character-select-label">{_('Character')}</InputLabel>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                            {_('Character')} *
+                        </Typography>
+                        <Tooltip title="Required - Character associated with this screen passage" arrow>
+                            <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                        </Tooltip>
+                    </Box>
                     <Select
-                        labelId="character-select-label"
                         value={formData.character}
                         onChange={(e) => handleInputChange('character', e.target.value)}
-                        label={_('Character')}
                         size="small"
                         required
+                        displayEmpty
                     >
+                        <MenuItem value="" disabled>
+                            <em>{_('Select a character')}</em>
+                        </MenuItem>
                         {availableCharacters.map((character) => (
                             <MenuItem key={character.id} value={character.id}>
                                 <Box>
-                                    <Typography variant="body2" component="span">
+                                    <Typography variant="body2" component="span" sx={{ fontSize: '0.875rem' }}>
                                         {character.name}
                                     </Typography>
                                     <Typography 
                                         variant="caption" 
                                         color="text.secondary"
                                         component="span"
-                                        sx={{ ml: 1 }}
+                                        sx={{ ml: 1, fontSize: '0.75rem' }}
                                     >
                                         ({character.type === 'main' ? _('Main Character') : _('Side Character')})
                                     </Typography>
@@ -134,7 +157,7 @@ export const BasicInfoSection = ({
                                             variant="caption" 
                                             color="text.secondary"
                                             component="div"
-                                            sx={{ mt: 0.5, fontStyle: 'italic' }}
+                                            sx={{ mt: 0.25, fontStyle: 'italic', fontSize: '0.7rem' }}
                                         >
                                             {truncateText(character.description, 50)}
                                         </Typography>
@@ -143,22 +166,25 @@ export const BasicInfoSection = ({
                             </MenuItem>
                         ))}
                     </Select>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.5 }}>
-                        {_('Required - Character associated with this screen passage')}
-                    </Typography>
                 </SFormControl>
             </SFormRow>
 
             <SFormRow>
                 <SFormControl fullWidth>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                            {_('Image Path')}
+                        </Typography>
+                        <Tooltip title="Optional - Image to display on the screen" arrow>
+                            <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                        </Tooltip>
+                    </Box>
                     <TextField
-                        label={_('Image Path')}
                         value={formData.image}
                         onChange={(e) => handleInputChange('image', e.target.value)}
                         variant="outlined"
                         size="small"
                         placeholder="path/to/image.png or select file"
-                        helperText={_('Optional - Image to display on the screen')}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -167,7 +193,7 @@ export const BasicInfoSection = ({
                                         edge="end"
                                         size="small"
                                     >
-                                        <FolderOpen />
+                                        <FolderOpen fontSize="small" />
                                     </IconButton>
                                 </InputAdornment>
                             ),

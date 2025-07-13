@@ -4,7 +4,7 @@ import { spacingCss } from 'code/components/css';
 
 export const SFormContainer = styled(Paper)(({ theme }) => `
     padding: ${spacingCss(1.5)};
-    max-width: 1000px;
+    max-width: 800px;
     margin: 0 auto;
     background-color: ${theme.palette.background.paper};
     color: ${theme.palette.text.primary};
@@ -32,6 +32,7 @@ export const SFormContent = styled(Column)`
 
 export const SFormRow = styled(Row)`
     width: 100%;
+    gap: ${spacingCss(1)};
 `;
 
 export const SButtonRow = styled(Row)`
@@ -82,65 +83,49 @@ export const SFormControl = styled(FormControl)(({ theme }) => `
     }
 `);
 
-export const SBodyItemContainer = styled(Box)(({ theme }) => `
+export const SSectionContainer = styled(Box)(({ theme }) => `
     border: 1px solid ${theme.palette.divider};
     border-radius: 6px;
-    margin-bottom: ${spacingCss(1)};
+    padding: ${spacingCss(1.5)};
     background-color: ${theme.palette.background.default};
+`);
+
+export const STimeRangeContainer = styled(Box)(({ theme }) => `
+    display: flex;
+    flex-direction: column;
+    gap: ${spacingCss(1)};
     
-    & .MuiAccordionSummary-root {
-        min-height: 40px;
-        padding: ${spacingCss(0.5)} ${spacingCss(1)};
-        
-        & .MuiTypography-subtitle1 {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-    }
-    
-    & .MuiAccordionDetails-root {
-        padding: ${spacingCss(1)};
+    @media (min-width: 600px) {
+        flex-direction: row;
+        align-items: flex-start;
     }
 `);
 
-export const SLinkContainer = styled(Box)(({ theme }) => `
-    padding: ${spacingCss(1)};
-    border: 1px solid ${theme.palette.divider};
-    border-radius: 4px;
-    margin-bottom: ${spacingCss(0.75)};
-    background-color: ${theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]};
-`);
+export const STimeInputGroup = styled(Box)`
+    flex: 1;
+    min-width: 200px;
+`;
 
-export const SCostSection = styled(Box)(({ theme }) => `
+export const SDurationDisplay = styled(Box)(({ theme }) => `
     padding: ${spacingCss(1)};
     border: 1px solid ${theme.palette.divider};
     border-radius: 4px;
     background-color: ${theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.grey[50]};
-    margin-top: ${spacingCss(0.75)};
-    
-    & .MuiTypography-subtitle2 {
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
+    text-align: center;
     
     & .MuiTypography-caption {
         font-size: 0.7rem;
+        color: ${theme.palette.text.secondary};
+    }
+    
+    & .duration-value {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: ${theme.palette.primary.main};
+    }
+    
+    @media (min-width: 600px) {
+        min-width: 120px;
+        flex: 0 0 auto;
     }
 `);
-
-export const SCostCard = styled(Box)(({ theme }) => `
-    padding: ${spacingCss(1)};
-    border: 1px solid ${theme.palette.divider};
-    border-radius: 4px;
-    background-color: ${theme.palette.background.paper};
-    margin-bottom: ${spacingCss(0.75)};
-`);
-
-export const SCompactRow = styled(Row)`
-    gap: ${spacingCss(0.75)};
-    align-items: center;
-`;
-
-export const SCompactColumn = styled(Column)`
-    gap: ${spacingCss(0.75)};
-`;

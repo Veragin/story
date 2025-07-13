@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from 'code/GlobalWrapper';
-import { PassageResolver } from '../Graphs/EventPassagesGraph/store/PassageResolver';
-import { EventResolver } from '../Graphs/EventPassagesGraph/store/EventResolcer';
 import { TEventPassageType } from 'types/TPassage';
 import { TEventId } from 'types/TIds';
-import { TPassageFormData, TBodyItem, TBodyItemLink, TLinkCost } from './types';
+import { PassageResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/PassageResolver';
+import { EventResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/EventResolcer';
+import { TLinkCost, TPassageFormData } from '../types';
+import { Agent } from 'code/Visualizer/stores/Agent';
+import { TScreenPassageData } from 'code/Visualizer/stores/ nodeServerTypes';
 
-export const usePassageForm = (eventId: TEventId, agent: any) => {
+export const usePassageForm = (eventId: TEventId, agent: Agent) => {
     const [formData, setFormData] = useState<TPassageFormData>({
         title: '',
         image: '',
@@ -36,7 +38,12 @@ export const usePassageForm = (eventId: TEventId, agent: any) => {
                     try {
                         const passageIds = await PassageResolver.getAvailablePassageIds(evId);
                         passageIds.forEach(pId => {
-                            allPassageIds.push(`${evId}-${pId}`);
+                            // Check if the passage ID already contains the event ID to avoid duplication
+                            if (pId.startsWith(`${evId}-`)) {
+                                allPassageIds.push(pId);
+                            } else {
+                                allPassageIds.push(`${evId}-${pId}`);
+                            }
                         });
                     } catch (error) {
                         // Event might not have passages, skip
@@ -167,18 +174,30 @@ export const usePassageForm = (eventId: TEventId, agent: any) => {
 
         setIsSubmitting(true);
         try {
-            const passageData: any = {
+            // Create properly typed TScreenPassageData object
+            const passageData: TScreenPassageData = {
                 type: 'screen' as TEventPassageType,
                 eventId: eventId,
                 characterId: formData.character,
                 id: passageId.trim(),
                 title: formData.title.trim() || 'Untitled Screen',
                 image: formData.image.trim() || '',
-                body: formData.body.filter(item => 
-                    item.text?.trim() || 
-                    item.redirect?.trim() || 
-                    (item.links && item.links.length > 0)
-                ),
+                body: formData.body
+                    .filter(item => 
+                        item.text?.trim() || 
+                        item.redirect?.trim() || 
+                        (item.links && item.links.length > 0)
+                    )
+                    .map(item => ({
+                        text: item.text,
+                        redirect: item.redirect,
+                        links: item.links?.map(link => ({
+                            text: link.text || '',
+                            passageId: link.passageId || '',
+                            autoPriority: link.autoPriority || 0,
+                            cost: link.cost
+                        })) || []
+                    }))
             };
 
             await agent.addScreenPassage(passageId.trim(), passageData);

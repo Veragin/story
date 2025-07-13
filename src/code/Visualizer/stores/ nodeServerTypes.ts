@@ -1,5 +1,6 @@
 import { TLocationId } from 'types/TLocation';
 import { TEventPassageType } from 'types/TPassage';
+import { TEventId } from 'types/TIds';
 
 // Updated server types to include missing fields
 export interface TimeRange {
@@ -32,7 +33,7 @@ export interface TLinkCostObjectUpdateRequest {
   tools?: string[];
 }
 
-export type TLinkCostUpdateRequest = 
+export type TLinkCostUpdateRequest =
   | { value: number; unit: 'min' | 'hour' | 'day' }
   | TLinkCostObjectUpdateRequest;
 
@@ -52,6 +53,9 @@ export interface TPassageScreenBodyItemUpdateRequest {
 
 export interface PassageUpdateRequest {
   type: 'screen' | 'linear' | 'transition';
+  eventId?: TEventId;
+  characterId?: string;
+  id?: string;
   title?: string;
   image?: string;
   body?: TPassageScreenBodyItemUpdateRequest[];
@@ -94,7 +98,7 @@ export interface MapData {
   data: MapTileData[][];
   locations: MapLocationReference[];
   maps: MapMapReference[];
-  palette: Record<string, { name: string; color: string; }>;  // Added missing field
+  palette: Record<string, { name: string; color: string; }>;
 }
 
 export interface MapUpdateRequest extends MapData {}
@@ -112,7 +116,7 @@ export interface MapListResponse {
 export type TEventData = {
   title: string;
   description: string;
-  location: TLocationId;
+  location: string;
   timeRange: {
     start: string;
     end: string;
@@ -124,3 +128,21 @@ export type TPassageData = {
   title?: string;
 };
 
+export type TScreenPassageData = {
+  type: TEventPassageType;
+  eventId: string;
+  characterId: string;
+  id: string;
+  title: string;
+  image: string;
+  body: Array<{
+    text?: string;
+    redirect?: string;
+    links?: Array<{
+      text: string;
+      passageId: string;
+      autoPriority: number;
+      cost?: any; // You might want to define TLinkCost type more specifically
+    }>;
+  }>;
+};

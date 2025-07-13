@@ -10,9 +10,9 @@ import {
     AccordionDetails,
     Checkbox,
     FormControlLabel,
-    Button,
+    Tooltip,
 } from '@mui/material';
-import { ExpandMore, Delete, AddLink } from '@mui/icons-material';
+import { ExpandMore, Delete, AddLink, HelpOutline } from '@mui/icons-material';
 import { TBodyItem, TLinkCost } from '../types';
 import { LinkSection } from './LinkSection';
 import { SBodyItemContainer, SCompactColumn } from '../styles';
@@ -47,12 +47,36 @@ export const BodyItemSection = ({
     onRemoveLink,
     onToggleLinkExpanded,
 }: Props) => {
+    const getContentTitle = () => {
+        if (bodyItem.text && bodyItem.text.trim()) {
+            // Get first line of text
+            const firstLine = bodyItem.text.split('\n')[0];
+            // Truncate if too long (around 50 characters, but break at word boundary)
+            if (firstLine.length > 50) {
+                const truncated = firstLine.substring(0, 47);
+                const lastSpace = truncated.lastIndexOf(' ');
+                return (lastSpace > 30 ? truncated.substring(0, lastSpace) : truncated) + '...';
+            }
+            return firstLine;
+        }
+        
+        if (bodyItem.redirect && bodyItem.redirect.trim()) {
+            return `→ ${bodyItem.redirect}`;
+        }
+        
+        if (bodyItem.links && bodyItem.links.length > 0) {
+            return `${bodyItem.links.length} link${bodyItem.links.length > 1 ? 's' : ''}`;
+        }
+        
+        return _('Empty Content Block');
+    };
+
     return (
         <SBodyItemContainer>
             <Accordion defaultExpanded>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography variant="subtitle1">
-                        {_('Content Block')} {bodyIndex + 1}
+                <AccordionSummary expandIcon={<ExpandMore fontSize="small" />}>
+                    <Typography variant="subtitle1" sx={{ flex: 1 }}>
+                        {getContentTitle()}
                     </Typography>
                     {bodyCount > 1 && (
                         <IconButton
@@ -63,7 +87,7 @@ export const BodyItemSection = ({
                             size="small"
                             sx={{ ml: 'auto', mr: 1 }}
                         >
-                            <Delete />
+                            <Delete fontSize="small" />
                         </IconButton>
                     )}
                 </AccordionSummary>
@@ -74,47 +98,70 @@ export const BodyItemSection = ({
                                 <Checkbox
                                     checked={bodyItem.condition || false}
                                     onChange={(e) => onBodyItemChange(bodyIndex, 'condition', e.target.checked)}
+                                    size="small"
                                 />
                             }
-                            label={_('Has condition')}
+                            label={
+                                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    {_('Has condition')}
+                                </Typography>
+                            }
                         />
 
-                        <TextField
-                            label={_('Text Content')}
-                            value={bodyItem.text || ''}
-                            onChange={(e) => onBodyItemChange(bodyIndex, 'text', e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            multiline
-                            rows={2}
-                            placeholder="Enter the text content for this screen section"
-                            helperText={_('The text displayed in this content block')}
-                        />
+                        <Box sx={{ mb: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    {_('Text Content')}
+                                </Typography>
+                                <Tooltip title="The text displayed in this content block" arrow>
+                                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                                </Tooltip>
+                            </Box>
+                            <TextField
+                                value={bodyItem.text || ''}
+                                onChange={(e) => onBodyItemChange(bodyIndex, 'text', e.target.value)}
+                                variant="outlined"
+                                size="small"
+                                multiline
+                                rows={2}
+                                placeholder="Enter the text content for this screen section"
+                                fullWidth
+                            />
+                        </Box>
 
-                        <TextField
-                            label={_('Redirect Passage ID')}
-                            value={bodyItem.redirect || ''}
-                            onChange={(e) => onBodyItemChange(bodyIndex, 'redirect', e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            select
-                            placeholder="Select passage to redirect to"
-                            helperText={_('Optional - Automatically redirect to another passage')}
-                        >
-                            <MenuItem value="">
-                                <em>{_('No redirect')}</em>
-                            </MenuItem>
-                            {availablePassageIds.map((passageId) => (
-                                <MenuItem key={passageId} value={passageId}>
-                                    {passageId}
+                        <Box sx={{ mb: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    {_('Redirect Passage ID')}
+                                </Typography>
+                                <Tooltip title="Optional - Automatically redirect to another passage" arrow>
+                                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                                </Tooltip>
+                            </Box>
+                            <TextField
+                                value={bodyItem.redirect || ''}
+                                onChange={(e) => onBodyItemChange(bodyIndex, 'redirect', e.target.value)}
+                                variant="outlined"
+                                size="small"
+                                select
+                                placeholder="Select passage to redirect to"
+                                fullWidth
+                            >
+                                <MenuItem value="">
+                                    <em>{_('No redirect')}</em>
                                 </MenuItem>
-                            ))}
-                        </TextField>
+                                {availablePassageIds.map((passageId) => (
+                                    <MenuItem key={passageId} value={passageId}>
+                                        {passageId}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Box>
 
                         {/* Links Section */}
                         <Box>
-                            <Row sx={{ alignItems: 'center', mb: 1 }}>
-                                <Typography variant="subtitle2">
+                            <Row sx={{ alignItems: 'center', mb: 0.75 }}>
+                                <Typography variant="subtitle2" sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
                                     {_('Links')}
                                 </Typography>
                                 <IconButton
@@ -122,7 +169,7 @@ export const BodyItemSection = ({
                                     size="small"
                                     sx={{ ml: 1 }}
                                 >
-                                    <AddLink />
+                                    <AddLink fontSize="small" />
                                 </IconButton>
                             </Row>
 

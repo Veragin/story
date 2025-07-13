@@ -1,24 +1,20 @@
 import React from 'react';
 import {
     styled,
-    FormControl,
-    Autocomplete,
-    TextField,
     Button,
     ThemeProvider,
     createTheme,
+    Typography,
 } from '@mui/material';
 import { Column, Row, WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
-import { register } from 'data/register';
 import { Nav } from '../components/Nav';
-import { TEventId } from 'types/TIds';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
-import { EventPassagesGraph } from '../Passages/EventPassagesGraph';
-import { ScreenPassageCreationForm } from '../Passages/ScreenPassageCreationForm/ScreenPassageCreationForm';
+import { EventTimeline } from './EventTimeline';
+import { EventCreationForm } from './EventCreationForm/EventCreationForm';
+import { Add, Event } from '@mui/icons-material';
 
-// Create a dark theme for the form
 const darkTheme = createTheme({
     palette: {
         mode: 'dark',
@@ -194,87 +190,56 @@ const darkTheme = createTheme({
     },
 });
 
-type Props = {
-    eventId: TEventId;
-};
-
-export const EventPassages = ({ eventId }: Props) => {
+export const Events = () => {
     const store = useVisualizerStore();
 
-    // Get all available events from register
-    const events = Object.entries(register.events).map(([id, event]) => ({
-        id: id as TEventId,
-        title: event.title,
-    }));
-
-    const handlePassageCreated = (passageId: string) => {
-        // Handle passage creation - you might want to refresh the graph or perform other actions
-        console.log('Passage created:', passageId);
-        // You could trigger a refresh of the EventPassagesGraph here if needed
+    const handleEventCreated = (eventId: string) => {
+        // Handle event creation - navigate to the new event's passages
+        console.log('Event created:', eventId);
+        store.setActiveTab({
+            tab: 'event',
+            eventId: eventId as any, // Cast to match TEventId type
+        });
     };
 
     return (
         <WholeContainer>
             <Nav>
                 <SRow>
-                    <Button
-                        color="inherit"
-                        variant={'text'}
-                        onClick={() => store.setActiveTab(null)}
-                    >
-                        {_('Back')}
-                    </Button>
-                    <SFormControl size="small">
-                        <Autocomplete
-                            value={
-                                events.find((event) => event.id === eventId) ??
-                                null
-                            }
-                            onChange={(_, newValue) => {
-                                store.setActiveTab(
-                                    newValue === null
-                                        ? null
-                                        : {
-                                              tab: 'event',
-                                              eventId: newValue.id,
-                                          }
-                                );
-                            }}
-                            options={events}
-                            getOptionLabel={(option) =>
-                                option.title || option.id
-                            }
-                            renderInput={(params) => (
-                                <TextField {...params} variant="outlined" />
-                            )}
-                            isOptionEqualToValue={(option, value) =>
-                                option.id === value.id
-                            }
-                            sx={{
-                                minWidth: 300,
-                            }}
-                        />
-                    </SFormControl>
+                    <SNavTitle>
+                        <Event fontSize="small" sx={{ mr: 1 }} />
+                        <Typography variant="h6" component="span" sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                            {_('Events Manager')}
+                        </Typography>
+                    </SNavTitle>
+                    <SNavActions>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                            {_('Create and manage game events')}
+                        </Typography>
+                    </SNavActions>
                 </SRow>
             </Nav>
             
             <SContentArea>
                 <ResizableSplitter
-                    leftContent={<EventPassagesGraph eventId={eventId} />}
+                    leftContent={
+                        <STimelineContainer>
+                            <EventTimeline />
+                        </STimelineContainer>
+                    }
                     rightContent={
                         <SFormContainer>
                             <ThemeProvider theme={darkTheme}>
-                                <ScreenPassageCreationForm
-                                    eventId={eventId}
+                                <EventCreationForm
                                     agent={store.agent}
-                                    onPassageCreated={handlePassageCreated}
+                                    onEventCreated={handleEventCreated}
                                 />
                             </ThemeProvider>
                         </SFormContainer>
                     }
-                    initialLeftWidth={75}
+                    initialLeftWidth={65}
                     minLeftWidth={30}
-                    maxLeftWidth={85}
+                    maxLeftWidth={80}
                 />
             </SContentArea>
         </WholeContainer>
@@ -283,82 +248,21 @@ export const EventPassages = ({ eventId }: Props) => {
 
 const SRow = styled(Row)`
     gap: ${spacingCss(2)};
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
 `;
 
-const SFormControl = styled(FormControl)`
-    min-width: 200px;
-    margin: 0;
+const SNavTitle = styled('div')`
+    display: flex;
+    align-items: center;
+    color: white;
+`;
 
-    & .MuiAutocomplete-root {
-        & .MuiOutlinedInput-root {
-            background-color: lightgray;
-            height: 40px;
-            padding: 0 ${spacingCss(2)};
-
-            & input {
-                color: rgba(0, 0, 0, 0.87);
-                padding: 0;
-                height: 100%;
-            }
-
-            & .MuiAutocomplete-endAdornment {
-                color: rgba(0, 0, 0, 0.54);
-                top: 50%;
-                transform: translateY(-50%);
-            }
-        }
-    }
-
-    & .MuiInputLabel-root {
-        color: white;
-        background-color: black;
-        border-radius: 4px;
-        padding: 0 ${spacingCss(0.5)};
-        transform: translate(14px, -6px) scale(0.75);
-
-        &.Mui-focused {
-            color: white;
-        }
-    }
-
-    & .MuiOutlinedInput-notchedOutline {
-        border-color: rgba(0, 0, 0, 0.23);
-    }
-
-    & .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
-        border-color: rgba(0, 0, 0, 0.87);
-    }
-
-    & .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-        border-color: black;
-    }
-
-    & .MuiAutocomplete-popper {
-        & .MuiPaper-root {
-            background-color: gray;
-            color: rgba(0, 0, 0, 0.87);
-            margin-top: 4px;
-        }
-
-        & .MuiAutocomplete-option {
-            padding: ${spacingCss(1)};
-
-            &:hover {
-                background-color: rgba(0, 0, 0, 0.1);
-            }
-            &[aria-selected='true'] {
-                background-color: rgba(0, 0, 0, 0.2);
-            }
-            &[aria-selected='true'].Mui-focused {
-                background-color: rgba(0, 0, 0, 0.3);
-            }
-        }
-
-        & .MuiAutocomplete-noOptions {
-            padding: ${spacingCss(1)};
-            color: rgba(0, 0, 0, 0.6);
-        }
-    }
+const SNavActions = styled('div')`
+    display: flex;
+    align-items: center;
+    gap: ${spacingCss(1)};
 `;
 
 const SContentArea = styled('div')`
@@ -366,6 +270,19 @@ const SContentArea = styled('div')`
     overflow: hidden;
     border-top: 1px solid grey;
     border-bottom: 1px solid grey;
+`;
+
+const STimelineContainer = styled('div')`
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: ${({ theme }) => theme?.palette?.background?.default || '#fafafa'};
+    
+    /* Ensure timeline fits well */
+    & > * {
+        height: 100%;
+        width: 100%;
+    }
 `;
 
 const SFormContainer = styled('div')`

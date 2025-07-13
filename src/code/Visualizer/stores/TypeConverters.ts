@@ -1,13 +1,20 @@
 import { TLocationId } from 'types/TLocation';
 import { TEventPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';
-import { TEventData, EventUpdateRequest, TPassageData, PassageUpdateRequest, MapData, SetTimeRequest } from './ nodeServerTypes';
+import { EventUpdateRequest, MapData, PassageUpdateRequest, SetTimeRequest, TEventData, TPassageData, TScreenPassageData } from './ nodeServerTypes';
+import { TEventId } from 'types/TIds';
 
 
 export class TypeConverters {
-
   // Event converters
   static eventDataToUpdateRequest(eventData: TEventData): EventUpdateRequest {
+    const originTime = { start: '2.2. 12:00', end: '2.2. 14:00' };
+
+    if (eventData.timeRange.start === '')
+      eventData.timeRange.start = originTime.start;
+    if (eventData.timeRange.end === '')
+      eventData.timeRange.end = originTime.end;
+
     return {
       title: eventData.title,
       description: eventData.description,
@@ -31,11 +38,31 @@ export class TypeConverters {
     };
   }
 
-  // Passage converters
   static passageDataToUpdateRequest(passageData: TPassageData): PassageUpdateRequest {
     return {
       type: passageData.type,
       title: passageData.title
+    };
+  }
+
+  static screenPassageDataToUpdateRequest(screenPassageData: TScreenPassageData): PassageUpdateRequest {
+    return {
+      type: screenPassageData.type,
+      eventId: screenPassageData.eventId as TEventId,
+      characterId: screenPassageData.characterId,
+      id: screenPassageData.id,
+      title: screenPassageData.title,
+      image: screenPassageData.image,
+      body: screenPassageData.body.map(bodyItem => ({
+        text: bodyItem.text,
+        redirect: bodyItem.redirect,
+        links: bodyItem.links?.map(link => ({
+          text: link.text,
+          passageId: link.passageId,
+          autoPriority: link.autoPriority,
+          cost: link.cost
+        }))
+      }))
     };
   }
 

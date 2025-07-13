@@ -1,4 +1,4 @@
-import { EventTimeline } from './Events/EventTimeline';
+import { Events } from './Events/Events';
 import { EventPassages } from './Events/EventPassages';
 import { useVisualizerStore } from 'code/Context';
 import { observer } from 'mobx-react-lite';
@@ -8,7 +8,7 @@ export const Visualizer = observer(() => {
     const store = useVisualizerStore();
 
     if (store.activeTab === null) {
-        return <EventTimeline />;
+        return <Events />;
     }
 
     if (store.activeTab.tab === 'event') {

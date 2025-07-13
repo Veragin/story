@@ -7,12 +7,13 @@ import {
     FormControl, 
     InputLabel, 
     Select, 
-    MenuItem 
+    MenuItem,
+    Tooltip
 } from '@mui/material';
-import { Add, Remove, Build } from '@mui/icons-material';
+import { Add, Remove, Build, HelpOutline } from '@mui/icons-material';
 import { TItemId } from 'types/TItem';
-import { ItemResolver } from '../../Graphs/EventPassagesGraph/store/ItemResolver';
-import { SCompactRow, SCompactColumn } from '../styles';
+import { ItemResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/ItemResolver';
+import { SCompactColumn, SCompactRow } from '../../styles';
 
 type Props = {
     value: TItemId[];
@@ -38,18 +39,20 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
 
     return (
         <Box>
-            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Build fontSize="small" />
-                Required Tools
-                <Typography variant="caption" color="text.secondary" component="span">
-                    (needed but not consumed)
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Build fontSize="small" />
+                    Required Tools
                 </Typography>
-            </Typography>
+                <Tooltip title="Tools needed but not consumed" arrow>
+                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+            </Box>
 
             <SCompactColumn>
                 {value.map((toolId, index) => (
                     <SCompactRow key={index}>
-                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <FormControl size="small" sx={{ flex: 1 }}>
                             <InputLabel>Tool</InputLabel>
                             <Select
                                 value={toolId}
@@ -58,7 +61,9 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
                             >
                                 {availableTools.map((tool) => (
                                     <MenuItem key={tool.value} value={tool.value}>
-                                        {tool.label}
+                                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                            {tool.label}
+                                        </Typography>
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -69,7 +74,7 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
                             size="small"
                             color="error"
                         >
-                            <Remove />
+                            <Remove fontSize="small" />
                         </IconButton>
                     </SCompactRow>
                 ))}
@@ -77,9 +82,9 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
                 <Button
                     variant="outlined"
                     onClick={addTool}
-                    startIcon={<Add />}
+                    startIcon={<Add fontSize="small" />}
                     size="small"
-                    sx={{ alignSelf: 'flex-start' }}
+                    sx={{ alignSelf: 'flex-start', fontSize: '0.8rem', py: 0.5 }}
                 >
                     Add Tool
                 </Button>

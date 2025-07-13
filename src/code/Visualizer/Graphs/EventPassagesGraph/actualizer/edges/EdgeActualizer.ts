@@ -2,7 +2,7 @@ import { Graph } from "../../../Graph";
 import { NodeVisualObject } from "../../../Node/NodeVisualObject";
 import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
-import { worldStateCopy } from "../../../PassagesGraph/WorldStateCopy";
+import { worldStateCopy } from "../../WorldStateCopy";
 import { EdgeFactory } from "./EdgeFactory";
 
 export class EdgeActualizer {

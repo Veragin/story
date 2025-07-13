@@ -8,12 +8,13 @@ import {
     FormControl, 
     InputLabel, 
     Select, 
-    MenuItem 
+    MenuItem,
+    Tooltip
 } from '@mui/material';
-import { Add, Remove, Inventory } from '@mui/icons-material';
+import { Add, Remove, Inventory, HelpOutline } from '@mui/icons-material';
 import { TItemId } from 'types/TItem';
-import { ItemResolver } from '../../Graphs/EventPassagesGraph/store/ItemResolver';
-import { SCompactRow, SCompactColumn } from '../styles';
+import { ItemResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/ItemResolver';
+import { SCompactColumn, SCompactRow } from '../../styles';
 
 type ItemCost = { id: TItemId; amount: number };
 
@@ -41,18 +42,20 @@ export const ItemsCostInput = ({ value, onChange }: Props) => {
 
     return (
         <Box>
-            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Inventory fontSize="small" />
-                Required Items
-                <Typography variant="caption" color="text.secondary" component="span">
-                    (consumed when used)
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Inventory fontSize="small" />
+                    Required Items
                 </Typography>
-            </Typography>
+                <Tooltip title="Items consumed when used" arrow>
+                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+            </Box>
 
             <SCompactColumn>
                 {value.map((item, index) => (
                     <SCompactRow key={index}>
-                        <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <FormControl size="small" sx={{ flex: 1 }}>
                             <InputLabel>Item</InputLabel>
                             <Select
                                 value={item.id}
@@ -62,10 +65,10 @@ export const ItemsCostInput = ({ value, onChange }: Props) => {
                                 {availableItems.map((availableItem) => (
                                     <MenuItem key={availableItem.value} value={availableItem.value}>
                                         <Box>
-                                            <Typography variant="body2">
+                                            <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                                                 {availableItem.label}
                                             </Typography>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                                 {ItemResolver.formatItemType(availableItem.type)}
                                             </Typography>
                                         </Box>
@@ -80,8 +83,8 @@ export const ItemsCostInput = ({ value, onChange }: Props) => {
                             value={item.amount}
                             onChange={(e) => handleItemChange(index, 'amount', parseInt(e.target.value) || 1)}
                             size="small"
-                            sx={{ width: 80 }}
-                            inputProps={{ min: 1 }}
+                            sx={{ width: 70 }}
+                            slotProps={{ htmlInput: { min: 1 } }}
                         />
                         
                         <IconButton
@@ -89,7 +92,7 @@ export const ItemsCostInput = ({ value, onChange }: Props) => {
                             size="small"
                             color="error"
                         >
-                            <Remove />
+                            <Remove fontSize="small" />
                         </IconButton>
                     </SCompactRow>
                 ))}
@@ -97,9 +100,9 @@ export const ItemsCostInput = ({ value, onChange }: Props) => {
                 <Button
                     variant="outlined"
                     onClick={addItem}
-                    startIcon={<Add />}
+                    startIcon={<Add fontSize="small" />}
                     size="small"
-                    sx={{ alignSelf: 'flex-start' }}
+                    sx={{ alignSelf: 'flex-start', fontSize: '0.8rem', py: 0.5 }}
                 >
                     Add Item
                 </Button>

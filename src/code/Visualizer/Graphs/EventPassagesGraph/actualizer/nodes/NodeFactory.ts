@@ -1,6 +1,6 @@
 import { TRegisterPassageId } from "data/register";
 import { NodeVisualObject } from "../../../Node/NodeVisualObject";
-import { worldStateCopy } from "../../../PassagesGraph/WorldStateCopy";
+import { worldStateCopy } from "../../WorldStateCopy";
 import { ColorManager } from "../ColorManager";
 import { LinearPassageNodeCreator } from "./creators/LinearPassageNodeCreator";
 import { ScreenPassageNodeCreator } from "./creators/ScreenPassageNodeCreator";

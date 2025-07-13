@@ -9,7 +9,7 @@ import { createPassageModalContent } from 'code/Visualizer/Events/createPassageM
 import { EventPassagesGraphStorageManager } from './EventPassagesGraphStorageManager';
 import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
 import { register, TRegisterPassageId } from 'data/register';
-import { worldStateCopy } from '../../PassagesGraph/WorldStateCopy';
+import { worldStateCopy } from '../WorldStateCopy';
 import { PassageResolver } from './PassageResolver';
 import { e } from 'worldState';
 
