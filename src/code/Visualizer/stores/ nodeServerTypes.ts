@@ -13,6 +13,7 @@ export interface EventUpdateRequest {
   description?: string;
   location?: string;
   timeRange?: TimeRange;
+  children?: Array<{ condition: string; eventId: string; }>;
 }
 
 export interface SetTimeRequest {
@@ -121,6 +122,7 @@ export type TEventData = {
     start: string;
     end: string;
   };
+  children?: Array<{ condition: string; eventId: string; }>;
 };
 
 export type TPassageData = {

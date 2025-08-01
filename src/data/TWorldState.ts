@@ -14,6 +14,7 @@ import { TCharacterId } from 'types/TIds';
 import { THistoryItem } from 'code/Engine/ts/History';
 import { THappening } from 'types/THappening';
 
+
 export type TWorldState = {
     time: Time;
     mainCharacterId: TCharacterId;

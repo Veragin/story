@@ -1,6 +1,11 @@
 import { TLocationId } from 'types/TLocation';
 import { Agent } from 'code/Visualizer/stores/Agent';
 
+export type TChildEvent = {
+    condition: string;
+    eventId: string;
+};
+
 export type TTimeRange = {
     start: string;
     end: string;
@@ -11,6 +16,7 @@ export type TEventFormData = {
     description: string;
     location: string;
     timeRange: TTimeRange;
+    children: TChildEvent[];  
 };
 
 export type TFormProps = {
@@ -28,7 +34,8 @@ export const DEFAULT_FORM_DATA: TEventFormData = {
     title: '',
     description: '',
     location: '',
-    timeRange: DEFAULT_TIME_RANGE
+    timeRange: DEFAULT_TIME_RANGE,
+    children: []  
 };
 
 // Helper functions for time formatting
@@ -96,4 +103,19 @@ export const calculateDuration = (timeRange: TTimeRange): string => {
     } catch {
         return '';
     }
+};
+
+export const validateChildren = (children: TChildEvent[], existingEventIds: string[]): string | null => {
+    for (const child of children) {
+        if (!child.condition.trim()) {
+            return _('All child events must have a condition');
+        }
+        if (!child.eventId.trim()) {
+            return _('All child events must have an event selected');
+        }
+        if (!existingEventIds.includes(child.eventId)) {
+            return _('Selected child event does not exist: %s', child.eventId);
+        }
+    }
+    return null;
 };

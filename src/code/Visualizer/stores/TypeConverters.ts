@@ -15,15 +15,19 @@ export class TypeConverters {
     if (eventData.timeRange.end === '')
       eventData.timeRange.end = originTime.end;
 
-    return {
+    const result = {
       title: eventData.title,
       description: eventData.description,
       location: eventData.location,
       timeRange: {
         start: eventData.timeRange.start,
         end: eventData.timeRange.end
-      }
+      },
+      children: eventData.children
     };
+
+    console.log('TypeConverter - converting eventData to updateRequest:', { eventData, result });
+    return result;
   }
 
   static updateRequestToEventData(updateRequest: EventUpdateRequest, fallbackLocation: TLocationId): TEventData {
@@ -34,7 +38,8 @@ export class TypeConverters {
       timeRange: {
         start: updateRequest.timeRange?.start || '',
         end: updateRequest.timeRange?.end || ''
-      }
+      },
+      children: updateRequest.children || []
     };
   }
 

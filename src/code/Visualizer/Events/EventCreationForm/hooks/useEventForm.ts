@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from 'code/GlobalWrapper';
 import { EventResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/EventResolcer';
-import { TEventFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange } from '../types';
+import { TEventFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange, validateChildren } from '../types';
 import { Agent } from 'code/Visualizer/stores/Agent';
 import { TEventData } from 'code/Visualizer/stores/ nodeServerTypes';
 
@@ -68,6 +68,12 @@ export const useEventForm = (agent: Agent) => {
             return false;
         }
 
+        const childrenError = validateChildren(formData.children, existingEventIds);
+        if (childrenError) {
+            showToast(childrenError, { variant: 'error' });
+            return false;
+        }
+
         return true;
     };
 
@@ -84,10 +90,13 @@ export const useEventForm = (agent: Agent) => {
                 timeRange: {
                     start: formData.timeRange.start || '',
                     end: formData.timeRange.end || ''
-                }
+                },
+                children: formData.children
             };
 
-            await agent.addEvent(eventId.trim(), eventData);
+            console.log('Creating event with data:', { eventId: eventId.trim(), eventData });
+
+            await agent.updateEvent(eventId.trim(), eventData);
             
             // Reset form
             handleReset();

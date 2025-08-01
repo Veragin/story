@@ -11,6 +11,7 @@ import { useEventForm } from './hooks/useEventForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
 import { LocationSection } from './components/LocationSection';
 import { TimeRangeSection } from './components/TimeRangeSection';
+import { ChildrenSection } from './components/ChildrenSection';
 import { SFormContainer, SHeader, SFormContent, SButtonRow } from './styles';
 
 type Props = {
@@ -64,6 +65,14 @@ export const EventCreationForm = ({ onEventCreated, onCancel, agent }: Props) =>
                 <TimeRangeSection
                     value={formData.timeRange}
                     onChange={handleTimeRangeChange}
+                />
+
+                <Divider sx={{ my: 2 }} />
+
+                <ChildrenSection
+                    value={formData.children}
+                    onChange={(children) => handleInputChange('children', children)}
+                    existingEventIds={existingEventIds}
                 />
 
                 <SButtonRow>

@@ -15,7 +15,7 @@ export class Agent {
     /**
      * Add or update an event
      */
-    addEvent = async (eventId: string, data: TEventData) => {
+    updateEvent = async (eventId: string, data: TEventData) => {
         try {
             const serverData = TypeConverters.eventDataToUpdateRequest(data);
 
