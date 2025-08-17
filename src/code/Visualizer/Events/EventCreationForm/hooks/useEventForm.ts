@@ -61,7 +61,7 @@ export const useEventForm = (agent: Agent) => {
             return false;
         }
 
-        // Validate time range if provided
+        // Validate time range - now required
         const timeRangeError = validateTimeRange(formData.timeRange);
         if (timeRangeError) {
             showToast(timeRangeError, { variant: 'error' });

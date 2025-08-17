@@ -62,8 +62,12 @@ export const parseDateTime = (dateTimeString: string): string => {
 };
 
 export const validateTimeRange = (timeRange: TTimeRange): string | null => {
-    if (!timeRange.start || !timeRange.end) {
-        return null; // Allow empty time ranges
+    if (!timeRange.start) {
+        return _('Start time is required');
+    }
+    
+    if (!timeRange.end) {
+        return _('End time is required');
     }
     
     const startDate = new Date(timeRange.start);

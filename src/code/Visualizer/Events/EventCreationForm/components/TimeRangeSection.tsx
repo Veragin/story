@@ -36,9 +36,9 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
             <Box sx={{ mb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
-                        {_('Event Duration')}
+                        {_('Event Duration')} *
                     </Typography>
-                    <Tooltip title="Optional - Define when this event occurs in the game timeline" arrow>
+                    <Tooltip title="Required - Define when this event occurs in the game timeline" arrow>
                         <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                     </Tooltip>
                 </Box>
@@ -53,6 +53,8 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
                             variant="outlined"
                             size="small"
                             fullWidth
+                            required
+                            error={!value.start && timeRangeError !== null}
                             slotProps={{
                                 inputLabel: { shrink: true },
                             }}
@@ -68,6 +70,7 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
                             variant="outlined"
                             size="small"
                             fullWidth
+                            required
                             error={!!timeRangeError}
                             helperText={timeRangeError}
                             slotProps={{
@@ -91,7 +94,7 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
             </Box>
 
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block' }}>
-                {_('Leave empty if this event has no specific time constraints')}
+                {_('Both start and end times are required for creating events')}
             </Typography>
         </Box>
     );
