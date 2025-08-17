@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import { usePassageForm } from './hooks/usePassageForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
 import { BodyItemSection } from './components/BodyItemSection';
@@ -17,10 +17,10 @@ type Props = {
     onPassageCreated?: (passageId: string) => void;
     onCancel?: () => void;
     agent: Agent;
-    eventId: TEventId;
+    chapterId: TChapterId;
 };
 
-export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, eventId }: Props) => {
+export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, chapterId }: Props) => {
     const {
         formData,
         passageId,
@@ -41,7 +41,7 @@ export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, e
         toggleLinkExpanded,
         handleSubmit,
         handleReset,
-    } = usePassageForm(eventId, agent);
+    } = usePassageForm(chapterId, agent);
 
     return (
         <SFormContainer>

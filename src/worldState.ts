@@ -1,18 +1,18 @@
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
-import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
+import { TCharacterId, TChapterId, TSideCharacterId } from 'types/TIds';
 import { TLocationId } from 'types/TLocation';
 import { Engine } from 'code/Engine/ts/Engine';
 import { itemInfo } from 'data/items/itemInfo';
 
 const ss = {
-    time: register.events.village.timeRange.start,
+    time: register.chapters.village.timeRange.start,
     mainCharacterId: 'thomas',
     currentHistory: {},
 
     characters: {} as Record<TCharacterId, unknown>,
     sideCharacters: {} as Record<TSideCharacterId, unknown>,
-    events: {} as Record<TEventId, unknown>,
+    chapters: {} as Record<TChapterId, unknown>,
     locations: {} as Record<TLocationId, unknown>,
 };
 
@@ -32,8 +32,8 @@ const ss = {
         ref: register.sideCharacters[id],
     };
 });
-(Object.keys(register.events) as TEventId[]).forEach((id) => {
-    ss.events[id] = { ...register.events[id].init, ref: register.events[id] };
+(Object.keys(register.chapters) as TChapterId[]).forEach((id) => {
+    ss.chapters[id] = { ...register.chapters[id].init, ref: register.chapters[id] };
 });
 (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
     ss.locations[id] = { ...register.locations[id].init, ref: register.locations[id] };

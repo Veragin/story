@@ -1,16 +1,16 @@
 import { register } from "data/register";
 
 export class PassageLoader {
-    async loadPassages(eventId: string): Promise<Record<string, any> | null> {
+    async loadPassages(chapterId: string): Promise<Record<string, any> | null> {
         try {
-            const passagesModule = await register.passages[eventId as keyof typeof register.passages]();
+            const passagesModule = await register.passages[chapterId as keyof typeof register.passages]();
             if (!passagesModule) {
-                console.error(`No passages found for event ${eventId}`);
+                console.error(`No passages found for chapter ${chapterId}`);
                 return null;
             }
             return passagesModule.default;
         } catch (error) {
-            console.error(`Error loading passages for event ${eventId}:`, error);
+            console.error(`Error loading passages for chapter ${chapterId}:`, error);
             return null;
         }
     }

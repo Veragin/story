@@ -1,4 +1,4 @@
-import { PassageEdgeVisualObject } from "code/Visualizer/Graphs/EventPassagesGraph/PassageEdgeVisualObject";
+import { PassageEdgeVisualObject } from "code/Visualizer/Graphs/ChapterPassagesGraph/PassageEdgeVisualObject";
 import { AbstractPassageEdgeCreator, EdgeCreationParams } from "../AbstractPassageEdgeCreator";
 
 export class ScreenPassageEdgeCreator extends AbstractPassageEdgeCreator {

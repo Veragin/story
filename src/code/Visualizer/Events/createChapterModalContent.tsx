@@ -2,8 +2,8 @@ import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Row } from 'code/components/Basic';
 import { useVisualizerStore } from 'code/Context';
 import { ReactNode, useState } from 'react';
-import { TEvent } from 'types/TEvent';
-import { TEventId } from 'types/TIds';
+import { TChapter } from 'types/TChapter';
+import { TChapterId } from 'types/TIds';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
@@ -11,27 +11,27 @@ import { SmallText, Text } from 'code/components/Text';
 import { spacingCss } from 'code/components/css';
 import { Modal } from 'code/components/Modal';
 
-export const createEventModalContent = (event: TEvent<TEventId>): ReactNode => (
-    <EventModalContent event={event} />
+export const createChapterModalContent = (chapter: TChapter<TChapterId>): ReactNode => (
+    <ChapterModalContent chapter={chapter} />
 );
 
-const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
+const ChapterModalContent = ({ chapter }: { chapter: TChapter<TChapterId> }) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();
 
     const start = store.timeManager.renderTime(
-        event.timeRange.start,
+        chapter.timeRange.start,
         'dateTime'
     );
-    const end = store.timeManager.renderTime(event.timeRange.end, 'dateTime');
+    const end = store.timeManager.renderTime(chapter.timeRange.end, 'dateTime');
 
     return (
         <SColumn>
             <Tooltip title={_('Copy to clipboard')} placement="top">
                 <SText
-                    onClick={() => navigator.clipboard.writeText(event.eventId)}
+                    onClick={() => navigator.clipboard.writeText(chapter.chapterId)}
                 >
-                    {event.eventId}
+                    {chapter.chapterId}
                 </SText>
             </Tooltip>
             <SmallText>{`${start} - ${end}`}</SmallText>
@@ -40,21 +40,21 @@ const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openEvent(event.eventId)}
+                        onClick={() => store.agent.openChapter(chapter.chapterId)}
                     >
                         <OpenInBrowserIcon />
                     </Button>
                 </Tooltip>
-                <Tooltip title={_('Set time of the event')}>
+                <Tooltip title={_('Set time of the chapter')}>
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openEvent(event.eventId)}
+                        onClick={() => store.agent.openChapter(chapter.chapterId)}
                     >
                         <AccessTimeFilledIcon />
                     </Button>
                 </Tooltip>
-                <Tooltip title={_('Delete event')}>
+                <Tooltip title={_('Delete chapter')}>
                     <Button
                         color="error"
                         variant="outlined"
@@ -65,15 +65,15 @@ const EventModalContent = ({ event }: { event: TEvent<TEventId> }) => {
                 </Tooltip>
             </SRow>
             <Modal
-                title={_('Delete event %s', event.eventId)}
+                title={_('Delete chapter %s', chapter.chapterId)}
                 open={open}
                 onClose={() => setOpen(false)}
             >
                 <SColumn>
                     <Text>
                         {_(
-                            'Are you sure that you want to delete %s event?',
-                            event.eventId
+                            'Are you sure that you want to delete %s chapter?',
+                            chapter.chapterId
                         )}
                     </Text>
                     <SRow>

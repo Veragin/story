@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { Add, Remove, Build, HelpOutline } from '@mui/icons-material';
 import { TItemId } from 'types/TItem';
-import { ItemResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/ItemResolver';
+import { ItemResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/ItemResolver';
 import { SCompactColumn, SCompactRow } from '../../styles';
 
 type Props = {

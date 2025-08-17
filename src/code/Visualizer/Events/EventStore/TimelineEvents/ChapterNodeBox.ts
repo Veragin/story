@@ -4,22 +4,22 @@ import { Graph } from 'code/Visualizer/Graphs/Graph';
 import { HorizontalDragStrategy } from 'code/Visualizer/Graphs/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
 import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/Graphs/Node/HorizontallyScalableNodeVisualObject';
 import { TextContent } from 'code/Visualizer/Graphs/Node/TextContent';
-import { TEvent } from 'types/TEvent';
-import { TEventId } from 'types/TIds';
+import { TChapter } from 'types/TChapter';
+import { TChapterId } from 'types/TIds';
 
 export const EVENT_NODE_HEIGHT = 60;
 
-export class EventNodeBox<E extends TEventId> {
+export class ChapterNodeBox<E extends TChapterId> {
     private boxNode: HorizontallyScalableNodeVisualObject | null = null;
     private textNode: TextContent | null = null;
 
-    constructor(public event: TEvent<E>) {}
+    constructor(public chapter: TChapter<E>) {}
 
     setupNodes = (
         graph: Graph,
         recompute: () => void,
-        click: (event: TEvent<TEventId>) => void,
-        dbclick: (id: TEventId) => void
+        click: (chapter: TChapter<TChapterId>) => void,
+        dbclick: (id: TChapterId) => void
     ) => {
         const textContent = new TextContent({
             position: { x: 0, y: 0 },
@@ -27,7 +27,7 @@ export class EventNodeBox<E extends TEventId> {
                 width: 100,
                 height: EVENT_NODE_HEIGHT,
             },
-            text: this.event.title,
+            text: this.chapter.title,
             alignment: 'middle_center',
         });
 
@@ -68,14 +68,14 @@ export class EventNodeBox<E extends TEventId> {
 
         // Add click handler
         node.onDbClick.subscribe(() => {
-            dbclick(this.event.eventId);
+            dbclick(this.chapter.chapterId);
         });
 
         node.onClick.subscribe(() => {
-            click(this.event);
+            click(this.chapter);
         });
 
-        graph.addNode(node, this.event.eventId);
+        graph.addNode(node, this.chapter.chapterId);
         graph.canvasManager.addObject(textContent);
 
         this.boxNode = node;
@@ -84,10 +84,10 @@ export class EventNodeBox<E extends TEventId> {
     };
 
     setUpEdges = (graph: Graph) => {
-        for (const e of this.event.children) {
-            const childNode = graph.getNode(e.event.eventId);
+        for (const e of this.chapter.children) {
+            const childNode = graph.getNode(e.chapter.chapterId);
             const edge = new EdgeFromSide(this.boxNode!, childNode!, '#ff0000');
-            edge.id = `${this.event.eventId}-${e.event.eventId}`;
+            edge.id = `${this.chapter.chapterId}-${e.chapter.chapterId}`;
             graph.addEdge(edge, edge.id);
         }
     };
@@ -122,7 +122,7 @@ export class EventNodeBox<E extends TEventId> {
 
     destroyNodes = (graph: Graph) => {
         if (this.boxNode) {
-            graph.removeNode(this.event.eventId);
+            graph.removeNode(this.chapter.chapterId);
         }
         if (this.textNode) {
             graph.canvasManager.removeObject(this.textNode);

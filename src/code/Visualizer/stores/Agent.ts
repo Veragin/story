@@ -1,10 +1,10 @@
 import { showToast } from 'code/GlobalWrapper';
 import { TLocationId } from 'types/TLocation';
-import { TEventPassageType } from 'types/TPassage';
+import { TChapterPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';
 import { TypeConverters } from './TypeConverters';
 import { HttpErrorHandler } from './HttpErrorHandler';
-import { MapResponse, TEventData, TScreenPassageData } from './ nodeServerTypes';
+import { MapResponse, TChapterData, TScreenPassageData } from './ nodeServerTypes';
 
 /**
  * Agent class for handling API communication with the WorldsFactory backend
@@ -13,16 +13,16 @@ export class Agent {
     constructor(public url: string) {}
 
     /**
-     * Add or update an event
+     * Add or update an chapter
      */
-    updateEvent = async (eventId: string, data: TEventData) => {
+    updateChapter = async (chapterId: string, data: TChapterData) => {
         try {
-            const serverData = TypeConverters.eventDataToUpdateRequest(data);
+            const serverData = TypeConverters.chapterDataToUpdateRequest(data);
 
-            console.log(`Adding event ${eventId} with data:`, serverData);
+            console.log(`Adding chapter ${chapterId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/event/${eventId}`,
+                `${this.url}/api/chapter/${chapterId}`,
                 {
                     method: 'PUT',
                     body: JSON.stringify(serverData),
@@ -30,70 +30,70 @@ export class Agent {
                         'Content-Type': 'application/json',
                     },
                 },
-                `add event ${eventId}`
+                `add chapter ${chapterId}`
             );
 
-            showToast(_('Event %s added', eventId), { variant: 'success' });
+            showToast(_('Chapter %s added', chapterId), { variant: 'success' });
         } catch (error) {
-            console.error('Add event error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to add event ${eventId}`;
+            console.error('Add chapter error:', error);
+            const errorMessage = error instanceof Error ? error.message : `Failed to add chapter ${chapterId}`;
             showToast(errorMessage, { variant: 'error' });
         }
     };
 
     /**
-     * Open an event in VS Code
+     * Open an chapter in VS Code
      */
-    openEvent = async (eventId: string) => {
+    openChapter = async (chapterId: string) => {
         try {
             await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/event/${eventId}/open`,
+                `${this.url}/api/chapter/${chapterId}/open`,
                 {
                     method: 'POST',
                 },
-                `open event ${eventId}`
+                `open chapter ${chapterId}`
             );
 
-            showToast(_('Event %s opened', eventId), { variant: 'success' });
+            showToast(_('Chapter %s opened', chapterId), { variant: 'success' });
         } catch (error) {
-            console.error('Open event error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to open event ${eventId}`;
+            console.error('Open chapter error:', error);
+            const errorMessage = error instanceof Error ? error.message : `Failed to open chapter ${chapterId}`;
             showToast(errorMessage, { variant: 'error' });
         }
     };
 
     /**
-     * Delete an event
+     * Delete an chapter
      */
-    deleteEvent = async (eventId: string) => {
+    deleteChapter = async (chapterId: string) => {
         try {
             await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/event/${eventId}`,
+                `${this.url}/api/chapter/${chapterId}`,
                 {
                     method: 'DELETE',
                 },
-                `delete event ${eventId}`
+                `delete chapter ${chapterId}`
             );
 
-            showToast(_('Event %s deleted', eventId), { variant: 'success' });
+            showToast(_('Chapter %s deleted', chapterId), { variant: 'success' });
         } catch (error) {
-            console.error('Delete event error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to delete event ${eventId}`;
+            console.error('Delete chapter error:', error);
+            const errorMessage = error instanceof Error ? error.message : `Failed to delete chapter ${chapterId}`;
             showToast(errorMessage, { variant: 'error' });
         }
     };
 
     /**
-     * Set time range for an event
+     * Set time range for an chapter
      */
-    setEventTime = async (eventId: string, data: { timeRange: { start: string; end: string } }) => {
+    setChapterTime = async (chapterId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
             const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
             
-            console.log(`Setting time for event ${eventId} with data:`, serverData);
+            console.log(`Setting time for chapter ${chapterId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/event/${eventId}/setTime`,
+                `${this.url}/api/chapter/${chapterId}/setTime`,
                 {
                     method: 'POST',
                     body: JSON.stringify(serverData),
@@ -101,11 +101,11 @@ export class Agent {
                         'Content-Type': 'application/json',
                     },
                 },
-                `set time for event ${eventId}`
+                `set time for chapter ${chapterId}`
             );
         } catch (error) {
-            console.error('Set event time error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to set time for event ${eventId}`;
+            console.error('Set chapter time error:', error);
+            const errorMessage = error instanceof Error ? error.message : `Failed to set time for chapter ${chapterId}`;
             showToast(errorMessage, { variant: 'error' });
         }
     };

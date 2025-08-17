@@ -5,7 +5,7 @@ import { useVisualizerStore } from 'code/Context';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,
-} from './EventStore/TimelineRender/TimelineMarker';
+} from './ChapterStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { ZoomSlider } from '../components/ZoomSlider';
@@ -14,8 +14,8 @@ import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputCompone
 import { observer } from 'mobx-react-lite';
 import { Nav, NavPicker } from '../components/Nav';
 
-export const EventTimeline = observer(() => {
-    const store = useVisualizerStore().eventStore;
+export const ChapterTimeline = observer(() => {
+    const store = useVisualizerStore().chapterStore;
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const timelineCanvasRef = useRef<HTMLCanvasElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
@@ -110,7 +110,7 @@ const STimelineTimeMarker = styled('div')`
     align-items: center;
     display: none;
     flex-direction: column;
-    pointer-events: none;
+    pointer-chapters: none;
     gap: ${spacingCss(1)};
     translate: -50%;
 

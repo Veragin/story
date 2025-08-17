@@ -1,9 +1,9 @@
 import { kingdomLocation } from './locations/kingdom.location';
-import { weddingEvent } from './events/wedding/wedding.event';
+import { weddingChapter } from './chapters/wedding/wedding.chapter';
 import { Annie } from './characters/annie';
 import { Thomas } from './characters/thomas';
-import { kingdomEvent } from './events/kingdom/kingdom.event';
-import { villageEvent } from './events/village/village.event';
+import { kingdomChapter } from './chapters/kingdom/kingdom.chapter';
+import { villageChapter } from './chapters/village/village.chapter';
 import { village_under_attackHappening } from './happenings/village_under_attack';
 import { villageLocation } from './locations/village.location';
 import { Franta } from './sideCharacters/Franta';
@@ -18,19 +18,19 @@ export const register = {
         franta: Franta,
         nobleMan: NobleMan,
     },
-    events: {
-    	village: villageEvent,
-        kingdom: kingdomEvent,
-    	wedding: weddingEvent,
+    chapters: {
+    	village: villageChapter,
+        kingdom: kingdomChapter,
+    	wedding: weddingChapter,
     },
     locations: {
     	village: villageLocation,
     	kingdom: kingdomLocation,
     },
     passages: {
-    	village: () => import('./events/village/village.passages'),
-        kingdom: () => import('./events/kingdom/kingdom.passages'),
-    	wedding: () => import('./events/wedding/wedding.passages'),
+    	village: () => import('./chapters/village/village.passages'),
+        kingdom: () => import('./chapters/kingdom/kingdom.passages'),
+    	wedding: () => import('./chapters/wedding/wedding.passages'),
     },
     happenings: {
         village_under_attack: village_under_attackHappening,

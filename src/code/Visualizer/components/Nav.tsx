@@ -23,7 +23,7 @@ export const NavPicker = () => {
                 variant={store.activeTab === null ? 'contained' : 'text'}
                 color={store.activeTab === null ? 'primary' : 'inherit'}
             >
-                {_('Event Timeline')}
+                {_('Chapter Timeline')}
             </Button>
             <Button
                 onClick={() =>

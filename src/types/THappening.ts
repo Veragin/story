@@ -1,7 +1,7 @@
-import { TEventId, THappeningId } from './TIds';
+import { TChapterId, THappeningId } from './TIds';
 import { TLocationId } from './TLocation';
 import { TimeRange } from 'time/Time';
-import { TEvent } from './TEvent';
+import { TChapter } from './TChapter';
 
 export type THappening<E extends THappeningId>= {
     happeningId: E;
@@ -11,5 +11,5 @@ export type THappening<E extends THappeningId>= {
     timeRange: TimeRange;
     location?: TLocationId;
 
-    childHappenings: (THappening<THappeningId> | TEvent<TEventId>)[];
+    childHappenings: (THappening<THappeningId> | TChapter<TChapterId>)[];
 };

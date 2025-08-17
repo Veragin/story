@@ -5,25 +5,25 @@ import { register } from 'data/register';
 import { TLinkCost } from 'types/TPassage';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from 'code/utils/parsePassageId';
-import { TEvent } from 'types/TEvent';
-import { TEventId } from 'types/TIds';
+import { TChapter } from 'types/TChapter';
+import { TChapterId } from 'types/TIds';
 
 export class Processor {
-    private eventList: TEvent<TEventId>[];
+    private chapterList: TChapter<TChapterId>[];
 
     constructor(
         private s: TWorldState,
         private e: Engine
     ) {
-        this.eventList = Object.values(this.s.events).map((event) => event.ref);
+        this.chapterList = Object.values(this.s.chapters).map((chapter) => chapter.ref);
     }
 
     continue = async () => {
         const turn = this.e.history.getTurn();
 
         const shouldTrigger = isInRange(this.s.time, turn.time);
-        for (const event of this.activeEvents) {
-            event.triggers.forEach((trigger) => {
+        for (const chapter of this.activeChapters) {
+            chapter.triggers.forEach((trigger) => {
                 if (shouldTrigger(trigger.time) && trigger.condition()) {
                     trigger.action();
                 }
@@ -34,8 +34,8 @@ export class Processor {
         this.e.story.spendTime(distance);
         turn.onStart?.();
 
-        const { eventId } = parsePassageId(turn.passageId);
-        const passageFun = await (register.passages[eventId] as any)(); // TODO create new type 
+        const { chapterId } = parsePassageId(turn.passageId);
+        const passageFun = await (register.passages[chapterId] as any)(); // TODO create new type 
         this.e.activePassage = (passageFun.default as any)[turn.passageId](this.s, this.e);
 
         if (this.e.activePassage.type === 'transition') {
@@ -115,8 +115,8 @@ export class Processor {
         return { time: DeltaTime.fromS(0), ...cost };
     };
 
-    private get activeEvents() {
-        return this.eventList.filter((event) => isInRange(event.timeRange.start, event.timeRange.end)(this.s.time));
+    private get activeChapters() {
+        return this.chapterList.filter((chapter) => isInRange(chapter.timeRange.start, chapter.timeRange.end)(this.s.time));
     }
 }
 

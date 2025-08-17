@@ -1,11 +1,11 @@
 import { Engine } from 'code/Engine/ts/Engine';
 import { TWorldState } from 'data/TWorldState';
-import { TEventPassage } from 'types/TPassage';
+import { TChapterPassage } from 'types/TPassage';
 
 export type TWeddingPassageId = never;
 
-const weddingEventPassages: Record<TWeddingPassageId, (s: TWorldState, e: Engine) => TEventPassage<'wedding'>> = {
+const weddingChapterPassages: Record<TWeddingPassageId, (s: TWorldState, e: Engine) => TChapterPassage<'wedding'>> = {
 	
 };
 
-export default weddingEventPassages;    
+export default weddingChapterPassages;    

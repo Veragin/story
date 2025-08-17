@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { LocationOn, HelpOutline } from '@mui/icons-material';
 import { SFormRow, SFormControl } from '../styles';
-import { LocationResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/LocationResolver';
+import { LocationResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/LocationResolver';
 
 type Props = {
     value: string;
@@ -33,9 +33,9 @@ export const LocationSection = ({ value, onChange }: Props) => {
                 <SFormControl fullWidth>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
-                            {_('Event Location')} *
+                            {_('Chapter Location')} *
                         </Typography>
-                        <Tooltip title="Required - Location where this event takes place" arrow>
+                        <Tooltip title="Required - Location where this chapter takes place" arrow>
                             <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                         </Tooltip>
                     </Box>

@@ -1,9 +1,9 @@
 import { TLocationId } from 'types/TLocation';
 import { Agent } from 'code/Visualizer/stores/Agent';
 
-export type TChildEvent = {
+export type TChildChapter = {
     condition: string;
-    eventId: string;
+    chapterId: string;
 };
 
 export type TTimeRange = {
@@ -11,16 +11,16 @@ export type TTimeRange = {
     end: string;
 };
 
-export type TEventFormData = {
+export type TChapterFormData = {
     title: string;
     description: string;
     location: string;
     timeRange: TTimeRange;
-    children: TChildEvent[];  
+    children: TChildChapter[];  
 };
 
 export type TFormProps = {
-    onEventCreated?: (eventId: string) => void;
+    onChapterCreated?: (chapterId: string) => void;
     onCancel?: () => void;
     agent: Agent;
 };
@@ -30,7 +30,7 @@ export const DEFAULT_TIME_RANGE: TTimeRange = {
     end: ''
 };
 
-export const DEFAULT_FORM_DATA: TEventFormData = {
+export const DEFAULT_FORM_DATA: TChapterFormData = {
     title: '',
     description: '',
     location: '',
@@ -109,16 +109,16 @@ export const calculateDuration = (timeRange: TTimeRange): string => {
     }
 };
 
-export const validateChildren = (children: TChildEvent[], existingEventIds: string[]): string | null => {
+export const validateChildren = (children: TChildChapter[], existingChapterIds: string[]): string | null => {
     for (const child of children) {
         if (!child.condition.trim()) {
-            return _('All child events must have a condition');
+            return _('All child chapters must have a condition');
         }
-        if (!child.eventId.trim()) {
-            return _('All child events must have an event selected');
+        if (!child.chapterId.trim()) {
+            return _('All child chapters must have an chapter selected');
         }
-        if (!existingEventIds.includes(child.eventId)) {
-            return _('Selected child event does not exist: %s', child.eventId);
+        if (!existingChapterIds.includes(child.chapterId)) {
+            return _('Selected child chapter does not exist: %s', child.chapterId);
         }
     }
     return null;

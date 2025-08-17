@@ -13,9 +13,9 @@ import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import { register } from 'data/register';
 import { Nav } from '../components/Nav';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
-import { EventPassagesGraph } from '../Passages/EventPassagesGraph';
+import { ChapterPassagesGraph } from '../Passages/ChapterPassagesGraph';
 import { ScreenPassageCreationForm } from '../Passages/ScreenPassageCreationForm/ScreenPassageCreationForm';
 
 // Create a dark theme for the form
@@ -195,22 +195,22 @@ const darkTheme = createTheme({
 });
 
 type Props = {
-    eventId: TEventId;
+    chapterId: TChapterId;
 };
 
-export const EventPassages = ({ eventId }: Props) => {
+export const ChapterPassages = ({ chapterId }: Props) => {
     const store = useVisualizerStore();
 
-    // Get all available events from register
-    const events = Object.entries(register.events).map(([id, event]) => ({
-        id: id as TEventId,
-        title: event.title,
+    // Get all available chapters from register
+    const chapters = Object.entries(register.chapters).map(([id, chapter]) => ({
+        id: id as TChapterId,
+        title: chapter.title,
     }));
 
     const handlePassageCreated = (passageId: string) => {
         // Handle passage creation - you might want to refresh the graph or perform other actions
         console.log('Passage created:', passageId);
-        // You could trigger a refresh of the EventPassagesGraph here if needed
+        // You could trigger a refresh of the ChapterPassagesGraph here if needed
     };
 
     return (
@@ -227,7 +227,7 @@ export const EventPassages = ({ eventId }: Props) => {
                     <SFormControl size="small">
                         <Autocomplete
                             value={
-                                events.find((event) => event.id === eventId) ??
+                                chapters.find((chapter) => chapter.id === chapterId) ??
                                 null
                             }
                             onChange={(_, newValue) => {
@@ -235,12 +235,12 @@ export const EventPassages = ({ eventId }: Props) => {
                                     newValue === null
                                         ? null
                                         : {
-                                              tab: 'event',
-                                              eventId: newValue.id,
+                                              tab: 'chapter',
+                                              chapterId: newValue.id,
                                           }
                                 );
                             }}
-                            options={events}
+                            options={chapters}
                             getOptionLabel={(option) =>
                                 option.title || option.id
                             }
@@ -260,12 +260,12 @@ export const EventPassages = ({ eventId }: Props) => {
             
             <SContentArea>
                 <ResizableSplitter
-                    leftContent={<EventPassagesGraph eventId={eventId} />}
+                    leftContent={<ChapterPassagesGraph chapterId={chapterId} />}
                     rightContent={
                         <SFormContainer>
                             <ThemeProvider theme={darkTheme}>
                                 <ScreenPassageCreationForm
-                                    eventId={eventId}
+                                    chapterId={chapterId}
                                     agent={store.agent}
                                     onPassageCreated={handlePassageCreated}
                                 />

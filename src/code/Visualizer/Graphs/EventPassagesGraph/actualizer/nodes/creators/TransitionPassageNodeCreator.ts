@@ -53,19 +53,19 @@ export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {
         const parts = passage.nextPassageId.split('-');
         if (parts.length < 2) return passageId;
 
-        const eventId = parts[0];
-        const linkPassageModule = await register.passages[eventId as keyof typeof register.passages]();
+        const chapterId = parts[0];
+        const linkPassageModule = await register.passages[chapterId as keyof typeof register.passages]();
         const linkPassages = linkPassageModule.default;
         const linkPassageData = linkPassages[passageId as keyof typeof linkPassages];
 
         if (typeof linkPassageData === 'function') {
             const [linkPassageId, linkPassageDataFunction] = Object.entries(linkPassages)[0];
             const linkPassage = linkPassageDataFunction({} as TWorldState);
-            const linkEventId = linkPassageId.split('-')[0];
-            const linkEvent = register.events[linkEventId as keyof typeof register.events];
+            const linkChapterId = linkPassageId.split('-')[0];
+            const linkChapter = register.chapters[linkChapterId as keyof typeof register.chapters];
             
-            if (linkEvent) {
-                return `${linkEvent.title} - ${linkPassage.title || linkPassageId}`;
+            if (linkChapter) {
+                return `${linkChapter.title} - ${linkPassage.title || linkPassageId}`;
             }
             return linkPassage.title || linkPassageId;
         }

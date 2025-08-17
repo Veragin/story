@@ -4,15 +4,15 @@ import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
 import { CanvasManager } from '../../Graphs/CanvasManager';
-import { TimelineEvents } from './TimelineEvents/TimelineEvents';
+import { TimelineChapters } from './TimelineChapters/TimelineChapters';
 import { DurationHelper } from './DurationHelper';
 import { Store } from '../../stores/Store';
-import { createEventModalContent } from 'code/Visualizer/Events/createEventModalContent';
+import { createChapterModalContent } from 'code/Visualizer/Chapters/createChapterModalContent';
 
-export class EventStore {
+export class ChapterStore {
     canvasManager: CanvasManager | null = null;
     durationHelper: DurationHelper;
-    timelineEvents: TimelineEvents | null = null;
+    timelineChapters: TimelineChapters | null = null;
     timelineRender: TimelineRender | null = null;
 
     constructor(
@@ -34,11 +34,11 @@ export class EventStore {
         this.deinit();
 
         this.canvasManager = new CanvasManager(mainRef);
-        this.timelineEvents = new TimelineEvents(
+        this.timelineChapters = new TimelineChapters(
             this,
             this.canvasManager,
-            (id) => this.store.setActiveTab({ tab: 'event', eventId: id }),
-            (event) => this.store.setModalContent(createEventModalContent(event))
+            (id) => this.store.setActiveTab({ tab: 'chapter', chapterId: id }),
+            (chapter) => this.store.setModalContent(createChapterModalContent(chapter))
         );
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);
         this.store.canvasHandler.registerCanvas('timeline', timelineRef);
@@ -48,13 +48,13 @@ export class EventStore {
     };
 
     deinit = () => {
-        this.timelineEvents?.destroy();
+        this.timelineChapters?.destroy();
         this.timelineRender?.destroy();
         this.canvasManager?.destroy();
         this.store.canvasHandler.unregisterCanvas('timeline');
         this.store.canvasHandler.unregisterCanvas('main');
 
-        this.timelineEvents = null;
+        this.timelineChapters = null;
         this.timelineRender = null;
         this.canvasManager = null;
     };
@@ -63,11 +63,11 @@ export class EventStore {
     toggleDisplayConnections = () => {
         this.displayConnections = !this.displayConnections;
         if (this.displayConnections) {
-            this.timelineEvents?.graph.showEdges();
+            this.timelineChapters?.graph.showEdges();
         } else {
-            this.timelineEvents?.graph.hideEdges();
+            this.timelineChapters?.graph.hideEdges();
         }
-        this.timelineEvents?.render();
+        this.timelineChapters?.render();
     };
 
     zoomLevel = 3;
@@ -91,7 +91,7 @@ export class EventStore {
     };
 
     render = () => {
-        this.timelineEvents?.render();
+        this.timelineChapters?.render();
         this.timelineRender?.render();
     };
 

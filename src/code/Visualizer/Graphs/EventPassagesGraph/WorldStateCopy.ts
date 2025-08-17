@@ -1,6 +1,6 @@
 // worldState/WorldStateManager.ts
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TEventId, TSideCharacterId } from 'types/TIds';
+import { TCharacterId, TChapterId, TSideCharacterId } from 'types/TIds';
 import { TLocationId } from 'types/TLocation';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
@@ -14,12 +14,12 @@ class WorldStateCopy {
     createBaseState(): TWorldState {
         // Create initial state structure
         const baseState = {
-            time: register.events.village.timeRange.start,
+            time: register.chapters.village.timeRange.start,
             mainCharacterId: 'thomas',
             currentHistory: {},
             characters: {} as Record<TCharacterId, unknown>,
             sideCharacters: {} as Record<TSideCharacterId, unknown>,
-            events: {} as Record<TEventId, unknown>,
+            chapters: {} as Record<TChapterId, unknown>,
             locations: {} as Record<TLocationId, unknown>,
             happenings: {} as Record<string, unknown>
         };
@@ -44,11 +44,11 @@ class WorldStateCopy {
             };
         });
 
-        // Initialize events
-        (Object.keys(register.events) as TEventId[]).forEach((id) => {
-            baseState.events[id] = { 
-                ...register.events[id].init, 
-                ref: register.events[id] 
+        // Initialize chapters
+        (Object.keys(register.chapters) as TChapterId[]).forEach((id) => {
+            baseState.chapters[id] = { 
+                ...register.chapters[id].init, 
+                ref: register.chapters[id] 
             };
         });
 

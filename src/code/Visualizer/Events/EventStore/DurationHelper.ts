@@ -1,5 +1,5 @@
 import { DeltaTime, Time } from 'time/Time';
-import { EventStore } from './EventStore';
+import { ChapterStore } from './ChapterStore';
 import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 
 export class DurationHelper {
@@ -8,7 +8,7 @@ export class DurationHelper {
         height: 0,
     };
 
-    constructor(private store: EventStore) {}
+    constructor(private store: ChapterStore) {}
 
     getDistanceFromTimestamp = (timestamp: Time) => {
         const timeOffset = timestamp.s - this.store.timelineStartTime.s;

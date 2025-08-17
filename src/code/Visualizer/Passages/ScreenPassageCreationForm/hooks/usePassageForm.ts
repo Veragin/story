@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from 'code/GlobalWrapper';
-import { TEventPassageType } from 'types/TPassage';
-import { TEventId } from 'types/TIds';
-import { PassageResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/PassageResolver';
-import { EventResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/EventResolcer';
+import { TChapterPassageType } from 'types/TPassage';
+import { TChapterId } from 'types/TIds';
+import { PassageResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/PassageResolver';
+import { ChapterResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';
 import { Agent } from 'code/Visualizer/stores/Agent';
 import { TScreenPassageData } from 'code/Visualizer/stores/ nodeServerTypes';
 
-export const usePassageForm = (eventId: TEventId, agent: Agent) => {
+export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
     const [formData, setFormData] = useState<TPassageFormData>({
         title: '',
         image: '',
@@ -23,22 +23,22 @@ export const usePassageForm = (eventId: TEventId, agent: Agent) => {
     const [isLoadingPassages, setIsLoadingPassages] = useState(true);
     const [expandedLinks, setExpandedLinks] = useState<{ [key: string]: boolean }>({});
 
-    // Fetch existing passage IDs when eventId changes
+    // Fetch existing passage IDs when chapterId changes
     useEffect(() => {
         const fetchPassageIds = async () => {
             setIsLoadingPassages(true);
             try {
-                const ids = await PassageResolver.getAvailablePassageIds(eventId);
+                const ids = await PassageResolver.getAvailablePassageIds(chapterId);
                 setExistingPassageIds(ids);
                 
-                // Get all passage IDs from all events for redirect options
-                const allEventIds = EventResolver.getAvailableEventIds();
+                // Get all passage IDs from all chapters for redirect options
+                const allChapterIds = ChapterResolver.getAvailableChapterIds();
                 const allPassageIds: string[] = [];
-                for (const evId of allEventIds) {
+                for (const evId of allChapterIds) {
                     try {
                         const passageIds = await PassageResolver.getAvailablePassageIds(evId);
                         passageIds.forEach(pId => {
-                            // Check if the passage ID already contains the event ID to avoid duplication
+                            // Check if the passage ID already contains the chapter ID to avoid duplication
                             if (pId.startsWith(`${evId}-`)) {
                                 allPassageIds.push(pId);
                             } else {
@@ -46,7 +46,7 @@ export const usePassageForm = (eventId: TEventId, agent: Agent) => {
                             }
                         });
                     } catch (error) {
-                        // Event might not have passages, skip
+                        // Chapter might not have passages, skip
                     }
                 }
                 setAvailablePassageIds(allPassageIds);
@@ -59,7 +59,7 @@ export const usePassageForm = (eventId: TEventId, agent: Agent) => {
         };
 
         fetchPassageIds();
-    }, [eventId]);
+    }, [chapterId]);
 
     const handleInputChange = useCallback((field: string, value: any) => {
         setFormData(prev => ({
@@ -176,8 +176,8 @@ export const usePassageForm = (eventId: TEventId, agent: Agent) => {
         try {
             // Create properly typed TScreenPassageData object
             const passageData: TScreenPassageData = {
-                type: 'screen' as TEventPassageType,
-                eventId: eventId,
+                type: 'screen' as TChapterPassageType,
+                chapterId: chapterId,
                 characterId: formData.character,
                 id: passageId.trim(),
                 title: formData.title.trim() || 'Untitled Screen',
@@ -206,7 +206,7 @@ export const usePassageForm = (eventId: TEventId, agent: Agent) => {
             handleReset();
 
             // Refresh the existing passage IDs
-            const updatedIds = await PassageResolver.getAvailablePassageIds(eventId);
+            const updatedIds = await PassageResolver.getAvailablePassageIds(chapterId);
             setExistingPassageIds(updatedIds);
 
             onPassageCreated?.(passageId.trim());

@@ -62,7 +62,7 @@ const SLink = styled('a')<{ $isDisabled: boolean }>`
         $isDisabled
             ? css`
                   color: grey;
-                  pointer-events: none;
+                  pointer-chapters: none;
               `
             : ''}
 `;

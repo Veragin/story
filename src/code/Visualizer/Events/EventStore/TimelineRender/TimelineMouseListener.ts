@@ -1,6 +1,6 @@
 import { throttle } from 'code/utils/throttle';
 import { ZOOM_SPEED_FACTOR } from './constants';
-import { EventStore } from '../EventStore';
+import { ChapterStore } from '../ChapterStore';
 import { ZOOM_CONFIG } from './zoomConfig';
 import { DeltaTime, Time } from 'time/Time';
 import { TimelineMarker } from './TimelineMarker';
@@ -16,24 +16,24 @@ export class TimelineMouseListener {
 
     constructor(
         private container: HTMLCanvasElement,
-        private store: EventStore,
+        private store: ChapterStore,
         private timelineMarker: TimelineMarker
     ) {
-        this.container.addEventListener('mousedown', this.onMouseDown);
-        document.addEventListener('mouseup', this.onMouseUp);
-        this.container.addEventListener('mousemove', this.onMouseMove);
-        this.container.addEventListener('wheel', this.onWheelEvent);
-        this.container.addEventListener('mouseenter', this.onMouseEnter);
-        this.container.addEventListener('mouseleave', this.onMouseLeave);
+        this.container.addChapterListener('mousedown', this.onMouseDown);
+        document.addChapterListener('mouseup', this.onMouseUp);
+        this.container.addChapterListener('mousemove', this.onMouseMove);
+        this.container.addChapterListener('wheel', this.onWheelChapter);
+        this.container.addChapterListener('mouseenter', this.onMouseEnter);
+        this.container.addChapterListener('mouseleave', this.onMouseLeave);
     }
 
-    getTimeShift(e: MouseEvent) {
+    getTimeShift(e: MouseChapter) {
         const delta = this.mouseDownXPosition - e.clientX;
         return DeltaTime.fromS(delta / this.timeToLengthFactor);
     }
 
-    private onMouseDown = (e: MouseEvent) => {
-        e.preventDefault();
+    private onMouseDown = (e: MouseChapter) => {
+        e.prchapterDefault();
         this.isMouseDown = true;
         this.timeToLengthFactor = this.container.offsetWidth / this.store.zoom.displayTime.s;
         this.container.classList.add('grabbing');
@@ -53,7 +53,7 @@ export class TimelineMouseListener {
         this.timelineMarker.hide();
     };
 
-    private onMouseMove = throttle((e: MouseEvent) => {
+    private onMouseMove = throttle((e: MouseChapter) => {
         const mouseTime = this.store.durationHelper.getTimestampFromDistance(e.clientX);
         this.timelineMarker.update(e.clientX, mouseTime);
 
@@ -70,7 +70,7 @@ export class TimelineMouseListener {
         }
     }, 30);
 
-    private onWheelEvent = (e: WheelEvent) => {
+    private onWheelChapter = (e: WheelChapter) => {
         const zoomStep = Math.max(Math.min(e.deltaY * ZOOM_SPEED_FACTOR, 1), -1);
         const zoomLevelProgress = this.zoomLevelProgress - zoomStep;
         if (zoomLevelProgress < 0 || zoomLevelProgress > ZOOM_CONFIG.length - 1) {
@@ -89,11 +89,11 @@ export class TimelineMouseListener {
     };
 
     destructor() {
-        this.container.removeEventListener('mousedown', this.onMouseDown);
-        document.removeEventListener('mouseup', this.onMouseUp);
-        this.container.removeEventListener('mousemove', this.onMouseMove);
-        this.container.removeEventListener('wheel', this.onWheelEvent);
-        this.container.removeEventListener('mouseenter', this.onMouseEnter);
-        this.container.removeEventListener('mouseleave', this.onMouseLeave);
+        this.container.removeChapterListener('mousedown', this.onMouseDown);
+        document.removeChapterListener('mouseup', this.onMouseUp);
+        this.container.removeChapterListener('mousemove', this.onMouseMove);
+        this.container.removeChapterListener('wheel', this.onWheelChapter);
+        this.container.removeChapterListener('mouseenter', this.onMouseEnter);
+        this.container.removeChapterListener('mouseleave', this.onMouseLeave);
     }
 }

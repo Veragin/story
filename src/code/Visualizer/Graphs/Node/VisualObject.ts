@@ -91,7 +91,7 @@ export abstract class VisualObject {
     /**
      * @param change
      * @param reason why the redraw is called, name of the property that changed,
-     * or name of event that triggered the redraw
+     * or name of chapter that triggered the redraw
      */
     protected redraw(change: boolean, reason: string): void {
         if (this.automaticDraw && change) {

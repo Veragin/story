@@ -4,7 +4,7 @@ import { TPassage } from 'types/TPassage';
 import { TVillageThomasPassageId } from '../village.passages';
 
 const coolPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
-    eventId: 'village',
+    chapterId: 'village',
     characterId: 'thomas',
     id: 'cool',
     type: 'transition',

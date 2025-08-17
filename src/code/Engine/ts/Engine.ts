@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { Inventory } from './Inventory';
-import { TEventPassage } from 'types/TPassage';
-import { TEventId } from 'types/TIds';
+import { TChapterPassage } from 'types/TPassage';
+import { TChapterId } from 'types/TIds';
 import { DUMMY_PASSAGE } from './const';
 import { History } from './History';
 import { Processor } from './Processor';
@@ -19,7 +19,7 @@ export class Engine {
     story: Story;
     timeManager: TimeManager;
 
-    activePassage: TEventPassage<TEventId> = DUMMY_PASSAGE;
+    activePassage: TChapterPassage<TChapterId> = DUMMY_PASSAGE;
     store: Store;
 
     constructor(private s: TWorldState) {

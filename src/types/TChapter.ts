@@ -1,11 +1,11 @@
 import { TWorldState } from 'data/TWorldState';
-import { TEventId } from './TIds';
+import { TChapterId } from './TIds';
 import { TLocationId } from './TLocation';
 import { TimeRange } from 'time/Time';
 import { TTimeTrigger } from './TTimeTrigger';
 
-export type TEvent<E extends TEventId> = {
-    eventId: E;
+export type TChapter<E extends TChapterId> = {
+    chapterId: E;
     title: string;
     description: string;
 
@@ -14,10 +14,10 @@ export type TEvent<E extends TEventId> = {
 
     children: {
         condition: string;
-        event: TEvent<TEventId>;
+        chapter: TChapter<TChapterId>;
     }[];
 
     triggers: TTimeTrigger[];
 
-    init: Omit<TWorldState['events'][E], 'ref'>;
+    init: Omit<TWorldState['chapters'][E], 'ref'>;
 };

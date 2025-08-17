@@ -1,11 +1,11 @@
-import { TEvent } from 'types/TEvent';
+import { TChapter } from 'types/TChapter';
 import { Time } from 'time/Time';
 import { nobleHouseRobberyTrigger } from './triggers';
 
-export const villageEvent: TEvent<'village'> = {
-    eventId: 'village',
-    title: 'Village Event',
-    description: 'A village event is happening',
+export const villageChapter: TChapter<'village'> = {
+    chapterId: 'village',
+    title: 'Village Chapter',
+    description: 'A village chapter is happening',
     timeRange: {
         start: Time.fromString('2.1. 8:00'),
         end: Time.fromString('5.1. 8:00'),
@@ -24,7 +24,7 @@ export const villageEvent: TEvent<'village'> = {
     },
 };
 
-export type TVillageEventData = {
+export type TVillageChapterData = {
     mojePromena: {
         time: number;
         asd: string;

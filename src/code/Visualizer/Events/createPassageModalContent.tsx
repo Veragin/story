@@ -2,23 +2,23 @@ import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Row } from 'code/components/Basic';
 import { useVisualizerStore } from 'code/Context';
 import { ReactNode, useState } from 'react';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Text } from 'code/components/Text';
 import { spacingCss } from 'code/components/css';
 import { Modal } from 'code/components/Modal';
-import { TEventPassage } from 'types/TPassage';
+import { TChapterPassage } from 'types/TPassage';
 import { getWholePassageId } from '../../../types/TPassage';
 
 export const createPassageModalContent = (
-    passage: TEventPassage<TEventId>
+    passage: TChapterPassage<TChapterId>
 ): ReactNode => <PassageModalContent passage={passage} />;
 
 const PassageModalContent = ({
     passage,
 }: {
-    passage: TEventPassage<TEventId>;
+    passage: TChapterPassage<TChapterId>;
 }) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();

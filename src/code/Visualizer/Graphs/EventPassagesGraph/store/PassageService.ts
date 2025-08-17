@@ -1,49 +1,49 @@
 import { register } from 'data/register';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
-import { TEventPassage } from 'types/TPassage';
+import { TChapterPassage } from 'types/TPassage';
 
 export class PassageService {
-    private static loadedModules: Map<TEventId, any> = new Map();
+    private static loadedModules: Map<TChapterId, any> = new Map();
 
     /**
-     * Pre-loads a passage module for an event
+     * Pre-loads a passage module for an chapter
      */
-    static async preloadPassageModule(eventId: TEventId): Promise<void> {
-        if (this.loadedModules.has(eventId)) {
+    static async preloadPassageModule(chapterId: TChapterId): Promise<void> {
+        if (this.loadedModules.has(chapterId)) {
             return; // Already loaded
         }
 
-        const passageLoader = register.passages[eventId];
+        const passageLoader = register.passages[chapterId];
         if (!passageLoader) {
-            throw new Error(`No passage loader found for event: ${eventId}`);
+            throw new Error(`No passage loader found for chapter: ${chapterId}`);
         }
 
         const module = await passageLoader();
-        this.loadedModules.set(eventId, module.default);
+        this.loadedModules.set(chapterId, module.default);
     }
 
     /**
      * Gets a specific passage by calling the passage function with required parameters
      */
     static async getPassage(
-        eventId: TEventId,
+        chapterId: TChapterId,
         passageId: string,
         worldState: TWorldState,
         engine: Engine
-    ): Promise<TEventPassage<TEventId>> {
+    ): Promise<TChapterPassage<TChapterId>> {
         // Ensure module is loaded
-        await this.preloadPassageModule(eventId);
+        await this.preloadPassageModule(chapterId);
         
-        const passageModule = this.loadedModules.get(eventId);
+        const passageModule = this.loadedModules.get(chapterId);
         if (!passageModule) {
-            throw new Error(`Passage module not loaded for event: ${eventId}`);
+            throw new Error(`Passage module not loaded for chapter: ${chapterId}`);
         }
 
         const passageFunction = passageModule[passageId];
         if (!passageFunction) {
-            throw new Error(`Passage ${passageId} not found in ${eventId} module`);
+            throw new Error(`Passage ${passageId} not found in ${chapterId} module`);
         }
 
         return passageFunction(worldState, engine);
@@ -52,9 +52,9 @@ export class PassageService {
     /**
      * Clears loaded modules cache
      */
-    static clearCache(eventId?: TEventId): void {
-        if (eventId) {
-            this.loadedModules.delete(eventId);
+    static clearCache(chapterId?: TChapterId): void {
+        if (chapterId) {
+            this.loadedModules.delete(chapterId);
         } else {
             this.loadedModules.clear();
         }

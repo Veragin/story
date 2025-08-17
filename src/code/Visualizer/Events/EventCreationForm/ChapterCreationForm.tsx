@@ -5,9 +5,9 @@ import {
     Divider,
     Tooltip,
 } from '@mui/material';
-import { Event } from '@mui/icons-material';
+import { Chapter } from '@mui/icons-material';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { useEventForm } from './hooks/useEventForm';
+import { useChapterForm } from './hooks/useChapterForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
 import { LocationSection } from './components/LocationSection';
 import { TimeRangeSection } from './components/TimeRangeSection';
@@ -15,42 +15,42 @@ import { ChildrenSection } from './components/ChildrenSection';
 import { SFormContainer, SHeader, SFormContent, SButtonRow } from './styles';
 
 type Props = {
-    onEventCreated?: (eventId: string) => void;
+    onChapterCreated?: (chapterId: string) => void;
     onCancel?: () => void;
     agent: Agent;
 };
 
-export const EventCreationForm = ({ onEventCreated, onCancel, agent }: Props) => {
+export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props) => {
     const {
         formData,
-        eventId,
-        existingEventIds,
+        chapterId,
+        existingChapterIds,
         isSubmitting,
-        setEventId,
+        setChapterId,
         handleInputChange,
         handleTimeRangeChange,
         handleSubmit,
         handleReset,
-    } = useEventForm(agent);
+    } = useChapterForm(agent);
 
     return (
         <SFormContainer>
             <SHeader>
-                <Tooltip title="Events are containers for passages and define game timeline" arrow>
+                <Tooltip title="Chapters are containers for passages and define game timeline" arrow>
                     <Typography variant="h6" component="h2" sx={{ cursor: 'help', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Event fontSize="small" />
-                        {_('Create New Event')}
+                        <Chapter fontSize="small" />
+                        {_('Create New Chapter')}
                     </Typography>
                 </Tooltip>
             </SHeader>
 
             <SFormContent>
                 <BasicInfoSection
-                    eventId={eventId}
-                    setEventId={setEventId}
+                    chapterId={chapterId}
+                    setChapterId={setChapterId}
                     formData={formData}
                     handleInputChange={handleInputChange}
-                    existingEventIds={existingEventIds}
+                    existingChapterIds={existingChapterIds}
                 />
 
                 <Divider sx={{ my: 2 }} />
@@ -72,7 +72,7 @@ export const EventCreationForm = ({ onEventCreated, onCancel, agent }: Props) =>
                 <ChildrenSection
                     value={formData.children}
                     onChange={(children) => handleInputChange('children', children)}
-                    existingEventIds={existingEventIds}
+                    existingChapterIds={existingChapterIds}
                 />
 
                 <SButtonRow>
@@ -98,13 +98,13 @@ export const EventCreationForm = ({ onEventCreated, onCancel, agent }: Props) =>
                     )}
                     <Button
                         variant="contained"
-                        onClick={() => handleSubmit(onEventCreated)}
+                        onClick={() => handleSubmit(onChapterCreated)}
                         disabled={isSubmitting}
                         color="primary"
                         size="small"
                         sx={{ fontSize: '0.8rem' }}
                     >
-                        {isSubmitting ? _('Creating...') : _('Create Event')}
+                        {isSubmitting ? _('Creating...') : _('Create Chapter')}
                     </Button>
                 </SButtonRow>
             </SFormContent>

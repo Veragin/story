@@ -1,14 +1,14 @@
-import { TCharacterId, TEventId, TEventPassageId } from 'types/TIds';
-import { TEventPassage, TPassageScreen } from 'types/TPassage';
+import { TCharacterId, TChapterId, TChapterPassageId } from 'types/TIds';
+import { TChapterPassage, TPassageScreen } from 'types/TPassage';
 
-export const DUMMY_PASSAGE: TEventPassage<'village'> = {
+export const DUMMY_PASSAGE: TChapterPassage<'village'> = {
     id: 'forest',
     body: [],
     characterId: 'thomas',
-    eventId: 'village',
+    chapterId: 'village',
     image: 'forest',
     title: 'Forest',
     type: 'screen',
 };
 
-export type TUnkownPassageScreen = TPassageScreen<TEventId, TCharacterId, TEventPassageId<TEventId>>;
+export type TUnkownPassageScreen = TPassageScreen<TChapterId, TCharacterId, TChapterPassageId<TChapterId>>;

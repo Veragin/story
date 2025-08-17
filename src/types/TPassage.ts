@@ -1,15 +1,15 @@
-import { TCharacterId, TEventCharacterPassageId, TEventId, TEventPassageId, TPassageId } from './TIds';
+import { TCharacterId, TChapterCharacterPassageId, TChapterId, TChapterPassageId, TPassageId } from './TIds';
 import { TItemId } from './TItem';
 
-export type TEventPassage<E extends TEventId> = TPassage<E, TCharacterId, TEventPassageId<E>>;
+export type TChapterPassage<E extends TChapterId> = TPassage<E, TCharacterId, TChapterPassageId<E>>;
 
-export type TPassage<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> =
+export type TPassage<E extends TChapterId, Ch extends TCharacterId, Ids extends TChapterCharacterPassageId<E, Ch>> =
     | TPassageScreen<E, Ch, Ids>
     | TPassageTransition<E, Ch>
     | TPassageLinear<E, Ch, Ids>;
 
-export type TPassageScreen<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> = {
-    eventId: E;
+export type TPassageScreen<E extends TChapterId, Ch extends TCharacterId, Ids extends TChapterCharacterPassageId<E, Ch>> = {
+    chapterId: E;
     characterId: Ch;
     id: string;
 
@@ -41,27 +41,27 @@ export type TLinkCost =
         tools?: TItemId[];
     };
 
-export type TPassageTransition<E extends TEventId, Ch extends TCharacterId> = {
-    eventId: E;
+export type TPassageTransition<E extends TChapterId, Ch extends TCharacterId> = {
+    chapterId: E;
     characterId: Ch;
     id: string;
     type: 'transition';
-    nextPassageId: TEventCharacterPassageId<TEventId, Ch>;
+    nextPassageId: TChapterCharacterPassageId<TChapterId, Ch>;
 };
 
-export type TPassageLinear<E extends TEventId, Ch extends TCharacterId, Ids extends TEventCharacterPassageId<E, Ch>> = {
-    eventId: E;
+export type TPassageLinear<E extends TChapterId, Ch extends TCharacterId, Ids extends TChapterCharacterPassageId<E, Ch>> = {
+    chapterId: E;
     characterId: Ch;
     id: string;
     type: 'linear';
     description: string;
-    nextPassageId?: Ids & TEventCharacterPassageId<E, Ch>;
+    nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;
 };
 
-export type TEventPassageType = TEventPassage<TEventId>['type'];
+export type TChapterPassageType = TChapterPassage<TChapterId>['type'];
 
-export const getWholePassageId = <E extends TEventId, Ch extends TCharacterId>(
-        passage: TEventPassage<E>
-    ): TEventCharacterPassageId<E, Ch> => {
-    return `${passage.eventId}-${passage.characterId}-${passage.id}` as TEventCharacterPassageId<E, Ch>;
+export const getWholePassageId = <E extends TChapterId, Ch extends TCharacterId>(
+        passage: TChapterPassage<E>
+    ): TChapterCharacterPassageId<E, Ch> => {
+    return `${passage.chapterId}-${passage.characterId}-${passage.id}` as TChapterCharacterPassageId<E, Ch>;
 };

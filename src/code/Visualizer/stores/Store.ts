@@ -1,19 +1,19 @@
 import { TimeManager } from 'time/TimeManager';
-import { EventStore } from '../Events/EventStore/EventStore';
+import { ChapterStore } from '../Chapters/ChapterStore/ChapterStore';
 import { action, makeObservable, observable } from 'mobx';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import { CanvasHandler } from './CanvasHandler';
 import { Agent } from './Agent';
 import { ReactNode } from 'react';
 
 export class Store {
-    eventStore: EventStore;
+    chapterStore: ChapterStore;
     canvasHandler: CanvasHandler;
     agent: Agent;
 
     constructor(public timeManager: TimeManager) {
         this.agent = new Agent('http://localhost:3123');
-        this.eventStore = new EventStore(timeManager, this);
+        this.chapterStore = new ChapterStore(timeManager, this);
         this.canvasHandler = new CanvasHandler(document.body, this);
 
         makeObservable(this, {
@@ -31,10 +31,10 @@ export class Store {
     };
 
     updateSize = (width: number, height: number) => {
-        this.eventStore.durationHelper.size.width = width;
-        this.eventStore.durationHelper.size.height = height;
+        this.chapterStore.durationHelper.size.width = width;
+        this.chapterStore.durationHelper.size.height = height;
 
-        this.eventStore.render();
+        this.chapterStore.render();
     };
 
     modalContent: ReactNode | null = null;
@@ -44,15 +44,15 @@ export class Store {
 
     destroy = () => {
         this.canvasHandler.destroy();
-        this.eventStore.deinit();
+        this.chapterStore.deinit();
     };
 }
 
 type TActiveTab =
     | null
     | {
-          tab: 'event';
-          eventId: TEventId;
+          tab: 'chapter';
+          chapterId: TChapterId;
       }
     | {
           tab: 'map';

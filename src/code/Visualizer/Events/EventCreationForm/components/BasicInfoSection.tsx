@@ -7,25 +7,25 @@ import {
 } from '@mui/material';
 import { HelpOutline } from '@mui/icons-material';
 import { SFormRow, SFormControl } from '../styles';
-import { TEventFormData } from '../types';
+import { TChapterFormData } from '../types';
 
 type Props = {
-    eventId: string;
-    setEventId: (id: string) => void;
+    chapterId: string;
+    setChapterId: (id: string) => void;
     formData: {
         title: string;
         description: string;
     };
-    handleInputChange: (field: keyof TEventFormData, value: any) => void;
-    existingEventIds: string[];
+    handleInputChange: (field: keyof TChapterFormData, value: any) => void;
+    existingChapterIds: string[];
 };
 
 export const BasicInfoSection = ({ 
-    eventId, 
-    setEventId, 
+    chapterId, 
+    setChapterId, 
     formData, 
     handleInputChange, 
-    existingEventIds 
+    existingChapterIds 
 }: Props) => {
     return (
         <Box>
@@ -37,23 +37,23 @@ export const BasicInfoSection = ({
                 <SFormControl fullWidth>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
-                            {_('Event ID')} *
+                            {_('Chapter ID')} *
                         </Typography>
-                        <Tooltip title="Enter a unique identifier for this event" arrow>
+                        <Tooltip title="Enter a unique identifier for this chapter" arrow>
                             <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                         </Tooltip>
                     </Box>
                     <TextField
-                        value={eventId}
-                        onChange={(e) => setEventId(e.target.value)}
+                        value={chapterId}
+                        onChange={(e) => setChapterId(e.target.value)}
                         variant="outlined"
                         size="small"
                         required
-                        placeholder="unique-event-id"
-                        error={eventId.trim() !== '' && existingEventIds.includes(eventId.trim())}
+                        placeholder="unique-chapter-id"
+                        error={chapterId.trim() !== '' && existingChapterIds.includes(chapterId.trim())}
                         helperText={
-                            eventId.trim() !== '' && existingEventIds.includes(eventId.trim())
-                                ? _('This event ID already exists')
+                            chapterId.trim() !== '' && existingChapterIds.includes(chapterId.trim())
+                                ? _('This chapter ID already exists')
                                 : ''
                         }
                     />
@@ -66,7 +66,7 @@ export const BasicInfoSection = ({
                         <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
                             {_('Title')} *
                         </Typography>
-                        <Tooltip title="Display title for the event" arrow>
+                        <Tooltip title="Display title for the chapter" arrow>
                             <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                         </Tooltip>
                     </Box>
@@ -76,7 +76,7 @@ export const BasicInfoSection = ({
                         variant="outlined"
                         size="small"
                         required
-                        placeholder="Event title"
+                        placeholder="Chapter title"
                     />
                 </SFormControl>
             </SFormRow>
@@ -87,7 +87,7 @@ export const BasicInfoSection = ({
                         <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
                             {_('Description')}
                         </Typography>
-                        <Tooltip title="Detailed description of the event" arrow>
+                        <Tooltip title="Detailed description of the chapter" arrow>
                             <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                         </Tooltip>
                     </Box>
@@ -98,7 +98,7 @@ export const BasicInfoSection = ({
                         size="small"
                         multiline
                         rows={3}
-                        placeholder="Describe what happens in this event"
+                        placeholder="Describe what happens in this chapter"
                     />
                 </SFormControl>
             </SFormRow>

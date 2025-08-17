@@ -1,6 +1,6 @@
 import { DeltaTime } from 'time/Time';
 import { TItemId } from 'types/TItem';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 
 export type TLinkCost = {
     time?: DeltaTime;
@@ -34,7 +34,7 @@ export type TFormProps = {
     onPassageCreated?: (passageId: string) => void;
     onCancel?: () => void;
     agent: any; // Replace with proper Agent type
-    eventId: TEventId;
+    chapterId: TChapterId;
 };
 
 export type TTimeInput = {

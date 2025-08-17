@@ -36,9 +36,9 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
             <Box sx={{ mb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
-                        {_('Event Duration')} *
+                        {_('Chapter Duration')} *
                     </Typography>
-                    <Tooltip title="Required - Define when this event occurs in the game timeline" arrow>
+                    <Tooltip title="Required - Define when this chapter occurs in the game timeline" arrow>
                         <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
                     </Tooltip>
                 </Box>
@@ -94,7 +94,7 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
             </Box>
 
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block' }}>
-                {_('Both start and end times are required for creating events')}
+                {_('Both start and end times are required for creating chapters')}
             </Typography>
         </Box>
     );

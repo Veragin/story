@@ -13,7 +13,7 @@ import {
 import { FolderOpen, HelpOutline } from '@mui/icons-material';
 import { showToast } from 'code/GlobalWrapper';
 import { SFormRow, SFormControl } from '../styles';
-import { CharacterResolver } from 'code/Visualizer/Graphs/EventPassagesGraph/store/CharacterResolver';
+import { CharacterResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/CharacterResolver';
 
 type Props = {
     passageId: string;
@@ -43,8 +43,8 @@ export const BasicInfoSection = ({
         }
     }, []);
 
-    const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    const handleFileChange = useCallback((chapter: React.ChangeChapter<HTMLInputElement>) => {
+        const file = chapter.target.files?.[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
                 showToast(_('Please select an image file'), { variant: 'error' });
@@ -56,8 +56,8 @@ export const BasicInfoSection = ({
             showToast(_('Image selected successfully'), { variant: 'success' });
         }
         
-        if (event.target) {
-            event.target.value = '';
+        if (chapter.target) {
+            chapter.target.value = '';
         }
     }, [handleInputChange]);
 

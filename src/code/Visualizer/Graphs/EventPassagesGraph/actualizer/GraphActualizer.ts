@@ -11,11 +11,11 @@ export class GraphActualizer {
     private readonly edgeActualizer: EdgeActualizer = new EdgeActualizer();
     private readonly passageLoader: PassageLoader = new PassageLoader();
 
-    async actualizeGraphData(eventId: string, graph: Graph): Promise<Graph> {
+    async actualizeGraphData(chapterId: string, graph: Graph): Promise<Graph> {
         // Load current passages
-        const currentPassages = await this.passageLoader.loadPassages(eventId);
+        const currentPassages = await this.passageLoader.loadPassages(chapterId);
         if (!currentPassages) {
-            console.error(`No passages found for event ${eventId}`);
+            console.error(`No passages found for chapter ${chapterId}`);
             return graph;
         }
 

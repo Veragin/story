@@ -4,7 +4,7 @@ import { TKingdomAnniePassageId } from '../kingdom.passages';
 
 export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomAnniePassageId> => {
     return {
-        eventId: 'kingdom',
+        chapterId: 'kingdom',
         characterId: 'annie',
         id: 'palace',
 

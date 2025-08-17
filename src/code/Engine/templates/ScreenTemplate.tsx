@@ -20,7 +20,7 @@ export const ScreenTemplate = ({ passage }: Props) => {
         <WholeContainer>
             <StatusBar />
             <SContainer>
-                <SImg src={`${passage.eventId}/${passage.image}.png`} />
+                <SImg src={`${passage.chapterId}/${passage.image}.png`} />
                 <SContent>
                     <Header>{passage.title}</Header>
                     <SText>
@@ -51,7 +51,7 @@ const SImg = styled('img')`
     width: 50%;
     object-fit: cover;
     aspect-ratio: 1;
-    pointer-events: none;
+    pointer-chapters: none;
     user-select: none;
 `;
 

@@ -1,15 +1,15 @@
 import { TKingdomLocationData } from './locations/kingdom.location';
-import { TWeddingEventData } from './events/wedding/wedding.event';
-import { TVillageEventData } from './events/village/village.event';
+import { TWeddingChapterData } from './chapters/wedding/wedding.chapter';
+import { TVillageChapterData } from './chapters/village/village.chapter';
 import { TCharacter, TCharacterData, TSideCharacter, TSideCharacterData } from '../types/TCharacter';
 import { TThomasCharacterData } from './characters/thomas';
 import { TFrantaSideCharacterData } from './sideCharacters/Franta';
 import { TVillageLocationData } from './locations/village.location';
-import { TEvent } from 'types/TEvent';
+import { TChapter } from 'types/TChapter';
 import { TLocation } from 'types/TLocation';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
-import { TKingdomEventData } from './events/kingdom/kingdom.event';
+import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
 import { TCharacterId } from 'types/TIds';
 import { THistoryItem } from 'code/Engine/ts/History';
 import { THappening } from 'types/THappening';
@@ -29,10 +29,10 @@ export type TWorldState = {
         nobleMan: { ref: TSideCharacter<'nobleMan'> } & TSideCharacterData & Partial<TNobleManSideCharacterData>;
     };
 
-    events: {
-    	village: { ref: TEvent<'village'> } & TVillageEventData;
-        kingdom: { ref: TEvent<'kingdom'> } & TKingdomEventData;
-    	wedding: { ref: TEvent <'wedding'> } & TWeddingEventData;
+    chapters: {
+    	village: { ref: TChapter<'village'> } & TVillageChapterData;
+        kingdom: { ref: TChapter<'kingdom'> } & TKingdomChapterData;
+    	wedding: { ref: TChapter <'wedding'> } & TWeddingChapterData;
     };
     locations: {
     	village: { ref: TLocation<'village'> } & TVillageLocationData;

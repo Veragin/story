@@ -2,7 +2,7 @@ import { parsePassageId } from 'code/utils/parsePassageId';
 import { Time } from 'time/Time';
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TEventCharacterPassageId, TEventId, TPassageId } from 'types/TIds';
+import { TCharacterId, TChapterCharacterPassageId, TChapterId, TPassageId } from 'types/TIds';
 
 export class History {
     data: Partial<Record<TCharacterId, THistoryItem[]>> = {};
@@ -28,8 +28,8 @@ export class History {
             };
         }
 
-        const eventId = parsePassageId(passageId).eventId;
-        const time = register.events[eventId].timeRange.start;
+        const chapterId = parsePassageId(passageId).chapterId;
+        const time = register.chapters[chapterId].timeRange.start;
         return { passageId, time };
     };
 
@@ -64,10 +64,10 @@ export class History {
         return minHistory;
     };
 
-    getPreviousPassageId = <E extends TEventId, Ch extends TCharacterId>(
+    getPreviousPassageId = <E extends TChapterId, Ch extends TCharacterId>(
         char: Ch,
-        event: E
-    ): TEventCharacterPassageId<E, Ch> | null => {
+        chapter: E
+    ): TChapterCharacterPassageId<E, Ch> | null => {
         const h = this.data[char] ?? [];
         if (h.length < 2) {
             return null;
@@ -76,7 +76,7 @@ export class History {
         if (isEndHistoryItem(item)) {
             return null;
         }
-        if (isSpecificPassageId(item.passageId, event, char)) {
+        if (isSpecificPassageId(item.passageId, chapter, char)) {
             return item.passageId;
         }
         return null;
@@ -105,10 +105,10 @@ const isEndHistoryItem = (item: THistoryItem): item is THistoryEndItem => {
     return !Number.isFinite(item.time.s);
 };
 
-const isSpecificPassageId = <E extends TEventId, Ch extends TCharacterId>(
+const isSpecificPassageId = <E extends TChapterId, Ch extends TCharacterId>(
     passageId: TPassageId,
     e: E,
     ch: Ch
-): passageId is TEventCharacterPassageId<E, Ch> => {
+): passageId is TChapterCharacterPassageId<E, Ch> => {
     return passageId.startsWith(`${e}-${ch}-`);
 };

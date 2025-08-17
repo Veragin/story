@@ -4,7 +4,7 @@ import { DraggableVisualObject } from './Node/DraggableVisualObject';
 import { HoverableVisualObject } from './Node/HoverableVisualObject';
 import { VisualObject } from './Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { RESOLUTION_FACTOR } from '../Events/EventStore/TimelineRender/constants';
+import { RESOLUTION_FACTOR } from '../Chapters/ChapterStore/TimelineRender/constants';
 import { Observer } from 'code/utils/Observer';
 
 export class CanvasManager {
@@ -31,31 +31,31 @@ export class CanvasManager {
         this.ctx = context;
         this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
 
-        // Add event listeners
-        this.canvas.addEventListener('mousemove', this.handleMouseMove);
-        this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        this.canvas.addEventListener('mouseup', this.handleMouseUp);
-        this.canvas.addEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.addEventListener('click', this.handleMouseClick);
-        this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
-        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+        // Add chapter listeners
+        this.canvas.addChapterListener('mousemove', this.handleMouseMove);
+        this.canvas.addChapterListener('mousedown', this.handleMouseDown);
+        this.canvas.addChapterListener('mouseup', this.handleMouseUp);
+        this.canvas.addChapterListener('mouseleave', this.handleMouseUp);
+        this.canvas.addChapterListener('click', this.handleMouseClick);
+        this.canvas.addChapterListener('dblclick', this.handleMouseDbClick);
+        this.canvas.addChapterListener('contextmenu', this.handleContextMenu);
     }
 
-    private getMousePoint(event: MouseEvent): TPoint {
+    private getMousePoint(chapter: MouseChapter): TPoint {
         const rect = this.canvas.getBoundingClientRect();
         return {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
+            x: chapter.clientX - rect.left,
+            y: chapter.clientY - rect.top,
         };
     }
 
-    private handleMouseDown = (event: MouseEvent) => {
+    private handleMouseDown = (chapter: MouseChapter) => {
         if (!this.dragMode) return;
 
-        const point = this.getMousePoint(event);
+        const point = this.getMousePoint(chapter);
         const objectsAtPoint = this.getTopObjectsAtPoint(point);
 
-        if (event.button === 0) {
+        if (chapter.button === 0) {
             // Find the topmost draggable object
             const draggableObject = objectsAtPoint.find((obj) => isDraggableObject(obj) && obj.isDraggable()) as
                 | DraggableVisualObject
@@ -74,8 +74,8 @@ export class CanvasManager {
             }
         }
 
-        // Handle right button down events
-        if (event.button === 2) {
+        // Handle right button down chapters
+        if (chapter.button === 2) {
             Array.from(this.visualObjects)
                 .reverse()
                 .forEach((obj) => {
@@ -86,8 +86,8 @@ export class CanvasManager {
         }
     };
 
-    private handleMouseMove = (event: MouseEvent) => {
-        const point = this.getMousePoint(event);
+    private handleMouseMove = (chapter: MouseChapter) => {
+        const point = this.getMousePoint(chapter);
 
         // Handle dragging
         if (this.draggedObject && this.dragMode) {
@@ -101,7 +101,7 @@ export class CanvasManager {
         // Get objects at point, sorted by z-index (top to bottom)
         const objectsAtPoint = this.getTopObjectsAtPoint(point);
 
-        // Handle hover events
+        // Handle hover chapters
         for (const obj of this.visualObjects.keys()) {
             if (isHoverableObject(obj)) {
                 const isTopMost = objectsAtPoint[0] === obj;
@@ -123,9 +123,9 @@ export class CanvasManager {
         this.hoveredObjects = hoveredObjectsThisFrame;
     };
 
-    private handleMouseClick = (event: MouseEvent) => {
-        const point = this.getMousePoint(event);
-        event.preventDefault();
+    private handleMouseClick = (chapter: MouseChapter) => {
+        const point = this.getMousePoint(chapter);
+        chapter.prchapterDefault();
 
         if (this.draggedObject) {
             return;
@@ -141,9 +141,9 @@ export class CanvasManager {
             });
     };
 
-    private handleMouseDbClick = (event: MouseEvent) => {
-        const point = this.getMousePoint(event);
-        event.preventDefault();
+    private handleMouseDbClick = (chapter: MouseChapter) => {
+        const point = this.getMousePoint(chapter);
+        chapter.prchapterDefault();
 
         if (this.draggedObject) {
             return;
@@ -159,16 +159,16 @@ export class CanvasManager {
             });
     };
 
-    private handleMouseUp = (event: MouseEvent) => {
+    private handleMouseUp = (chapter: MouseChapter) => {
         if (this.draggedObject) {
-            const point = this.getMousePoint(event);
+            const point = this.getMousePoint(chapter);
             this.draggedObject.endDrag(point);
             this.draggedObject = null;
         }
     };
 
-    private handleContextMenu = (event: MouseEvent) => {
-        event.preventDefault();
+    private handleContextMenu = (chapter: MouseChapter) => {
+        chapter.prchapterDefault();
         return false;
     };
 
@@ -235,14 +235,14 @@ export class CanvasManager {
     };
 
     destroy = () => {
-        // Clean up event listeners
-        this.canvas.removeEventListener('mousemove', this.handleMouseMove);
-        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
-        this.canvas.removeEventListener('mouseup', this.handleMouseUp);
-        this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.removeEventListener('click', this.handleMouseClick);
-        this.canvas.removeEventListener('dblclick', this.handleMouseDbClick);
-        this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+        // Clean up chapter listeners
+        this.canvas.removeChapterListener('mousemove', this.handleMouseMove);
+        this.canvas.removeChapterListener('mousedown', this.handleMouseDown);
+        this.canvas.removeChapterListener('mouseup', this.handleMouseUp);
+        this.canvas.removeChapterListener('mouseleave', this.handleMouseUp);
+        this.canvas.removeChapterListener('click', this.handleMouseClick);
+        this.canvas.removeChapterListener('dblclick', this.handleMouseDbClick);
+        this.canvas.removeChapterListener('contextmenu', this.handleContextMenu);
 
         // Clean up object subscriptions
         for (const obj of this.visualObjects) {

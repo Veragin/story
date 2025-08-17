@@ -5,7 +5,7 @@ import { EdgeVisualObject } from "../EdgeVisualObject";
 import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";
 import { DraggableVisualObject } from "../Node/DraggableVisualObject";
 import { CircularInitializePositionStrategy, InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
-import { PassageNodeVisualObject } from "../EventPassagesGraph/PassageNodeVisualObject";
+import { PassageNodeVisualObject } from "../ChapterPassagesGraph/PassageNodeVisualObject";
 
 interface Force {
     dx: number;

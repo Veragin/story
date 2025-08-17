@@ -4,15 +4,15 @@ import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from '../Graphs/animation.ts/GraphAnimationHandler';
-import { TEventId } from 'types/TIds';
+import { TChapterId } from 'types/TIds';
 import { CanvasManager } from '../Graphs/CanvasManager';
-import { GraphProvider } from '../Graphs/EventPassagesGraph/store/EventPassageGraphProvider';
+import { GraphProvider } from '../Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
 
 type Props = {
-    eventId: TEventId;
+    chapterId: TChapterId;
 };
 
-export const EventPassagesGraph = ({ eventId }: Props) => {
+export const ChapterPassagesGraph = ({ chapterId }: Props) => {
     const store = useVisualizerStore();
     const mainCanvasRef = useRef<HTMLCanvasElement>(null);
     const graphAnimationHandlerRef = useRef<GraphAnimationHandler | null>(null);
@@ -35,10 +35,10 @@ export const EventPassagesGraph = ({ eventId }: Props) => {
                 graphAnimationHandlerRef.current = null;
             }
 
-            if (register.passages[eventId]) {
+            if (register.passages[chapterId]) {
                 try {
                     const graph = await GraphProvider.getGraph(
-                        eventId,
+                        chapterId,
                         canvasManager,
                         store
                     );
@@ -67,7 +67,7 @@ export const EventPassagesGraph = ({ eventId }: Props) => {
                 graphAnimationHandlerRef.current = null;
             }
         };
-    }, [eventId, store.activeTab, store]);
+    }, [chapterId, store.activeTab, store]);
 
     return <SMainCanvas ref={mainCanvasRef} />;
 };

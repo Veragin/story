@@ -20,57 +20,57 @@ export class MouseListener {
 
     init = (canvas: HTMLCanvasElement) => {
         this.canvas = canvas;
-        document.addEventListener('keydown', this.onKeyDown);
-        document.addEventListener('keyup', this.onKeyUp);
-        canvas.addEventListener('mousedown', this.onMouseDown);
-        canvas.addEventListener('mouseup', this.onMouseUp);
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('resize', this.onResize);
-        document.addEventListener('contextmenu', this.onContextMenu);
-        document.addEventListener('wheel', this.onWheel);
+        document.addChapterListener('keydown', this.onKeyDown);
+        document.addChapterListener('keyup', this.onKeyUp);
+        canvas.addChapterListener('mousedown', this.onMouseDown);
+        canvas.addChapterListener('mouseup', this.onMouseUp);
+        document.addChapterListener('mousemove', this.onMouseMove);
+        document.addChapterListener('resize', this.onResize);
+        document.addChapterListener('contextmenu', this.onContextMenu);
+        document.addChapterListener('wheel', this.onWheel);
     };
 
     deinit = () => {
-        document.removeEventListener('keydown', this.onKeyDown);
-        document.removeEventListener('keyup', this.onKeyUp);
-        this.canvas?.removeEventListener('mousedown', this.onMouseDown);
-        this.canvas?.removeEventListener('mouseup', this.onMouseUp);
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('resize', this.onResize);
-        document.removeEventListener('contextmenu', this.onContextMenu);
-        document.removeEventListener('wheel', this.onWheel);
+        document.removeChapterListener('keydown', this.onKeyDown);
+        document.removeChapterListener('keyup', this.onKeyUp);
+        this.canvas?.removeChapterListener('mousedown', this.onMouseDown);
+        this.canvas?.removeChapterListener('mouseup', this.onMouseUp);
+        document.removeChapterListener('mousemove', this.onMouseMove);
+        document.removeChapterListener('resize', this.onResize);
+        document.removeChapterListener('contextmenu', this.onContextMenu);
+        document.removeChapterListener('wheel', this.onWheel);
         this.canvas = null;
     };
 
-    private onKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'd') this.user.key.right = true;
-        else if (event.key === 'a') this.user.key.left = true;
-        else if (event.key === 'w') this.user.key.up = true;
-        else if (event.key === 's') this.user.key.down = true;
-        else if (event.key === 'Ctrl') this.user.key.ctrl = true;
-        else if (event.key === 'Shift') this.user.key.shift = true;
+    private onKeyDown = (chapter: KeyboardChapter) => {
+        if (chapter.key === 'd') this.user.key.right = true;
+        else if (chapter.key === 'a') this.user.key.left = true;
+        else if (chapter.key === 'w') this.user.key.up = true;
+        else if (chapter.key === 's') this.user.key.down = true;
+        else if (chapter.key === 'Ctrl') this.user.key.ctrl = true;
+        else if (chapter.key === 'Shift') this.user.key.shift = true;
     };
 
-    private onKeyUp = (event: KeyboardEvent) => {
-        if (event.key === 'd') this.user.key.right = false;
-        else if (event.key === 'a') this.user.key.left = false;
-        else if (event.key === 'w') this.user.key.up = false;
-        else if (event.key === 's') this.user.key.down = false;
-        else if (event.key === 'ctrl') this.user.key.ctrl = false;
-        else if (event.key === 'Shift') this.user.key.shift = false;
+    private onKeyUp = (chapter: KeyboardChapter) => {
+        if (chapter.key === 'd') this.user.key.right = false;
+        else if (chapter.key === 'a') this.user.key.left = false;
+        else if (chapter.key === 'w') this.user.key.up = false;
+        else if (chapter.key === 's') this.user.key.down = false;
+        else if (chapter.key === 'ctrl') this.user.key.ctrl = false;
+        else if (chapter.key === 'Shift') this.user.key.shift = false;
     };
 
-    private onMouseDown = (event: MouseEvent) => {
-        if (event.button !== 0) {
+    private onMouseDown = (chapter: MouseChapter) => {
+        if (chapter.button !== 0) {
             return;
         }
         this.user.mouse.hold = true;
         this.user.mouse.pointingTo = this.isOnMinimap() ? 'minimap' : 'map';
     };
 
-    onMouseUp = (event: MouseEvent) => {
+    onMouseUp = (chapter: MouseChapter) => {
         if (this.canvas === null) return;
-        if (event.button !== 0) {
+        if (chapter.button !== 0) {
             return;
         }
         if (!this.user.mouse.hold) return;
@@ -89,12 +89,12 @@ export class MouseListener {
         this.mapStore.render();
     };
 
-    onMouseMove = (event: MouseEvent) => {
+    onMouseMove = (chapter: MouseChapter) => {
         if (this.canvas === null) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        this.user.mouse.pos.x = event.clientX - rect.left;
-        this.user.mouse.pos.y = event.clientY - rect.top;
+        this.user.mouse.pos.x = chapter.clientX - rect.left;
+        this.user.mouse.pos.y = chapter.clientY - rect.top;
 
         if (this.user.mouse.pointingTo === 'minimap') {
             if (this.user.mouse.hold && this.isOnMinimap()) {
@@ -130,11 +130,11 @@ export class MouseListener {
         this.mapStore.render();
     };
 
-    onContextMenu = (event: MouseEvent) => {
-        event.preventDefault();
+    onContextMenu = (chapter: MouseChapter) => {
+        chapter.prchapterDefault();
     };
 
-    onWheel = (e: WheelEvent) => {
+    onWheel = (e: WheelChapter) => {
         if (this.user.key.shift) {
             this.mapStore.setZoomLevel(this.mapStore.zoomLevel + Math.sign(e.deltaY));
             return;

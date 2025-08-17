@@ -4,7 +4,7 @@ import { s } from 'worldState';
 import { TVillageThomasPassageId } from '../village.passages';
 
 export const forestPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
-    eventId: 'village',
+    chapterId: 'village',
     characterId: 'thomas',
     id: 'forest',
 

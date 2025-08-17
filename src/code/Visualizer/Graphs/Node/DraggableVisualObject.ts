@@ -3,20 +3,20 @@ import { ClickableVisualObject } from './ClickableVisualObject';
 import { DragStrategy } from './dragAndDropMovingStrategies/DragStrategy';
 import { FreeDragStrategy } from './dragAndDropMovingStrategies/FreeDragStrategy';
 
-export type DragStartEvent = {
+export type DragStartChapter = {
     object: DraggableVisualObject;
     startPosition: TPoint;
     mouseOffset: TPoint;
 };
 
-export type DragMoveEvent = {
+export type DragMoveChapter = {
     object: DraggableVisualObject;
     currentPosition: TPoint;
     startPosition: TPoint;
     mouseOffset: TPoint;
 };
 
-export type DragEndEvent = {
+export type DragEndChapter = {
     object: DraggableVisualObject;
     finalPosition: TPoint;
     startPosition: TPoint;
@@ -29,19 +29,19 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
     private _mouseOffset: TPoint = { x: 0, y: 0 };
     private _dragStrategy: DragStrategy;
 
-    private _onDragStart = new Observer<DragStartEvent>();
-    private _onDragMove = new Observer<DragMoveEvent>();
-    private _onDragEnd = new Observer<DragEndEvent>();
+    private _onDragStart = new Observer<DragStartChapter>();
+    private _onDragMove = new Observer<DragMoveChapter>();
+    private _onDragEnd = new Observer<DragEndChapter>();
 
-    get onDragStart(): Observer<DragStartEvent> {
+    get onDragStart(): Observer<DragStartChapter> {
         return this._onDragStart;
     }
 
-    get onDragMove(): Observer<DragMoveEvent> {
+    get onDragMove(): Observer<DragMoveChapter> {
         return this._onDragMove;
     }
 
-    get onDragEnd(): Observer<DragEndEvent> {
+    get onDragEnd(): Observer<DragEndChapter> {
         return this._onDragEnd;
     }
 

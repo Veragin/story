@@ -11,9 +11,9 @@ import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import { Nav } from '../components/Nav';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
-import { EventTimeline } from './EventTimeline';
-import { EventCreationForm } from './EventCreationForm/EventCreationForm';
-import { Add, Event } from '@mui/icons-material';
+import { ChapterTimeline } from './ChapterTimeline';
+import { ChapterCreationForm } from './ChapterCreationForm/ChapterCreationForm';
+import { Add, Chapter } from '@mui/icons-material';
 
 const darkTheme = createTheme({
     palette: {
@@ -190,15 +190,15 @@ const darkTheme = createTheme({
     },
 });
 
-export const Events = () => {
+export const Chapters = () => {
     const store = useVisualizerStore();
 
-    const handleEventCreated = (eventId: string) => {
-        // Handle event creation - navigate to the new event's passages
-        console.log('Event created:', eventId);
+    const handleChapterCreated = (chapterId: string) => {
+        // Handle chapter creation - navigate to the new chapter's passages
+        console.log('Chapter created:', chapterId);
         store.setActiveTab({
-            tab: 'event',
-            eventId: eventId as any, // Cast to match TEventId type
+            tab: 'chapter',
+            chapterId: chapterId as any, // Cast to match TChapterId type
         });
     };
 
@@ -207,14 +207,14 @@ export const Events = () => {
             <Nav>
                 <SRow>
                     <SNavTitle>
-                        <Event fontSize="small" sx={{ mr: 1 }} />
+                        <Chapter fontSize="small" sx={{ mr: 1 }} />
                         <Typography variant="h6" component="span" sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                            {_('Events Manager')}
+                            {_('Chapters Manager')}
                         </Typography>
                     </SNavTitle>
                     <SNavActions>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                            {_('Create and manage game events')}
+                            {_('Create and manage game chapters')}
                         </Typography>
                     </SNavActions>
                 </SRow>
@@ -224,15 +224,15 @@ export const Events = () => {
                 <ResizableSplitter
                     leftContent={
                         <STimelineContainer>
-                            <EventTimeline />
+                            <ChapterTimeline />
                         </STimelineContainer>
                     }
                     rightContent={
                         <SFormContainer>
                             <ThemeProvider theme={darkTheme}>
-                                <EventCreationForm
+                                <ChapterCreationForm
                                     agent={store.agent}
-                                    onEventCreated={handleEventCreated}
+                                    onChapterCreated={handleChapterCreated}
                                 />
                             </ThemeProvider>
                         </SFormContainer>

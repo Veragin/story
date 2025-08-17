@@ -6,7 +6,7 @@ export class HttpErrorHandler {
     /**
      * Handles HTTP responses and extracts error messages from API responses
      * @param response - The fetch Response object
-     * @param context - Context for error messages (e.g., "updating event", "saving map")
+     * @param context - Context for error messages (e.g., "updating chapter", "saving map")
      * @returns The parsed JSON response if successful
      * @throws Error with detailed message if the request failed
      */

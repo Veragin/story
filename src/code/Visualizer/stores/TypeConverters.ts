@@ -1,36 +1,36 @@
 import { TLocationId } from 'types/TLocation';
-import { TEventPassageType } from 'types/TPassage';
+import { TChapterPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';
-import { EventUpdateRequest, MapData, PassageUpdateRequest, SetTimeRequest, TEventData, TPassageData, TScreenPassageData } from './ nodeServerTypes';
-import { TEventId } from 'types/TIds';
+import { ChapterUpdateRequest, MapData, PassageUpdateRequest, SetTimeRequest, TChapterData, TPassageData, TScreenPassageData } from './ nodeServerTypes';
+import { TChapterId } from 'types/TIds';
 
 
 export class TypeConverters {
-  // Event converters
-  static eventDataToUpdateRequest(eventData: TEventData): EventUpdateRequest {
+  // Chapter converters
+  static chapterDataToUpdateRequest(chapterData: TChapterData): ChapterUpdateRequest {
     const originTime = { start: '2.2. 12:00', end: '2.2. 14:00' };
 
-    if (eventData.timeRange.start === '')
-      eventData.timeRange.start = originTime.start;
-    if (eventData.timeRange.end === '')
-      eventData.timeRange.end = originTime.end;
+    if (chapterData.timeRange.start === '')
+      chapterData.timeRange.start = originTime.start;
+    if (chapterData.timeRange.end === '')
+      chapterData.timeRange.end = originTime.end;
 
     const result = {
-      title: eventData.title,
-      description: eventData.description,
-      location: eventData.location,
+      title: chapterData.title,
+      description: chapterData.description,
+      location: chapterData.location,
       timeRange: {
-        start: eventData.timeRange.start,
-        end: eventData.timeRange.end
+        start: chapterData.timeRange.start,
+        end: chapterData.timeRange.end
       },
-      children: eventData.children
+      children: chapterData.children
     };
 
-    console.log('TypeConverter - converting eventData to updateRequest:', { eventData, result });
+    console.log('TypeConverter - converting chapterData to updateRequest:', { chapterData, result });
     return result;
   }
 
-  static updateRequestToEventData(updateRequest: EventUpdateRequest, fallbackLocation: TLocationId): TEventData {
+  static updateRequestToChapterData(updateRequest: ChapterUpdateRequest, fallbackLocation: TLocationId): TChapterData {
     return {
       title: updateRequest.title || '',
       description: updateRequest.description || '',
@@ -53,7 +53,7 @@ export class TypeConverters {
   static screenPassageDataToUpdateRequest(screenPassageData: TScreenPassageData): PassageUpdateRequest {
     return {
       type: screenPassageData.type,
-      eventId: screenPassageData.eventId as TEventId,
+      chapterId: screenPassageData.chapterId as TChapterId,
       characterId: screenPassageData.characterId,
       id: screenPassageData.id,
       title: screenPassageData.title,
@@ -73,7 +73,7 @@ export class TypeConverters {
 
   static updateRequestToPassageData(updateRequest: PassageUpdateRequest): TPassageData {
     return {
-      type: updateRequest.type as TEventPassageType,
+      type: updateRequest.type as TChapterPassageType,
       title: updateRequest.title
     };
   }

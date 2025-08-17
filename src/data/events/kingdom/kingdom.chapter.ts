@@ -1,11 +1,11 @@
-import { TEvent } from 'types/TEvent';
+import { TChapter } from 'types/TChapter';
 import { Time } from 'time/Time';
-import { villageEvent } from '../village/village.event';
+import { villageChapter } from '../village/village.chapter';
 
-export const kingdomEvent: TEvent<'kingdom'> = {
-    eventId: 'kingdom',
-    title: 'Kingdom Event',
-    description: 'A Kingdom event is happening',
+export const kingdomChapter: TChapter<'kingdom'> = {
+    chapterId: 'kingdom',
+    title: 'Kingdom Chapter',
+    description: 'A Kingdom chapter is happening',
     timeRange: {
         start: Time.fromString('2.1. 8:00'),
         end: Time.fromString('5.1. 8:00'),
@@ -15,7 +15,7 @@ export const kingdomEvent: TEvent<'kingdom'> = {
     children: [
         {
             condition: 'asdasd',
-            event: villageEvent,
+            chapter: villageChapter,
         },
     ],
 
@@ -29,7 +29,7 @@ export const kingdomEvent: TEvent<'kingdom'> = {
     },
 };
 
-export type TKingdomEventData = {
+export type TKingdomChapterData = {
     mojePromena: {
         time: number;
         asd: string;

@@ -221,7 +221,7 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
     }
 
     private calculateOptimalRadius(nodeCount: number): number {
-        // Calculate optimal radius based on node count to prevent overcrowding
+        // Calculate optimal radius based on node count to prchapter overcrowding
         return Math.max(30, Math.min(this.SCC_RADIUS, nodeCount * 20));
     }
 }

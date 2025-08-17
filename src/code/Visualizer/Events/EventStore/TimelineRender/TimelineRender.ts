@@ -1,5 +1,5 @@
 import { TimeManager } from 'time/TimeManager';
-import { EventStore } from '../EventStore';
+import { ChapterStore } from '../ChapterStore';
 import { TimelineMouseListener } from './TimelineMouseListener';
 import { TimelinePaint } from './TimelinePaint/TimelinePaint';
 import { TimelineMarker } from './TimelineMarker';
@@ -13,7 +13,7 @@ export class TimelineRender {
         public canvasRef: HTMLCanvasElement,
         public markerRef: HTMLDivElement,
         public timeManager: TimeManager,
-        store: EventStore
+        store: ChapterStore
     ) {
         this.timelineMarker = new TimelineMarker(markerRef, timeManager);
         this.timelinePaint = new TimelinePaint(store, timeManager, canvasRef);

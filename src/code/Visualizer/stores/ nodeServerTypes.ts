@@ -1,6 +1,6 @@
 import { TLocationId } from 'types/TLocation';
-import { TEventPassageType } from 'types/TPassage';
-import { TEventId } from 'types/TIds';
+import { TChapterPassageType } from 'types/TPassage';
+import { TChapterId } from 'types/TIds';
 
 // Updated server types to include missing fields
 export interface TimeRange {
@@ -8,12 +8,12 @@ export interface TimeRange {
   end: string;
 }
 
-export interface EventUpdateRequest {
+export interface ChapterUpdateRequest {
   title?: string;
   description?: string;
   location?: string;
   timeRange?: TimeRange;
-  children?: Array<{ condition: string; eventId: string; }>;
+  children?: Array<{ condition: string; chapterId: string; }>;
 }
 
 export interface SetTimeRequest {
@@ -54,7 +54,7 @@ export interface TPassageScreenBodyItemUpdateRequest {
 
 export interface PassageUpdateRequest {
   type: 'screen' | 'linear' | 'transition';
-  eventId?: TEventId;
+  chapterId?: TChapterId;
   characterId?: string;
   id?: string;
   title?: string;
@@ -114,7 +114,7 @@ export interface MapListResponse {
   data: string[];
 }
 
-export type TEventData = {
+export type TChapterData = {
   title: string;
   description: string;
   location: string;
@@ -122,17 +122,17 @@ export type TEventData = {
     start: string;
     end: string;
   };
-  children?: Array<{ condition: string; eventId: string; }>;
+  children?: Array<{ condition: string; chapterId: string; }>;
 };
 
 export type TPassageData = {
-  type: TEventPassageType;
+  type: TChapterPassageType;
   title?: string;
 };
 
 export type TScreenPassageData = {
-  type: TEventPassageType;
-  eventId: string;
+  type: TChapterPassageType;
+  chapterId: string;
   characterId: string;
   id: string;
   title: string;
