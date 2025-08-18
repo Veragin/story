@@ -20,25 +20,25 @@ export class MouseListener {
 
     init = (canvas: HTMLCanvasElement) => {
         this.canvas = canvas;
-        document.addChapterListener('keydown', this.onKeyDown);
-        document.addChapterListener('keyup', this.onKeyUp);
-        canvas.addChapterListener('mousedown', this.onMouseDown);
-        canvas.addChapterListener('mouseup', this.onMouseUp);
-        document.addChapterListener('mousemove', this.onMouseMove);
-        document.addChapterListener('resize', this.onResize);
-        document.addChapterListener('contextmenu', this.onContextMenu);
-        document.addChapterListener('wheel', this.onWheel);
+        document.addEventListener('keydown', this.onKeyDown);
+        document.addEventListener('keyup', this.onKeyUp);
+        canvas.addEventListener('mousedown', this.onMouseDown);
+        canvas.addEventListener('mouseup', this.onMouseUp);
+        document.addEventListener('mousemove', this.onMouseMove);
+        document.addEventListener('resize', this.onResize);
+        document.addEventListener('contextmenu', this.onContextMenu);
+        document.addEventListener('wheel', this.onWheel);
     };
 
     deinit = () => {
-        document.removeChapterListener('keydown', this.onKeyDown);
-        document.removeChapterListener('keyup', this.onKeyUp);
-        this.canvas?.removeChapterListener('mousedown', this.onMouseDown);
-        this.canvas?.removeChapterListener('mouseup', this.onMouseUp);
-        document.removeChapterListener('mousemove', this.onMouseMove);
-        document.removeChapterListener('resize', this.onResize);
-        document.removeChapterListener('contextmenu', this.onContextMenu);
-        document.removeChapterListener('wheel', this.onWheel);
+        document.removeEventListener('keydown', this.onKeyDown);
+        document.removeEventListener('keyup', this.onKeyUp);
+        this.canvas?.removeEventListener('mousedown', this.onMouseDown);
+        this.canvas?.removeEventListener('mouseup', this.onMouseUp);
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('resize', this.onResize);
+        document.removeEventListener('contextmenu', this.onContextMenu);
+        document.removeEventListener('wheel', this.onWheel);
         this.canvas = null;
     };
 
@@ -60,7 +60,7 @@ export class MouseListener {
         else if (chapter.key === 'Shift') this.user.key.shift = false;
     };
 
-    private onMouseDown = (chapter: MouseChapter) => {
+    private onMouseDown = (chapter: MouseEvent) => {
         if (chapter.button !== 0) {
             return;
         }
@@ -68,7 +68,7 @@ export class MouseListener {
         this.user.mouse.pointingTo = this.isOnMinimap() ? 'minimap' : 'map';
     };
 
-    onMouseUp = (chapter: MouseChapter) => {
+    onMouseUp = (chapter: MouseEvent) => {
         if (this.canvas === null) return;
         if (chapter.button !== 0) {
             return;
@@ -89,7 +89,7 @@ export class MouseListener {
         this.mapStore.render();
     };
 
-    onMouseMove = (chapter: MouseChapter) => {
+    onMouseMove = (chapter: MouseEvent) => {
         if (this.canvas === null) return;
 
         const rect = this.canvas.getBoundingClientRect();
@@ -130,8 +130,8 @@ export class MouseListener {
         this.mapStore.render();
     };
 
-    onContextMenu = (chapter: MouseChapter) => {
-        chapter.prchapterDefault();
+    onContextMenu = (chapter: MouseEvent) => {
+        chapter.preventDefault();
     };
 
     onWheel = (e: WheelChapter) => {

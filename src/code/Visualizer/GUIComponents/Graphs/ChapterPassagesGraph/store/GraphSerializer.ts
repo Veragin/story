@@ -1,9 +1,9 @@
 import { TRegisterPassageId } from "data/register";
 import { TLineType } from "../../EdgeVisualObject";
 import { Graph } from "../../Graph";
-import { BorderConfig } from "../../Node/BorderConfig";
-import { NodeVisualObject } from "../../Node/NodeVisualObject";
-import { TextContent } from "../../Node/TextContent";
+import { BorderConfig } from "../../../Canvas/Node/BorderConfig";
+import { NodeVisualObject } from "../../../Canvas/Node/NodeVisualObject";
+import { TextContent } from "../../../Canvas/Node/TextContent";
 import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
 import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
 

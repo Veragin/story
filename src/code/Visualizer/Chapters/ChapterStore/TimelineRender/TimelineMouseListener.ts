@@ -19,21 +19,21 @@ export class TimelineMouseListener {
         private store: ChapterStore,
         private timelineMarker: TimelineMarker
     ) {
-        this.container.addChapterListener('mousedown', this.onMouseDown);
-        document.addChapterListener('mouseup', this.onMouseUp);
-        this.container.addChapterListener('mousemove', this.onMouseMove);
-        this.container.addChapterListener('wheel', this.onWheelChapter);
-        this.container.addChapterListener('mouseenter', this.onMouseEnter);
-        this.container.addChapterListener('mouseleave', this.onMouseLeave);
+        this.container.addEventListener('mousedown', this.onMouseDown);
+        document.addEventListener('mouseup', this.onMouseUp);
+        this.container.addEventListener('mousemove', this.onMouseMove);
+        this.container.addEventListener('wheel', this.onWheelChapter);
+        this.container.addEventListener('mouseenter', this.onMouseEnter);
+        this.container.addEventListener('mouseleave', this.onMouseLeave);
     }
 
-    getTimeShift(e: MouseChapter) {
+    getTimeShift(e: MouseEvent) {
         const delta = this.mouseDownXPosition - e.clientX;
         return DeltaTime.fromS(delta / this.timeToLengthFactor);
     }
 
-    private onMouseDown = (e: MouseChapter) => {
-        e.prchapterDefault();
+    private onMouseDown = (e: MouseEvent) => {
+        e.preventDefault();
         this.isMouseDown = true;
         this.timeToLengthFactor = this.container.offsetWidth / this.store.zoom.displayTime.s;
         this.container.classList.add('grabbing');
@@ -53,7 +53,7 @@ export class TimelineMouseListener {
         this.timelineMarker.hide();
     };
 
-    private onMouseMove = throttle((e: MouseChapter) => {
+    private onMouseMove = throttle((e: MouseEvent) => {
         const mouseTime = this.store.durationHelper.getTimestampFromDistance(e.clientX);
         this.timelineMarker.update(e.clientX, mouseTime);
 
@@ -89,11 +89,11 @@ export class TimelineMouseListener {
     };
 
     destructor() {
-        this.container.removeChapterListener('mousedown', this.onMouseDown);
-        document.removeChapterListener('mouseup', this.onMouseUp);
-        this.container.removeChapterListener('mousemove', this.onMouseMove);
-        this.container.removeChapterListener('wheel', this.onWheelChapter);
-        this.container.removeChapterListener('mouseenter', this.onMouseEnter);
-        this.container.removeChapterListener('mouseleave', this.onMouseLeave);
+        this.container.removeEventListener('mousedown', this.onMouseDown);
+        document.removeEventListener('mouseup', this.onMouseUp);
+        this.container.removeEventListener('mousemove', this.onMouseMove);
+        this.container.removeEventListener('wheel', this.onWheelChapter);
+        this.container.removeEventListener('mouseenter', this.onMouseEnter);
+        this.container.removeEventListener('mouseleave', this.onMouseLeave);
     }
 }

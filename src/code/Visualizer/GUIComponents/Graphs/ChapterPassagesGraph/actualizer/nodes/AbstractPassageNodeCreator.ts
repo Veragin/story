@@ -1,5 +1,5 @@
-import { FreeDragStrategy } from "../../../Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { TextContent, TTextAlignment } from "../../../Node/TextContent";
+import { FreeDragStrategy } from "../../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy";
+import { TextContent, TTextAlignment } from "../../../../Canvas/Node/TextContent";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
 import { ColorManager } from "../ColorManager";
 

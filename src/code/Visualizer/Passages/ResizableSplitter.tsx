@@ -22,12 +22,12 @@ export const ResizableSplitter = ({
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const handleMouseDown = useCallback((e: React.MouseChapter) => {
-        e.prchapterDefault();
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
         setIsDragging(true);
     }, []);
 
-    const handleMouseMove = useCallback((e: MouseChapter) => {
+    const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDragging || !containerRef.current) return;
 
         const containerRect = containerRef.current.getBoundingClientRect();
@@ -48,15 +48,15 @@ export const ResizableSplitter = ({
 
     useEffect(() => {
         if (isDragging) {
-            document.addChapterListener('mousemove', handleMouseMove);
-            document.addChapterListener('mouseup', handleMouseUp);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none';
         }
 
         return () => {
-            document.removeChapterListener('mousemove', handleMouseMove);
-            document.removeChapterListener('mouseup', handleMouseUp);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
         };

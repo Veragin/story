@@ -1,5 +1,5 @@
 import { Graph } from "../../../Graph";
-import { NodeVisualObject } from "../../../Node/NodeVisualObject";
+import { NodeVisualObject } from "../../../../Canvas/Node/NodeVisualObject";
 import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
 import { worldStateCopy } from "../../WorldStateCopy";
