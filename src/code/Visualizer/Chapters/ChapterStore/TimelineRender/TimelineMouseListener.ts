@@ -22,7 +22,7 @@ export class TimelineMouseListener {
         this.container.addEventListener('mousedown', this.onMouseDown);
         document.addEventListener('mouseup', this.onMouseUp);
         this.container.addEventListener('mousemove', this.onMouseMove);
-        this.container.addEventListener('wheel', this.onWheelChapter);
+        this.container.addEventListener('wheel', this.onWheelEvent);
         this.container.addEventListener('mouseenter', this.onMouseEnter);
         this.container.addEventListener('mouseleave', this.onMouseLeave);
     }
@@ -70,7 +70,7 @@ export class TimelineMouseListener {
         }
     }, 30);
 
-    private onWheelChapter = (e: WheelChapter) => {
+    private onWheelEvent = (e: WheelEvent) => {
         const zoomStep = Math.max(Math.min(e.deltaY * ZOOM_SPEED_FACTOR, 1), -1);
         const zoomLevelProgress = this.zoomLevelProgress - zoomStep;
         if (zoomLevelProgress < 0 || zoomLevelProgress > ZOOM_CONFIG.length - 1) {
@@ -92,7 +92,7 @@ export class TimelineMouseListener {
         this.container.removeEventListener('mousedown', this.onMouseDown);
         document.removeEventListener('mouseup', this.onMouseUp);
         this.container.removeEventListener('mousemove', this.onMouseMove);
-        this.container.removeEventListener('wheel', this.onWheelChapter);
+        this.container.removeEventListener('wheel', this.onWheelEvent);
         this.container.removeEventListener('mouseenter', this.onMouseEnter);
         this.container.removeEventListener('mouseleave', this.onMouseLeave);
     }

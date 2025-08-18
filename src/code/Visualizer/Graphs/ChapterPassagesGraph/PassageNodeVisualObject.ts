@@ -1,7 +1,7 @@
-import { BorderConfig } from "../../Canvas/Node/BorderConfig";
-import { HorizontallyScalableNodeVisualObject } from "../../Canvas/Node/HorizontallyScalableNodeVisualObject";
-import { nodeVisualObjectProperties } from "../../Canvas/Node/NodeVisualObject";
-import { VisualObject } from "../../Canvas/Node/VisualObject";
+import { BorderConfig } from "../Node/BorderConfig";
+import { HorizontallyScalableNodeVisualObject } from "../Node/HorizontallyScalableNodeVisualObject";
+import { nodeVisualObjectProperties } from "../Node/NodeVisualObject";
+import { VisualObject } from "../Node/VisualObject";
 import { TRegisterPassageId } from "data/register";
 
 export const selectableVisualProperties = {

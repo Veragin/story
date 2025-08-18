@@ -1,8 +1,8 @@
 import { CanvasManager } from "../../CanvasManager";
 import { Graph } from "../../Graph";
-import { FreeDragStrategy } from "../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { NodeVisualObject } from "../../../Canvas/Node/NodeVisualObject";
-import { TextContent } from "../../../Canvas/Node/TextContent";
+import { FreeDragStrategy } from "../../Node/dragAndDropMovingStrategies/FreeDragStrategy";
+import { NodeVisualObject } from "../../Node/NodeVisualObject";
+import { TextContent } from "../../Node/TextContent";
 import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
 import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
 import { GraphSerializer, SerializedGraph } from "./GraphSerializer";

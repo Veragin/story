@@ -1,5 +1,5 @@
-import { NodeVisualObject } from '../Canvas/Node/NodeVisualObject';
-import { ClickableVisualObject } from '../Canvas/Node/ClickableVisualObject';
+import { NodeVisualObject } from './Node/NodeVisualObject';
+import { ClickableVisualObject } from './Node/ClickableVisualObject';
 
 export const edgeVisualObjectProperties = {
     source: 'source',

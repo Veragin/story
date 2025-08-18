@@ -1,6 +1,6 @@
 
 import { EdgeVisualObject, TLineType } from '../EdgeVisualObject';
-import { NodeVisualObject } from '../../Canvas/Node/NodeVisualObject';
+import { NodeVisualObject } from '../Node/NodeVisualObject';
 import { PassageNodeVisualObject, selectableVisualProperties } from './PassageNodeVisualObject';
 
 

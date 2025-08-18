@@ -42,7 +42,7 @@ export class MouseListener {
         this.canvas = null;
     };
 
-    private onKeyDown = (chapter: KeyboardChapter) => {
+    private onKeyDown = (chapter: KeyboardEvent) => {
         if (chapter.key === 'd') this.user.key.right = true;
         else if (chapter.key === 'a') this.user.key.left = true;
         else if (chapter.key === 'w') this.user.key.up = true;
@@ -51,7 +51,7 @@ export class MouseListener {
         else if (chapter.key === 'Shift') this.user.key.shift = true;
     };
 
-    private onKeyUp = (chapter: KeyboardChapter) => {
+    private onKeyUp = (chapter: KeyboardEvent) => {
         if (chapter.key === 'd') this.user.key.right = false;
         else if (chapter.key === 'a') this.user.key.left = false;
         else if (chapter.key === 'w') this.user.key.up = false;
@@ -134,7 +134,7 @@ export class MouseListener {
         chapter.preventDefault();
     };
 
-    onWheel = (e: WheelChapter) => {
+    onWheel = (e: WheelEvent) => {
         if (this.user.key.shift) {
             this.mapStore.setZoomLevel(this.mapStore.zoomLevel + Math.sign(e.deltaY));
             return;

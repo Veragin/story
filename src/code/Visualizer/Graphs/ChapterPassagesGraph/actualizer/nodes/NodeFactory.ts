@@ -1,5 +1,5 @@
 import { TRegisterPassageId } from "data/register";
-import { NodeVisualObject } from "../../../../Canvas/Node/NodeVisualObject";
+import { NodeVisualObject } from "../../../Node/NodeVisualObject";
 import { worldStateCopy } from "../../WorldStateCopy";
 import { ColorManager } from "../ColorManager";
 import { LinearPassageNodeCreator } from "./creators/LinearPassageNodeCreator";

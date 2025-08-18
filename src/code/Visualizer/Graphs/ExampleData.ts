@@ -1,9 +1,9 @@
-import { TextContent } from '../Canvas/Node/TextContent';
+import { TextContent } from './Node/TextContent';
 import { CanvasManager } from './CanvasManager';
-import { DragStrategy } from '../Canvas/Node/dragAndDropMovingStrategies/DragStrategy';
-import { HorizontalDragStrategy } from '../Canvas/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
-import { GridDragStrategy } from '../Canvas/Node/dragAndDropMovingStrategies/GridDragStrategy';
-import { HorizontallyScalableNodeVisualObject } from '../Canvas/Node/HorizontallyScalableNodeVisualObject';
+import { DragStrategy } from './Node/dragAndDropMovingStrategies/DragStrategy';
+import { HorizontalDragStrategy } from './Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
+import { GridDragStrategy } from './Node/dragAndDropMovingStrategies/GridDragStrategy';
+import { HorizontallyScalableNodeVisualObject } from './Node/HorizontallyScalableNodeVisualObject';
 import { EdgeVisualObject } from './EdgeVisualObject';
 
 // Example data for nodes

@@ -1,10 +1,10 @@
 import { throttle } from 'code/utils/throttle';
-import { ClickableVisualObject } from '../Canvas/Node/ClickableVisualObject';
-import { DraggableVisualObject } from '../Canvas/Node/DraggableVisualObject';
-import { HoverableVisualObject } from '../Canvas/Node/HoverableVisualObject';
-import { VisualObject } from '../Canvas/Node/VisualObject';
+import { ClickableVisualObject } from './Node/ClickableVisualObject';
+import { DraggableVisualObject } from './Node/DraggableVisualObject';
+import { HoverableVisualObject } from './Node/HoverableVisualObject';
+import { VisualObject } from './Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { RESOLUTION_FACTOR } from '../../Chapters/ChapterStore/TimelineRender/constants';
+import { RESOLUTION_FACTOR } from '../Chapters/ChapterStore/TimelineRender/constants';
 import { Observer } from 'code/utils/Observer';
 
 export class CanvasManager {

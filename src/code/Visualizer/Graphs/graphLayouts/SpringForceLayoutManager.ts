@@ -1,9 +1,9 @@
 import { GraphLayoutManager } from "./GraphLayoutManager";
-import { NodeVisualObject } from "../../Canvas/Node/NodeVisualObject";
+import { NodeVisualObject } from "../Node/NodeVisualObject";
 import { Graph } from "../Graph";
 import { EdgeVisualObject } from "../EdgeVisualObject";
 import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";
-import { DraggableVisualObject } from "../../Canvas/Node/DraggableVisualObject";
+import { DraggableVisualObject } from "../Node/DraggableVisualObject";
 import { CircularInitializePositionStrategy, InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
 import { PassageNodeVisualObject } from "../ChapterPassagesGraph/PassageNodeVisualObject";
 

@@ -3,12 +3,12 @@ type Listener<T> = (data: T) => void;
 export class Observer<T> {
     private listeners: Set<Listener<T>> = new Set();
 
-    // Subscribe a listener to the event
+    // Subscribe a listener to the chapter
     public subscribe(listener: Listener<T>): void {
         this.listeners.add(listener);
     }
 
-    // Unsubscribe a listener from the event
+    // Unsubscribe a listener from the chapter
     public unsubscribe(listener: Listener<T>): void {
         this.listeners.delete(listener);
     }
