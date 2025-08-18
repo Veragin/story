@@ -59,8 +59,8 @@ export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {
         const linkPassageData = linkPassages[passageId as keyof typeof linkPassages];
 
         if (typeof linkPassageData === 'function') {
-            const [linkPassageId, linkPassageDataFunction] = Object.entries(linkPassages)[0];
-            const linkPassage = linkPassageDataFunction({} as TWorldState);
+            const [linkPassageId, linkEventDataFunction] = Object.entries(linkPassages)[0];
+            const linkPassage = (linkEventDataFunction as (worldState: TWorldState) => any)({} as TWorldState);
             const linkChapterId = linkPassageId.split('-')[0];
             const linkChapter = register.chapters[linkChapterId as keyof typeof register.chapters];
             

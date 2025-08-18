@@ -5,7 +5,7 @@ import {
     Divider,
     Tooltip,
 } from '@mui/material';
-import { Chapter } from '@mui/icons-material';
+import { Event } from '@mui/icons-material';
 import { Agent } from 'code/Visualizer/stores/Agent';
 import { useChapterForm } from './hooks/useChapterForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
@@ -38,7 +38,7 @@ export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props
             <SHeader>
                 <Tooltip title="Chapters are containers for passages and define game timeline" arrow>
                     <Typography variant="h6" component="h2" sx={{ cursor: 'help', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chapter fontSize="small" />
+                        <Event fontSize="small" />
                         {_('Create New Chapter')}
                     </Typography>
                 </Tooltip>
