@@ -3,7 +3,7 @@ import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 import { TimelineRender } from './TimelineRender/TimelineRender';
 import { Time } from 'time/Time';
 import { TimeManager } from 'time/TimeManager';
-import { CanvasManager } from '../../Graphs/CanvasManager';
+import { CanvasManager } from '../../GUIComponents/Graphs/CanvasManager';
 import { TimelineChapters } from './TimelineChapters/TimelineChapters';
 import { DurationHelper } from './DurationHelper';
 import { Store } from '../../stores/Store';

@@ -13,7 +13,7 @@ import {
 import { FolderOpen, HelpOutline } from '@mui/icons-material';
 import { showToast } from 'code/GlobalWrapper';
 import { SFormRow, SFormControl } from '../styles';
-import { CharacterResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/CharacterResolver';
+import { CharacterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/CharacterResolver';
 
 type Props = {
     passageId: string;

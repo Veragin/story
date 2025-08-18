@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Add, Remove, Inventory, HelpOutline } from '@mui/icons-material';
 import { TItemId } from 'types/TItem';
-import { ItemResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/ItemResolver';
+import { ItemResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ItemResolver';
 import { SCompactColumn, SCompactRow } from '../../styles';
 
 type ItemCost = { id: TItemId; amount: number };

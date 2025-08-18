@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { LocationOn, HelpOutline } from '@mui/icons-material';
 import { SFormRow, SFormControl } from '../styles';
-import { LocationResolver } from 'code/Visualizer/Graphs/ChapterPassagesGraph/store/LocationResolver';
+import { LocationResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/LocationResolver';
 
 type Props = {
     value: string;

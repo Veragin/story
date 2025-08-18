@@ -3,10 +3,10 @@ import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
-import { GraphAnimationHandler } from '../Graphs/animation.ts/GraphAnimationHandler';
+import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation.ts/GraphAnimationHandler';
 import { TChapterId } from 'types/TIds';
-import { CanvasManager } from '../Graphs/CanvasManager';
-import { GraphProvider } from '../Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
+import { CanvasManager } from '../GUIComponents/Graphs/CanvasManager';
+import { GraphProvider } from '../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
 
 type Props = {
     chapterId: TChapterId;
