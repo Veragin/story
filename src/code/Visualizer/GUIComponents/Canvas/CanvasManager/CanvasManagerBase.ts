@@ -1,3 +1,4 @@
+// CanvasManagerBase.ts
 import { throttle } from 'code/utils/throttle';
 import { ClickableVisualObject } from '../Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../Node/DraggableVisualObject';
@@ -6,6 +7,7 @@ import { VisualObject } from '../Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
 import { Observer } from 'code/utils/Observer';
+import { CanvasWorld } from './CanvasWorld';
 
 /**
  * Base class containing common visual object management functionality
@@ -14,6 +16,7 @@ import { Observer } from 'code/utils/Observer';
 export abstract class CanvasManagerBase {
     readonly canvas: HTMLCanvasElement;
     protected ctx: CanvasRenderingContext2D;
+    public readonly canvasWorld: CanvasWorld;
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
@@ -34,8 +37,11 @@ export abstract class CanvasManagerBase {
         assertNotNullish(context);
         this.ctx = context;
         this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
+        
+        this.canvasWorld = new CanvasWorld();
+        this.canvasWorld.onViewPositionChange.subscribe(() => this.draw());
+        this.canvasWorld.onPixelSizeChange.subscribe(() => this.draw());
 
-        // Add event listeners
         this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
@@ -45,11 +51,7 @@ export abstract class CanvasManagerBase {
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
-    // Abstract methods for coordinate transformation - subclasses implement these
-    protected abstract screenToWorld(screenPoint: TPoint): TPoint;
-    protected abstract worldToScreen(worldPoint: TPoint): TPoint;
     protected abstract applyViewportTransformation(ctx: CanvasRenderingContext2D): void;
-    protected abstract getVisibleBounds(): { min: TPoint; max: TPoint };
 
     protected getMousePoint = (event: MouseEvent): TPoint => {
         const rect = this.canvas.getBoundingClientRect();
@@ -61,7 +63,7 @@ export abstract class CanvasManagerBase {
 
     protected handleMouseDown = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        const worldPoint = this.screenToWorld(screenPoint);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
         // Let subclass handle additional mouse down logic (like panning)
         if (this.onMouseDownPre(event, screenPoint, worldPoint)) {
@@ -113,7 +115,7 @@ export abstract class CanvasManagerBase {
             return; // Subclass handled the event
         }
 
-        const worldPoint = this.screenToWorld(screenPoint);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
         // Handle dragging
         if (this.draggedObject && this.dragMode) {
@@ -149,7 +151,7 @@ export abstract class CanvasManagerBase {
 
     protected handleMouseClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        const worldPoint = this.screenToWorld(screenPoint);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
         event.preventDefault();
 
         // Let subclass handle additional logic
@@ -173,7 +175,7 @@ export abstract class CanvasManagerBase {
 
     protected handleMouseDbClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        const worldPoint = this.screenToWorld(screenPoint);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
         event.preventDefault();
 
         if (this.draggedObject) {
@@ -192,7 +194,7 @@ export abstract class CanvasManagerBase {
 
     protected handleMouseUp = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        const worldPoint = this.screenToWorld(screenPoint);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
         // Let subclass handle additional logic (like ending pan)
         this.onMouseUpPre(event, screenPoint, worldPoint);
@@ -278,7 +280,7 @@ export abstract class CanvasManagerBase {
         this.applyViewportTransformation(this.ctx);
         
         // Get visible bounds in world coordinates
-        const visibleBounds = this.getVisibleBounds();
+        const visibleBounds = this.canvasWorld.getVisibleWorldBounds(this.canvasSize);
         
         // Draw sorted objects
         const sortedObjects = this.getSortedObjects();

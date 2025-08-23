@@ -1,19 +1,29 @@
+import { ConditionalObserver } from 'code/utils/Observer';
+
 export class CanvasWorld {
     private _viewPosition: TPoint = { x: 0, y: 0 };
     private _pixelSizeInWorldUnits: number = 1;
-
-    constructor(pixelSizeInWorldUnits: number = 1) {
-        this._pixelSizeInWorldUnits = pixelSizeInWorldUnits;
-    }
+    
+    public onViewPositionChange = new ConditionalObserver<TPoint>(
+        (newPos, lastPos) => !lastPos || newPos.x !== lastPos.x || newPos.y !== lastPos.y
+    );
+    
+    public onPixelSizeChange = new ConditionalObserver<number>(
+        (newSize, lastSize) => !lastSize || Math.abs(newSize - lastSize) > 0.00001
+    );
 
     get viewPosition(): TPoint { return this._viewPosition; }
-    set viewPosition(position: TPoint) { this._viewPosition = position; }
-
-    get pixelSizeInWorldUnits(): number { return this._pixelSizeInWorldUnits; }
-    set pixelSizeInWorldUnits(size: number) { 
-        this._pixelSizeInWorldUnits = Math.max(0.00001, size); // Prevent zero
+    set viewPosition(position: TPoint) {
+        this._viewPosition = position;
+        this.onViewPositionChange.notify(position);
     }
 
+    get pixelSizeInWorldUnits(): number { return this._pixelSizeInWorldUnits; }
+    set pixelSizeInWorldUnits(size: number) {
+        this._pixelSizeInWorldUnits = Math.max(0.00001, size);
+        this.onPixelSizeChange.notify(this._pixelSizeInWorldUnits);
+    }
+    
     screenToWorld(screenPoint: TPoint): TPoint {
         return {
             x: this._viewPosition.x + (screenPoint.x * this._pixelSizeInWorldUnits),
@@ -57,20 +67,31 @@ export class CanvasWorld {
         
         this._viewPosition.x += worldPointBefore.x - worldPointAfter.x;
         this._viewPosition.y += worldPointBefore.y - worldPointAfter.y;
+        
+        // These will only notify if values actually changed
+        this.onViewPositionChange.notify(this._viewPosition);
+        this.onPixelSizeChange.notify(this._pixelSizeInWorldUnits);
     }
 
     pan(targetPosition: TPoint): void {
         this._viewPosition.x -= this.screenLengthToWorld(targetPosition.x);
         this._viewPosition.y -= this.screenLengthToWorld(targetPosition.y);
+        
+        this.onViewPositionChange.notify(this._viewPosition);
     }
 
     resetView(): void {
         this._viewPosition = { x: 0, y: 0 };
         this._pixelSizeInWorldUnits = 1;
+        
+        this.onViewPositionChange.notify(this._viewPosition);
+        this.onPixelSizeChange.notify(this._pixelSizeInWorldUnits);
     }
 
     resetViewPosition(): void {
         this._viewPosition = { x: 0, y: 0 };
+        
+        this.onViewPositionChange.notify(this._viewPosition);
     }
 
     getPixelSizeInWorldUnits(): number {
