@@ -6,7 +6,7 @@ import { HoverableVisualObject } from '../Node/HoverableVisualObject';
 import { VisualObject } from '../Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
-import { Observer } from 'code/utils/Observer';
+import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
 
 /**
@@ -23,7 +23,12 @@ export abstract class CanvasManagerBase {
     protected hoveredObjects: Set<HoverableVisualObject> = new Set();
     protected nextInsertionOrder: number = 0;
     protected draggedObject: DraggableVisualObject | null = null;
-    readonly onCanvasResize = new Observer<TSize>();
+    readonly onCanvasResize = new ConditionalObserver<TSize>(
+        (lastSize, newSize) => {
+            if (!lastSize || !newSize) return false;
+            return lastSize.width !== newSize.width || lastSize.height !== newSize.height;
+        }
+    );
 
     get canvasSize(): TSize {
         return { width: this.canvas.width, height: this.canvas.height };
@@ -49,6 +54,12 @@ export abstract class CanvasManagerBase {
         this.canvas.addEventListener('click', this.handleMouseClick);
         this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+
+        this.canvas.addEventListener('resize', () => {
+            this.onCanvasResize.notify(this.canvasSize);
+            console.log('Canvas resized:', this.canvasSize);
+            this.draw();
+        });
     }
 
     protected abstract applyViewportTransformation(ctx: CanvasRenderingContext2D): void;
