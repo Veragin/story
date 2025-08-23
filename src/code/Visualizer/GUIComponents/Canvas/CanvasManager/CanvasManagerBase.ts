@@ -8,7 +8,8 @@ import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
 import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
-import { VisibleVisualObjectsManager, IVisibleVisualObjectsManager, IVisibilityProvider } from './VisibleObjectsManager';
+import { IVisibilityProvider } from './VisibleVisualObjectsManager';
+import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
 
 /**
  * Base class containing common visual object management functionality
@@ -18,7 +19,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
     readonly canvas: HTMLCanvasElement;
     protected ctx: CanvasRenderingContext2D;
     public readonly canvasWorld: CanvasWorld;
-    public readonly visibleVisualObjectsManager: IVisibleVisualObjectsManager;
+    public readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
@@ -51,7 +52,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
 
         this.canvasWorld = new CanvasWorld();
-        this.visibleVisualObjectsManager = new VisibleVisualObjectsManager(this.canvasWorld, this);
+        this.visibleVisualObjectsManager = new ZIndexSortedVisibleVisualObjectsManager(this.canvasWorld, this);
         this.visibleVisualObjectsManager.onVisibleObjectsChanged.subscribe(() => this.draw());
 
         this.canvasWorld.onViewPositionChange.subscribe(() => this.draw());
@@ -194,11 +195,10 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         }
 
         // Handle clicks in reverse order (top-most object first)
-        Array.from(this.visualObjects)
-            .reverse()
+        Array.from(this.getTopObjectsAtVisiblePoint(worldPoint))
             .forEach((obj) => {
-                if (isClickableObject(obj[0])) {
-                    obj[0].handleClick(worldPoint);
+                if (isClickableObject(obj)) {
+                    obj.handleClick(worldPoint);
                 }
             });
     };
@@ -213,11 +213,10 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         }
 
         // Handle double clicks in reverse order (top-most object first)
-        Array.from(this.visualObjects)
-            .reverse()
+        Array.from(this.getTopObjectsAtVisiblePoint(worldPoint))
             .forEach((obj) => {
-                if (isClickableObject(obj[0])) {
-                    obj[0].handleDbClick(worldPoint);
+                if (isClickableObject(obj)) {
+                    obj.handleDbClick(worldPoint);
                 }
             });
     };
@@ -267,8 +266,9 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
     };
 
     protected getTopObjectsAtVisiblePoint = (worldPoint: TPoint): VisualObject[] => {
-        return this.sortVisualObjectsByZIndex(this.visibleVisualObjectsManager.getVisibleObjects())
-            .filter((obj) => isHoverableObject(obj) && obj.isPointInside(worldPoint))
+        return this.visibleVisualObjectsManager.getSortedVisibleObjects()
+            .filter((obj: VisualObject) =>
+                isHoverableObject(obj) && obj.isPointInside(worldPoint))
             .reverse(); // Reverse to get top-most objects first
     };
 
@@ -315,10 +315,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         // Apply viewport transformation (implemented by subclass)
         this.applyViewportTransformation(this.ctx);
 
-        const visibleObjects = this.visibleVisualObjectsManager.getVisibleObjects();
-
-        // Draw sorted objects that are visible
-        const sortedObjects = this.sortVisualObjectsByZIndex(visibleObjects);
+        const sortedObjects = this.visibleVisualObjectsManager.getSortedVisibleObjects();
         for (const obj of sortedObjects) {
             obj.draw(this.ctx);
         }
