@@ -4,7 +4,7 @@ import { TPassageId } from 'types/TIds';
 import { TLinkCost } from 'types/TPassage';
 import { Engine } from './Engine';
 import { parsePassageId } from 'code/utils/parsePassageId';
-import { showToast } from 'code/GlobalWrapper';
+import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { itemInfo } from 'data/items/itemInfo';
 import { action, makeObservable } from 'mobx';
 

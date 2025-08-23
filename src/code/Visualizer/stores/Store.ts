@@ -51,10 +51,17 @@ export class Store {
 type TActiveTab =
     | null
     | {
-          tab: 'chapter';
-          chapterId: TChapterId;
-      }
+        tab: 'chapters';
+    }
     | {
-          tab: 'map';
-          mapId: string;
-      };
+        tab: 'chapter';
+        chapterId: TChapterId;
+    }
+    | {
+        tab: 'map';
+        mapId: string;
+    }
+    | {
+        tab: 'worldEvents';
+    };
+

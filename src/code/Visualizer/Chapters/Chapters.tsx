@@ -13,7 +13,7 @@ import { Nav } from '../components/Nav';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
 import { ChapterTimeline } from './ChapterTimeline';
 import { ChapterCreationForm } from './ChapterCreationForm/ChapterCreationForm';
-import { Add, Chapter } from '@mui/icons-material';
+import { Add, Event } from '@mui/icons-material';
 
 const darkTheme = createTheme({
     palette: {
@@ -207,7 +207,7 @@ export const Chapters = () => {
             <Nav>
                 <SRow>
                     <SNavTitle>
-                        <Chapter fontSize="small" sx={{ mr: 1 }} />
+                        <Event fontSize="small" sx={{ mr: 1 }} />
                         <Typography variant="h6" component="span" sx={{ fontSize: '1rem', fontWeight: 500 }}>
                             {_('Chapters Manager')}
                         </Typography>

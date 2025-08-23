@@ -1,4 +1,4 @@
-import { CanvasManager } from '../../CanvasManager';
+import { CanvasManager } from '../../../Canvas/CanvasManager/CanvasManager';
 import { Graph } from '../../Graph';
 import { GraphDeserializer } from './GraphDeserializer';
 import { GraphSerializer, SerializedGraph } from './GraphSerializer';

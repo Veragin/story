@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { showToast } from 'code/GlobalWrapper';
+import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TChapterFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange, validateChildren } from '../types';
 import { Agent } from 'code/Visualizer/stores/Agent';

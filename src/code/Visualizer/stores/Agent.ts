@@ -1,4 +1,4 @@
-import { showToast } from 'code/GlobalWrapper';
+import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { TLocationId } from 'types/TLocation';
 import { TChapterPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';

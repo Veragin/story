@@ -1,9 +1,9 @@
 import { assertNotNullish } from 'code/utils/typeguards';
 import { EdgeFromSide } from 'code/Visualizer/GUIComponents/Graphs/EdgeFromSide';
 import { Graph } from 'code/Visualizer/GUIComponents/Graphs/Graph';
-import { HorizontalDragStrategy } from 'code/Visualizer/GUIComponents/Graphs/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
-import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/GUIComponents/Graphs/Node/HorizontallyScalableNodeVisualObject';
-import { TextContent } from 'code/Visualizer/GUIComponents/Graphs/Node/TextContent';
+import { HorizontalDragStrategy } from 'code/Visualizer/GUIComponents/Canvas/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
+import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/GUIComponents/Canvas/Node/HorizontallyScalableNodeVisualObject';
+import { TextContent } from 'code/Visualizer/GUIComponents/Canvas/Node/TextContent';
 import { TChapter } from 'types/TChapter';
 import { TChapterId } from 'types/TIds';
 

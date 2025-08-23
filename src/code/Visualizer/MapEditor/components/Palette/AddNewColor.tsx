@@ -6,7 +6,7 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { List } from './List';
 import { TextField } from 'code/Visualizer/components/TextField';
 import { useState } from 'react';
-import { showToast } from 'code/GlobalWrapper';
+import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { spacingCss } from 'code/components/css';
 import styled from '@emotion/styled';
 

@@ -1,11 +1,11 @@
 import { ReactNode } from 'react';
 import { StrictMode } from 'react';
-import './index.css';
+import '../index.css';
 import { EnqueueSnackbar, SnackbarProvider, useSnackbar } from 'notistack';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import appTheme from 'code/theme/theme';
-import { applyFormatting } from './utils/translations';
+import { applyFormatting } from '../utils/translations';
 
 type Props = {
     children: ReactNode;

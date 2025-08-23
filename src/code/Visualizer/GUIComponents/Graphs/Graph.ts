@@ -1,7 +1,7 @@
-import { CanvasManager } from './CanvasManager';
+import { CanvasManager } from '../Canvas/CanvasManager/CanvasManager';
 import { EdgeVisualObject } from './EdgeVisualObject';
 import { GraphLayoutManager } from './graphLayouts/GraphLayoutManager';
-import { NodeVisualObject } from './Node/NodeVisualObject';
+import { NodeVisualObject } from './NodeVisualObject';
 import { Observer } from 'code/utils/Observer';
 import { SpringForceLayoutManager } from './graphLayouts/SpringForceLayoutManager';
 

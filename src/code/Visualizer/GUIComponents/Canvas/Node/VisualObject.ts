@@ -17,7 +17,7 @@ export const visualObjectProperties = {
 export abstract class VisualObject {
     protected position: TPoint;
     protected size: TSize;
-    private automaticDraw: boolean = true;
+    private _automaticDraw: boolean = true;
     private _onPropertyChanged = new Observer<TVisualObjectPropertyChangeArgs>();
     private _zIndex: number = 0;
 
@@ -52,7 +52,7 @@ export abstract class VisualObject {
     }
 
     getAutomaticDraw(): boolean {
-        return this.automaticDraw;
+        return this._automaticDraw;
     }
 
     setX(x: number) {
@@ -85,16 +85,16 @@ export abstract class VisualObject {
     }
 
     setAutomaticDraw(automaticDraw: boolean): void {
-        this.automaticDraw = automaticDraw;
+        this._automaticDraw = automaticDraw;
     }
 
     /**
      * @param change
      * @param reason why the redraw is called, name of the property that changed,
-     * or name of chapter that triggered the redraw
+     * or name of event that triggered the redraw
      */
     protected redraw(change: boolean, reason: string): void {
-        if (this.automaticDraw && change) {
+        if (this._automaticDraw && change) {
             this.onPropertyChanged.notify({
                 property: reason,
                 VisualObject: this,

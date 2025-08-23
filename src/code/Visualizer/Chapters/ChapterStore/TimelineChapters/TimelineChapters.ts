@@ -1,4 +1,4 @@
-import { CanvasManager } from 'code/Visualizer/GUIComponents/Graphs/CanvasManager';
+import { CanvasManager } from 'code/Visualizer/GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { ChapterStore } from '../ChapterStore';
 import { register } from 'data/register';
 import { TChapterId } from 'types/TIds';

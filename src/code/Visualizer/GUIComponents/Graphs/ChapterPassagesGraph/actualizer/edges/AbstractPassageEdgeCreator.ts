@@ -1,5 +1,5 @@
 import { TLineType } from "../../../EdgeVisualObject";
-import { NodeVisualObject } from "../../../Node/NodeVisualObject";
+import { NodeVisualObject } from "../../../NodeVisualObject";
 import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
 
 export type EdgeCreationParams = {

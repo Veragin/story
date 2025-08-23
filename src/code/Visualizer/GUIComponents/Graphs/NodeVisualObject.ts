@@ -1,6 +1,6 @@
-import { BorderConfig } from './BorderConfig';
-import { DraggableVisualObject } from './DraggableVisualObject';
-import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from './VisualObject';
+import { BorderConfig } from '../Canvas/Node/BorderConfig';
+import { DraggableVisualObject } from '../Canvas/Node/DraggableVisualObject';
+import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from '../Canvas/Node/VisualObject';
 
 export const nodeVisualObjectProperties = {
     border: 'border',

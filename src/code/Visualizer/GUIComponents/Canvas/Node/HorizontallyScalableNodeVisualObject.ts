@@ -1,5 +1,5 @@
 import { BorderConfig } from './BorderConfig';
-import { NodeVisualObject } from './NodeVisualObject';
+import { NodeVisualObject } from '../../Graphs/NodeVisualObject';
 import { VisualObject } from './VisualObject';
 import { Observer } from 'code/utils/Observer';
 

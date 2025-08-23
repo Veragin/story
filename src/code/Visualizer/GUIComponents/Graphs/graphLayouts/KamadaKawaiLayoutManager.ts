@@ -1,5 +1,5 @@
 import { GraphLayoutManager } from "./GraphLayoutManager";
-import { NodeVisualObject } from "../Node/NodeVisualObject";
+import { NodeVisualObject } from "../NodeVisualObject";
 import { Graph } from "../Graph";
 import { EdgeVisualObject } from "../EdgeVisualObject";
 import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";

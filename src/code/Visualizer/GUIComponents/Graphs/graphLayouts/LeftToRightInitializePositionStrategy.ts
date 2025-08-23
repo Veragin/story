@@ -1,5 +1,5 @@
 import { EdgeVisualObject } from "../EdgeVisualObject";
-import { NodeVisualObject } from "../Node/NodeVisualObject";
+import { NodeVisualObject } from "../NodeVisualObject";
 import { InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
 
 /**

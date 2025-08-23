@@ -1,21 +1,25 @@
 import { throttle } from 'code/utils/throttle';
-import { ClickableVisualObject } from './Node/ClickableVisualObject';
-import { DraggableVisualObject } from './Node/DraggableVisualObject';
-import { HoverableVisualObject } from './Node/HoverableVisualObject';
-import { VisualObject } from './Node/VisualObject';
+import { ClickableVisualObject } from '../Node/ClickableVisualObject';
+import { DraggableVisualObject } from '../Node/DraggableVisualObject';
+import { HoverableVisualObject } from '../Node/HoverableVisualObject';
+import { VisualObject } from '../Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { RESOLUTION_FACTOR } from '../../Chapters/ChapterStore/TimelineRender/constants';
+import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
 import { Observer } from 'code/utils/Observer';
 
-export class CanvasManager {
+/**
+ * Base class containing common visual object management functionality
+ * Subclasses handle coordinate transformations and viewport management
+ */
+export abstract class CanvasManagerBase {
     readonly canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
+    protected ctx: CanvasRenderingContext2D;
 
     // Visual objects with insertion order
-    private visualObjects: Map<VisualObject, number> = new Map();
-    private hoveredObjects: Set<HoverableVisualObject> = new Set();
-    private nextInsertionOrder: number = 0;
-    private draggedObject: DraggableVisualObject | null = null;
+    protected visualObjects: Map<VisualObject, number> = new Map();
+    protected hoveredObjects: Set<HoverableVisualObject> = new Set();
+    protected nextInsertionOrder: number = 0;
+    protected draggedObject: DraggableVisualObject | null = null;
     readonly onCanvasResize = new Observer<TSize>();
 
     get canvasSize(): TSize {
@@ -31,7 +35,7 @@ export class CanvasManager {
         this.ctx = context;
         this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
 
-        // Add chapter listeners
+        // Add event listeners
         this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
@@ -41,72 +45,92 @@ export class CanvasManager {
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
-    private getMousePoint(chapter: MouseEvent): TPoint {
+    // Abstract methods for coordinate transformation - subclasses implement these
+    protected abstract screenToWorld(screenPoint: TPoint): TPoint;
+    protected abstract worldToScreen(worldPoint: TPoint): TPoint;
+    protected abstract applyViewportTransformation(ctx: CanvasRenderingContext2D): void;
+    protected abstract getVisibleBounds(): { min: TPoint; max: TPoint };
+
+    protected getMousePoint = (event: MouseEvent): TPoint => {
         const rect = this.canvas.getBoundingClientRect();
         return {
-            x: chapter.clientX - rect.left,
-            y: chapter.clientY - rect.top,
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
         };
     }
 
-    private handleMouseDown = (chapter: MouseEvent) => {
+    protected handleMouseDown = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.screenToWorld(screenPoint);
+
+        // Let subclass handle additional mouse down logic (like panning)
+        if (this.onMouseDownPre(event, screenPoint, worldPoint)) {
+            return; // Subclass handled the event
+        }
+
         if (!this.dragMode) return;
 
-        const point = this.getMousePoint(chapter);
-        const objectsAtPoint = this.getTopObjectsAtPoint(point);
+        const objectsAtPoint = this.getTopObjectsAtPoint(worldPoint);
 
-        if (chapter.button === 0) {
+        if (event.button === 0) {
             // Find the topmost draggable object
-            const draggableObject = objectsAtPoint.find((obj) => isDraggableObject(obj) && obj.isDraggable()) as
-                | DraggableVisualObject
-                | undefined;
+            const draggableObject = objectsAtPoint.find((obj) => 
+                isDraggableObject(obj) && obj.isDraggable()
+            ) as DraggableVisualObject | undefined;
 
             if (draggableObject) {
                 this.draggedObject = draggableObject;
-                draggableObject.startDrag(point);
+                draggableObject.startDrag(worldPoint);
 
-                // Increase z-index while dragging // TODO maybe just set to max z-index
+                // Increase z-index while dragging
                 const currentZIndex = draggableObject.zIndex;
-                const highestZIndex = Math.max(...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex));
+                const highestZIndex = Math.max(
+                    ...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex)
+                );
                 if (currentZIndex <= highestZIndex) {
                     draggableObject.setZIndex(highestZIndex + 1);
                 }
             }
         }
 
-        // Handle right button down chapters
-        if (chapter.button === 2) {
+        // Handle right button down events
+        if (event.button === 2) {
             Array.from(this.visualObjects)
                 .reverse()
                 .forEach((obj) => {
                     if (isClickableObject(obj[0])) {
-                        obj[0].handleRightDown(point);
+                        obj[0].handleRightDown(worldPoint);
                     }
                 });
         }
     };
 
-    private handleMouseMove = (chapter: MouseEvent) => {
-        const point = this.getMousePoint(chapter);
+    protected handleMouseMove = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        
+        // Let subclass handle additional mouse move logic (like panning)
+        if (this.onMouseMovePre(event, screenPoint)) {
+            return; // Subclass handled the event
+        }
+
+        const worldPoint = this.screenToWorld(screenPoint);
 
         // Handle dragging
         if (this.draggedObject && this.dragMode) {
-            this.draggedObject.drag(point);
+            this.draggedObject.drag(worldPoint);
             return;
         }
 
         // Handle regular hover
         const hoveredObjectsThisFrame = new Set<HoverableVisualObject>();
+        const objectsAtPoint = this.getTopObjectsAtPoint(worldPoint);
 
-        // Get objects at point, sorted by z-index (top to bottom)
-        const objectsAtPoint = this.getTopObjectsAtPoint(point);
-
-        // Handle hover chapters
+        // Handle hover events
         for (const obj of this.visualObjects.keys()) {
             if (isHoverableObject(obj)) {
                 const isTopMost = objectsAtPoint[0] === obj;
-                if (isTopMost && obj.isPointInside(point)) {
-                    obj.handleHover(point);
+                if (isTopMost && obj.isPointInside(worldPoint)) {
+                    obj.handleHover(worldPoint);
                     if (obj.isHovered()) {
                         hoveredObjectsThisFrame.add(obj);
                     }
@@ -123,9 +147,15 @@ export class CanvasManager {
         this.hoveredObjects = hoveredObjectsThisFrame;
     };
 
-    private handleMouseClick = (chapter: MouseEvent) => {
-        const point = this.getMousePoint(chapter);
-        chapter.preventDefault();
+    protected handleMouseClick = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.screenToWorld(screenPoint);
+        event.preventDefault();
+
+        // Let subclass handle additional logic
+        if (this.onMouseClickPre(event, screenPoint, worldPoint)) {
+            return; // Subclass handled the event
+        }
 
         if (this.draggedObject) {
             return;
@@ -136,53 +166,77 @@ export class CanvasManager {
             .reverse()
             .forEach((obj) => {
                 if (isClickableObject(obj[0])) {
-                    obj[0].handleClick(point);
+                    obj[0].handleClick(worldPoint);
                 }
             });
     };
 
-    private handleMouseDbClick = (chapter: MouseEvent) => {
-        const point = this.getMousePoint(chapter);
-        chapter.preventDefault();
+    protected handleMouseDbClick = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.screenToWorld(screenPoint);
+        event.preventDefault();
 
         if (this.draggedObject) {
             return;
         }
 
-        // Handle clicks in reverse order (top-most object first)
+        // Handle double clicks in reverse order (top-most object first)
         Array.from(this.visualObjects)
             .reverse()
             .forEach((obj) => {
                 if (isClickableObject(obj[0])) {
-                    obj[0].handleDbClick(point);
+                    obj[0].handleDbClick(worldPoint);
                 }
             });
     };
 
-    private handleMouseUp = (chapter: MouseEvent) => {
+    protected handleMouseUp = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.screenToWorld(screenPoint);
+
+        // Let subclass handle additional logic (like ending pan)
+        this.onMouseUpPre(event, screenPoint, worldPoint);
+
         if (this.draggedObject) {
-            const point = this.getMousePoint(chapter);
-            this.draggedObject.endDrag(point);
+            this.draggedObject.endDrag(worldPoint);
             this.draggedObject = null;
         }
     };
 
-    private handleContextMenu = (chapter: MouseEvent) => {
-        chapter.preventDefault();
+    protected handleContextMenu = (event: MouseEvent) => {
+        event.preventDefault();
         return false;
     };
+
+    // Hooks for subclasses to add their own behavior
+    // Return true if the subclass handled the event and no further processing should occur
+    protected onMouseDownPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
+        return false;
+    }
+
+    protected onMouseMovePre(event: MouseEvent, screenPoint: TPoint): boolean {
+        return false;
+    }
+
+    protected onMouseClickPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
+        return false;
+    }
+
+    protected onMouseUpPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): void {
+        // Default implementation does nothing
+    }
 
     private handleVisualObjectChange = () => {
         this.draw();
     };
 
-    private getTopObjectsAtPoint = (point: TPoint): VisualObject[] => {
+    protected getTopObjectsAtPoint = (worldPoint: TPoint): VisualObject[] => {
         return this.getSortedObjects()
-            .filter((obj) => isHoverableObject(obj) && obj.isPointInside(point))
+            .filter((obj) => isHoverableObject(obj) && obj.isPointInside(worldPoint))
             .reverse(); // Reverse to get top-most objects first
     };
 
-    private getSortedObjects = (): VisualObject[] => {
+    protected getSortedObjects = (): VisualObject[] => {
         return Array.from(this.visualObjects.keys()).sort((a, b) => {
             // First compare by z-index
             if (a.zIndex !== b.zIndex) {
@@ -193,6 +247,7 @@ export class CanvasManager {
         });
     };
 
+    // Visual object management methods
     addObject = (obj: VisualObject) => {
         this.visualObjects.set(obj, this.nextInsertionOrder++);
         obj.onPropertyChanged.subscribe(this.handleVisualObjectChange);
@@ -215,27 +270,44 @@ export class CanvasManager {
 
     draw = throttle(() => {
         this.clear();
+        
+        // Save the context state
+        this.ctx.save();
+        
+        // Apply viewport transformation (implemented by subclass)
+        this.applyViewportTransformation(this.ctx);
+        
+        // Get visible bounds in world coordinates
+        const visibleBounds = this.getVisibleBounds();
+        
+        // Draw sorted objects
         const sortedObjects = this.getSortedObjects();
         for (const obj of sortedObjects) {
-            if (!this.isObjVisible(obj)) continue;
+            if (!this.isObjVisible(obj, visibleBounds)) continue;
             obj.draw(this.ctx);
         }
+        
+        // Restore the context state
+        this.ctx.restore();
     }, 1000 / 60);
 
-    private isObjVisible = (obj: VisualObject): boolean => {
+    protected isObjVisible = (
+        obj: VisualObject, 
+        visibleBounds: { min: TPoint; max: TPoint }
+    ): boolean => {
         const pos = obj.getPosition();
         const size = obj.getSize();
 
         return (
-            pos.x + size.width >= 0 &&
-            pos.x <= this.canvas.width &&
-            pos.y + size.height >= 0 &&
-            pos.y <= this.canvas.height
+            pos.x + size.width >= visibleBounds.min.x &&
+            pos.x <= visibleBounds.max.x &&
+            pos.y + size.height >= visibleBounds.min.y &&
+            pos.y <= visibleBounds.max.y
         );
     };
 
-    destroy = () => {
-        // Clean up chapter listeners
+    protected destroy = () => {
+        // Clean up event listeners
         this.canvas.removeEventListener('mousemove', this.handleMouseMove);
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
@@ -255,6 +327,11 @@ export class CanvasManager {
         this.draggedObject = null;
     };
 
+    /** Public wrapper for protected destroy to allow external cleanup */
+    public dispose() {
+        this.destroy();
+    }
+
     getHeight(): number | undefined {
         return this.canvas.height;
     }
@@ -264,6 +341,7 @@ export class CanvasManager {
     }
 }
 
+// Type guards
 const isDraggableObject = (obj: any): obj is DraggableVisualObject => {
     return 'isDragging' in obj && 'isDraggable' in obj;
 };

@@ -1,12 +1,12 @@
 import { createRoot } from 'react-dom/client';
 import { Engine } from 'code/Engine/Engine';
 import { Wrapper } from 'code/Engine/Wrapper';
-import { GlobalWrapper } from 'code/GlobalWrapper';
+import { GlobalThemeWrapper } from 'code/theme/GlobalThemeWrapper';
 
 createRoot(document.getElementById('root')!).render(
-    <GlobalWrapper>
+    <GlobalThemeWrapper>
         <Wrapper>
             <Engine />
         </Wrapper>
-    </GlobalWrapper>
+    </GlobalThemeWrapper>
 );
