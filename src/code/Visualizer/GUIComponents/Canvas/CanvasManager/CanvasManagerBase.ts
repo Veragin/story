@@ -195,12 +195,16 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         }
 
         // Handle clicks in reverse order (top-most object first)
-        Array.from(this.getTopObjectsAtVisiblePoint(worldPoint))
-            .forEach((obj) => {
-                if (isClickableObject(obj)) {
-                    obj.handleClick(worldPoint);
+        // Stop propagation if an object returns true
+        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
+        for (const obj of objectsAtPoint) {
+            if (isClickableObject(obj)) {
+                const handled = obj.handleClick(worldPoint);
+                if (handled) {
+                    break;
                 }
-            });
+            }
+        }
     };
 
     protected handleMouseDbClick = (event: MouseEvent) => {
@@ -213,12 +217,16 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         }
 
         // Handle double clicks in reverse order (top-most object first)
-        Array.from(this.getTopObjectsAtVisiblePoint(worldPoint))
-            .forEach((obj) => {
-                if (isClickableObject(obj)) {
-                    obj.handleDbClick(worldPoint);
+        // Stop propagation if an object returns true
+        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
+        for (const obj of objectsAtPoint) {
+            if (isClickableObject(obj)) {
+                const handled = obj.handleDbClick(worldPoint);
+                if (handled) {
+                    break;
                 }
-            });
+            }
+        }
     };
 
     protected handleMouseUp = (event: MouseEvent) => {
