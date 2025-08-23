@@ -8,21 +8,28 @@ import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
 import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
+import { VisibleVisualObjectsManager, IVisibleVisualObjectsManager, IVisibilityProvider } from './VisibleObjectsManager';
 
 /**
  * Base class containing common visual object management functionality
  * Subclasses handle coordinate transformations and viewport management
  */
-export abstract class CanvasManagerBase {
+export abstract class CanvasManagerBase implements IVisibilityProvider {
     readonly canvas: HTMLCanvasElement;
     protected ctx: CanvasRenderingContext2D;
     public readonly canvasWorld: CanvasWorld;
+    public readonly visibleVisualObjectsManager: IVisibleVisualObjectsManager;
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
     protected hoveredObjects: Set<HoverableVisualObject> = new Set();
     protected nextInsertionOrder: number = 0;
     protected draggedObject: DraggableVisualObject | null = null;
+
+    public readonly onObjectAdded = new Observer<VisualObject>();
+    public readonly onObjectRemoved = new Observer<VisualObject>();
+    public readonly onObjectPropertyChanged = new Observer<{ object: VisualObject, property: string }>();
+
     readonly onCanvasResize = new ConditionalObserver<TSize>(
         (lastSize, newSize) => {
             if (!lastSize || !newSize) return false;
@@ -42,8 +49,11 @@ export abstract class CanvasManagerBase {
         assertNotNullish(context);
         this.ctx = context;
         this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
-        
+
         this.canvasWorld = new CanvasWorld();
+        this.visibleVisualObjectsManager = new VisibleVisualObjectsManager(this.canvasWorld, this);
+        this.visibleVisualObjectsManager.onVisibleObjectsChanged.subscribe(() => this.draw());
+
         this.canvasWorld.onViewPositionChange.subscribe(() => this.draw());
         this.canvasWorld.onPixelSizeChange.subscribe(() => this.draw());
 
@@ -57,9 +67,18 @@ export abstract class CanvasManagerBase {
 
         this.canvas.addEventListener('resize', () => {
             this.onCanvasResize.notify(this.canvasSize);
+            this.visibleVisualObjectsManager.setCanvasSize(this.canvasSize);
             console.log('Canvas resized:', this.canvasSize);
             this.draw();
         });
+    }
+
+    getAllObjects(): Iterable<VisualObject> {
+        return this.visualObjects.keys();
+    }
+
+    getCanvasSize(): TSize {
+        return this.canvasSize;
     }
 
     protected abstract applyViewportTransformation(ctx: CanvasRenderingContext2D): void;
@@ -83,11 +102,11 @@ export abstract class CanvasManagerBase {
 
         if (!this.dragMode) return;
 
-        const objectsAtPoint = this.getTopObjectsAtPoint(worldPoint);
+        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
         if (event.button === 0) {
             // Find the topmost draggable object
-            const draggableObject = objectsAtPoint.find((obj) => 
+            const draggableObject = objectsAtPoint.find((obj) =>
                 isDraggableObject(obj) && obj.isDraggable()
             ) as DraggableVisualObject | undefined;
 
@@ -120,7 +139,7 @@ export abstract class CanvasManagerBase {
 
     protected handleMouseMove = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        
+
         // Let subclass handle additional mouse move logic (like panning)
         if (this.onMouseMovePre(event, screenPoint)) {
             return; // Subclass handled the event
@@ -136,7 +155,7 @@ export abstract class CanvasManagerBase {
 
         // Handle regular hover
         const hoveredObjectsThisFrame = new Set<HoverableVisualObject>();
-        const objectsAtPoint = this.getTopObjectsAtPoint(worldPoint);
+        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
         // Handle hover events
         for (const obj of this.visualObjects.keys()) {
@@ -239,18 +258,22 @@ export abstract class CanvasManagerBase {
         // Default implementation does nothing
     }
 
-    private handleVisualObjectChange = () => {
+    private handleVisualObjectChange = (args: { property: string; VisualObject: VisualObject }) => {
+        this.onObjectPropertyChanged.notify({
+            object: args.VisualObject,
+            property: args.property
+        });
         this.draw();
     };
 
-    protected getTopObjectsAtPoint = (worldPoint: TPoint): VisualObject[] => {
-        return this.getSortedObjects()
+    protected getTopObjectsAtVisiblePoint = (worldPoint: TPoint): VisualObject[] => {
+        return this.sortVisualObjectsByZIndex(this.visibleVisualObjectsManager.getVisibleObjects())
             .filter((obj) => isHoverableObject(obj) && obj.isPointInside(worldPoint))
             .reverse(); // Reverse to get top-most objects first
     };
 
-    protected getSortedObjects = (): VisualObject[] => {
-        return Array.from(this.visualObjects.keys()).sort((a, b) => {
+    protected sortVisualObjectsByZIndex = (objectsToSort: Set<VisualObject>): VisualObject[] => {
+        return Array.from(objectsToSort).sort((a, b) => {
             // First compare by z-index
             if (a.zIndex !== b.zIndex) {
                 return a.zIndex - b.zIndex;
@@ -264,6 +287,7 @@ export abstract class CanvasManagerBase {
     addObject = (obj: VisualObject) => {
         this.visualObjects.set(obj, this.nextInsertionOrder++);
         obj.onPropertyChanged.subscribe(this.handleVisualObjectChange);
+        this.onObjectAdded.notify(obj);
         this.draw();
     };
 
@@ -274,6 +298,7 @@ export abstract class CanvasManagerBase {
     removeObject = (obj: VisualObject) => {
         this.visualObjects.delete(obj);
         obj.onPropertyChanged.unsubscribe(this.handleVisualObjectChange);
+        this.onObjectRemoved.notify(obj);
         this.draw();
     };
 
@@ -283,41 +308,24 @@ export abstract class CanvasManagerBase {
 
     draw = throttle(() => {
         this.clear();
-        
+
         // Save the context state
         this.ctx.save();
-        
+
         // Apply viewport transformation (implemented by subclass)
         this.applyViewportTransformation(this.ctx);
-        
-        // Get visible bounds in world coordinates
-        const visibleBounds = this.canvasWorld.getVisibleWorldBounds(this.canvasSize);
-        
-        // Draw sorted objects
-        const sortedObjects = this.getSortedObjects();
+
+        const visibleObjects = this.visibleVisualObjectsManager.getVisibleObjects();
+
+        // Draw sorted objects that are visible
+        const sortedObjects = this.sortVisualObjectsByZIndex(visibleObjects);
         for (const obj of sortedObjects) {
-            if (!this.isObjVisible(obj, visibleBounds)) continue;
             obj.draw(this.ctx);
         }
-        
+
         // Restore the context state
         this.ctx.restore();
     }, 1000 / 60);
-
-    protected isObjVisible = (
-        obj: VisualObject, 
-        visibleBounds: { min: TPoint; max: TPoint }
-    ): boolean => {
-        const pos = obj.getPosition();
-        const size = obj.getSize();
-
-        return (
-            pos.x + size.width >= visibleBounds.min.x &&
-            pos.x <= visibleBounds.max.x &&
-            pos.y + size.height >= visibleBounds.min.y &&
-            pos.y <= visibleBounds.max.y
-        );
-    };
 
     protected destroy = () => {
         // Clean up event listeners
@@ -338,6 +346,8 @@ export abstract class CanvasManagerBase {
         this.visualObjects.clear();
         this.hoveredObjects.clear();
         this.draggedObject = null;
+
+        this.visibleVisualObjectsManager.dispose();
     };
 
     /** Public wrapper for protected destroy to allow external cleanup */

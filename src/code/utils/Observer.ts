@@ -1,4 +1,4 @@
-type Listener<T> = (data: T) => void;
+export type Listener<T> = (data: T) => void;
 
 export class Observer<T> {
     private listeners: Set<Listener<T>> = new Set();

@@ -1,4 +1,4 @@
-import { Observer } from 'code/utils/Observer';
+import { Listener, Observer } from 'code/utils/Observer';
 
 export type TVisualObjectPropertyChangeArgs = {
     property: string;
@@ -24,7 +24,7 @@ export abstract class VisualObject {
     get onPropertyChanged(): Observer<TVisualObjectPropertyChangeArgs> {
         return this._onPropertyChanged;
     }
-
+    
     get zIndex(): number {
         return this._zIndex;
     }
