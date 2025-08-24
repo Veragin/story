@@ -121,7 +121,7 @@ const DEFAULT_CONFIG: Required<PanableCanvasConfig> = {
         right: [KeyCode.ARROW_RIGHT, KeyCode.KEY_D, KeyCode.NUMPAD_6],
         reset: [KeyCode.HOME, KeyCode.NUMPAD_5, KeyCode.ESCAPE, KeyCode.KEY_R]
     },
-    smoothPanning: false,
+    smoothPanning: true,
     smoothingFactor: 0.15,
     panBounds: {
         minX: undefined,

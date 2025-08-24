@@ -59,7 +59,7 @@ const DEFAULT_ZOOM_CONFIG: Required<Omit<ZoomableCanvasConfig, keyof PanableCanv
         zoomOut: [KeyCode.MINUS, KeyCode.NUMPAD_SUBTRACT, KeyCode.KEY_X],
         resetZoom: [KeyCode.NUMPAD_5, KeyCode.NUMPAD_0]
     },
-    smoothZooming: false,
+    smoothZooming: true,
     zoomSmoothingFactor: 0.2,
     zoomAtCursor: true,
     preventWheelDefault: true,
