@@ -1,33 +1,6 @@
 import { PanableCanvasManager, PanableCanvasConfig, KeyCode, KeyCodeType, MouseButton, MouseButtonType, isValidKeyCode } from "./PanableCanvasManager";
 
 /**
- * Extended key codes for zooming functionality
- */
-export const ZoomKeyCode = {
-    ...KeyCode,
-    // Zoom-specific keys
-    NUMPAD_ADD: 'NumpadAdd',
-    NUMPAD_SUBTRACT: 'NumpadSubtract',
-    NUMPAD_0: 'Numpad0',
-    EQUAL: 'Equal',
-    MINUS: 'Minus',
-    BRACKET_LEFT: 'BracketLeft',
-    BRACKET_RIGHT: 'BracketRight',
-    DIGIT_0: 'Digit0',
-    KEY_Z: 'KeyZ',
-    KEY_X: 'KeyX'
-} as const;
-
-export type ZoomKeyCodeType = typeof ZoomKeyCode[keyof typeof ZoomKeyCode];
-
-/**
- * Type guard to check if a string is a valid ZoomKeyCodeType
- */
-export function isValidZoomKeyCode(key: string): key is ZoomKeyCodeType {
-    return Object.values(ZoomKeyCode).includes(key as ZoomKeyCodeType);
-}
-
-/**
  * Configuration interface for customizing zooming behavior
  */
 export interface ZoomableCanvasConfig extends PanableCanvasConfig {
@@ -36,9 +9,6 @@ export interface ZoomableCanvasConfig extends PanableCanvasConfig {
     
     /** Enable/disable keyboard zooming */
     enableKeyboardZoom?: boolean;
-    
-    /** Mouse button for zoom reset (middle button by default) */
-    zoomMouseButton?: MouseButtonType;
     
     /** Zoom factor per wheel notch or key press (1.1 = 10% zoom) */
     zoomFactor?: number;
@@ -54,12 +24,11 @@ export interface ZoomableCanvasConfig extends PanableCanvasConfig {
     
     /** Keyboard keys for zooming */
     zoomKeys?: {
-        zoomIn?: ZoomKeyCodeType[];
-        zoomOut?: ZoomKeyCodeType[];
-        resetZoom?: ZoomKeyCodeType[];
+        zoomIn?: KeyCodeType[];
+        zoomOut?: KeyCodeType[];
+        resetZoom?: KeyCodeType[];
     };
     
-    /** Smooth zooming animation */
     smoothZooming?: boolean;
     
     /** Smoothing factor for zoom animation (0-1, higher = faster) */
@@ -81,15 +50,14 @@ export interface ZoomableCanvasConfig extends PanableCanvasConfig {
 const DEFAULT_ZOOM_CONFIG: Required<Omit<ZoomableCanvasConfig, keyof PanableCanvasConfig>> = {
     enableWheelZoom: true,
     enableKeyboardZoom: true,
-    zoomMouseButton: MouseButton.MIDDLE,
     zoomFactor: 1.1,
     maxZoom: 10,
     minZoom: 0.1,
     invertWheelZoom: false,
     zoomKeys: {
-        zoomIn: [ZoomKeyCode.EQUAL, ZoomKeyCode.NUMPAD_ADD, ZoomKeyCode.KEY_Z, ZoomKeyCode.BRACKET_RIGHT],
-        zoomOut: [ZoomKeyCode.MINUS, ZoomKeyCode.NUMPAD_SUBTRACT, ZoomKeyCode.KEY_X, ZoomKeyCode.BRACKET_LEFT],
-        resetZoom: [ZoomKeyCode.NUMPAD_5, ZoomKeyCode.NUMPAD_0, ZoomKeyCode.DIGIT_0]
+        zoomIn: [KeyCode.EQUAL, KeyCode.NUMPAD_ADD, KeyCode.KEY_Z],
+        zoomOut: [KeyCode.MINUS, KeyCode.NUMPAD_SUBTRACT, KeyCode.KEY_X],
+        resetZoom: [KeyCode.NUMPAD_5, KeyCode.NUMPAD_0]
     },
     smoothZooming: true,
     zoomSmoothingFactor: 0.2,
@@ -98,17 +66,25 @@ const DEFAULT_ZOOM_CONFIG: Required<Omit<ZoomableCanvasConfig, keyof PanableCanv
     keyboardZoomSpeed: 1.2
 };
 
+interface SmoothZoomState {
+    startZoom: number;
+    targetZoom: number;
+    startViewPosition: TPoint;
+    zoomPoint: TPoint; // Screen coordinates
+    worldPointAtZoomStart: TPoint; // World coordinates at zoom start
+}
+
 /**
- * Canvas manager that supports both panning and zooming with smooth animations
+ * Canvas manager that supports both panning and zooming
  */
 export class ZoomableCanvasManager extends PanableCanvasManager {
     private zoomConfig: Required<ZoomableCanvasConfig>;
     private targetZoom: number = 1;
     private currentZoom: number = 1;
     private zoomAnimationId: number | null = null;
-    private lastWheelTime: number = 0;
     private wheelTimeout: number | null = null;
     private isZooming: boolean = false;
+    private smoothZoomState: SmoothZoomState | null = null;
     
     constructor(canvas: HTMLCanvasElement, config?: ZoomableCanvasConfig) {
         super(canvas, config);
@@ -124,7 +100,6 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             }
         } as Required<ZoomableCanvasConfig>;
         
-        // Update the parent config reference
         this.config = this.zoomConfig;
         
         // Initialize zoom-specific event listeners
@@ -141,9 +116,6 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         if (this.zoomConfig.enableWheelZoom) {
             this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
         }
-        
-        // Middle mouse button for zoom reset (optional)
-        this.canvas.addEventListener('mousedown', this.handleZoomMouseDown);
     }
     
     private handleWheel = (event: WheelEvent): void => {
@@ -165,19 +137,7 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             ? this.getMousePoint(event)
             : { x: this.canvas.width / 2, y: this.canvas.height / 2 };
         
-        // Apply zoom
         this.zoom(factor, zoomPoint);
-        
-        // Track wheel events for smooth zooming
-        this.lastWheelTime = performance.now();
-    };
-    
-    private handleZoomMouseDown = (event: MouseEvent): void => {
-        // Optional: Middle click to reset zoom
-        if (event.button === this.zoomConfig.zoomMouseButton) {
-            this.resetZoom();
-            event.preventDefault();
-        }
     };
     
     protected handleKeyDown = (event: KeyboardEvent): void => {
@@ -186,7 +146,7 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         if (!this.zoomConfig.enableKeyboardZoom) return;
         
         const key = event.code;
-        if (!isValidZoomKeyCode(key)) return;
+        if (!isValidKeyCode(key)) return;
         
         // Check for zoom keys
         if (this.zoomConfig.zoomKeys.zoomIn?.includes(key)) {
@@ -221,16 +181,45 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         if (Math.abs(diff) < 0.0001) {
             this.currentZoom = this.targetZoom;
             this.isZooming = false;
+            this.smoothZoomState = null;
             return;
         }
         
         // Apply smooth interpolation
         const factor = this.zoomConfig.zoomSmoothingFactor;
+        const oldZoom = this.currentZoom;
         this.currentZoom += diff * factor;
         this.isZooming = true;
         
         // Update the actual canvas world zoom
         this.canvasWorld.pixelSizeInWorldUnits = 1 / this.currentZoom;
+        
+        // If we have smooth zoom state, update view position to maintain zoom point stability
+        if (this.smoothZoomState) {
+            this.updateViewPositionForSmoothZoom();
+        }
+    }
+    
+    private updateViewPositionForSmoothZoom(): void {
+        if (!this.smoothZoomState) return;
+        
+        const { worldPointAtZoomStart, zoomPoint, startZoom } = this.smoothZoomState;
+        
+        // Calculate where the world point should appear on screen at the current zoom
+        const currentWorldPointScreen = this.canvasWorld.worldToScreen(worldPointAtZoomStart);
+        
+        // Calculate the offset from where it should be (zoomPoint)
+        const offsetX = currentWorldPointScreen.x - zoomPoint.x;
+        const offsetY = currentWorldPointScreen.y - zoomPoint.y;
+        
+        // Adjust view position to correct this offset
+        if (Math.abs(offsetX) > 0.1 || Math.abs(offsetY) > 0.1) {
+            const currentViewPos = this.canvasWorld.viewPosition;
+            this.canvasWorld.viewPosition = {
+                x: currentViewPos.x + this.canvasWorld.screenLengthToWorld(offsetX),
+                y: currentViewPos.y + this.canvasWorld.screenLengthToWorld(offsetY)
+            };
+        }
     }
     
     /**
@@ -246,9 +235,6 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         // If no change, return early
         if (Math.abs(newZoom - this.targetZoom) < 0.0001) return;
         
-        // Store the old zoom for calculations
-        const oldZoom = this.zoomConfig.smoothZooming ? this.currentZoom : this.targetZoom;
-        
         // Update target zoom
         this.targetZoom = newZoom;
         
@@ -256,22 +242,18 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         if (!this.zoomConfig.smoothZooming) {
             this.currentZoom = newZoom;
             this.canvasWorld.zoomAtPoint(screenPoint, factor);
+            this.smoothZoomState = null;
         } else {
-            // For smooth zooming, we need to handle the viewport adjustment
-            // Calculate the world point before zoom
-            const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
+            // For smooth zooming, store the zoom state
+            const worldPointAtZoomStart = this.canvasWorld.screenToWorld(screenPoint);
             
-            // The smooth zoom animation will handle the actual zoom change
-            // We need to adjust the view position to keep the zoom point stable
-            const zoomRatio = oldZoom / newZoom;
-            
-            // Calculate the new view position to keep the zoom point stable
-            const currentViewPos = this.canvasWorld.viewPosition;
-            const newViewX = worldPoint.x - (worldPoint.x - currentViewPos.x) * zoomRatio;
-            const newViewY = worldPoint.y - (worldPoint.y - currentViewPos.y) * zoomRatio;
-            
-            // Update the view position
-            this.canvasWorld.viewPosition = { x: newViewX, y: newViewY };
+            this.smoothZoomState = {
+                startZoom: this.currentZoom,
+                targetZoom: newZoom,
+                startViewPosition: { ...this.canvasWorld.viewPosition },
+                zoomPoint: { ...screenPoint },
+                worldPointAtZoomStart: { ...worldPointAtZoomStart }
+            };
         }
     }
     
@@ -284,6 +266,7 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             this.currentZoom = 1;
             this.canvasWorld.pixelSizeInWorldUnits = 1;
         }
+        this.smoothZoomState = null;
     }
     
     /**
@@ -382,6 +365,8 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             x: centerX - (this.canvas.width / 2) * (1 / clampedZoom),
             y: centerY - (this.canvas.height / 2) * (1 / clampedZoom)
         };
+        
+        this.smoothZoomState = null;
     }
     
     /**
@@ -440,6 +425,7 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
                 // Set current zoom to target immediately
                 this.currentZoom = this.targetZoom;
                 this.canvasWorld.pixelSizeInWorldUnits = 1 / this.currentZoom;
+                this.smoothZoomState = null;
             }
         }
     }
@@ -456,7 +442,6 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         if (this.zoomConfig.enableWheelZoom) {
             this.canvas.removeEventListener('wheel', this.handleWheel);
         }
-        this.canvas.removeEventListener('mousedown', this.handleZoomMouseDown);
         
         // Stop zoom animation loop
         if (this.zoomAnimationId !== null) {
@@ -469,6 +454,9 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             clearTimeout(this.wheelTimeout);
             this.wheelTimeout = null;
         }
+        
+        // Clear smooth zoom state
+        this.smoothZoomState = null;
         
         // Call parent destroy
         super.destroy();

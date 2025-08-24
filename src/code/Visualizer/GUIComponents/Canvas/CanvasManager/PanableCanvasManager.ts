@@ -49,7 +49,11 @@ export const KeyCode = {
     NUMPAD_ADD: 'NumpadAdd',
     NUMPAD_SUBTRACT: 'NumpadSubtract',
     KEY_Z: 'KeyZ',
-    KEY_X: 'KeyX'
+    KEY_X: 'KeyX',
+    NUMPAD_0: 'Numpad0',
+    BRACKET_LEFT: 'BracketLeft',
+    BRACKET_RIGHT: 'BracketRight',
+    DIGIT_0: 'Digit0',
 } as const;
 
 export type KeyCodeType = typeof KeyCode[keyof typeof KeyCode];
