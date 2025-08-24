@@ -46,6 +46,12 @@ export const KeyCode = {
 
 export type KeyCodeType = typeof KeyCode[keyof typeof KeyCode];
 
+/**
+ * Type guard to check if a string is a valid KeyCodeType
+ */
+function isValidKeyCode(key: string): key is KeyCodeType {
+    return Object.values(KeyCode).includes(key as KeyCodeType);
+}
 
 /**
  * Configuration interface for customizing panning behavior
@@ -90,7 +96,7 @@ export interface PanableCanvasConfig {
 const DEFAULT_CONFIG: Required<PanableCanvasConfig> = {
     keyboardPanSpeed: 15,
     panCursor: 'grabbing',
-    defaultCursor: 'grab',
+    defaultCursor: '',
     panMouseButton: MouseButton.RIGHT,
     enableKeyboardPan: true,
     enableMousePan: true,
@@ -120,7 +126,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
     private config: Required<PanableCanvasConfig>;
     private isPanning: boolean = false;
     private lastPanPoint: TPoint | null = null;
-    private keysPressed: Set<string> = new Set();
+    private keysPressed: Set<KeyCodeType> = new Set();
     private animationFrameId: number | null = null;
     private panVelocity: TPoint = { x: 0, y: 0 };
     
@@ -161,7 +167,10 @@ export class PanableCanvasManager extends CanvasManagerBase {
     private handleKeyDown = (event: KeyboardEvent): void => {
         if (!this.config.enableKeyboardPan) return;
         
-        const key = event.code; // More reliable than event.key
+        const key = event.code;
+
+        if (!isValidKeyCode(key)) return;
+        
         this.keysPressed.add(key);
         
         // Check for reset key
@@ -183,7 +192,10 @@ export class PanableCanvasManager extends CanvasManagerBase {
     };
     
     private handleKeyUp = (event: KeyboardEvent): void => {
-        this.keysPressed.delete(event.code);
+        const key = event.code;
+        if (isValidKeyCode(key)) {
+            this.keysPressed.delete(key);
+        }
     };
     
     private startAnimationLoop(): void {
