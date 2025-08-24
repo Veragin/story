@@ -102,17 +102,14 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         
         this.config = this.zoomConfig;
         
-        // Initialize zoom-specific event listeners
         this.initializeZoomEventListeners();
         
-        // Start zoom animation loop if smooth zooming is enabled
         if (this.zoomConfig.smoothZooming) {
             this.startZoomAnimationLoop();
         }
     }
     
     private initializeZoomEventListeners(): void {
-        // Mouse wheel for zooming
         if (this.zoomConfig.enableWheelZoom) {
             this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
         }

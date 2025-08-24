@@ -22,27 +22,27 @@ export const KeyCode = {
     ARROW_DOWN: 'ArrowDown',
     ARROW_LEFT: 'ArrowLeft',
     ARROW_RIGHT: 'ArrowRight',
-    
+
     // WASD
     KEY_W: 'KeyW',
     KEY_A: 'KeyA',
     KEY_S: 'KeyS',
     KEY_D: 'KeyD',
-    
+
     // Numpad
     NUMPAD_8: 'Numpad8',
     NUMPAD_2: 'Numpad2',
     NUMPAD_4: 'Numpad4',
     NUMPAD_6: 'Numpad6',
     NUMPAD_5: 'Numpad5',
-    
+
     // Special keys
     SPACE: 'Space',
     ENTER: 'Enter',
     ESCAPE: 'Escape',
     HOME: 'Home',
     KEY_R: 'KeyR',
-    
+
     // Zoom keys (added for ZoomableCanvasManager)
     EQUAL: 'Equal',
     MINUS: 'Minus',
@@ -76,12 +76,12 @@ export interface PanableCanvasConfig {
     defaultCursor?: string;
     panMouseButton?: MouseButtonType;
     enableKeyboardPan?: boolean;
-    
+
     enableMousePan?: boolean;
-    
+
     invertPanX?: boolean;
     invertPanY?: boolean;
-    
+
     panKeys?: {
         up?: KeyCodeType[];
         down?: KeyCodeType[];
@@ -89,11 +89,11 @@ export interface PanableCanvasConfig {
         right?: KeyCodeType[];
         reset?: KeyCodeType[];
     };
-    
+
     smoothPanning?: boolean;
-    
+
     smoothingFactor?: number;
-    
+
     panBounds?: {
         minX?: number;
         maxX?: number;
@@ -141,10 +141,10 @@ export class PanableCanvasManager extends CanvasManagerBase {
     protected keysPressed: Set<KeyCodeType> = new Set();
     protected animationFrameId: number | null = null;
     protected panVelocity: TPoint = { x: 0, y: 0 };
-    
+
     constructor(canvas: HTMLCanvasElement, config?: PanableCanvasConfig) {
         super(canvas);
-        
+
         // Merge provided config with defaults
         this.config = {
             ...DEFAULT_CONFIG,
@@ -158,17 +158,17 @@ export class PanableCanvasManager extends CanvasManagerBase {
                 ...(config?.panBounds || {})
             }
         };
-        
+
         this.initializeEventListeners();
         this.updateCanvasCursor();
     }
-    
+
     protected initializeEventListeners(): void {
         if (this.config.enableKeyboardPan) {
-            document.addEventListener('keydown', this.handleKeyDown);
-            document.addEventListener('keyup', this.handleKeyUp);
+            document.addEventListener('keydown', this.handleKeyDown.bind(this));
+            document.addEventListener('keyup', this.handleKeyUp.bind(this));
         }
-        
+
         // Start animation loop for smooth keyboard panning
         if (this.config.enableKeyboardPan && this.config.smoothPanning) {
             this.startAnimationLoop();
@@ -177,19 +177,19 @@ export class PanableCanvasManager extends CanvasManagerBase {
 
     protected handleKeyDown (event: KeyboardEvent): void {
         if (!this.config.enableKeyboardPan) return;
-        
+
         const key = event.code;
 
         if (!isValidKeyCode(key)) return;
-        
+
         this.keysPressed.add(key);
-        
+
         // Check for reset key
         if (this.config.panKeys.reset?.includes(key)) {
             this.resetViewPosition();
             event.preventDefault();
         }
-        
+
         // Prevent default behavior for pan keys
         const allPanKeys = [
             ...(this.config.panKeys.up || []),
@@ -201,14 +201,14 @@ export class PanableCanvasManager extends CanvasManagerBase {
             event.preventDefault();
         }
     };
-    
+
     protected handleKeyUp = (event: KeyboardEvent): void => {
         const key = event.code;
         if (isValidKeyCode(key)) {
             this.keysPressed.delete(key);
         }
     };
-    
+
     protected startAnimationLoop(): void {
         const animate = () => {
             this.updateKeyboardPanning();
@@ -216,15 +216,15 @@ export class PanableCanvasManager extends CanvasManagerBase {
         };
         animate();
     }
-    
+
     protected updateKeyboardPanning(): void {
-        if (!this.config.enableKeyboardPan) 
+        if (!this.config.enableKeyboardPan)
             return;
-        
+
         let dx = 0;
         let dy = 0;
         const speed = this.config.keyboardPanSpeed;
-        
+
         // Calculate pan direction based on pressed keys
         for (const key of this.keysPressed) {
             if (this.config.panKeys.up?.includes(key)) dy -= speed;
@@ -232,17 +232,17 @@ export class PanableCanvasManager extends CanvasManagerBase {
             if (this.config.panKeys.left?.includes(key)) dx -= speed;
             if (this.config.panKeys.right?.includes(key)) dx += speed;
         }
-        
+
         // Apply inversion if configured
         if (this.config.invertPanX) dx = -dx;
         if (this.config.invertPanY) dy = -dy;
-        
+
         // Apply smooth panning
         if (this.config.smoothPanning) {
             const factor = this.config.smoothingFactor;
             this.panVelocity.x = this.panVelocity.x * (1 - factor) + dx * factor;
             this.panVelocity.y = this.panVelocity.y * (1 - factor) + dy * factor;
-            
+
             // Only pan if velocity is significant
             if (Math.abs(this.panVelocity.x) > 0.1 || Math.abs(this.panVelocity.y) > 0.1) {
                 this.pan({ x: -this.panVelocity.x, y: -this.panVelocity.y });
@@ -251,10 +251,10 @@ export class PanableCanvasManager extends CanvasManagerBase {
             this.pan({ x: -dx, y: -dy });
         }
     }
-    
+
     protected onMouseDownPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
         if (!this.config.enableMousePan) return false;
-        
+
         // Check if the correct mouse button is pressed for panning
         if (event.button === this.config.panMouseButton) {
             this.isPanning = true;
@@ -262,28 +262,28 @@ export class PanableCanvasManager extends CanvasManagerBase {
             this.canvas.style.cursor = this.config.panCursor;
             return true; // Event handled
         }
-        
+
         return false;
     }
-    
+
     protected onMouseMovePre(event: MouseEvent, screenPoint: TPoint): boolean {
         if (!this.config.enableMousePan || !this.isPanning || !this.lastPanPoint) {
             return false;
         }
-        
+
         const dx = screenPoint.x - this.lastPanPoint.x;
         const dy = screenPoint.y - this.lastPanPoint.y;
-        
+
         // Apply inversion if configured
         const panDx = this.config.invertPanX ? -dx : dx;
         const panDy = this.config.invertPanY ? -dy : dy;
-        
+
         this.pan({ x: panDx, y: panDy });
         this.lastPanPoint = screenPoint;
-        
+
         return true; // Event handled
     }
-    
+
     protected onMouseUpPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): void {
         if (this.isPanning) {
             this.isPanning = false;
@@ -291,7 +291,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
             this.updateCanvasCursor();
         }
     }
-    
+
     /**
      * Pan the view by a given delta (in screen coordinates)
      */
@@ -301,11 +301,11 @@ export class PanableCanvasManager extends CanvasManagerBase {
             x: this.canvasWorld.screenLengthToWorld(delta.x),
             y: this.canvasWorld.screenLengthToWorld(delta.y)
         };
-        
+
         const currentPos = this.canvasWorld.viewPosition;
         let newX = currentPos.x - worldDelta.x;
         let newY = currentPos.y - worldDelta.y;
-        
+
         // Apply bounds if configured
         if (this.config.panBounds.minX !== undefined) {
             newX = Math.max(this.config.panBounds.minX, newX);
@@ -319,15 +319,15 @@ export class PanableCanvasManager extends CanvasManagerBase {
         if (this.config.panBounds.maxY !== undefined) {
             newY = Math.min(this.config.panBounds.maxY, newY);
         }
-        
+
         this.canvasWorld.viewPosition = { x: newX, y: newY };
     }
-    
+
     protected resetViewPosition(): void {
         this.canvasWorld.resetViewPosition();
         this.panVelocity = { x: 0, y: 0 };
     }
-    
+
     protected updateCanvasCursor(): void {
         if (this.config.enableMousePan && !this.isPanning) {
             this.canvas.style.cursor = this.config.defaultCursor;
@@ -335,17 +335,17 @@ export class PanableCanvasManager extends CanvasManagerBase {
             this.canvas.style.cursor = 'default';
         }
     }
-    
+
     protected applyViewportTransformation(ctx: CanvasRenderingContext2D): void {
         const viewPos = this.canvasWorld.viewPosition;
         const scale = 1 / this.canvasWorld.pixelSizeInWorldUnits;
-        
+
         // Apply translation for panning
         ctx.translate(-viewPos.x * scale, -viewPos.y * scale);
-        
+
         // Note: No scaling applied since this is pan-only
     }
-    
+
     /**
      * Set new configuration options
      */
@@ -364,14 +364,14 @@ export class PanableCanvasManager extends CanvasManagerBase {
         };
         this.updateCanvasCursor();
     }
-    
+
     /**
      * Get current configuration
      */
     public getConfig(): Required<PanableCanvasConfig> {
         return { ...this.config };
     }
-    
+
     /**
      * Enable or disable different panning methods
      */
@@ -380,7 +380,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
         this.config.enableKeyboardPan = keyboard;
         this.updateCanvasCursor();
     }
-    
+
     /**
      * Set pan boundaries
      */
@@ -390,26 +390,26 @@ export class PanableCanvasManager extends CanvasManagerBase {
             ...bounds
         };
     }
-    
+
     /**
      * Get current pan bounds
      */
     public getPanBounds(): Required<PanableCanvasConfig>['panBounds'] {
         return { ...this.config.panBounds };
     }
-    
+
     protected destroy(): void {
         // Clean up event listeners
         if (this.config.enableKeyboardPan) {
-            document.removeEventListener('keydown', this.handleKeyDown);
-            document.removeEventListener('keyup', this.handleKeyUp);
+            document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+            document.removeEventListener('keyup', this.handleKeyUp.bind(this));
         }
 
         // Stop animation loop
         if (this.animationFrameId !== null) {
             cancelAnimationFrame(this.animationFrameId);
         }
-        
+
         // Call parent destroy
         super.destroy();
     }
