@@ -85,6 +85,7 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
     private wheelTimeout: number | null = null;
     private isZooming: boolean = false;
     private smoothZoomState: SmoothZoomState | null = null;
+    private keyboardListenersAdded: boolean = false;
     
     constructor(canvas: HTMLCanvasElement, config?: ZoomableCanvasConfig) {
         super(canvas, config);
@@ -103,9 +104,22 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         this.config = this.zoomConfig;
         
         this.initializeZoomEventListeners();
+        this.ensureKeyboardListeners();
         
         if (this.zoomConfig.smoothZooming) {
             this.startZoomAnimationLoop();
+        }
+    }
+    
+    private ensureKeyboardListeners(): void {
+        // Add keyboard listeners if either keyboard pan OR keyboard zoom is enabled
+        // and they haven't been added yet
+        const needsKeyboardListeners = this.zoomConfig.enableKeyboardZoom || this.zoomConfig.enableKeyboardPan;
+        
+        if (needsKeyboardListeners && !this.keyboardListenersAdded) {
+            document.addEventListener('keydown', this.handleKeyDown);
+            document.addEventListener('keyup', this.handleKeyUp);
+            this.keyboardListenersAdded = true;
         }
     }
     
@@ -138,7 +152,9 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
     };
     
     protected handleKeyDown = (event: KeyboardEvent): void => {
-        super.handleKeyDown(event);
+        if (this.zoomConfig.enableKeyboardPan) {
+            super.handleKeyDown(event);
+        }
         
         if (!this.zoomConfig.enableKeyboardZoom) return;
         
@@ -157,6 +173,12 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         } else if (this.zoomConfig.zoomKeys.resetZoom?.includes(key)) {
             this.resetZoom();
             event.preventDefault();
+        }
+    };
+    
+    protected handleKeyUp = (event: KeyboardEvent): void => {
+        if (this.zoomConfig.enableKeyboardPan) {
+            super.handleKeyUp(event);
         }
     };
     
@@ -412,6 +434,9 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
             }
         }
         
+        // Ensure keyboard listeners are added if needed
+        this.ensureKeyboardListeners();
+        
         // Update animation loop based on smooth zooming setting
         if (config.smoothZooming !== undefined) {
             if (config.smoothZooming && !this.zoomAnimationId) {
@@ -438,6 +463,12 @@ export class ZoomableCanvasManager extends PanableCanvasManager {
         // Clean up zoom-specific event listeners
         if (this.zoomConfig.enableWheelZoom) {
             this.canvas.removeEventListener('wheel', this.handleWheel);
+        }
+        
+        // Clean up keyboard listeners if we added them
+        if (this.keyboardListenersAdded) {
+            document.removeEventListener('keydown', this.handleKeyDown);
+            document.removeEventListener('keyup', this.handleKeyUp);
         }
         
         // Stop zoom animation loop

@@ -202,7 +202,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
         }
     };
 
-    protected handleKeyUp = (event: KeyboardEvent): void => {
+    protected handleKeyUp(event: KeyboardEvent): void {
         const key = event.code;
         if (isValidKeyCode(key)) {
             this.keysPressed.delete(key);
