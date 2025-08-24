@@ -1,15 +1,16 @@
 /// <reference path="../../../@types/global.d.ts" />
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { styled, useTheme } from '@mui/material';
 import { useVisualizerStore } from '../../Context';
 import { VisualObject } from '../GUIComponents/Canvas/Node/VisualObject';
 import { HoverableVisualObject } from '../GUIComponents/Canvas/Node/HoverableVisualObject';
 import { ClickableVisualObject } from '../GUIComponents/Canvas/Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../GUIComponents/Canvas/Node/DraggableVisualObject';
-import { PanableCanvasManager } from '../GUIComponents/Canvas/CanvasManager/PanableCanvasManager';
-import { Button } from '@mui/material';
+import { ZoomableCanvasManager } from '../GUIComponents/Canvas/CanvasManager/ZoomableCanvasManager';
+import { Button, ButtonGroup, Typography, Box, Chip } from '@mui/material';
+import { ZoomIn, ZoomOut, CenterFocusStrong, RestartAlt } from '@mui/icons-material';
 
-// Create a simple navigation bar with theme colors
+// Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -17,18 +18,42 @@ const NavBar = styled('div')(({ theme }) => ({
   backgroundColor: theme.palette.primary.dark, // #000814
   borderBottom: `1px solid ${theme.palette.primary.main}`, // #003566
   minHeight: '48px',
+  gap: '16px',
 }));
 
 const Title = styled('h2')(({ theme }) => ({
-  margin: '0 16px',
+  margin: 0,
   color: theme.palette.secondary.main, // #ffc300
   fontSize: '1.25rem',
   fontWeight: 500,
+  flex: 1,
+}));
+
+const ZoomControls = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  color: 'white',
 }));
 
 const StyledCanvasEl = styled('canvas')(({ theme }) => ({
   display: 'block',
   background: theme.palette.background.default, // #000814
+  cursor: 'default',
+}));
+
+const InstructionsOverlay = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: '16px',
+  right: '16px',
+  backgroundColor: 'rgba(0, 8, 20, 0.9)',
+  border: `1px solid ${theme.palette.primary.main}`,
+  borderRadius: '8px',
+  padding: '12px',
+  color: theme.palette.secondary.main,
+  fontSize: '0.875rem',
+  maxWidth: '300px',
+  zIndex: 1000,
 }));
 
 // Example visual objects implementation using theme colors
@@ -40,6 +65,11 @@ class RectangleVisual extends VisualObject {
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        
+        // Add a border for better visibility
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
     }
 }
 
@@ -53,6 +83,11 @@ class CircleVisual extends VisualObject {
         ctx.beginPath();
         ctx.arc(this.position.x + this.radius, this.position.y + this.radius, this.radius, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Add a border for better visibility
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
     }
 }
 
@@ -72,6 +107,11 @@ class HoverableRectangle extends HoverableVisualObject {
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.isHovered() ? this.hoverColor : this.defaultColor;
         ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        
+        // Add a border
+        ctx.strokeStyle = this.isHovered() ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = this.isHovered() ? 2 : 1;
+        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
     }
 }
 
@@ -89,6 +129,11 @@ class ClickableCircle extends ClickableVisualObject {
         ctx.beginPath();
         ctx.arc(this.position.x + this.size.width / 2, this.position.y + this.size.height / 2, this.size.width / 2, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Add a border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
     }
 }
 
@@ -108,20 +153,53 @@ class DraggableBox extends DraggableVisualObject {
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        
+        // Add a border and drag indicator
+        ctx.strokeStyle = this.isDragging() ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = this.isDragging() ? 2 : 1;
+        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        
+        // Add drag icon in center
+        if (!this.isDragging()) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('⋮⋮', this.position.x + this.size.width / 2, this.position.y + this.size.height / 2 + 5);
+        }
     }
 }
 
 export const WorldEvents = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasManagerRef = useRef<PanableCanvasManager | null>(null);
+    const canvasManagerRef = useRef<ZoomableCanvasManager | null>(null);
     const store = useVisualizerStore();
     const theme = useTheme();
+    
+    // State for zoom information display
+    const [zoomLevel, setZoomLevel] = useState<number>(1);
+    const [isZooming, setIsZooming] = useState<boolean>(false);
+    const [showInstructions, setShowInstructions] = useState<boolean>(true);
 
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        // Initialize canvas manager with panning capabilities
-        canvasManagerRef.current = new PanableCanvasManager(canvasRef.current);
+        // Initialize canvas manager with zooming capabilities
+        canvasManagerRef.current = new ZoomableCanvasManager(canvasRef.current, {
+            // Enable all zoom features
+            enableWheelZoom: true,
+            enableKeyboardZoom: true,
+            zoomAtCursor: true,
+            smoothZooming: true,
+            zoomSmoothingFactor: 0.15,
+            zoomFactor: 1.15,
+            maxZoom: 5,
+            minZoom: 0.2,
+            // Enable panning
+            enableMousePan: true,
+            enableKeyboardPan: true,
+            panMouseButton: 2, // Right mouse button for panning
+        });
+        
         const canvasManager = canvasManagerRef.current;
 
         // Set canvas size
@@ -138,7 +216,20 @@ export const WorldEvents = () => {
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Add example visual objects using theme colors
+        // Create a more diverse scene to showcase zoom capabilities
+        // Background grid pattern
+        for (let x = 0; x < 2000; x += 200) {
+            for (let y = 0; y < 1500; y += 200) {
+                const gridRect = new RectangleVisual(
+                    { x: x + 10, y: y + 10 },
+                    { width: 180, height: 180 },
+                    'rgba(0, 53, 102, 0.1)' // Very faint primary color
+                );
+                canvasManager.addObject(gridRect);
+            }
+        }
+
+        // Main visual objects
         const staticRect = new RectangleVisual(
             { x: 50, y: 50 }, 
             { width: 100, height: 80 }, 
@@ -176,12 +267,74 @@ export const WorldEvents = () => {
         );
         canvasManager.addObject(draggableBox);
 
+        // Add some scattered objects for zoom testing
+        const colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.primary.light];
+        for (let i = 0; i < 20; i++) {
+            const x = Math.random() * 1800 + 100;
+            const y = Math.random() * 1300 + 200;
+            const size = Math.random() * 50 + 20;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            if (Math.random() > 0.5) {
+                const rect = new RectangleVisual(
+                    { x, y },
+                    { width: size, height: size * 0.7 },
+                    color
+                );
+                canvasManager.addObject(rect);
+            } else {
+                const circle = new CircleVisual(
+                    { x, y },
+                    size / 2,
+                    color
+                );
+                canvasManager.addObject(circle);
+            }
+        }
+
+        // Update zoom level display
+        const updateZoomDisplay = () => {
+            setZoomLevel(canvasManager.getZoomLevel());
+            setIsZooming(canvasManager.isCurrentlyZooming());
+        };
+
+        // Set up a timer to update zoom display
+        const zoomUpdateInterval = setInterval(updateZoomDisplay, 16); // ~60fps
+
         // Clean up
         return () => {
+            clearInterval(zoomUpdateInterval);
             window.removeEventListener('resize', resizeCanvas);
             canvasManagerRef.current?.dispose();
         };
     }, [theme]);
+
+    // Zoom control handlers
+    const handleZoomIn = () => {
+        canvasManagerRef.current?.zoomIn();
+    };
+
+    const handleZoomOut = () => {
+        canvasManagerRef.current?.zoomOut();
+    };
+
+    const handleResetZoom = () => {
+        canvasManagerRef.current?.resetZoom();
+    };
+
+    const handleResetView = () => {
+        canvasManagerRef.current?.resetView();
+    };
+
+    const handleFitToRect = () => {
+        // Fit to a specific area of interest
+        canvasManagerRef.current?.fitToRect({
+            x: 0,
+            y: 0,
+            width: 800,
+            height: 400
+        }, 50);
+    };
 
     return (
         <StyledContainer>
@@ -195,9 +348,80 @@ export const WorldEvents = () => {
                     Back
                 </Button>
                 <Title>World Events (Pan & Zoom Enabled)</Title>
+                
+                <ZoomControls>
+                    <Typography variant="body2">
+                        Zoom: {(zoomLevel * 100).toFixed(0)}%
+                    </Typography>
+                    
+                    {isZooming && (
+                        <Chip 
+                            label="Zooming" 
+                            size="small" 
+                            color="secondary"
+                            sx={{ fontSize: '0.7rem' }}
+                        />
+                    )}
+                    
+                    <ButtonGroup size="small" variant="outlined" sx={{ color: 'white' }}>
+                        <Button onClick={handleZoomOut} title="Zoom Out">
+                            <ZoomOut fontSize="small" />
+                        </Button>
+                        <Button onClick={handleResetZoom} title="Reset Zoom">
+                            <CenterFocusStrong fontSize="small" />
+                        </Button>
+                        <Button onClick={handleZoomIn} title="Zoom In">
+                            <ZoomIn fontSize="small" />
+                        </Button>
+                    </ButtonGroup>
+                    
+                    <ButtonGroup size="small" variant="outlined" sx={{ color: 'white' }}>
+                        <Button onClick={handleFitToRect} title="Fit to Area" sx={{ fontSize: '0.75rem' }}>
+                            Fit
+                        </Button>
+                        <Button onClick={handleResetView} title="Reset View">
+                            <RestartAlt fontSize="small" />
+                        </Button>
+                    </ButtonGroup>
+                    
+                    <Button 
+                        size="small" 
+                        variant="text" 
+                        onClick={() => setShowInstructions(!showInstructions)}
+                        sx={{ color: 'white', fontSize: '0.75rem' }}
+                    >
+                        {showInstructions ? 'Hide' : 'Show'} Help
+                    </Button>
+                </ZoomControls>
             </NavBar>
+            
             <CanvasContainer>
                 <StyledCanvasEl ref={canvasRef} />
+                
+                {showInstructions && (
+                    <InstructionsOverlay>
+                        <Typography variant="subtitle2" gutterBottom>
+                            🎮 Controls:
+                        </Typography>
+                        <Typography variant="body2" component="div">
+                            <strong>Zoom:</strong><br/>
+                            • Mouse wheel to zoom in/out<br/>
+                            • +/= or Z to zoom in<br/>
+                            • -/_ or X to zoom out<br/>
+                            • Numpad 5/0 or Esc to reset zoom<br/>
+                            <br/>
+                            <strong>Pan:</strong><br/>
+                            • Right-click + drag to pan<br/>
+                            • Arrow keys or WASD to pan<br/>
+                            • Home or R to reset position<br/>
+                            <br/>
+                            <strong>Interaction:</strong><br/>
+                            • Hover over rectangles<br/>
+                            • Click circles<br/>
+                            • Drag yellow boxes<br/>
+                        </Typography>
+                    </InstructionsOverlay>
+                )}
             </CanvasContainer>
         </StyledContainer>
     );
@@ -216,4 +440,5 @@ const StyledContainer = styled('div')(({ theme }) => ({
 const CanvasContainer = styled('div')({
     flex: 1,
     overflow: 'hidden',
+    position: 'relative',
 });

@@ -41,7 +41,15 @@ export const KeyCode = {
     ENTER: 'Enter',
     ESCAPE: 'Escape',
     HOME: 'Home',
-    KEY_R: 'KeyR'
+    KEY_R: 'KeyR',
+    
+    // Zoom keys (added for ZoomableCanvasManager)
+    EQUAL: 'Equal',
+    MINUS: 'Minus',
+    NUMPAD_ADD: 'NumpadAdd',
+    NUMPAD_SUBTRACT: 'NumpadSubtract',
+    KEY_Z: 'KeyZ',
+    KEY_X: 'KeyX'
 } as const;
 
 export type KeyCodeType = typeof KeyCode[keyof typeof KeyCode];
@@ -49,7 +57,7 @@ export type KeyCodeType = typeof KeyCode[keyof typeof KeyCode];
 /**
  * Type guard to check if a string is a valid KeyCodeType
  */
-function isValidKeyCode(key: string): key is KeyCodeType {
+export function isValidKeyCode(key: string): key is KeyCodeType {
     return Object.values(KeyCode).includes(key as KeyCodeType);
 }
 
@@ -123,12 +131,12 @@ const DEFAULT_CONFIG: Required<PanableCanvasConfig> = {
  * Canvas manager that supports panning (moving the viewport) without zooming
  */
 export class PanableCanvasManager extends CanvasManagerBase {
-    private config: Required<PanableCanvasConfig>;
-    private isPanning: boolean = false;
-    private lastPanPoint: TPoint | null = null;
-    private keysPressed: Set<KeyCodeType> = new Set();
-    private animationFrameId: number | null = null;
-    private panVelocity: TPoint = { x: 0, y: 0 };
+    protected config: Required<PanableCanvasConfig>;
+    protected isPanning: boolean = false;
+    protected lastPanPoint: TPoint | null = null;
+    protected keysPressed: Set<KeyCodeType> = new Set();
+    protected animationFrameId: number | null = null;
+    protected panVelocity: TPoint = { x: 0, y: 0 };
     
     constructor(canvas: HTMLCanvasElement, config?: PanableCanvasConfig) {
         super(canvas);
@@ -151,8 +159,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
         this.updateCanvasCursor();
     }
     
-    private initializeEventListeners(): void {
-        // Keyboard events - use document for better capture
+    protected initializeEventListeners(): void {
         if (this.config.enableKeyboardPan) {
             document.addEventListener('keydown', this.handleKeyDown);
             document.addEventListener('keyup', this.handleKeyUp);
@@ -163,8 +170,8 @@ export class PanableCanvasManager extends CanvasManagerBase {
             this.startAnimationLoop();
         }
     }
-    
-    private handleKeyDown = (event: KeyboardEvent): void => {
+
+    protected handleKeyDown (event: KeyboardEvent): void {
         if (!this.config.enableKeyboardPan) return;
         
         const key = event.code;
@@ -191,14 +198,14 @@ export class PanableCanvasManager extends CanvasManagerBase {
         }
     };
     
-    private handleKeyUp = (event: KeyboardEvent): void => {
+    protected handleKeyUp = (event: KeyboardEvent): void => {
         const key = event.code;
         if (isValidKeyCode(key)) {
             this.keysPressed.delete(key);
         }
     };
     
-    private startAnimationLoop(): void {
+    protected startAnimationLoop(): void {
         const animate = () => {
             this.updateKeyboardPanning();
             this.animationFrameId = requestAnimationFrame(animate);
@@ -206,8 +213,9 @@ export class PanableCanvasManager extends CanvasManagerBase {
         animate();
     }
     
-    private updateKeyboardPanning(): void {
-        if (!this.config.enableKeyboardPan) return;
+    protected updateKeyboardPanning(): void {
+        if (!this.config.enableKeyboardPan) 
+            return;
         
         let dx = 0;
         let dy = 0;
@@ -283,7 +291,7 @@ export class PanableCanvasManager extends CanvasManagerBase {
     /**
      * Pan the view by a given delta (in screen coordinates)
      */
-    private pan(delta: TPoint): void {
+    protected pan(delta: TPoint): void {
         // Apply bounds checking if configured
         const worldDelta = {
             x: this.canvasWorld.screenLengthToWorld(delta.x),
@@ -311,12 +319,12 @@ export class PanableCanvasManager extends CanvasManagerBase {
         this.canvasWorld.viewPosition = { x: newX, y: newY };
     }
     
-    private resetViewPosition(): void {
+    protected resetViewPosition(): void {
         this.canvasWorld.resetViewPosition();
         this.panVelocity = { x: 0, y: 0 };
     }
     
-    private updateCanvasCursor(): void {
+    protected updateCanvasCursor(): void {
         if (this.config.enableMousePan && !this.isPanning) {
             this.canvas.style.cursor = this.config.defaultCursor;
         } else if (!this.config.enableMousePan) {
