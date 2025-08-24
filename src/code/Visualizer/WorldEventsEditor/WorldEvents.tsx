@@ -6,7 +6,7 @@ import { VisualObject } from '../GUIComponents/Canvas/Node/VisualObject';
 import { HoverableVisualObject } from '../GUIComponents/Canvas/Node/HoverableVisualObject';
 import { ClickableVisualObject } from '../GUIComponents/Canvas/Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../GUIComponents/Canvas/Node/DraggableVisualObject';
-import { StaticCanvasManager } from '../GUIComponents/Canvas/CanvasManager/StaticCanvasManager';
+import { PanableCanvasManager } from '../GUIComponents/Canvas/CanvasManager/PanableCanvasManager';
 import { Button } from '@mui/material';
 
 // Create a simple navigation bar with theme colors
@@ -113,15 +113,15 @@ class DraggableBox extends DraggableVisualObject {
 
 export const WorldEvents = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasManagerRef = useRef<StaticCanvasManager | null>(null);
+    const canvasManagerRef = useRef<PanableCanvasManager | null>(null);
     const store = useVisualizerStore();
     const theme = useTheme();
 
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        // Initialize canvas manager
-        canvasManagerRef.current = new StaticCanvasManager(canvasRef.current);
+        // Initialize canvas manager with panning capabilities
+        canvasManagerRef.current = new PanableCanvasManager(canvasRef.current);
         const canvasManager = canvasManagerRef.current;
 
         // Set canvas size
@@ -179,8 +179,7 @@ export const WorldEvents = () => {
         // Clean up
         return () => {
             window.removeEventListener('resize', resizeCanvas);
-            // Provide public dispose on manager to clean listeners
-            (canvasManagerRef.current as any)?.dispose?.();
+            canvasManagerRef.current?.dispose();
         };
     }, [theme]);
 
@@ -195,7 +194,7 @@ export const WorldEvents = () => {
                 >
                     Back
                 </Button>
-                <Title>World Events</Title>
+                <Title>World Events (Pan & Zoom Enabled)</Title>
             </NavBar>
             <CanvasContainer>
                 <StyledCanvasEl ref={canvasRef} />

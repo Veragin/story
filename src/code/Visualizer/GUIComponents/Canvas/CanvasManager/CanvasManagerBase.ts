@@ -332,7 +332,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.ctx.restore();
     }, 1000 / 60);
 
-    protected destroy = () => {
+    protected destroy(): void {
         // Clean up event listeners
         this.canvas.removeEventListener('mousemove', this.handleMouseMove);
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
