@@ -1,4 +1,3 @@
-// CanvasManagerBase.ts
 import { throttle } from 'code/utils/throttle';
 import { ClickableVisualObject } from '../Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../Node/DraggableVisualObject';
@@ -10,16 +9,35 @@ import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
 import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
+import { EventDispatcher } from './EventDispatcher';
+import { MouseButton } from './InputConstants';
+
+// Assuming these types are defined elsewhere
+type TPoint = { x: number; y: number };
+type TSize = { width: number; height: number };
 
 /**
- * Base class containing common visual object management functionality
- * Subclasses handle coordinate transformations and viewport management
+ * Interface for the canvas manager core that plugins can use to interact with the core functionality.
  */
-export abstract class CanvasManagerBase implements IVisibilityProvider {
+export interface ICanvasManagerCore {
+    readonly canvas: HTMLCanvasElement;
+    readonly canvasWorld: CanvasWorld;
+    readonly eventDispatcher: EventDispatcher;
+    readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
+    updateCursor(cursor: string): void;
+    requestRedraw(): void;
+}
+
+/**
+ * Core canvas manager class handling base functionality without specific behaviors like panning or zooming.
+ * Plugins can extend functionality by registering with the event dispatcher.
+ */
+export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvider {
     readonly canvas: HTMLCanvasElement;
     protected ctx: CanvasRenderingContext2D;
-    public readonly canvasWorld: CanvasWorld;
-    public readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
+    readonly canvasWorld: CanvasWorld;
+    readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
+    readonly eventDispatcher: EventDispatcher;
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
@@ -27,9 +45,9 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
     protected nextInsertionOrder: number = 0;
     protected draggedObject: DraggableVisualObject | null = null;
 
-    public readonly onObjectAdded = new Observer<VisualObject>();
-    public readonly onObjectRemoved = new Observer<VisualObject>();
-    public readonly onObjectPropertyChanged = new Observer<{ object: VisualObject, property: string }>();
+    readonly onObjectAdded = new Observer<VisualObject>();
+    readonly onObjectRemoved = new Observer<VisualObject>();
+    readonly onObjectPropertyChanged = new Observer<{ object: VisualObject; property: string }>();
 
     readonly onCanvasResize = new ConditionalObserver<TSize>(
         (lastSize, newSize) => {
@@ -58,6 +76,9 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.canvasWorld.onViewPositionChange.subscribe(() => this.draw());
         this.canvasWorld.onPixelSizeChange.subscribe(() => this.draw());
 
+        this.eventDispatcher = new EventDispatcher(this);
+
+        // Set up event listeners
         this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
@@ -65,6 +86,10 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.canvas.addEventListener('click', this.handleMouseClick);
         this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+        this.canvas.addEventListener('wheel', this.handleWheel);
+
+        document.addEventListener('keydown', this.handleKeyDown);
+        document.addEventListener('keyup', this.handleKeyUp);
 
         this.canvas.addEventListener('resize', () => {
             this.onCanvasResize.notify(this.canvasSize);
@@ -82,9 +107,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         return this.canvasSize;
     }
 
-    protected abstract applyViewportTransformation(ctx: CanvasRenderingContext2D): void;
-
-    protected getMousePoint = (event: MouseEvent): TPoint => {
+    protected getMousePoint(event: MouseEvent | WheelEvent): TPoint {
         const rect = this.canvas.getBoundingClientRect();
         return {
             x: event.clientX - rect.left,
@@ -96,17 +119,15 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-        // Let subclass handle additional mouse down logic (like panning)
-        if (this.onMouseDownPre(event, screenPoint, worldPoint)) {
-            return; // Subclass handled the event
+        if (this.eventDispatcher.dispatchMouseDown(event, screenPoint, worldPoint)) {
+            return;
         }
 
         if (!this.dragMode) return;
 
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
-        if (event.button === 0) {
-            // Find the topmost draggable object
+        if (event.button === MouseButton.LEFT) {
             const draggableObject = objectsAtPoint.find((obj) =>
                 isDraggableObject(obj) && obj.isDraggable()
             ) as DraggableVisualObject | undefined;
@@ -115,7 +136,6 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
                 this.draggedObject = draggableObject;
                 draggableObject.startDrag(worldPoint);
 
-                // Increase z-index while dragging
                 const currentZIndex = draggableObject.zIndex;
                 const highestZIndex = Math.max(
                     ...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex)
@@ -126,39 +146,32 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
             }
         }
 
-        // Handle right button down events
-        if (event.button === 2) {
-            Array.from(this.visualObjects)
-                .reverse()
-                .forEach((obj) => {
-                    if (isClickableObject(obj[0])) {
-                        obj[0].handleRightDown(worldPoint);
-                    }
-                });
+        if (event.button === MouseButton.RIGHT) {
+            for (const obj of objectsAtPoint) {
+                if (isClickableObject(obj)) {
+                    obj.handleRightDown(worldPoint);
+                }
+            }
         }
     };
 
     protected handleMouseMove = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
 
-        // Let subclass handle additional mouse move logic (like panning)
-        if (this.onMouseMovePre(event, screenPoint)) {
-            return; // Subclass handled the event
+        if (this.eventDispatcher.dispatchMouseMove(event, screenPoint)) {
+            return;
         }
 
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-        // Handle dragging
         if (this.draggedObject && this.dragMode) {
             this.draggedObject.drag(worldPoint);
             return;
         }
 
-        // Handle regular hover
         const hoveredObjectsThisFrame = new Set<HoverableVisualObject>();
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
-        // Handle hover events
         for (const obj of this.visualObjects.keys()) {
             if (isHoverableObject(obj)) {
                 const isTopMost = objectsAtPoint[0] === obj;
@@ -168,34 +181,36 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
                         hoveredObjectsThisFrame.add(obj);
                     }
                 } else {
-                    // Force hover exit if not top-most
                     if (obj.isHovered()) {
-                        obj.handleHover({ x: -1, y: -1 }); // Force exit
+                        obj.handleHover({ x: -1, y: -1 });
                     }
                 }
             }
         }
 
-        // Update hovered objects set
         this.hoveredObjects = hoveredObjectsThisFrame;
+    };
+
+    protected handleMouseUp = (event: MouseEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
+
+        this.eventDispatcher.dispatchMouseUp(event, screenPoint, worldPoint);
+
+        if (this.draggedObject) {
+            this.draggedObject.endDrag(worldPoint);
+            this.draggedObject = null;
+        }
     };
 
     protected handleMouseClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-        event.preventDefault();
-
-        // Let subclass handle additional logic
-        if (this.onMouseClickPre(event, screenPoint, worldPoint)) {
-            return; // Subclass handled the event
-        }
 
         if (this.draggedObject) {
             return;
         }
 
-        // Handle clicks in reverse order (top-most object first)
-        // Stop propagation if an object returns true
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
         for (const obj of objectsAtPoint) {
             if (isClickableObject(obj)) {
@@ -210,14 +225,11 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
     protected handleMouseDbClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-        event.preventDefault();
 
         if (this.draggedObject) {
             return;
         }
 
-        // Handle double clicks in reverse order (top-most object first)
-        // Stop propagation if an object returns true
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
         for (const obj of objectsAtPoint) {
             if (isClickableObject(obj)) {
@@ -229,41 +241,25 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         }
     };
 
-    protected handleMouseUp = (event: MouseEvent) => {
-        const screenPoint = this.getMousePoint(event);
-        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-
-        // Let subclass handle additional logic (like ending pan)
-        this.onMouseUpPre(event, screenPoint, worldPoint);
-
-        if (this.draggedObject) {
-            this.draggedObject.endDrag(worldPoint);
-            this.draggedObject = null;
-        }
-    };
-
     protected handleContextMenu = (event: MouseEvent) => {
         event.preventDefault();
         return false;
     };
 
-    // Hooks for subclasses to add their own behavior
-    // Return true if the subclass handled the event and no further processing should occur
-    protected onMouseDownPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
-        return false;
-    }
+    protected handleWheel = (event: WheelEvent) => {
+        const screenPoint = this.getMousePoint(event);
+        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-    protected onMouseMovePre(event: MouseEvent, screenPoint: TPoint): boolean {
-        return false;
-    }
+        this.eventDispatcher.dispatchWheel(event, screenPoint, worldPoint);
+    };
 
-    protected onMouseClickPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
-        return false;
-    }
+    protected handleKeyDown = (event: KeyboardEvent) => {
+        this.eventDispatcher.dispatchKeyDown(event);
+    };
 
-    protected onMouseUpPre(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): void {
-        // Default implementation does nothing
-    }
+    protected handleKeyUp = (event: KeyboardEvent) => {
+        this.eventDispatcher.dispatchKeyUp(event);
+    };
 
     private handleVisualObjectChange = (args: { property: string; VisualObject: VisualObject }) => {
         this.onObjectPropertyChanged.notify({
@@ -273,54 +269,40 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.draw();
     };
 
-    protected getTopObjectsAtVisiblePoint = (worldPoint: TPoint): VisualObject[] => {
+    protected getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {
         return this.visibleVisualObjectsManager.getSortedVisibleObjects()
             .filter((obj: VisualObject) =>
                 isHoverableObject(obj) && obj.isPointInside(worldPoint))
-            .reverse(); // Reverse to get top-most objects first
-    };
+            .reverse();
+    }
 
-    protected sortVisualObjectsByZIndex = (objectsToSort: Set<VisualObject>): VisualObject[] => {
-        return Array.from(objectsToSort).sort((a, b) => {
-            // First compare by z-index
-            if (a.zIndex !== b.zIndex) {
-                return a.zIndex - b.zIndex;
-            }
-            // If z-index is the same, use insertion order
-            return (this.visualObjects.get(a) ?? 0) - (this.visualObjects.get(b) ?? 0);
-        });
-    };
-
-    // Visual object management methods
-    addObject = (obj: VisualObject) => {
+    addObject(obj: VisualObject): void {
         this.visualObjects.set(obj, this.nextInsertionOrder++);
         obj.onPropertyChanged.subscribe(this.handleVisualObjectChange);
         this.onObjectAdded.notify(obj);
         this.draw();
-    };
+    }
 
-    hasObject = (obj: VisualObject) => {
+    hasObject(obj: VisualObject): boolean {
         return this.visualObjects.has(obj);
-    };
+    }
 
-    removeObject = (obj: VisualObject) => {
+    removeObject(obj: VisualObject): void {
         this.visualObjects.delete(obj);
         obj.onPropertyChanged.unsubscribe(this.handleVisualObjectChange);
         this.onObjectRemoved.notify(obj);
         this.draw();
-    };
+    }
 
-    clear = () => {
+    clear(): void {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    };
+    }
 
     draw = throttle(() => {
         this.clear();
 
-        // Save the context state
         this.ctx.save();
 
-        // Apply viewport transformation (implemented by subclass)
         this.applyViewportTransformation(this.ctx);
 
         const sortedObjects = this.visibleVisualObjectsManager.getSortedVisibleObjects();
@@ -328,12 +310,28 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
             obj.draw(this.ctx);
         }
 
-        // Restore the context state
         this.ctx.restore();
     }, 1000 / 60);
 
+    protected applyViewportTransformation(ctx: CanvasRenderingContext2D): void {
+        const pixelSize = this.canvasWorld.pixelSizeInWorldUnits;
+        const zoomX = 1 / pixelSize.width;
+        const zoomY = 1 / pixelSize.height;
+        const viewPos = this.canvasWorld.viewPosition;
+
+        ctx.scale(zoomX, zoomY);
+        ctx.translate(-viewPos.x * zoomX, -viewPos.y * zoomY);
+    }
+
+    updateCursor(cursor: string): void {
+        this.canvas.style.cursor = cursor;
+    }
+
+    requestRedraw(): void {
+        this.draw();
+    }
+
     protected destroy(): void {
-        // Clean up event listeners
         this.canvas.removeEventListener('mousemove', this.handleMouseMove);
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
@@ -341,21 +339,22 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
         this.canvas.removeEventListener('click', this.handleMouseClick);
         this.canvas.removeEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+        this.canvas.removeEventListener('wheel', this.handleWheel);
 
-        // Clean up object subscriptions
+        document.removeEventListener('keydown', this.handleKeyDown);
+        document.removeEventListener('keyup', this.handleKeyUp);
+
         for (const obj of this.visualObjects) {
             obj[0].onPropertyChanged.unsubscribe(this.handleVisualObjectChange);
         }
 
-        // Clear objects
         this.visualObjects.clear();
         this.hoveredObjects.clear();
         this.draggedObject = null;
 
         this.visibleVisualObjectsManager.dispose();
-    };
+    }
 
-    /** Public wrapper for protected destroy to allow external cleanup */
     public dispose() {
         this.destroy();
     }
@@ -369,7 +368,7 @@ export abstract class CanvasManagerBase implements IVisibilityProvider {
     }
 }
 
-// Type guards
+// Type guards (same as before)
 const isDraggableObject = (obj: any): obj is DraggableVisualObject => {
     return 'isDragging' in obj && 'isDraggable' in obj;
 };

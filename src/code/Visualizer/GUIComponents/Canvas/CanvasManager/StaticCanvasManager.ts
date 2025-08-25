@@ -1,4 +1,4 @@
-import { CanvasManagerBase } from "./CanvasManagerBase";
+import { CanvasManagerBase } from "./CanvasManagerCore";
 
 export class StaticCanvasManager extends CanvasManagerBase {
     

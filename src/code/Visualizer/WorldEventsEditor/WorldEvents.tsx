@@ -6,9 +6,13 @@ import { VisualObject } from '../GUIComponents/Canvas/Node/VisualObject';
 import { HoverableVisualObject } from '../GUIComponents/Canvas/Node/HoverableVisualObject';
 import { ClickableVisualObject } from '../GUIComponents/Canvas/Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../GUIComponents/Canvas/Node/DraggableVisualObject';
-import { ZoomableCanvasManager } from '../GUIComponents/Canvas/CanvasManager/ZoomableCanvasManager';
+import { panningPlugin } from '../GUIComponents/Canvas/CanvasManager/panningPlugin';
+import { ZoomingControls, zoomingPlugin } from '../GUIComponents/Canvas/CanvasManager/zoomingPlugin';
 import { Button, ButtonGroup, Typography, Box, Chip } from '@mui/material';
 import { ZoomIn, ZoomOut, CenterFocusStrong, RestartAlt } from '@mui/icons-material';
+import { MouseButton } from '../GUIComponents/Canvas/CanvasManager/InputConstants';
+import { CanvasManagerCore } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerCore';
+import { CanvasManagerBuilder } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerBuilder';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
@@ -171,7 +175,8 @@ class DraggableBox extends DraggableVisualObject {
 
 export const WorldEvents = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasManagerRef = useRef<ZoomableCanvasManager | null>(null);
+    const canvasManagerRef = useRef<CanvasManagerCore | null>(null);
+    const zoomControlsRef = useRef<ZoomingControls | null>(null);
     const store = useVisualizerStore();
     const theme = useTheme();
     
@@ -183,9 +188,14 @@ export const WorldEvents = () => {
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        // Initialize canvas manager with zooming capabilities
-        canvasManagerRef.current = new ZoomableCanvasManager(canvasRef.current, {
-            // Enable all zoom features
+        // Initialize plugins
+        const { plugin: panPlugin, controls: panControls } = panningPlugin({
+            enableKeyboardPan: true,
+            enableMousePan: true,
+            panMouseButton: MouseButton.RIGHT,
+        });
+
+        const { plugin: zoomPlugin, controls: zoomControls } = zoomingPlugin({
             enableWheelZoom: true,
             enableKeyboardZoom: true,
             zoomAtCursor: true,
@@ -194,13 +204,15 @@ export const WorldEvents = () => {
             zoomFactor: 1.15,
             maxZoom: 5,
             minZoom: 0.2,
-            // Enable panning
-            enableMousePan: true,
-            enableKeyboardPan: true,
-            panMouseButton: 2, // Right mouse button for panning
         });
-        
-        const canvasManager = canvasManagerRef.current;
+
+        // Build canvas manager
+        const builder = new CanvasManagerBuilder(canvasRef.current);
+        builder.addPlugin(panPlugin);
+        builder.addPlugin(zoomPlugin);
+        const core = builder.build();
+        canvasManagerRef.current = core;
+        zoomControlsRef.current = zoomControls;
 
         // Set canvas size
         const resizeCanvas = () => {
@@ -210,7 +222,7 @@ export const WorldEvents = () => {
 
             canvasRef.current.width = container.clientWidth;
             canvasRef.current.height = container.clientHeight;
-            canvasManager.draw();
+            core.requestRedraw();
         };
 
         resizeCanvas();
@@ -225,7 +237,7 @@ export const WorldEvents = () => {
                     { width: 180, height: 180 },
                     'rgba(0, 53, 102, 0.1)' // Very faint primary color
                 );
-                canvasManager.addObject(gridRect);
+                core.addObject(gridRect);
             }
         }
 
@@ -235,14 +247,14 @@ export const WorldEvents = () => {
             { width: 100, height: 80 }, 
             theme.palette.primary.main // #003566
         );
-        canvasManager.addObject(staticRect);
+        core.addObject(staticRect);
 
         const staticCircle = new CircleVisual(
             { x: 200, y: 80 }, 
             40, 
             theme.palette.secondary.main // #ffc300
         );
-        canvasManager.addObject(staticCircle);
+        core.addObject(staticCircle);
 
         const hoverableRect = new HoverableRectangle(
             { x: 300, y: 50 },
@@ -250,7 +262,7 @@ export const WorldEvents = () => {
             theme.palette.secondary.light, // #ffd60a
             theme.palette.secondary.main  // #ffc300
         );
-        canvasManager.addObject(hoverableRect);
+        core.addObject(hoverableRect);
 
         const clickableCircle = new ClickableCircle(
             { x: 450, y: 80 },
@@ -258,14 +270,14 @@ export const WorldEvents = () => {
             theme.palette.primary.light, // #001d3d
             theme.palette.primary.main   // #003566
         );
-        canvasManager.addObject(clickableCircle);
+        core.addObject(clickableCircle);
 
         const draggableBox = new DraggableBox(
             { x: 550, y: 50 },
             { width: 100, height: 70 },
             theme.palette.secondary.main // #ffc300
         );
-        canvasManager.addObject(draggableBox);
+        core.addObject(draggableBox);
 
         // Add some scattered objects for zoom testing
         const colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.primary.light];
@@ -281,21 +293,21 @@ export const WorldEvents = () => {
                     { width: size, height: size * 0.7 },
                     color
                 );
-                canvasManager.addObject(rect);
+                core.addObject(rect);
             } else {
                 const circle = new CircleVisual(
                     { x, y },
                     size / 2,
                     color
                 );
-                canvasManager.addObject(circle);
+                core.addObject(circle);
             }
         }
 
         // Update zoom level display
         const updateZoomDisplay = () => {
-            setZoomLevel(canvasManager.getZoomLevel());
-            setIsZooming(canvasManager.isCurrentlyZooming());
+            setZoomLevel(zoomControls.getZoomLevel());
+            setIsZooming(zoomControls.isCurrentlyZooming());
         };
 
         // Set up a timer to update zoom display
@@ -311,24 +323,25 @@ export const WorldEvents = () => {
 
     // Zoom control handlers
     const handleZoomIn = () => {
-        canvasManagerRef.current?.zoomIn();
+        zoomControlsRef.current?.zoomIn();
     };
 
     const handleZoomOut = () => {
-        canvasManagerRef.current?.zoomOut();
+        zoomControlsRef.current?.zoomOut();
     };
 
     const handleResetZoom = () => {
-        canvasManagerRef.current?.resetZoom();
+        zoomControlsRef.current?.resetZoom();
     };
 
     const handleResetView = () => {
-        canvasManagerRef.current?.resetView();
+        zoomControlsRef.current?.resetZoom();
+        canvasManagerRef.current?.canvasWorld.resetViewPosition();
     };
 
     const handleFitToRect = () => {
         // Fit to a specific area of interest
-        canvasManagerRef.current?.fitToRect({
+        zoomControlsRef.current?.fitToRect({
             x: 0,
             y: 0,
             width: 800,

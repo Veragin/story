@@ -129,8 +129,8 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
 
         // Check if object is smaller than a pixel in either dimension
         const pixelSize = this.canvasWorld.pixelSizeInWorldUnits;
-        const objWidthInPixels = size.width / pixelSize;
-        const objHeightInPixels = size.height / pixelSize;
+        const objWidthInPixels = size.width / pixelSize.width;
+        const objHeightInPixels = size.height / pixelSize.height;
 
         if (objWidthInPixels < 1 || objHeightInPixels < 1) {
             return false;
