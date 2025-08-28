@@ -169,7 +169,7 @@ export function zoomingPlugin(initialConfig?: ZoomableCanvasConfig): { plugin: (
         const worldPointAtZoomStart = coreRef.canvasWorld.screenToWorld(screenPoint);
 
         if (!config.smoothZooming) {
-            const pixelFactor = 1 / relativeScaleFactor; // For CanvasWorld zoomAtPoint
+            const pixelFactor = relativeScaleFactor; // Fixed: no inversion needed
             coreRef.canvasWorld.zoomAtPoint(screenPoint, pixelFactor);
             currentScale = newTargetScale;
             smoothZoomState = null;
