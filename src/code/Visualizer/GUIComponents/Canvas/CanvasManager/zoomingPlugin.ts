@@ -138,9 +138,9 @@ export function zoomingPlugin(initialConfig?: ZoomableCanvasConfig): { plugin: (
         }
 
         const factor = config.zoomSmoothingFactor;
+        const previousScale = currentScale;
         currentScale += diff * factor;
         isZooming = true;
-
         const newPixelSize: TSize = { width: 1 / currentScale, height: 1 / currentScale };
 
         if (smoothZoomState) {

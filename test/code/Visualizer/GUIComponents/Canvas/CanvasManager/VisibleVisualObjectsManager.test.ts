@@ -751,6 +751,46 @@ suite('VisibleVisualObjectsManager - Performance and Edge Cases', () => {
     });
 });
 
+suite('VisibleVisualObjectsManager - Zoom-In Visibility', () => {
+    let canvasWorld: CanvasWorld;
+    let provider: MockVisibilityProvider;
+    let manager: VisibleVisualObjectsManager;
+    let obj: MockVisualObject;
+
+    setup(() => {
+        canvasWorld = new CanvasWorld();
+        provider = new MockVisibilityProvider();
+
+        canvasWorld.viewPosition = { x: 0, y: 0 };
+        canvasWorld.pixelSizeInWorldUnits = { width: 1, height: 1 };
+        provider.setCanvasSize({ width: 800, height: 600 });
+
+        obj = new MockVisualObject({ x: 801, y: 250 }, { width: 30, height: 50 });
+        provider.addObject(obj);
+
+        manager = new VisibleVisualObjectsManager(canvasWorld, provider);
+    });
+
+    teardown(() => {
+        manager.dispose();
+        sinon.restore();
+    });
+
+    test('should make an object visible after zooming in towards it', () => {
+        assert.ok(!manager.getVisibleObjects().has(obj), 'Object should not be visible initially');
+
+        const screenRightEdge: TPoint = { x: 750, y: 300 };
+        canvasWorld.zoomAtPoint(screenRightEdge, 0.5);
+
+        assert.strictEqual(canvasWorld.pixelSizeInWorldUnits.width, 2, 'Pixel size should be doubled (zoomed in)');
+        assert.strictEqual(canvasWorld.pixelSizeInWorldUnits.height, 2, 'Pixel size should be doubled (zoomed in)');
+
+        const visibleBounds = canvasWorld.getVisibleWorldBounds({ width: 800, height: 600 });
+        
+        assert.ok(manager.getVisibleObjects().has(obj), `Object should become visible after zooming in towards the right edge. Object is at (${obj.getPosition().x}, ${obj.getPosition().y}) with size (${obj.getSize().width}, ${obj.getSize().height}), visible bounds are min: (${visibleBounds.min.x}, ${visibleBounds.min.y}) max: (${visibleBounds.max.x}, ${visibleBounds.max.y})`);
+    });
+});
+
 suite('VisibleVisualObjectsManager - Observer Notifications', () => {
     let canvasWorld: CanvasWorld;
     let provider: MockVisibilityProvider;

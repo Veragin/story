@@ -409,6 +409,40 @@ suite('CanvasWorld - Reset Operations', () => {
     });
 });
 
+suite('CanvasWorld - Panning Logic Verification', () => {
+    let canvasWorld: CanvasWorld;
+
+    setup(() => {
+        canvasWorld = new CanvasWorld();
+    });
+
+    teardown(() => {
+        sinon.restore();
+    });
+
+    test('should keep world point stable under cursor during a pan operation', () => {
+        canvasWorld.viewPosition = { x: 500, y: 500 };
+        canvasWorld.pixelSizeInWorldUnits = { width: 0.2, height: 0.2 };
+
+        const screenPointBefore: TPoint = { x: 100, y: 150 };
+        const screenPointAfter: TPoint = { x: 125, y: 140 };
+
+        const worldPointBefore = canvasWorld.screenToWorld(screenPointBefore);
+        assert.deepStrictEqual(worldPointBefore, { x: 520, y: 530 });
+
+        const screenDelta: TPoint = {
+            x: screenPointAfter.x - screenPointBefore.x,
+            y: screenPointAfter.y - screenPointBefore.y
+        };
+        canvasWorld.pan(screenDelta);
+
+        const worldPointAfter = canvasWorld.screenToWorld(screenPointAfter);
+
+        assert.ok(Math.abs(worldPointAfter.x - worldPointBefore.x) < 0.0001, 'World point X should remain stable after pan');
+        assert.ok(Math.abs(worldPointAfter.y - worldPointBefore.y) < 0.0001, 'World point Y should remain stable after pan');
+    });
+});
+
 suite('CanvasWorld - Edge Cases and Error Handling', () => {
     let canvasWorld: CanvasWorld;
 

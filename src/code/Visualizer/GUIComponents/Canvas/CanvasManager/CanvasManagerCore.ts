@@ -107,10 +107,15 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     }
 
     protected getMousePoint(event: MouseEvent | WheelEvent): TPoint {
-        // Use offsetX and offsetY for more accurate position relative to canvas
+        const rect = this.canvas.getBoundingClientRect();
+        
+        // Calculate position considering potential CSS scaling
+        const scaleX = this.canvas.clientWidth / rect.width;
+        const scaleY = this.canvas.clientHeight / rect.height;
+        
         return {
-            x: event.offsetX,
-            y: event.offsetY,
+            x: (event.clientX - rect.left) * scaleX,
+            y: (event.clientY - rect.top) * scaleY,
         };
     }
 
@@ -318,8 +323,9 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         const zoomY = 1 / pixelSize.height;
         const viewPos = this.canvasWorld.viewPosition;
 
+        // scale first, then translate
         ctx.scale(zoomX, zoomY);
-        ctx.translate(-viewPos.x * zoomX, -viewPos.y * zoomY);
+        ctx.translate(-viewPos.x, -viewPos.y);
     }
 
     updateCursor(cursor: string): void {
