@@ -4,7 +4,6 @@ import { DraggableVisualObject } from '../Node/DraggableVisualObject';
 import { HoverableVisualObject } from '../Node/HoverableVisualObject';
 import { VisualObject } from '../Node/VisualObject';
 import { assertNotNullish } from 'code/utils/typeguards';
-import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
 import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
@@ -47,7 +46,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
 
     readonly onObjectAdded = new Observer<VisualObject>();
     readonly onObjectRemoved = new Observer<VisualObject>();
-    readonly onObjectPropertyChanged = new Observer<{ object: VisualObject; property: string }>();
+    readonly onObjectPropertyChanged = new Observer<{ object: VisualObject, property: string }>();
 
     readonly onCanvasResize = new ConditionalObserver<TSize>(
         (lastSize, newSize) => {
@@ -56,8 +55,9 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         }
     );
 
+    // Use logical (CSS) size for calculations
     get canvasSize(): TSize {
-        return { width: this.canvas.width, height: this.canvas.height };
+        return { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
     }
 
     dragMode = true;
@@ -67,7 +67,10 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         const context = canvas.getContext('2d');
         assertNotNullish(context);
         this.ctx = context;
-        this.ctx.scale(RESOLUTION_FACTOR, RESOLUTION_FACTOR);
+
+        // Use dynamic devicePixelRatio instead of constant RESOLUTION_FACTOR
+        const dpr = window.devicePixelRatio || 1;
+        this.ctx.scale(dpr, dpr);
 
         this.canvasWorld = new CanvasWorld();
         this.visibleVisualObjectsManager = new ZIndexSortedVisibleVisualObjectsManager(this.canvasWorld, this);
@@ -91,12 +94,8 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keyup', this.handleKeyUp);
 
-        this.canvas.addEventListener('resize', () => {
-            this.onCanvasResize.notify(this.canvasSize);
-            this.visibleVisualObjectsManager.setCanvasSize(this.canvasSize);
-            console.log('Canvas resized:', this.canvasSize);
-            this.draw();
-        });
+        // Note: Canvas resize handling is done in WorldEvents via window.resize
+        // as canvas elements don't have a standard 'resize' event
     }
 
     getAllObjects(): Iterable<VisualObject> {
@@ -108,10 +107,10 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     }
 
     protected getMousePoint(event: MouseEvent | WheelEvent): TPoint {
-        const rect = this.canvas.getBoundingClientRect();
+        // Use offsetX and offsetY for more accurate position relative to canvas
         return {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
+            x: event.offsetX,
+            y: event.offsetY,
         };
     }
 

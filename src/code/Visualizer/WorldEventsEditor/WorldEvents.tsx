@@ -214,14 +214,24 @@ export const WorldEvents = () => {
         canvasManagerRef.current = core;
         zoomControlsRef.current = zoomControls;
 
-        // Set canvas size
+        // Set canvas size with high-DPI support
         const resizeCanvas = () => {
             if (!canvasRef.current) return;
             const container = canvasRef.current.parentElement;
             if (!container) return;
 
-            canvasRef.current.width = container.clientWidth;
-            canvasRef.current.height = container.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            const cssWidth = container.clientWidth;
+            const cssHeight = container.clientHeight;
+
+            canvasRef.current.width = cssWidth * dpr;
+            canvasRef.current.height = cssHeight * dpr;
+            canvasRef.current.style.width = `${cssWidth}px`;
+            canvasRef.current.style.height = `${cssHeight}px`;
+
+            // Update visibility manager with logical size
+            core.visibleVisualObjectsManager.setCanvasSize({ width: cssWidth, height: cssHeight });
+
             core.requestRedraw();
         };
 

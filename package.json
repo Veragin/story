@@ -9,7 +9,9 @@
         "lint": "eslint .",
         "preview": "vite preview",
         "pretty": "prettier . --write",
-        "pretty:check": "prettier . --check"
+        "pretty:check": "prettier . --check",
+        "test": "mocha",
+        "test:watch": "mocha --watch"
     },
     "dependencies": {
         "@emotion/react": "^11.13.3",
@@ -30,14 +32,23 @@
     "devDependencies": {
         "@eslint/js": "^9.9.0",
         "@types/d3": "^7.4.3",
+        "@types/jsdom": "^21.1.7",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^24.3.0",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
+        "@types/sinon": "^17.0.4",
         "@vitejs/plugin-react": "^4.3.2",
         "eslint": "^9.9.0",
         "eslint-plugin-react-hooks": "^5.1.0-rc.0",
         "eslint-plugin-react-refresh": "^0.4.9",
         "globals": "^15.9.0",
+        "jsdom": "^26.1.0",
+        "mocha": "^11.7.1",
         "prettier": "^3.3.3",
+        "sinon": "^21.0.0",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.20.5",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.0.1",
         "vite": "^5.4.9"

@@ -29,18 +29,13 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
 
     public readonly onVisibleObjectsChanged = new Observer<Set<VisualObject>>();
 
-    private _throttledCheckAllVisibility: () => void;
-
     constructor(canvasWorld: CanvasWorld, provider: IVisibilityProvider) {
         this.canvasWorld = canvasWorld;
         this.provider = provider;
 
-        this._throttledCheckAllVisibility = throttle(() => {
-            this.checkAllVisualObjectsVisibility();
-        }, 1000 / 30);
-
-        this.canvasWorld.onViewPositionChange.subscribe(() => this._throttledCheckAllVisibility());
-        this.canvasWorld.onPixelSizeChange.subscribe(() => this._throttledCheckAllVisibility());
+        // Remove throttle: call directly for immediate updates
+        this.canvasWorld.onViewPositionChange.subscribe(() => this.checkAllVisualObjectsVisibility());
+        this.canvasWorld.onPixelSizeChange.subscribe(() => this.checkAllVisualObjectsVisibility());
 
         this.provider.onObjectAdded.subscribe((obj) => this.handleObjectAdded(obj));
         this.provider.onObjectRemoved.subscribe((obj) => this.handleObjectRemoved(obj));
@@ -53,7 +48,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
 
     setCanvasSize(size: TSize) {
         this.provider.getCanvasSize = () => size;
-        this._throttledCheckAllVisibility();
+        this.checkAllVisualObjectsVisibility();  // Direct call, no throttle
     }
 
     getVisibleObjects(): Set<VisualObject> {
@@ -72,7 +67,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
     }
 
     protected handleVisualObjectPropertyChanged(obj: VisualObject, property: string) {
-        if (property === 'position' || property === 'Size') {
+        if (property === 'position' || property === 'size') {  // Fixed: 'size' lowercase
             this.checkVisualObjectVisibility(obj);
         }
     }

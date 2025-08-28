@@ -1,0 +1,8 @@
+{
+  "extensions": ["ts"],
+  "spec": "test/**/*.test.ts",
+  "recursive": true,
+  "timeout": 5000,
+  "ui": "tdd",
+  "require": ["tsx/cjs", "test/setup.ts"]
+}
