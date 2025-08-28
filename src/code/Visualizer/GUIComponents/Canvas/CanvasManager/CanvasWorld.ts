@@ -83,8 +83,8 @@ export class CanvasWorld {
 
         // Calculate new values
         const newPixelSize = {
-            width: Math.max(0.00001, this._pixelSizeInWorldUnits.width * zoomFactor),
-            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height * zoomFactor)
+            width: Math.max(0.00001, this._pixelSizeInWorldUnits.width / zoomFactor),
+            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactor)
         };
 
         // Temporarily update pixel size to calculate new world point
@@ -115,8 +115,8 @@ export class CanvasWorld {
 
         // Calculate new values
         const newPixelSize = {
-            width: Math.max(0.00001, this._pixelSizeInWorldUnits.width * zoomFactors.width),
-            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height * zoomFactors.height)
+            width: Math.max(0.00001, this._pixelSizeInWorldUnits.width / zoomFactors.width),
+            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactors.height)
         };
 
         // Temporarily update pixel size to calculate new world point

@@ -56,6 +56,16 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
     }
 
     private rebuildSortedArray(): void {
+        // Ensure _objectPositions is initialized
+        if (!this._objectPositions) {
+            this._objectPositions = new WeakMap();
+        }
+        
+        // Ensure _insertionOrderMap is initialized
+        if (!this._insertionOrderMap) {
+            this._insertionOrderMap = new WeakMap();
+        }
+        
         this._sortedVisibleVisualObjects = Array.from(super.getVisibleObjects()).sort((a, b) => {
             // First compare by z-index
             if (a.zIndex !== b.zIndex) {
@@ -122,6 +132,11 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
     }
 
     private insertObjectInSortedPosition(obj: VisualObject): void {
+        // Ensure _objectPositions is initialized
+        if (!this._objectPositions) {
+            this._objectPositions = new WeakMap();
+        }
+        
         const insertionIndex = this.findInsertionPoint(obj);
         this._sortedVisibleVisualObjects.splice(insertionIndex, 0, obj);
 
@@ -132,6 +147,12 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
     }
 
     private removeObjectFromSorted(obj: VisualObject): void {
+        // Ensure _objectPositions is initialized
+        if (!this._objectPositions) {
+            this._objectPositions = new WeakMap();
+            return;
+        }
+        
         const index = this._objectPositions.get(obj);
         if (index !== undefined) {
             this._sortedVisibleVisualObjects.splice(index, 1);
