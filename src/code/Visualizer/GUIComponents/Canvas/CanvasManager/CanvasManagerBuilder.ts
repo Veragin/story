@@ -9,6 +9,7 @@ export interface ICanvasManagerBuildResult {
     plugins: Map<string, ICanvasPlugin>;
     getPlugin<T extends ICanvasPlugin>(name: string): T | undefined;
     getPluginControls<TControls>(name: string): TControls | undefined;
+    destroy(): void;
 }
 
 /**
@@ -35,40 +36,13 @@ export class CanvasManagerBuilder {
     }
     
     /**
-     * Remove a plugin by name
-     */
-    removePlugin(name: string): this {
-        this.plugins.delete(name);
-        return this;
-    }
-    
-    /**
-     * Check if a plugin exists
-     */
-    hasPlugin(name: string): boolean {
-        return this.plugins.has(name);
-    }
-    
-    /**
      * Build the canvas manager with all configured plugins
      */
     build(): ICanvasManagerBuildResult {
         const core = new CanvasManagerCore(this.canvas);
         
-        // Initialize all plugins
         for (const plugin of this.plugins.values()) {
-            try {
-                plugin.initialize(core);
-            } catch (error) {
-                console.error(`Failed to initialize plugin '${plugin.name}':`, error);
-                // Clean up partially initialized plugin
-                try {
-                    plugin.destroy();
-                } catch (destroyError) {
-                    console.error(`Failed to destroy plugin '${plugin.name}' after initialization error:`, destroyError);
-                }
-                throw error;
-            }
+            plugin.initialize(core);
         }
         
         return new CanvasManagerBuildResult(core, this.plugins);

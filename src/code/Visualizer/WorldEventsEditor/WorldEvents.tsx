@@ -329,6 +329,7 @@ export const WorldEvents = () => {
         return () => {
             clearInterval(zoomUpdateInterval);
             window.removeEventListener('resize', resizeCanvas);
+            managerRef.current?.destroy();
         };
     }, [theme]);
 

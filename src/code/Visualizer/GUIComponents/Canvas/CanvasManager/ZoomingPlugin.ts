@@ -77,6 +77,11 @@ const DEFAULT_CONFIG: IZoomingConfig = {
     keyboardZoomSpeed: 1.2
 };
 
+interface SmoothZoomTarget {
+    screenPoint: TPoint;
+    worldPoint: TPoint;
+}
+
 /**
  * Plugin that adds zooming functionality to the canvas
  */
@@ -84,52 +89,50 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     readonly name = "ZoomingPlugin";
 
     private config: IZoomingConfig;
-    private zoomState: ZoomState;
-    private animationLoop: ZoomAnimationLoop;
+    private currentScale = 1;
+    private targetScale = 1;
+    private smoothZoomTarget: SmoothZoomTarget | null = null;
+    private animationFrameId: number | null = null;
     private eventHandlers: ZoomEventHandlers;
 
     constructor(initialConfig?: Partial<IZoomingConfig>) {
         super();
         this.config = { ...DEFAULT_CONFIG, ...initialConfig };
-        this.zoomState = new ZoomState();
-        this.animationLoop = new ZoomAnimationLoop(() => this.updateSmoothZoom());
         this.eventHandlers = new ZoomEventHandlers(this);
     }
 
     protected onInitialize(): void {
         const core = this.requireCore();
 
-        // Initialize zoom state from current canvas world state
         const initialPixelSize = core.canvasWorld.pixelSizeInWorldUnits.width;
-        const initialScale = 1 / initialPixelSize;
-        this.zoomState.setScales(initialScale, initialScale);
+        this.currentScale = 1 / initialPixelSize;
+        this.targetScale = this.currentScale;
 
         this.eventHandlers.registerAll();
     }
 
     protected onDestroy(): void {
-        this.animationLoop.stop();
+        this.stopAnimationLoop();
         this.eventHandlers.unregisterAll();
     }
 
     protected onEnable(): void {
         if (this.config.smoothZooming) {
-            this.animationLoop.start();
+            this.startAnimationLoop();
         }
     }
 
     protected onDisable(): void {
-        this.animationLoop.stop();
-        this.zoomState.reset();
+        this.stopAnimationLoop();
+        this.currentScale = 1;
+        this.targetScale = 1;
+        this.smoothZoomTarget = null;
     }
 
     getControls(): IZoomingControls {
         return new ZoomingControls(this);
     }
 
-    /**
-     * Internal method to update configuration
-     */
     updateConfig(newConfig: Partial<IZoomingConfig>): void {
         const oldSmoothZooming = this.config.smoothZooming;
 
@@ -144,10 +147,10 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
 
         if (this.isEnabled() && this.config.smoothZooming !== oldSmoothZooming) {
             if (this.config.smoothZooming) {
-                this.animationLoop.start();
+                this.startAnimationLoop();
             } else {
-                this.animationLoop.stop();
-                this.zoomState.snapToTarget();
+                this.stopAnimationLoop();
+                this.currentScale = this.targetScale;
                 this.applyCurrentScale();
             }
         }
@@ -157,9 +160,6 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         return { ...this.config };
     }
 
-    /**
-     * Handle wheel events
-     */
     handleWheel(event: WheelEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
         if (!this.config.enableWheelZoom) {
             return false;
@@ -179,9 +179,6 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         return true;
     }
 
-    /**
-     * Handle key down events
-     */
     handleKeyDown(event: KeyboardEvent): boolean {
         const key = event.code;
         if (!isValidKeyCode(key) || !this.config.enableKeyboardZoom) {
@@ -205,62 +202,66 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         return false;
     }
 
-    /**
-     * Perform zoom operation
-     */
     performZoom(relativeScaleFactor: number, screenPoint: TPoint): void {
         const core = this.requireCore();
 
-        let newTargetScale = this.zoomState.getTargetScale() * relativeScaleFactor;
+        // If smooth zooming and currently animating, snap to target first
+        if (this.config.smoothZooming && this.isZooming()) {
+            this.currentScale = this.targetScale;
+            this.applyCurrentScale();
+            this.smoothZoomTarget = null;
+        }
+
+        // Now calculate with the updated state
+        let newTargetScale = this.targetScale * relativeScaleFactor;
         newTargetScale = Math.max(this.config.minZoom, Math.min(this.config.maxZoom, newTargetScale));
 
-        if (Math.abs(newTargetScale - this.zoomState.getTargetScale()) < 0.0001) {
+        if (Math.abs(newTargetScale - this.targetScale) < 0.0001) {
             return;
         }
 
         const worldPointAtZoomStart = core.canvasWorld.screenToWorld(screenPoint);
 
         if (!this.config.smoothZooming) {
-            core.canvasWorld.zoomAtPoint(screenPoint, relativeScaleFactor);
-            this.zoomState.setScales(newTargetScale, newTargetScale);
+            const actualRelativeScaleFactor = newTargetScale / this.currentScale;
+            core.canvasWorld.zoomAtPoint(screenPoint, actualRelativeScaleFactor);
+            this.currentScale = newTargetScale;
+            this.targetScale = newTargetScale;
+            this.smoothZoomTarget = null;
         } else {
-            this.zoomState.setSmoothZoomTarget(newTargetScale, screenPoint, worldPointAtZoomStart);
+            this.smoothZoomTarget = {
+                screenPoint: { ...screenPoint },
+                worldPoint: { ...worldPointAtZoomStart }
+            };
+            this.targetScale = newTargetScale;
         }
     }
 
-    /**
-     * Set zoom level directly
-     */
     setZoomLevelInternal(newZoomLevel: number, centerAtPoint?: TPoint): void {
         newZoomLevel = Math.max(this.config.minZoom, Math.min(this.config.maxZoom, newZoomLevel));
-        const relativeScaleFactor = newZoomLevel / this.zoomState.getTargetScale();
+        const relativeScaleFactor = newZoomLevel / this.targetScale;
 
         if (Math.abs(relativeScaleFactor - 1) > 0.0001) {
             const zoomPoint = centerAtPoint || this.getCenterPoint();
             this.performZoom(relativeScaleFactor, zoomPoint);
+        } else {
         }
     }
 
-    /**
-     * Reset zoom to 1:1
-     */
     resetZoomInternal(): void {
         const core = this.requireCore();
 
-        this.zoomState.setTargetScale(1);
+        this.targetScale = 1;
 
         if (!this.config.smoothZooming) {
-            this.zoomState.setCurrentScale(1);
+            this.currentScale = 1;
             const newPixelSize: TSize = { width: 1, height: 1 };
             core.canvasWorld.pixelSizeInWorldUnits = newPixelSize;
         }
 
-        this.zoomState.clearSmoothZoomTarget();
+        this.smoothZoomTarget = null;
     }
 
-    /**
-     * Fit view to a world rectangle
-     */
     fitToRectInternal(worldRect: IWorldRect, padding: number): void {
         const core = this.requireCore();
 
@@ -288,18 +289,16 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
             viewPosition: newViewPosition
         });
 
-        this.zoomState.setScales(newZoom, newZoom);
-        this.zoomState.clearSmoothZoomTarget();
+        this.currentScale = newZoom;
+        this.targetScale = newZoom;
+        this.smoothZoomTarget = null;
     }
 
-    /**
-     * Get current zoom state
-     */
     getZoomState(): { current: number; target: number; isZooming: boolean } {
         return {
-            current: this.zoomState.getCurrentScale(),
-            target: this.zoomState.getTargetScale(),
-            isZooming: this.zoomState.isZooming()
+            current: this.currentScale,
+            target: this.targetScale,
+            isZooming: this.isZooming()
         };
     }
 
@@ -308,28 +307,62 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         return { x: core.canvas.width / 2, y: core.canvas.height / 2 };
     }
 
+    private startAnimationLoop(): void {
+        if (this.animationFrameId !== null) {
+            return;
+        }
+
+        const animate = () => {
+            this.updateSmoothZoom();
+            this.animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animate();
+    }
+
+    private stopAnimationLoop(): void {
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+
     private updateSmoothZoom(): void {
         if (!this.core) {
             return;
         }
 
-        const hasChanged = this.zoomState.updateSmoothZoom(this.config.zoomSmoothingFactor);
+        const diff = this.targetScale - this.currentScale;
 
-        if (hasChanged) {
-            this.applyCurrentScale();
+        if (Math.abs(diff) < 0.0001) {
+            if (this.currentScale !== this.targetScale) {
+                this.currentScale = this.targetScale;
+                this.applyCurrentScale();
+            }
+            if (this.smoothZoomTarget) {
+                this.smoothZoomTarget = null;
+            }
+            return;
         }
+
+        this.currentScale += diff * this.config.zoomSmoothingFactor;
+
+        if (Math.abs(this.targetScale - this.currentScale) < 0.0001) {
+            this.currentScale = this.targetScale;
+        }
+
+        this.applyCurrentScale();
     }
 
     private applyCurrentScale(): void {
         const core = this.requireCore();
-        const currentScale = this.zoomState.getCurrentScale();
-        const newPixelSize: TSize = { width: 1 / currentScale, height: 1 / currentScale };
+        const newPixelSize: TSize = { width: 1 / this.currentScale, height: 1 / this.currentScale };
 
-        const smoothTarget = this.zoomState.getSmoothZoomTarget();
-        if (smoothTarget) {
+        if (this.smoothZoomTarget) {
+
             const newViewPosition: TPoint = {
-                x: smoothTarget.worldPoint.x - smoothTarget.screenPoint.x * newPixelSize.width,
-                y: smoothTarget.worldPoint.y - smoothTarget.screenPoint.y * newPixelSize.height
+                x: this.smoothZoomTarget.worldPoint.x - this.smoothZoomTarget.screenPoint.x * newPixelSize.width,
+                y: this.smoothZoomTarget.worldPoint.y - this.smoothZoomTarget.screenPoint.y * newPixelSize.height
             };
 
             core.canvasWorld.atomicZoomAndPositionUpdate({
@@ -337,148 +370,17 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
                 viewPosition: newViewPosition
             });
         } else {
-            core.canvasWorld.pixelSizeInWorldUnits = newPixelSize;
+            core.canvasWorld.atomicZoomAndPositionUpdate({
+                pixelSizeInWorldUnits: newPixelSize
+            });
         }
+    }
 
-        // Clear only after applying the update, and only if done zooming
-        if (!this.zoomState.isZooming()) {
-            this.zoomState.clearSmoothZoomTarget();
-        }
+    private isZooming(): boolean {
+        return Math.abs(this.targetScale - this.currentScale) > 0.0001;
     }
 }
 
-/**
- * Manages the state of zoom operations
- */
-class ZoomState {
-    private currentScale = 1;
-    private targetScale = 1;
-    private isZoomingFlag = false;
-    private smoothZoomTarget: SmoothZoomTarget | null = null;
-
-    setCurrentScale(scale: number): void {
-        this.currentScale = scale;
-    }
-
-    getCurrentScale(): number {
-        return this.currentScale;
-    }
-
-    setTargetScale(scale: number): void {
-        this.targetScale = scale;
-    }
-
-    getTargetScale(): number {
-        return this.targetScale;
-    }
-
-    setScales(current: number, target: number): void {
-        this.currentScale = current;
-        this.targetScale = target;
-    }
-
-    isZooming(): boolean {
-        return this.isZoomingFlag;
-    }
-
-    setSmoothZoomTarget(targetScale: number, screenPoint: TPoint, worldPoint: TPoint): void {
-        this.targetScale = targetScale;
-        this.smoothZoomTarget = {
-            screenPoint: { ...screenPoint },
-            worldPoint: { ...worldPoint }
-        };
-    }
-
-    getSmoothZoomTarget(): SmoothZoomTarget | null {
-        return this.smoothZoomTarget;
-    }
-
-    clearSmoothZoomTarget(): void {
-        this.smoothZoomTarget = null;
-    }
-
-    updateSmoothZoom(smoothingFactor: number): boolean {
-        const oldScale = this.currentScale;
-        const diff = this.targetScale - this.currentScale;
-        let changed = false;
-
-        if (Math.abs(diff) < 0.0001) {
-            if (this.currentScale !== this.targetScale) {
-                this.currentScale = this.targetScale;
-                changed = true;
-            }
-            this.isZoomingFlag = false;
-        } else {
-            this.currentScale += diff * smoothingFactor;
-            changed = true;
-            if (Math.abs(this.targetScale - this.currentScale) < 0.0001) {
-                this.currentScale = this.targetScale;
-                this.isZoomingFlag = false;
-            } else {
-                this.isZoomingFlag = true;
-            }
-        }
-        return changed;
-    }
-
-    snapToTarget(): void {
-        this.currentScale = this.targetScale;
-        this.isZoomingFlag = false;
-        this.smoothZoomTarget = null;
-    }
-
-    reset(): void {
-        this.currentScale = 1;
-        this.targetScale = 1;
-        this.isZoomingFlag = false;
-        this.smoothZoomTarget = null;
-    }
-}
-
-interface SmoothZoomTarget {
-    screenPoint: TPoint;
-    worldPoint: TPoint;
-}
-
-/**
- * Manages the animation loop for smooth zooming
- */
-class ZoomAnimationLoop {
-    private animationFrameId: number | null = null;
-    private callback: () => void;
-
-    constructor(callback: () => void) {
-        this.callback = callback;
-    }
-
-    start(): void {
-        if (this.animationFrameId !== null) {
-            return;
-        }
-
-        const animate = () => {
-            this.callback();
-            this.animationFrameId = requestAnimationFrame(animate);
-        };
-
-        animate();
-    }
-
-    stop(): void {
-        if (this.animationFrameId !== null) {
-            cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null;
-        }
-    }
-
-    isRunning(): boolean {
-        return this.animationFrameId !== null;
-    }
-}
-
-/**
- * Manages event handler registration for zooming
- */
 class ZoomEventHandlers {
     private plugin: ZoomingPlugin;
     private registeredKeys = new Set<KeyCodeType>();
@@ -491,10 +393,8 @@ class ZoomEventHandlers {
         const core = this.plugin['requireCore']();
         const config = this.plugin.getConfiguration();
 
-        // Register wheel handler
         core.eventDispatcher.registerWheel((e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
 
-        // Register keyboard handlers for all zoom keys
         const allKeys = this.collectAllKeys(config.zoomKeys);
         for (const key of allKeys) {
             core.eventDispatcher.registerKeyDown(key, e => this.plugin.handleKeyDown(e));
@@ -503,25 +403,18 @@ class ZoomEventHandlers {
     }
 
     unregisterAll(): void {
-        // Note: Currently no unregister methods in eventDispatcher
-        // This would need to be implemented in the core
         this.registeredKeys.clear();
     }
 
     private collectAllKeys(zoomKeys: IZoomingConfig['zoomKeys']): Set<KeyCodeType> {
         const keys = new Set<KeyCodeType>();
-
         zoomKeys.zoomIn.forEach(k => keys.add(k));
         zoomKeys.zoomOut.forEach(k => keys.add(k));
         zoomKeys.resetZoom.forEach(k => keys.add(k));
-
         return keys;
     }
 }
 
-/**
- * Implementation of controls exposed to external code
- */
 class ZoomingControls implements IZoomingControls {
     constructor(private plugin: ZoomingPlugin) { }
 
