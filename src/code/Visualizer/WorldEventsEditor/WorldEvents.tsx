@@ -1,4 +1,3 @@
-/// <reference path="../../../@types/global.d.ts" />
 import React, { useEffect, useRef, useState } from 'react';
 import { styled, useTheme } from '@mui/material';
 import { useVisualizerStore } from '../../Context';
@@ -6,13 +5,13 @@ import { VisualObject } from '../GUIComponents/Canvas/Node/VisualObject';
 import { HoverableVisualObject } from '../GUIComponents/Canvas/Node/HoverableVisualObject';
 import { ClickableVisualObject } from '../GUIComponents/Canvas/Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../GUIComponents/Canvas/Node/DraggableVisualObject';
-import { panningPlugin } from '../GUIComponents/Canvas/CanvasManager/panningPlugin';
-import { ZoomingControls, zoomingPlugin } from '../GUIComponents/Canvas/CanvasManager/zoomingPlugin';
 import { Button, ButtonGroup, Typography, Box, Chip } from '@mui/material';
 import { ZoomIn, ZoomOut, CenterFocusStrong, RestartAlt } from '@mui/icons-material';
 import { MouseButton } from '../GUIComponents/Canvas/CanvasManager/InputConstants';
 import { CanvasManagerCore } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerCore';
 import { CanvasManagerBuilder } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerBuilder';
+import { PanningPlugin } from '../GUIComponents/Canvas/CanvasManager/PanningPlugin';
+import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/CanvasManager/ZoomingPlugin';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
@@ -175,8 +174,8 @@ class DraggableBox extends DraggableVisualObject {
 
 export const WorldEvents = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasManagerRef = useRef<CanvasManagerCore | null>(null);
-    const zoomControlsRef = useRef<ZoomingControls | null>(null);
+    const managerRef = useRef<ReturnType<typeof CanvasManagerBuilder.prototype.build> | null>(null);
+    const zoomControlsRef = useRef<IZoomingControls | null>(null);
     const store = useVisualizerStore();
     const theme = useTheme();
     
@@ -189,13 +188,13 @@ export const WorldEvents = () => {
         if (!canvasRef.current) return;
 
         // Initialize plugins
-        const { plugin: panPlugin, controls: panControls } = panningPlugin({
+        const panPlugin = new PanningPlugin({
             enableKeyboardPan: true,
             enableMousePan: true,
             panMouseButton: MouseButton.RIGHT,
         });
 
-        const { plugin: zoomPlugin, controls: zoomControls } = zoomingPlugin({
+        const zoomPlugin = new ZoomingPlugin({
             enableWheelZoom: true,
             enableKeyboardZoom: true,
             zoomAtCursor: true,
@@ -210,9 +209,12 @@ export const WorldEvents = () => {
         const builder = new CanvasManagerBuilder(canvasRef.current);
         builder.addPlugin(panPlugin);
         builder.addPlugin(zoomPlugin);
-        const core = builder.build();
-        canvasManagerRef.current = core;
-        zoomControlsRef.current = zoomControls;
+        const manager = builder.build();
+        managerRef.current = manager;
+        const core = manager.core;
+
+        // Get controls
+        zoomControlsRef.current = manager.getPluginControls<IZoomingControls>("ZoomingPlugin") ?? null;
 
         // Set canvas size with high-DPI support
         const resizeCanvas = () => {
@@ -316,8 +318,8 @@ export const WorldEvents = () => {
 
         // Update zoom level display
         const updateZoomDisplay = () => {
-            setZoomLevel(zoomControls.getZoomLevel());
-            setIsZooming(zoomControls.isCurrentlyZooming());
+            setZoomLevel(zoomControlsRef.current?.getZoomLevel() ?? 1);
+            setIsZooming(zoomControlsRef.current?.isCurrentlyZooming() ?? false);
         };
 
         // Set up a timer to update zoom display
@@ -327,7 +329,6 @@ export const WorldEvents = () => {
         return () => {
             clearInterval(zoomUpdateInterval);
             window.removeEventListener('resize', resizeCanvas);
-            canvasManagerRef.current?.dispose();
         };
     }, [theme]);
 
@@ -346,7 +347,7 @@ export const WorldEvents = () => {
 
     const handleResetView = () => {
         zoomControlsRef.current?.resetZoom();
-        canvasManagerRef.current?.canvasWorld.resetViewPosition();
+        managerRef.current?.core.canvasWorld.resetViewPosition();
     };
 
     const handleFitToRect = () => {

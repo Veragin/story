@@ -38,5 +38,6 @@ export enum KeyCode {
     NUMPAD_6 = "NUMPAD_6",
     KEY_R = "KEY_R",
     HOME = "HOME",
-    ESCAPE = "ESCAPE"
+    ESCAPE = "ESCAPE",
+    KEY_0 = "KEY_0"
 }

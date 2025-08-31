@@ -8,7 +8,7 @@ import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
 import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
-import { EventDispatcher } from './EventDispatcher';
+import { GuiEventDispatcher } from './EventDispatcher';
 import { MouseButton } from './InputConstants';
 
 // Assuming these types are defined elsewhere
@@ -21,7 +21,7 @@ type TSize = { width: number; height: number };
 export interface ICanvasManagerCore {
     readonly canvas: HTMLCanvasElement;
     readonly canvasWorld: CanvasWorld;
-    readonly eventDispatcher: EventDispatcher;
+    readonly eventDispatcher: GuiEventDispatcher;
     readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
     updateCursor(cursor: string): void;
     requestRedraw(): void;
@@ -36,7 +36,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     protected ctx: CanvasRenderingContext2D;
     readonly canvasWorld: CanvasWorld;
     readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
-    readonly eventDispatcher: EventDispatcher;
+    readonly eventDispatcher: GuiEventDispatcher;
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
@@ -79,7 +79,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         this.canvasWorld.onViewPositionChange.subscribe(() => this.draw());
         this.canvasWorld.onPixelSizeChange.subscribe(() => this.draw());
 
-        this.eventDispatcher = new EventDispatcher(this);
+        this.eventDispatcher = new GuiEventDispatcher(this);
 
         // Set up event listeners
         this.canvas.addEventListener('mousemove', this.handleMouseMove);

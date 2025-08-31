@@ -5,7 +5,7 @@ import { isValidKeyCode, KeyCodeType, MouseButtonType } from "./InputConstants";
 /**
  * Separate class for managing event listeners and plugin registrations.
  */
-export class EventDispatcher {
+export class GuiEventDispatcher {
     private core: CanvasManagerCore;
 
     private mouseDownHandlers: Map<MouseButtonType, ((event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean)[]> = new Map();
