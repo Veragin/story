@@ -83,9 +83,9 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
     constructor(initialConfig?: Partial<IPanningConfig>) {
         super();
         this.config = { ...DEFAULT_CONFIG, ...initialConfig };
+        this.eventHandlers = new EventHandlers(this);
         this.panState = new PanState();
         this.animationLoop = new AnimationLoop(() => this.updateKeyboardPanning());
-        this.eventHandlers = new EventHandlers(this);
     }
     
     protected onInitialize(): void {
@@ -202,6 +202,7 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
      */
     handleKeyDown(event: KeyboardEvent): boolean {
         const key = event.code;
+        console.log("Key down event:", key);
         if (!isValidKeyCode(key)) {
             return false;
         }
@@ -212,9 +213,12 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
             this.requireCore().canvasWorld.resetViewPosition();
             this.panState.resetVelocity();
             event.preventDefault();
+            console.log("Resetting pan state");
             return true;
         }
-        
+
+        console.log("Registering key for panning:", key);
+
         const isPanKey = this.isPanKey(key);
         if (isPanKey) {
             event.preventDefault();
@@ -435,13 +439,16 @@ class EventHandlers {
         
         // Register mouse handlers
         core.eventDispatcher.registerMouseDown(
+            "start panning",
             config.panMouseButton,
             (e, sp, wp) => this.plugin.handleMouseDown(e, sp, wp)
         );
         core.eventDispatcher.registerMouseMove(
+            "panning",
             (e, sp) => this.plugin.handleMouseMove(e, sp)
         );
         core.eventDispatcher.registerMouseUp(
+            "stop panning",
             config.panMouseButton,
             (e, sp, wp) => this.plugin.handleMouseUp(e, sp, wp)
         );
@@ -449,15 +456,22 @@ class EventHandlers {
         // Register keyboard handlers for all pan keys
         const allKeys = this.collectAllKeys(config.panKeys);
         for (const key of allKeys) {
-            core.eventDispatcher.registerKeyDown(key, e => this.plugin.handleKeyDown(e));
-            core.eventDispatcher.registerKeyUp(key, e => this.plugin.handleKeyUp(e));
+            console.log("Registering key for panning:", key);
+            core.eventDispatcher.registerKeyDown(
+                "start panning " + key,
+                key,
+                e => this.plugin.handleKeyDown(e)
+            );
+            core.eventDispatcher.registerKeyUp(
+                "stop panning " + key,
+                key,
+                e => this.plugin.handleKeyUp(e)
+            );
             this.registeredKeys.add(key);
         }
     }
     
     unregisterAll(): void {
-        // Note: Currently no unregister methods in eventDispatcher
-        // This would need to be implemented in the core
         this.registeredKeys.clear();
     }
     

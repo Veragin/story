@@ -68,7 +68,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         assertNotNullish(context);
         this.ctx = context;
 
-        // Use dynamic devicePixelRatio instead of constant RESOLUTION_FACTOR
         const dpr = window.devicePixelRatio || 1;
         this.ctx.scale(dpr, dpr);
 
@@ -106,13 +105,16 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         return this.canvasSize;
     }
 
+    /**
+     * Get the mouse position relative to the visible left top corner of the canvas
+     */
     protected getMousePoint(event: MouseEvent | WheelEvent): TPoint {
         const rect = this.canvas.getBoundingClientRect();
-        
+
         // Calculate position considering potential CSS scaling
         const scaleX = this.canvas.clientWidth / rect.width;
         const scaleY = this.canvas.clientHeight / rect.height;
-        
+
         return {
             x: (event.clientX - rect.left) * scaleX,
             y: (event.clientY - rect.top) * scaleY,
@@ -127,7 +129,8 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
             return;
         }
 
-        if (!this.dragMode) return;
+        if (!this.dragMode)
+            return;
 
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
@@ -176,7 +179,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         const hoveredObjectsThisFrame = new Set<HoverableVisualObject>();
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
-        for (const obj of this.visualObjects.keys()) {
+        for (const obj of this.visibleVisualObjectsManager.getVisibleObjects()) {
             if (isHoverableObject(obj)) {
                 const isTopMost = objectsAtPoint[0] === obj;
                 if (isTopMost && obj.isPointInside(worldPoint)) {

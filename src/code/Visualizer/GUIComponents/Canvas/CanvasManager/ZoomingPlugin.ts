@@ -68,7 +68,7 @@ const DEFAULT_CONFIG: IZoomingConfig = {
     zoomKeys: {
         zoomIn: [KeyCode.EQUAL, KeyCode.NUMPAD_ADD, KeyCode.KEY_Z],
         zoomOut: [KeyCode.MINUS, KeyCode.NUMPAD_SUBTRACT, KeyCode.KEY_X],
-        resetZoom: [KeyCode.NUMPAD_0, KeyCode.KEY_0]
+        resetZoom: [KeyCode.NUMPAD_0, KeyCode.KEY0]
     },
     smoothZooming: true,
     zoomSmoothingFactor: 0.2,
@@ -393,11 +393,17 @@ class ZoomEventHandlers {
         const core = this.plugin['requireCore']();
         const config = this.plugin.getConfiguration();
 
-        core.eventDispatcher.registerWheel((e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
+        core.eventDispatcher.registerWheel(
+            "zoom ",
+            (e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
 
         const allKeys = this.collectAllKeys(config.zoomKeys);
         for (const key of allKeys) {
-            core.eventDispatcher.registerKeyDown(key, e => this.plugin.handleKeyDown(e));
+            core.eventDispatcher.registerKeyDown(
+                "zoom " + key,
+                key,
+                e => this.plugin.handleKeyDown(e)
+            );
             this.registeredKeys.add(key);
         }
     }

@@ -15,6 +15,11 @@ export function isValidKeyCode(key: string): boolean {
     return Object.values(KeyCode).includes(key as KeyCode);
 }
 
+export function validateKeyCode(key: string): void {
+    if (!isValidKeyCode(key))
+        throw new Error(`Invalid key code: ${key}`);
+}
+
 export enum KeyCode {
     EQUAL = 'Equal',
     NUMPAD_ADD = 'NumpadAdd',
@@ -24,20 +29,21 @@ export enum KeyCode {
     KEY_X = 'KeyX',
     NUMPAD_5 = 'Numpad5',
     NUMPAD_0 = 'Numpad0',
-    ARROW_UP = "ARROW_UP",
-    KEY_W = "KEY_W",
-    NUMPAD_8 = "NUMPAD_8",
-    NUMPAD_2 = "NUMPAD_2",
-    KEY_S = "KEY_S",
-    ARROW_DOWN = "ARROW_DOWN",
-    ARROW_LEFT = "ARROW_LEFT",
-    ARROW_RIGHT = "ARROW_RIGHT",
-    KEY_D = "KEY_D",
-    KEY_A = "KEY_A",
-    NUMPAD_4 = "NUMPAD_4",
-    NUMPAD_6 = "NUMPAD_6",
-    KEY_R = "KEY_R",
-    HOME = "HOME",
-    ESCAPE = "ESCAPE",
-    KEY_0 = "KEY_0"
+    ARROW_UP = "ArrowUp",
+    KEY_W = "KeyW",
+    NUMPAD_8 = "Numpad8",
+    NUMPAD_2 = "Numpad2",
+    KEY_S = "KeyS",
+    ARROW_DOWN = "ArrowDown",
+    ARROW_LEFT = "ArrowLeft",
+    ARROW_RIGHT = "ArrowRight",
+    KEY_D = "KeyD",
+    KEY_A = "KeyA",
+    NUMPAD_4 = "Numpad4",
+    NUMPAD_6 = "Numpad6",
+    KEY_R = "KeyR",
+    HOME = "Home",
+    ESCAPE = "Escape",
+    Numpad0 = "Numpad0",
+    KEY0 = "Key0"
 }
