@@ -47,7 +47,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
             return lastSize.width !== newSize.width || lastSize.height !== newSize.height;
         }
     );
-    readonly allowedVisualObjectTypes: Set<> = new Set();
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
