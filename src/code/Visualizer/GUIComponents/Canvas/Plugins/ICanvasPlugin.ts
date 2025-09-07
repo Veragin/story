@@ -1,4 +1,4 @@
-import { ICanvasManagerCore } from "./CanvasManagerCore";
+import { ICanvasManagerCore } from "../CanvasManager/CanvasManagerCore";
 
 /**
  * Base interface for all canvas plugins

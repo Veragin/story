@@ -1,6 +1,6 @@
 import { CanvasPluginBase } from "./CanvasPluginBase";
-import { TPoint } from "./CanvasWorld";
-import { MouseButton } from "./InputConstants";
+import { TPoint } from "../CanvasManager/CanvasWorld";
+import { MouseButton } from "../CanvasManager/InputConstants";
 import { DraggableVisualObject } from "../Node/DraggableVisualObject";
 import { VisualObject } from "../Node/VisualObject";
 import { isPointInside } from "../Node/utils";

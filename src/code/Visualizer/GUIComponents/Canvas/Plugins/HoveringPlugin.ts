@@ -1,5 +1,5 @@
 import { CanvasPluginBase } from "./CanvasPluginBase";
-import { TPoint } from "./CanvasWorld";
+import { TPoint } from "../CanvasManager/CanvasWorld";
 import { HoverableVisualObject } from "../Node/HoverableVisualObject";
 import { VisualObject } from "../Node/VisualObject";
 

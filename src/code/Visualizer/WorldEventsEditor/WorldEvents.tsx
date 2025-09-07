@@ -10,11 +10,11 @@ import { ZoomIn, ZoomOut, CenterFocusStrong, RestartAlt } from '@mui/icons-mater
 import { MouseButton } from '../GUIComponents/Canvas/CanvasManager/InputConstants';
 import { CanvasManagerCore } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerCore';
 import { CanvasManagerBuilder } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerBuilder';
-import { PanningPlugin } from '../GUIComponents/Canvas/CanvasManager/PanningPlugin';
-import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/CanvasManager/ZoomingPlugin';
-import { HoveringPlugin } from '../GUIComponents/Canvas/CanvasManager/HoveringPlugin';
-import { DraggingPlugin } from '../GUIComponents/Canvas/CanvasManager/DraggingPlugin';
-import { ClickingPlugin } from '../GUIComponents/Canvas/CanvasManager/ClickingPlugin';
+import { PanningPlugin } from '../GUIComponents/Canvas/Plugins/PanningPlugin';
+import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/Plugins/ZoomingPlugin';
+import { HoveringPlugin } from '../GUIComponents/Canvas/Plugins/HoveringPlugin';
+import { DraggingPlugin } from '../GUIComponents/Canvas/Plugins/DraggingPlugin';
+import { ClickingPlugin } from '../GUIComponents/Canvas/Plugins/ClickingPlugin';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({

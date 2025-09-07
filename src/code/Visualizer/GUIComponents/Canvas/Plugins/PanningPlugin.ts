@@ -1,7 +1,7 @@
 import { CanvasPluginBase } from "./CanvasPluginBase";
-import { TPoint } from "./CanvasWorld";
+import { TPoint } from "../CanvasManager/CanvasWorld";
 import { IPluginWithControls } from "./ICanvasPlugin";
-import { isValidKeyCode, KeyCode, KeyCodeType, MouseButton, MouseButtonType } from "./InputConstants";
+import { isValidKeyCode, KeyCode, KeyCodeType, MouseButton, MouseButtonType } from "../CanvasManager/InputConstants";
 
 /**
  * Configuration for panning behavior

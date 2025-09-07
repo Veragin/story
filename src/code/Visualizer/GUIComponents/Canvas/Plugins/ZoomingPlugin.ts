@@ -1,7 +1,7 @@
 import { CanvasPluginBase } from "./CanvasPluginBase";
 import { IPluginWithControls } from "./ICanvasPlugin";
-import { TPoint, TSize } from "./CanvasWorld";
-import { isValidKeyCode, KeyCode, KeyCodeType } from "./InputConstants";
+import { TPoint, TSize } from "../CanvasManager/CanvasWorld";
+import { isValidKeyCode, KeyCode, KeyCodeType } from "../CanvasManager/InputConstants";
 
 /**
  * Configuration for zooming behavior

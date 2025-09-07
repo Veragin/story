@@ -11,7 +11,7 @@ export interface IVisibleVisualObjectsManager {
     getVisibleObjects(): Set<VisualObject>;
     onVisibleObjectsChanged: Observer<Set<VisualObject>>;
     setCanvasSize(size: TSize): void;
-    dispose(): void;
+    destroy(): void;
 }
 
 export interface IVisibilityProvider {
@@ -140,6 +140,6 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
         );
     }
 
-    dispose() {
+    destroy() {
     }
 }

@@ -10,6 +10,9 @@ export interface TSize {
     height: number;
 }
 
+/**
+ * Manages 2D canvas coordinate system transformations between screen pixels and world coordinates.
+ */
 export class CanvasWorld {
     private _viewPosition: TPoint = { x: 0, y: 0 };
     private _pixelSizeInWorldUnits: TSize = { width: 1, height: 1 };

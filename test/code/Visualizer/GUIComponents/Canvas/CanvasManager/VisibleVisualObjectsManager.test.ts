@@ -126,7 +126,7 @@ suite('VisibleVisualObjectsManager - Initialization', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -151,7 +151,7 @@ suite('VisibleVisualObjectsManager - Initialization', () => {
         assert.ok(visibleObjects.has(obj1), 'First object should be visible');
         assert.ok(visibleObjects.has(obj2), 'Second object should be visible');
         
-        newManager.dispose();
+        newManager.destroy();
     });
 
     test('should subscribe to canvas world events', () => {
@@ -198,7 +198,7 @@ suite('VisibleVisualObjectsManager - Object Addition', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -276,7 +276,7 @@ suite('VisibleVisualObjectsManager - Object Removal', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -352,7 +352,7 @@ suite('VisibleVisualObjectsManager - Property Changes', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -451,7 +451,7 @@ suite('VisibleVisualObjectsManager - Canvas Size Changes', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -513,7 +513,7 @@ suite('VisibleVisualObjectsManager - Viewport Changes', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -578,7 +578,7 @@ suite('VisibleVisualObjectsManager - Visibility Detection', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -665,7 +665,7 @@ suite('VisibleVisualObjectsManager - Performance and Edge Cases', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -700,7 +700,7 @@ suite('VisibleVisualObjectsManager - Performance and Edge Cases', () => {
         provider.addObject(obj);
         
         // Should not throw when disposed
-        manager.dispose();
+        manager.destroy();
         
         // Adding objects after disposal should not affect the disposed manager
         provider.addObject(new MockVisualObject({ x: 20, y: 20 }));
@@ -772,7 +772,7 @@ suite('VisibleVisualObjectsManager - Zoom-In Visibility', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 
@@ -803,7 +803,7 @@ suite('VisibleVisualObjectsManager - Observer Notifications', () => {
     });
 
     teardown(() => {
-        manager.dispose();
+        manager.destroy();
         sinon.restore();
     });
 

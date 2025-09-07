@@ -1,5 +1,5 @@
 import { CanvasManagerCore, ICanvasManagerCore } from "./CanvasManagerCore";
-import { ICanvasPlugin, IPluginWithControls } from "./ICanvasPlugin";
+import { ICanvasPlugin, IPluginWithControls } from "../Plugins/ICanvasPlugin";
 
 /**
  * Result of building a canvas manager with plugins
@@ -96,6 +96,6 @@ class CanvasManagerBuildResult implements ICanvasManagerBuildResult {
         }
         
         // Dispose core
-        this.core.dispose();
+        this.core.destroy();
     }
 }

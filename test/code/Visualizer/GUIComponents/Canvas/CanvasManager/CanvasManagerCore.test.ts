@@ -54,7 +54,7 @@ suite('CanvasManagerCore - Object Management', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -120,7 +120,7 @@ suite('CanvasManagerCore - Canvas Size and Cursor', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -178,7 +178,7 @@ suite('CanvasManagerCore - Mouse Event Handling', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -327,7 +327,7 @@ suite('CanvasManagerCore - Keyboard Event Handling', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -367,7 +367,7 @@ suite('CanvasManagerCore - Drawing', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -461,7 +461,7 @@ suite('CanvasManagerCore - Event Listener Management', () => {
     test('should remove all event listeners on disposal', () => {
         const canvasManagerCore = new CanvasManagerCore(mockCanvas);
         
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
 
         const expectedCanvasEvents = [
             'mousemove', 'mousedown', 'mouseup', 'mouseleave',
@@ -498,7 +498,7 @@ suite('CanvasManagerCore - Drag Mode', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
@@ -553,7 +553,7 @@ suite('CanvasManagerCore - Z-Index Management', () => {
     });
 
     teardown(() => {
-        canvasManagerCore.dispose();
+        canvasManagerCore.destroy();
         sinon.restore();
     });
 
