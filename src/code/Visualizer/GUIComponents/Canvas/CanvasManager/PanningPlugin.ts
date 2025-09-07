@@ -101,13 +101,13 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
         if (this.config.enableKeyboardPan) {
             this.animationLoop.start();
         }
-        this.requireCore().updateCursor(this.config.defaultCursor);
+        this.canvasManagerCore.updateCursor(this.config.defaultCursor);
     }
     
     protected onDisable(): void {
         this.animationLoop.stop();
         this.panState.reset();
-        this.requireCore().updateCursor('');
+        this.canvasManagerCore.updateCursor('');
     }
     
     getControls(): IPanningControls {
@@ -142,8 +142,8 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
             }
         }
         
-        if (this.core) {
-            this.core.updateCursor(this.config.defaultCursor);
+        if (this.canvasManagerCore) {
+            this.canvasManagerCore.updateCursor(this.config.defaultCursor);
         }
     }
     
@@ -160,7 +160,7 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
         }
         
         this.panState.startMousePan(screenPoint);
-        this.requireCore().updateCursor(this.config.panCursor);
+        this.canvasManagerCore.updateCursor(this.config.panCursor);
         return true;
     }
     
@@ -193,7 +193,7 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
         }
         
         this.panState.endMousePan();
-        this.requireCore().updateCursor(this.config.defaultCursor);
+        this.canvasManagerCore.updateCursor(this.config.defaultCursor);
         return true;
     }
     
@@ -202,7 +202,6 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
      */
     handleKeyDown(event: KeyboardEvent): boolean {
         const key = event.code;
-        console.log("Key down event:", key);
         if (!isValidKeyCode(key)) {
             return false;
         }
@@ -210,14 +209,11 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
         this.panState.addPressedKey(key);
         
         if (this.config.panKeys.reset.includes(key)) {
-            this.requireCore().canvasWorld.resetViewPosition();
+            this.canvasManagerCore.canvasWorld.resetViewPosition();
             this.panState.resetVelocity();
             event.preventDefault();
-            console.log("Resetting pan state");
             return true;
         }
-
-        console.log("Registering key for panning:", key);
 
         const isPanKey = this.isPanKey(key);
         if (isPanKey) {
@@ -246,7 +242,7 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
     }
     
     private updateKeyboardPanning(): void {
-        if (!this.config.enableKeyboardPan || !this.core) {
+        if (!this.config.enableKeyboardPan || !this.canvasManagerCore) {
             return;
         }
         
@@ -289,7 +285,7 @@ export class PanningPlugin extends CanvasPluginBase implements IPluginWithContro
     }
     
     private applyPan(screenDelta: TPoint): void {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
         const worldDelta = core.canvasWorld.screenDeltaToWorldDelta(screenDelta);
         
         let newViewPosition = {
@@ -434,20 +430,20 @@ class EventHandlers {
     }
     
     registerAll(): void {
-        const core = this.plugin['requireCore']();
+        const eventDispatcher = this.plugin.canvasManagerCore.eventDispatcher;
         const config = this.plugin.getConfiguration();
         
         // Register mouse handlers
-        core.eventDispatcher.registerMouseDown(
+        eventDispatcher.registerMouseDown(
             "start panning",
             config.panMouseButton,
             (e, sp, wp) => this.plugin.handleMouseDown(e, sp, wp)
         );
-        core.eventDispatcher.registerMouseMove(
+        eventDispatcher.registerMouseMove(
             "panning",
             (e, sp) => this.plugin.handleMouseMove(e, sp)
         );
-        core.eventDispatcher.registerMouseUp(
+        eventDispatcher.registerMouseUp(
             "stop panning",
             config.panMouseButton,
             (e, sp, wp) => this.plugin.handleMouseUp(e, sp, wp)
@@ -456,13 +452,12 @@ class EventHandlers {
         // Register keyboard handlers for all pan keys
         const allKeys = this.collectAllKeys(config.panKeys);
         for (const key of allKeys) {
-            console.log("Registering key for panning:", key);
-            core.eventDispatcher.registerKeyDown(
+            eventDispatcher.registerKeyDown(
                 "start panning " + key,
                 key,
                 e => this.plugin.handleKeyDown(e)
             );
-            core.eventDispatcher.registerKeyUp(
+            eventDispatcher.registerKeyUp(
                 "stop panning " + key,
                 key,
                 e => this.plugin.handleKeyUp(e)
@@ -519,7 +514,6 @@ class PanningControls implements IPanningControls {
     }
     
     resetPanPosition(): void {
-        const core = this.plugin['requireCore']();
-        core.canvasWorld.resetViewPosition();
+        this.plugin.canvasManagerCore.canvasWorld.resetViewPosition();
     }
 }

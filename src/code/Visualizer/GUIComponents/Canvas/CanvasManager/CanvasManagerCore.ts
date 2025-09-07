@@ -1,19 +1,15 @@
 import { throttle } from 'code/utils/throttle';
 import { ClickableVisualObject } from '../Node/ClickableVisualObject';
-import { DraggableVisualObject } from '../Node/DraggableVisualObject';
-import { HoverableVisualObject } from '../Node/HoverableVisualObject';
 import { VisualObject } from '../Node/VisualObject';
+import { isPointInside } from '../Node/utils';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { ConditionalObserver, Observer } from 'code/utils/Observer';
-import { CanvasWorld } from './CanvasWorld';
+import { CanvasWorld, TPoint, TSize } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
 import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
 import { GuiEventDispatcher } from './EventDispatcher';
 import { MouseButton } from './InputConstants';
 
-// Assuming these types are defined elsewhere
-type TPoint = { x: number; y: number };
-type TSize = { width: number; height: number };
 
 /**
  * Interface for the canvas manager core that plugins can use to interact with the core functionality.
@@ -23,6 +19,7 @@ export interface ICanvasManagerCore {
     readonly canvasWorld: CanvasWorld;
     readonly eventDispatcher: GuiEventDispatcher;
     readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
+    getAllObjects(): Iterable<VisualObject>;
     updateCursor(cursor: string): void;
     requestRedraw(): void;
 }
@@ -40,9 +37,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
 
     // Visual objects with insertion order
     protected visualObjects: Map<VisualObject, number> = new Map();
-    protected hoveredObjects: Set<HoverableVisualObject> = new Set();
     protected nextInsertionOrder: number = 0;
-    protected draggedObject: DraggableVisualObject | null = null;
 
     readonly onObjectAdded = new Observer<VisualObject>();
     readonly onObjectRemoved = new Observer<VisualObject>();
@@ -60,7 +55,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         return { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
     }
 
-    dragMode = true;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -84,7 +78,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
-        this.canvas.addEventListener('mouseleave', this.handleMouseUp);
+        this.canvas.addEventListener('mouseleave', this.handleMouseLeave);
         this.canvas.addEventListener('click', this.handleMouseClick);
         this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
@@ -129,29 +123,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
             return;
         }
 
-        if (!this.dragMode)
-            return;
-
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-
-        if (event.button === MouseButton.LEFT) {
-            const draggableObject = objectsAtPoint.find((obj) =>
-                isDraggableObject(obj) && obj.isDraggable()
-            ) as DraggableVisualObject | undefined;
-
-            if (draggableObject) {
-                this.draggedObject = draggableObject;
-                draggableObject.startDrag(worldPoint);
-
-                const currentZIndex = draggableObject.zIndex;
-                const highestZIndex = Math.max(
-                    ...Array.from(this.visualObjects.keys()).map((obj) => obj.zIndex)
-                );
-                if (currentZIndex <= highestZIndex) {
-                    draggableObject.setZIndex(highestZIndex + 1);
-                }
-            }
-        }
 
         if (event.button === MouseButton.RIGHT) {
             for (const obj of objectsAtPoint) {
@@ -164,38 +136,9 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
 
     protected handleMouseMove = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-
         if (this.eventDispatcher.dispatchMouseMove(event, screenPoint)) {
             return;
         }
-
-        const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-
-        if (this.draggedObject && this.dragMode) {
-            this.draggedObject.drag(worldPoint);
-            return;
-        }
-
-        const hoveredObjectsThisFrame = new Set<HoverableVisualObject>();
-        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-
-        for (const obj of this.visibleVisualObjectsManager.getVisibleObjects()) {
-            if (isHoverableObject(obj)) {
-                const isTopMost = objectsAtPoint[0] === obj;
-                if (isTopMost && obj.isPointInside(worldPoint)) {
-                    obj.handleHover(worldPoint);
-                    if (obj.isHovered()) {
-                        hoveredObjectsThisFrame.add(obj);
-                    }
-                } else {
-                    if (obj.isHovered()) {
-                        obj.handleHover({ x: -1, y: -1 });
-                    }
-                }
-            }
-        }
-
-        this.hoveredObjects = hoveredObjectsThisFrame;
     };
 
     protected handleMouseUp = (event: MouseEvent) => {
@@ -203,20 +146,15 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
         this.eventDispatcher.dispatchMouseUp(event, screenPoint, worldPoint);
+    };
 
-        if (this.draggedObject) {
-            this.draggedObject.endDrag(worldPoint);
-            this.draggedObject = null;
-        }
+    protected handleMouseLeave = () => {
+        // Handle mouse leave events for plugins
     };
 
     protected handleMouseClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-
-        if (this.draggedObject) {
-            return;
-        }
 
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
         for (const obj of objectsAtPoint) {
@@ -232,10 +170,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     protected handleMouseDbClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
-
-        if (this.draggedObject) {
-            return;
-        }
 
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
         for (const obj of objectsAtPoint) {
@@ -278,8 +212,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
 
     protected getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {
         return this.visibleVisualObjectsManager.getSortedVisibleObjects()
-            .filter((obj: VisualObject) =>
-                isHoverableObject(obj) && obj.isPointInside(worldPoint))
+            .filter((obj: VisualObject) => isPointInside(worldPoint, obj.getPosition(), obj.getSize()))
             .reverse();
     }
 
@@ -343,7 +276,7 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         this.canvas.removeEventListener('mousemove', this.handleMouseMove);
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
-        this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
+        this.canvas.removeEventListener('mouseleave', this.handleMouseLeave);
         this.canvas.removeEventListener('click', this.handleMouseClick);
         this.canvas.removeEventListener('dblclick', this.handleMouseDbClick);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
@@ -357,8 +290,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         }
 
         this.visualObjects.clear();
-        this.hoveredObjects.clear();
-        this.draggedObject = null;
 
         this.visibleVisualObjectsManager.dispose();
     }
@@ -375,15 +306,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         return this.canvas.width;
     }
 }
-
-// Type guards (same as before)
-const isDraggableObject = (obj: any): obj is DraggableVisualObject => {
-    return 'isDragging' in obj && 'isDraggable' in obj;
-};
-
-const isHoverableObject = (obj: any): obj is HoverableVisualObject => {
-    return 'handleHover' in obj && 'isHovered' in obj;
-};
 
 const isClickableObject = (obj: VisualObject): obj is ClickableVisualObject => {
     return 'handleClick' in obj && 'isClickable' in obj;

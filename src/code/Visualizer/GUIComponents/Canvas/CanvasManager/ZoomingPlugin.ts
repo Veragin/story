@@ -102,7 +102,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     protected onInitialize(): void {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
 
         const initialPixelSize = core.canvasWorld.pixelSizeInWorldUnits.width;
         this.currentScale = 1 / initialPixelSize;
@@ -203,7 +203,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     performZoom(relativeScaleFactor: number, screenPoint: TPoint): void {
-        const core = this.requireCore();
+        const canvasWorld = this.canvasManagerCore.canvasWorld;
 
         // If smooth zooming and currently animating, snap to target first
         if (this.config.smoothZooming && this.isZooming()) {
@@ -220,11 +220,11 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
             return;
         }
 
-        const worldPointAtZoomStart = core.canvasWorld.screenToWorld(screenPoint);
+        const worldPointAtZoomStart = canvasWorld.screenToWorld(screenPoint);
 
         if (!this.config.smoothZooming) {
             const actualRelativeScaleFactor = newTargetScale / this.currentScale;
-            core.canvasWorld.zoomAtPoint(screenPoint, actualRelativeScaleFactor);
+            canvasWorld.zoomAtPoint(screenPoint, actualRelativeScaleFactor);
             this.currentScale = newTargetScale;
             this.targetScale = newTargetScale;
             this.smoothZoomTarget = null;
@@ -249,7 +249,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     resetZoomInternal(): void {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
 
         this.targetScale = 1;
 
@@ -263,7 +263,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     fitToRectInternal(worldRect: IWorldRect, padding: number): void {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
 
         const canvasWidth = core.canvas.width - padding * 2;
         const canvasHeight = core.canvas.height - padding * 2;
@@ -303,7 +303,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     private getCenterPoint(): TPoint {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
         return { x: core.canvas.width / 2, y: core.canvas.height / 2 };
     }
 
@@ -328,7 +328,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     private updateSmoothZoom(): void {
-        if (!this.core) {
+        if (!this.canvasManagerCore) {
             return;
         }
 
@@ -355,7 +355,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     }
 
     private applyCurrentScale(): void {
-        const core = this.requireCore();
+        const core = this.canvasManagerCore;
         const newPixelSize: TSize = { width: 1 / this.currentScale, height: 1 / this.currentScale };
 
         if (this.smoothZoomTarget) {
@@ -390,16 +390,16 @@ class ZoomEventHandlers {
     }
 
     registerAll(): void {
-        const core = this.plugin['requireCore']();
+        const eventDispatcher = this.plugin.canvasManagerCore.eventDispatcher;
         const config = this.plugin.getConfiguration();
 
-        core.eventDispatcher.registerWheel(
+        eventDispatcher.registerWheel(
             "zoom ",
             (e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
 
         const allKeys = this.collectAllKeys(config.zoomKeys);
         for (const key of allKeys) {
-            core.eventDispatcher.registerKeyDown(
+            eventDispatcher.registerKeyDown(
                 "zoom " + key,
                 key,
                 e => this.plugin.handleKeyDown(e)
@@ -478,7 +478,7 @@ class ZoomingControls implements IZoomingControls {
     }
 
     private getCenterPoint(): TPoint {
-        const core = this.plugin['requireCore']();
+        const core = this.plugin.canvasManagerCore;
         return { x: core.canvas.width / 2, y: core.canvas.height / 2 };
     }
 }

@@ -7,15 +7,15 @@ import { ICanvasPlugin } from "./ICanvasPlugin";
 export abstract class CanvasPluginBase implements ICanvasPlugin {
     abstract readonly name: string;
     
-    protected core: ICanvasManagerCore | null = null;
+    private _canvasManagerCore: ICanvasManagerCore | null = null;
     private _enabled: boolean = true;
     
-    initialize(core: ICanvasManagerCore): void {
-        if (this.core) {
+    initialize(canvasManagerCore: ICanvasManagerCore): void {
+        if (this._canvasManagerCore) {
             throw new Error(`Plugin ${this.name} is already initialized`);
         }
-        
-        this.core = core;
+
+        this._canvasManagerCore = canvasManagerCore;
         this.onInitialize();
         
         if (this._enabled) {
@@ -24,7 +24,7 @@ export abstract class CanvasPluginBase implements ICanvasPlugin {
     }
     
     destroy(): void {
-        if (!this.core) {
+        if (!this._canvasManagerCore) {
             return;
         }
         
@@ -33,7 +33,7 @@ export abstract class CanvasPluginBase implements ICanvasPlugin {
         }
         
         this.onDestroy();
-        this.core = null;
+        this._canvasManagerCore = null;
     }
     
     setEnabled(enabled: boolean): void {
@@ -43,7 +43,7 @@ export abstract class CanvasPluginBase implements ICanvasPlugin {
         
         this._enabled = enabled;
         
-        if (this.core) {
+        if (this.canvasManagerCore) {
             if (enabled) {
                 this.onEnable();
             } else {
@@ -56,22 +56,15 @@ export abstract class CanvasPluginBase implements ICanvasPlugin {
         return this._enabled;
     }
     
-    protected requireCore(): ICanvasManagerCore {
-        if (!this.core) {
+    public get canvasManagerCore(): ICanvasManagerCore {
+        if (!this._canvasManagerCore) {
             throw new Error(`Plugin ${this.name} is not initialized`);
         }
-        return this.core;
+        return this._canvasManagerCore;
     }
     
-    /** Called when plugin is initialized */
     protected abstract onInitialize(): void;
-    
-    /** Called when plugin is destroyed */
     protected abstract onDestroy(): void;
-    
-    /** Called when plugin is enabled */
     protected abstract onEnable(): void;
-    
-    /** Called when plugin is disabled */
     protected abstract onDisable(): void;
 }

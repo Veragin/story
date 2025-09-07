@@ -12,6 +12,8 @@ import { CanvasManagerCore } from '../GUIComponents/Canvas/CanvasManager/CanvasM
 import { CanvasManagerBuilder } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerBuilder';
 import { PanningPlugin } from '../GUIComponents/Canvas/CanvasManager/PanningPlugin';
 import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/CanvasManager/ZoomingPlugin';
+import { HoveringPlugin } from '../GUIComponents/Canvas/CanvasManager/HoveringPlugin';
+import { DraggingPlugin } from '../GUIComponents/Canvas/CanvasManager/DraggingPlugin';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
@@ -209,6 +211,8 @@ export const WorldEvents = () => {
         const builder = new CanvasManagerBuilder(canvasRef.current);
         builder.addPlugin(panPlugin);
         builder.addPlugin(zoomPlugin);
+        builder.addPlugin(new HoveringPlugin());
+        builder.addPlugin(new DraggingPlugin());
         const manager = builder.build();
         managerRef.current = manager;
         const core = manager.core;
