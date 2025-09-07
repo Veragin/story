@@ -1,5 +1,6 @@
 import { CanvasManagerCore } from "./CanvasManagerCore";
 import { KeyCodeType, MouseButtonType, validateKeyCode } from "./InputConstants";
+import { TPoint } from "./CanvasWorld";
 
 
 /**
@@ -22,6 +23,21 @@ export class GuiEventDispatcher {
         description: string,
         executeEvent: (event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean
     }[]> = new Map();
+    
+    private clickHandlers: {
+        description: string,
+        executeEvent: (event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean
+    }[] = [];
+    
+    private dblClickHandlers: {
+        description: string,
+        executeEvent: (event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean
+    }[] = [];
+    
+    private mouseLeaveHandlers: {
+        description: string,
+        executeEvent: () => boolean
+    }[] = [];
     
     private wheelHandlers: {
         description: string,
@@ -66,6 +82,24 @@ export class GuiEventDispatcher {
             this.mouseUpHandlers.set(button, []);
         }
         this.mouseUpHandlers.get(button)!.push({ description, executeEvent: handler });
+    }
+
+    registerClick(
+        description: string,
+        handler: (event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean): void {
+        this.clickHandlers.push({ description, executeEvent: handler });
+    }
+
+    registerDblClick(
+        description: string,
+        handler: (event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint) => boolean): void {
+        this.dblClickHandlers.push({ description, executeEvent: handler });
+    }
+
+    registerMouseLeave(
+        description: string,
+        handler: () => boolean): void {
+        this.mouseLeaveHandlers.push({ description, executeEvent: handler });
     }
 
     registerWheel(
@@ -122,6 +156,33 @@ export class GuiEventDispatcher {
                 if (handler.executeEvent(event, screenPoint, worldPoint)) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    dispatchClick(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
+        for (const handler of this.clickHandlers) {
+            if (handler.executeEvent(event, screenPoint, worldPoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    dispatchDblClick(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
+        for (const handler of this.dblClickHandlers) {
+            if (handler.executeEvent(event, screenPoint, worldPoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    dispatchMouseLeave(): boolean {
+        for (const handler of this.mouseLeaveHandlers) {
+            if (handler.executeEvent()) {
+                return true;
             }
         }
         return false;

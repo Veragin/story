@@ -17,26 +17,29 @@ export class HoveringPlugin extends CanvasPluginBase {
             "hover",
             (e, sp) => this.handleMouseMove(e, sp)
         );
-        core.canvas.addEventListener('mouseleave', this.handleMouseLeave);
+
+        core.eventDispatcher.registerMouseLeave(
+            "hover leave",
+            () => this.handleMouseLeave()
+        );
     }
 
     protected onDestroy(): void {
-        if (this.canvasManagerCore) {
-            this.canvasManagerCore.canvas.removeEventListener('mouseleave', this.handleMouseLeave);
-        }
         this.clearAllHovers();
     }
 
     protected onEnable(): void {
+        // No specific enable logic needed
     }
 
     protected onDisable(): void {
         this.clearAllHovers();
     }
 
-    private handleMouseLeave = (): void => {
+    private handleMouseLeave(): boolean {
         this.clearAllHovers();
-    };
+        return false; // Allow propagation to other plugins
+    }
 
     private clearAllHovers(): void {
         const exitPoint = { x: -1, y: -1 };
@@ -54,6 +57,7 @@ export class HoveringPlugin extends CanvasPluginBase {
         const hoveredThisFrame = new Set<HoverableVisualObject>();
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
 
+        // Check all visible objects for hover state
         for (const obj of core.visibleVisualObjectsManager.getVisibleObjects()) {
             if (isHoverableObject(obj)) {
                 const isTopMost = objectsAtPoint[0] === obj;
@@ -63,13 +67,14 @@ export class HoveringPlugin extends CanvasPluginBase {
                         hoveredThisFrame.add(obj);
                     }
                 } else if (obj.isHovered()) {
+                    // Object is no longer under cursor, send exit hover
                     obj.handleHover({ x: -1, y: -1 });
                 }
             }
         }
 
         this.hoveredObjects = hoveredThisFrame;
-        return false; // Allow propagation
+        return false; // Allow propagation to other plugins
     }
 
     private getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {

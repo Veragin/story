@@ -83,7 +83,7 @@ export class DraggingPlugin extends CanvasPluginBase {
     }
 
     private bringToFront(obj: VisualObject): void {
-        const allObjects = Array.from(this.canvasManagerCore.getAllObjects() as Iterable<VisualObject>);
+        const allObjects = Array.from(this.canvasManagerCore.allObjects as Iterable<VisualObject>);
         const highestZIndex = Math.max(...allObjects.map(o => o.zIndex));
         obj.setZIndex(highestZIndex + 1);
     }

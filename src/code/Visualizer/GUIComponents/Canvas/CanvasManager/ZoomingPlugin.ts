@@ -265,8 +265,9 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
     fitToRectInternal(worldRect: IWorldRect, padding: number): void {
         const core = this.canvasManagerCore;
 
-        const canvasWidth = core.canvas.width - padding * 2;
-        const canvasHeight = core.canvas.height - padding * 2;
+        const canvasSize = core.canvasSize;
+        const canvasWidth = canvasSize.width - padding * 2;
+        const canvasHeight = canvasSize.height - padding * 2;
 
         const zoomX = canvasWidth / worldRect.width;
         const zoomY = canvasHeight / worldRect.height;
@@ -280,8 +281,8 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         const newPixelSize: TSize = { width: 1 / newZoom, height: 1 / newZoom };
 
         const newViewPosition: TPoint = {
-            x: centerX - (core.canvas.width / 2) * newPixelSize.width,
-            y: centerY - (core.canvas.height / 2) * newPixelSize.height
+            x: centerX - (canvasSize.width / 2) * newPixelSize.width,
+            y: centerY - (canvasSize.height / 2) * newPixelSize.height
         };
 
         core.canvasWorld.atomicZoomAndPositionUpdate({
@@ -304,7 +305,8 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
 
     private getCenterPoint(): TPoint {
         const core = this.canvasManagerCore;
-        return { x: core.canvas.width / 2, y: core.canvas.height / 2 };
+        const canvasSize = core.canvasSize;
+        return { x: canvasSize.width / 2, y: canvasSize.height / 2 };
     }
 
     private startAnimationLoop(): void {
@@ -479,6 +481,7 @@ class ZoomingControls implements IZoomingControls {
 
     private getCenterPoint(): TPoint {
         const core = this.plugin.canvasManagerCore;
-        return { x: core.canvas.width / 2, y: core.canvas.height / 2 };
+        const canvasSize = core.canvasSize;
+        return { x: canvasSize.width / 2, y: canvasSize.height / 2 };
     }
 }

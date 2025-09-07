@@ -14,6 +14,7 @@ import { PanningPlugin } from '../GUIComponents/Canvas/CanvasManager/PanningPlug
 import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/CanvasManager/ZoomingPlugin';
 import { HoveringPlugin } from '../GUIComponents/Canvas/CanvasManager/HoveringPlugin';
 import { DraggingPlugin } from '../GUIComponents/Canvas/CanvasManager/DraggingPlugin';
+import { ClickingPlugin } from '../GUIComponents/Canvas/CanvasManager/ClickingPlugin';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
@@ -213,6 +214,7 @@ export const WorldEvents = () => {
         builder.addPlugin(zoomPlugin);
         builder.addPlugin(new HoveringPlugin());
         builder.addPlugin(new DraggingPlugin());
+        builder.addPlugin(new ClickingPlugin());
         const manager = builder.build();
         managerRef.current = manager;
         const core = manager.core;

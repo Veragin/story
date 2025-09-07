@@ -1,5 +1,4 @@
 import { throttle } from 'code/utils/throttle';
-import { ClickableVisualObject } from '../Node/ClickableVisualObject';
 import { VisualObject } from '../Node/VisualObject';
 import { isPointInside } from '../Node/utils';
 import { assertNotNullish } from 'code/utils/typeguards';
@@ -8,18 +7,17 @@ import { CanvasWorld, TPoint, TSize } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
 import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
 import { GuiEventDispatcher } from './EventDispatcher';
-import { MouseButton } from './InputConstants';
 
 
 /**
  * Interface for the canvas manager core that plugins can use to interact with the core functionality.
  */
 export interface ICanvasManagerCore {
-    readonly canvas: HTMLCanvasElement;
     readonly canvasWorld: CanvasWorld;
     readonly eventDispatcher: GuiEventDispatcher;
     readonly visibleVisualObjectsManager: IZIndexSortedVisibleVisualObjectsManager;
-    getAllObjects(): Iterable<VisualObject>;
+    get canvasSize(): TSize;
+    get allObjects(): Iterable<VisualObject>;
     updateCursor(cursor: string): void;
     requestRedraw(): void;
 }
@@ -50,12 +48,6 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         }
     );
 
-    // Use logical (CSS) size for calculations
-    get canvasSize(): TSize {
-        return { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
-    }
-
-
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         const context = canvas.getContext('2d');
@@ -79,8 +71,8 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handleMouseUp);
         this.canvas.addEventListener('mouseleave', this.handleMouseLeave);
-        this.canvas.addEventListener('click', this.handleMouseClick);
-        this.canvas.addEventListener('dblclick', this.handleMouseDbClick);
+        this.canvas.addEventListener('click', this.handleClick);
+        this.canvas.addEventListener('dblclick', this.handleDblClick);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
         this.canvas.addEventListener('wheel', this.handleWheel);
 
@@ -90,9 +82,21 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         // Note: Canvas resize handling is done in WorldEvents via window.resize
         // as canvas elements don't have a standard 'resize' event
     }
+    getCurrentCanvasSize(): TSize {
+        throw new Error('Method not implemented.');
+    }
+
+
+    get allObjects(): Iterable<VisualObject> {
+        return this.visualObjects.keys();
+    }
 
     getAllObjects(): Iterable<VisualObject> {
-        return this.visualObjects.keys();
+        return this.allObjects;
+    }
+
+    get canvasSize(): TSize {
+        return { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
     }
 
     getCanvasSize(): TSize {
@@ -119,26 +123,12 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-        if (this.eventDispatcher.dispatchMouseDown(event, screenPoint, worldPoint)) {
-            return;
-        }
-
-        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-
-        if (event.button === MouseButton.RIGHT) {
-            for (const obj of objectsAtPoint) {
-                if (isClickableObject(obj)) {
-                    obj.handleRightDown(worldPoint);
-                }
-            }
-        }
+        this.eventDispatcher.dispatchMouseDown(event, screenPoint, worldPoint);
     };
 
     protected handleMouseMove = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
-        if (this.eventDispatcher.dispatchMouseMove(event, screenPoint)) {
-            return;
-        }
+        this.eventDispatcher.dispatchMouseMove(event, screenPoint);
     };
 
     protected handleMouseUp = (event: MouseEvent) => {
@@ -149,37 +139,21 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     };
 
     protected handleMouseLeave = () => {
-        // Handle mouse leave events for plugins
+        this.eventDispatcher.dispatchMouseLeave();
     };
 
-    protected handleMouseClick = (event: MouseEvent) => {
+    protected handleClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-        for (const obj of objectsAtPoint) {
-            if (isClickableObject(obj)) {
-                const handled = obj.handleClick(worldPoint);
-                if (handled) {
-                    break;
-                }
-            }
-        }
+        this.eventDispatcher.dispatchClick(event, screenPoint, worldPoint);
     };
 
-    protected handleMouseDbClick = (event: MouseEvent) => {
+    protected handleDblClick = (event: MouseEvent) => {
         const screenPoint = this.getMousePoint(event);
         const worldPoint = this.canvasWorld.screenToWorld(screenPoint);
 
-        const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-        for (const obj of objectsAtPoint) {
-            if (isClickableObject(obj)) {
-                const handled = obj.handleDbClick(worldPoint);
-                if (handled) {
-                    break;
-                }
-            }
-        }
+        this.eventDispatcher.dispatchDblClick(event, screenPoint, worldPoint);
     };
 
     protected handleContextMenu = (event: MouseEvent) => {
@@ -277,8 +251,8 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handleMouseUp);
         this.canvas.removeEventListener('mouseleave', this.handleMouseLeave);
-        this.canvas.removeEventListener('click', this.handleMouseClick);
-        this.canvas.removeEventListener('dblclick', this.handleMouseDbClick);
+        this.canvas.removeEventListener('click', this.handleClick);
+        this.canvas.removeEventListener('dblclick', this.handleDblClick);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
         this.canvas.removeEventListener('wheel', this.handleWheel);
 
@@ -306,7 +280,3 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
         return this.canvas.width;
     }
 }
-
-const isClickableObject = (obj: VisualObject): obj is ClickableVisualObject => {
-    return 'handleClick' in obj && 'isClickable' in obj;
-};
