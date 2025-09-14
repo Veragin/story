@@ -30,7 +30,7 @@ if (typeof document === 'undefined') {
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { CanvasManagerCore } from '../../../../../../src/code/Visualizer/GUIComponents/Canvas/CanvasManager/CanvasManagerCore';
-import { zoomingPlugin, ZoomingControls } from '../../../../../../src/code/Visualizer/GUIComponents/Canvas/CanvasManager/zoomingPlugin';
+import { zoomingPlugin, ZoomingControls } from '../../../../../../src/code/Visualizer/GUIComponents/Canvas/Plugins/ZoomingPlugin';
 import { TPoint } from '../../../../../../src/code/Visualizer/GUIComponents/Canvas/CanvasManager/CanvasWorld';
 import {
     createMockCanvas,
