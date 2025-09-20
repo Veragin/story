@@ -18,6 +18,7 @@ export class MementoSystem {
   private state: MementoSystemState = MementoSystemState.Uninitialized;
   private savedMementoIds = new Set<string>(); // Track what's been saved
   private serializer = new MementoSerializer();
+  private factories: Map<string, (memento: MementoRecord) => WithMemento> = new Map();
 
   constructor(
     private readonly systemId: string,
@@ -28,6 +29,13 @@ export class MementoSystem {
   ) {
     // Auto-initialize
     this.initialize();
+  }
+
+  /**
+   * Register a factory for a specific type
+   */
+  registerFactory(type: string, factory: (memento: MementoRecord) => WithMemento): void {
+    this.factories.set(type, factory);
   }
 
   /**
@@ -197,7 +205,7 @@ export class MementoSystem {
     }
 
     const mementos: MementoRecord[] = [];
-
+``
     // Create mementos for all registered objects
     for (const objectId of registeredIds) {
       const obj = this.registry.get(objectId);
@@ -244,16 +252,115 @@ export class MementoSystem {
   }
 
   /**
-   * Load a memento from storage (future implementation)
-   * For now, this is a placeholder as requested
+   * Load and restore an object by ID
    */
-  async loadMemento(objectId: string): Promise<MementoRecord | undefined> {
+  async loadObject<T extends WithMemento>(objectId: string): Promise<T | undefined> {
     await this.waitForReady();
 
-    // TODO: Implement loading logic - this is complex as mentioned
-    // Would need object factories, type resolution, etc.
-    return await this.storage.loadMemento(objectId);
+    if (this.registry.isRegistered(objectId)) {
+      return this.registry.get<T>(objectId);
+    }
+
+    const memento = await this.storage.loadMemento(objectId);
+    if (!memento) return undefined;
+
+    const factory = this.factories.get(memento.type);
+    if (!factory) {
+      throw new Error(`No factory registered for type '${memento.type}'`);
+    }
+
+    const obj = restoreObjectFromMemento(memento, this.registry, factory);
+    this.registry.register(obj);
+
+    if (obj.restoreFromMemento) {
+      obj.restoreFromMemento(memento, this.registry);
+    }
+
+    return obj as T;
   }
+
+  /**
+   * Load and restore all saved objects
+   */
+  async loadAll(): Promise<void> {
+    await this.waitForReady();
+
+    const ids = await this.storage.loadMementoIds();
+    const mementoMap = new Map<string, MementoRecord>();
+
+    for (const id of ids) {
+      const m = await this.storage.loadMemento(id);
+      if (m) mementoMap.set(id, m);
+    }
+
+    // Phase 1: Create and register all objects with primitives
+    const objects = new Map<string, WithMemento>();
+    for (const memento of mementoMap.values()) {
+      const factory = this.factories.get(memento.type);
+      if (!factory) throw new Error(`No factory for type '${memento.type}'`);
+
+      const obj = factory(memento);
+
+      // Set primitives
+      for (const [key, value] of Object.entries(memento.primitives)) {
+        (obj as any)[key] = value;
+      }
+
+      objects.set(memento.id, obj);
+      this.registry.register(obj);
+    }
+
+    // Phase 2: Set collections and references
+    for (const [id, obj] of objects) {
+      const memento = mementoMap.get(id)!;
+
+      // Set collections
+      for (const [colKey, col] of Object.entries(memento.collections)) {
+        if (col.type === 'array') {
+          const arr: any[] = [];
+          for (const item of col.items ?? []) {
+            if (item.kind === 'primitive') {
+              arr.push(item.value);
+            } else if (item.kind === 'reference') {
+              const ref = this.registry.get(item.id!);
+              if (ref === undefined) throw new Error(`Missing reference ${item.id}`);
+              arr.push(ref);
+            } else if (item.kind === 'object') {
+              const sub: Record<string, any> = {};
+              for (const [pkey, pval] of Object.entries(item.primitives ?? {})) {
+                sub[pkey] = pval;
+              }
+              arr.push(sub);
+            }
+          }
+          (obj as any)[colKey] = arr;
+        }
+        // TODO: handle set/map if needed
+      }
+
+      // Set references
+      for (const [refKey, refId] of Object.entries(memento.references)) {
+        const ref = this.registry.get(refId);
+        if (ref === undefined) throw new Error(`Missing reference ${refId}`);
+        (obj as any)[refKey] = ref;
+      }
+    }
+
+    // Phase 3: Call custom restore methods
+    for (const obj of objects.values()) {
+      if (obj.restoreFromMemento) {
+        const memento = mementoMap.get(obj.getMementoId())!;
+        obj.restoreFromMemento(memento, this.registry);
+      }
+    }
+
+    if (this.options.validateOnLoad) {
+      // Optional: implement validation, e.g., check for unresolved references
+    }
+  }
+
+  // Remove or comment out the old loadMemento as it's now loadObject/loadAll
+  // async loadMemento(objectId: string): Promise<MementoRecord | undefined> { ... }
 
   /**
    * Clear all data (registry and storage)
@@ -267,11 +374,48 @@ export class MementoSystem {
   }
 }
 
+function restoreObjectFromMemento(
+  memento: MementoRecord,
+  registry: MementoRegistry,
+  factory: (memento: MementoRecord) => WithMemento
+): WithMemento {
+  const obj = factory(memento);
 
-class GameEngine implements WithMemento {
-  getMementoId() { return 'game-engine'; }
-  
-  onPlayerMove(data: string) {
-    // Handle player movement
+  // Set primitives
+  for (const [key, value] of Object.entries(memento.primitives)) {
+    (obj as any)[key] = value;
   }
+
+  // Set collections
+  for (const [colKey, col] of Object.entries(memento.collections)) {
+    if (col.type === 'array') {
+      const arr: any[] = [];
+      for (const item of col.items ?? []) {
+        if (item.kind === 'primitive') {
+          arr.push(item.value);
+        } else if (item.kind === 'reference') {
+          const ref = registry.get(item.id!);
+          if (ref === undefined) throw new Error(`Missing reference ${item.id}`);
+          arr.push(ref);
+        } else if (item.kind === 'object') {
+          const sub: Record<string, any> = {};
+          for (const [pkey, pval] of Object.entries(item.primitives ?? {})) {
+            sub[pkey] = pval;
+          }
+          arr.push(sub);
+        }
+      }
+      (obj as any)[colKey] = arr;
+    }
+    // TODO: handle set/map if needed
+  }
+
+  // Set references
+  for (const [refKey, refId] of Object.entries(memento.references)) {
+    const ref = registry.get(refId);
+    if (ref === undefined) throw new Error(`Missing reference ${refId}`);
+    (obj as any)[refKey] = ref;
+  }
+
+  return obj;
 }

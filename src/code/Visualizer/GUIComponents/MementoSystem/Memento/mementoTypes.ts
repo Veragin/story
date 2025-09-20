@@ -5,6 +5,7 @@
 // Base interface that objects must implement to be memento-able
 export interface WithMemento {
   getMementoId(): string;
+  restoreFromMemento?: (memento: MementoRecord, registry: MementoRegistry) => void;
 }
 
 // Structure for storing primitive values and object references
@@ -23,8 +24,14 @@ export type PrimitiveValue = string | number | boolean | null | undefined | Date
 // Collection handling for arrays and other iterable structures
 export interface MementoCollection {
   type: 'array' | 'set' | 'map';
-  primitives: PrimitiveValue[];           // Primitive elements
-  references: string[];                   // IDs of WithMemento objects
+  items: MementoItem[];
+}
+
+export interface MementoItem {
+  kind: 'primitive' | 'reference' | 'object';
+  value?: PrimitiveValue;
+  id?: string;
+  primitives?: Record<string, PrimitiveValue>;
 }
 
 // Registry interface for dependency injection
