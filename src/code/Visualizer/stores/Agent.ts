@@ -89,7 +89,7 @@ export class Agent {
     setChapterTime = async (chapterId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
             const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
-            
+
             console.log(`Setting time for chapter ${chapterId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(
@@ -116,7 +116,7 @@ export class Agent {
     addScreenPassage = async (passageId: string, data: TScreenPassageData) => {
         try {
             const serverData = TypeConverters.screenPassageDataToUpdateRequest(data);
-            
+
             console.log(`Adding screen passage ${passageId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(
@@ -187,7 +187,7 @@ export class Agent {
     setPassageTime = async (passageId: string, data: { timeRange: { start: string; end: string } }) => {
         try {
             const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
-            
+
             console.log(`Setting time for passage ${passageId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(
@@ -208,9 +208,6 @@ export class Agent {
         }
     };
 
-    /**
-     * Get map data by ID
-     */
     getMap = async (mapId: string): Promise<TMapData> => {
         try {
             const mapResponse: MapResponse = await HttpErrorHandler.fetchWithErrorHandling(
@@ -258,7 +255,7 @@ export class Agent {
     saveMap = async (mapData: TMapData) => {
         try {
             const serverData = TypeConverters.mapDataToServerType(mapData);
-            
+
             console.log(`Saving map ${mapData.mapId} with data:`, serverData);
 
             await HttpErrorHandler.fetchWithErrorHandling(

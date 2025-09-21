@@ -51,15 +51,19 @@ export class Draw {
             }
         }
         if (this.user.mouse.pointingTo === 'map') {
-            const pack = findNeighbor(
-                this.user.mouse.poinTo.i,
-                this.user.mouse.poinTo.j,
-                this.user.mouse.size,
-                this.map.height,
-                this.map.width
-            );
-            for (let k in pack) {
-                this.drawTileBorder(pack[k].i, pack[k].j);
+            if (this.mapStore.mode === 'edit') {
+                this.drawTileBorder(this.user.mouse.poinTo.i, this.user.mouse.poinTo.j);
+            } else {
+                const pack = findNeighbor(
+                    this.user.mouse.poinTo.i,
+                    this.user.mouse.poinTo.j,
+                    this.user.mouse.size,
+                    this.map.height,
+                    this.map.width
+                );
+                for (let k in pack) {
+                    this.drawTileBorder(pack[k].i, pack[k].j);
+                }
             }
         }
         this.ctx.restore();

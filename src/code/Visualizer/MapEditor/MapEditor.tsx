@@ -87,7 +87,10 @@ export const MapEditor = observer(({ mapStore, createNewMap }: Props) => {
             </SRow>
 
             <Palette mapStore={mapStore} />
-            <EditWidget mapStore={mapStore} />
+            <EditWidget
+                mapStore={mapStore}
+                key={mapStore.selectedTile?.i + ' ' + mapStore.selectedTile?.j}
+            />
 
             <Modal
                 title={_('Create new map')}

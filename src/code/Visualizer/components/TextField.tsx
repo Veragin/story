@@ -11,6 +11,7 @@ const SField = styled(MuiTextField)`
     & *,
     & *:hover,
     & *:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline,
+    & .MuiOutlinedInput-notchedOutline,
     & .MuiInputLabel-root,
     & .MuiInputBase-root {
         color: white;

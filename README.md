@@ -97,6 +97,9 @@ MVP:
     -   locations: { i: Int; j: Int; locationId: String }[]
     -   maps: { i: Int; j: Int; mapId: String }[]
 -   GET `/map/<mapId>`
+-   GET `/map`
+    -   mapId: String
+    -   title: String
 
 ## Insights
 
@@ -116,3 +119,14 @@ Realne, pri psani zmen vlastnosti v pasazi by naseptavac naseptaval vlastnosti p
 ### Typy pasazi
 
 Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim frameworkem.
+
+# TODO
+
+-   přejmenovat events na chapter
+-   prejmenovat trigger na event
+-   každý even má pole triggerů
+
+-   místo na pasní poznámek
+-   odebrat happenning
+-   key chapter - dochází k rozhodujicímu splitu v příběhu
+-   location list
