@@ -104,7 +104,7 @@ export class MementoSystem {
     await this.waitForReady();
 
     // Check if object is already registered
-    const objectId = obj.getMementoId();
+    const objectId = obj.getId();
     if (this.registry.isRegistered(objectId)) {
       throw new Error(`Object with ID '${objectId}' is already registered`);
     }
@@ -125,7 +125,7 @@ export class MementoSystem {
 
     if (result.success && this.options.autoSave) {
       // Auto-save if configured
-      await this.saveMemento(obj.getMementoId());
+      await this.saveMemento(obj.getId());
       for (const newId of result.autoRegisteredIds) {
         await this.saveMemento(newId);
       }
@@ -143,7 +143,7 @@ export class MementoSystem {
   ): Promise<MementoResult> {
     await this.waitForReady();
 
-    const objectId = obj.getMementoId();
+    const objectId = obj.getId();
 
     // Check if object is registered
     if (!this.registry.isRegistered(objectId)) {
@@ -349,7 +349,7 @@ export class MementoSystem {
     // Phase 3: Call custom restore methods
     for (const obj of objects.values()) {
       if (obj.restoreFromMemento) {
-        const memento = mementoMap.get(obj.getMementoId())!;
+        const memento = mementoMap.get(obj.getId())!;
         obj.restoreFromMemento(memento, this.registry);
       }
     }

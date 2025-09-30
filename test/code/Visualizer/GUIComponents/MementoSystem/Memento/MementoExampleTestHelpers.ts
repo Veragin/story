@@ -14,7 +14,7 @@ export class TestUser implements WithMemento {
         public createdAt: Date = new Date()
     ) {}
 
-    getMementoId(): string {
+    getId(): string {
         return `user-${this.id}`;
     }
 }
@@ -30,7 +30,7 @@ export class TestTask implements WithMemento {
         public dueDate?: Date
     ) {}
 
-    getMementoId(): string {
+    getId(): string {
         return `task-${this.id}`;
     }
 }
@@ -47,7 +47,7 @@ export class TestProject implements WithMemento {
         public isArchived: boolean = false
     ) {}
 
-    getMementoId(): string {
+    getId(): string {
         return `project-${this.id}`;
     }
 

@@ -4,7 +4,7 @@
 
 // Base interface that objects must implement to be memento-able
 export interface WithMemento {
-  getMementoId(): string;
+  getId(): string;
   restoreFromMemento?: (memento: MementoRecord, registry: MementoRegistry) => void;
 }
 

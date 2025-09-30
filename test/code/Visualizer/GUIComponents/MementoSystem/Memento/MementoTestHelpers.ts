@@ -16,7 +16,7 @@ export class MockMementoObject implements WithMemento {
         this.getMementoIdSpy.returns(id);
     }
 
-    getMementoId(): string {
+    getId(): string {
         return this.getMementoIdSpy();
     }
 }
@@ -24,7 +24,7 @@ export class MockMementoObject implements WithMemento {
 export class EmptyMementoObject implements WithMemento {
     constructor(public id: string) {}
 
-    getMementoId(): string {
+    getId(): string {
         return this.id;
     }
 }
@@ -41,7 +41,7 @@ export class ComplexMementoObject implements WithMemento {
         public nestedObject: { nested: string } // This should be skipped in current implementation
     ) {}
 
-    getMementoId(): string {
+    getId(): string {
         return this.id;
     }
 }
@@ -60,7 +60,7 @@ export class MockMementoObjectWithReferences implements WithMemento {
         this.getMementoIdSpy.returns(id);
     }
 
-    getMementoId(): string {
+    getId(): string {
         return this.getMementoIdSpy();
     }
 }
@@ -70,7 +70,7 @@ export class MockMementoParent implements WithMemento {
     
     constructor(public id: string, public name: string = 'parent') {}
 
-    getMementoId(): string {
+    getId(): string {
         return this.id;
     }
 
@@ -85,7 +85,7 @@ export class MockMementoChild implements WithMemento {
     
     constructor(public id: string, public name: string = 'child') {}
 
-    getMementoId(): string {
+    getId(): string {
         return this.id;
     }
 }

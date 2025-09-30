@@ -8,7 +8,7 @@ export class InMemoryMementoRegistry implements MementoRegistry {
   }
   
   register(obj: WithMemento): boolean {
-    const id = obj.getMementoId();
+    const id = obj.getId();
     if (this.objects.has(id)) {
       return false;
     }

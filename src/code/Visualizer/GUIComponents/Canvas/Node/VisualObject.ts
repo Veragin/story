@@ -1,4 +1,5 @@
-import { Listener, Observer } from 'code/utils/Observer';
+import { WithMemento } from "../../MementoSystem/Memento/mementoTypes";
+import { IMementoAwareListener, MementoAwareObserver } from "../../MementoSystem/MementoAwareObserver";
 
 export type TVisualObjectPropertyChangeArgs = {
     property: string;
@@ -13,15 +14,17 @@ export const visualObjectProperties = {
 
 /**
  * Base class for any visual object that can be drawn on canvas
+ * Now implements WithMemento for persistence support
  */
-export abstract class VisualObject {
+export abstract class VisualObject implements WithMemento {
+    protected id: string;
     protected position: TPoint;
     protected size: TSize;
     private _automaticDraw: boolean = true;
-    private _onPropertyChanged = new Observer<TVisualObjectPropertyChangeArgs>();
+    private _onPropertyChanged: MementoAwareObserver<TVisualObjectPropertyChangeArgs>;
     private _zIndex: number = 0;
 
-    get onPropertyChanged(): Observer<TVisualObjectPropertyChangeArgs> {
+    get onPropertyChanged(): MementoAwareObserver<TVisualObjectPropertyChangeArgs> {
         return this._onPropertyChanged;
     }
     
@@ -29,10 +32,32 @@ export abstract class VisualObject {
         return this._zIndex;
     }
 
-    constructor(position: TPoint, size: TSize, zIndex: number = 0) {
+    constructor(id: string, position: TPoint, size: TSize, zIndex: number = 0) {
+        this.id = id;
         this.position = position;
         this.size = size;
         this._zIndex = zIndex;
+        this._onPropertyChanged = new MementoAwareObserver<TVisualObjectPropertyChangeArgs>(
+            `${id}_propertyChanged`
+        );
+    }
+
+    getId(): string {
+        return this.id;
+    }
+
+    /**
+     * Subscribe a listener to property change events
+     */
+    subscribeToPropertyChanges(listener: IMementoAwareListener<TVisualObjectPropertyChangeArgs>): void {
+        this._onPropertyChanged.subscribe(listener);
+    }
+
+    /**
+     * Unsubscribe a listener from property change events
+     */
+    unsubscribeFromPropertyChanges(listener: IMementoAwareListener<TVisualObjectPropertyChangeArgs>): void {
+        this._onPropertyChanged.unsubscribe(listener);
     }
 
     abstract draw(ctx: CanvasRenderingContext2D): void;
@@ -59,14 +84,17 @@ export abstract class VisualObject {
         this.position.x = x;
         this.redraw(true, visualObjectProperties.position);
     }
+
     setY(y: number) {
         this.position.y = y;
         this.redraw(true, visualObjectProperties.position);
     }
+
     setW(w: number) {
         this.size.width = w;
         this.redraw(true, visualObjectProperties.Size);
     }
+
     setH(h: number) {
         this.size.height = h;
         this.redraw(true, visualObjectProperties.Size);
@@ -95,7 +123,7 @@ export abstract class VisualObject {
      */
     protected redraw(change: boolean, reason: string): void {
         if (this._automaticDraw && change) {
-            this.onPropertyChanged.notify({
+            this._onPropertyChanged.notify({
                 property: reason,
                 VisualObject: this,
             });

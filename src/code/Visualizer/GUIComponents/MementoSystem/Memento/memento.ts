@@ -229,7 +229,7 @@ function createMementoRecursive(
   
   // Create memento record
   const memento: MementoRecord = {
-    id: obj.getMementoId(),
+    id: obj.getId(),
     type: getObjectTypeName(obj),
     primitives,
     references,
