@@ -15,9 +15,9 @@ export class TypeGuards {
   }
   
   static isWithMemento(value: any): value is WithMemento {
-    return value != null && 
-           typeof value === 'object' && 
-           typeof value.getMementoId === 'function';
+    return value != null &&
+           typeof value === 'object' &&
+           typeof value.getId === 'function';
   }
   
   static isArray(value: any): value is any[] {

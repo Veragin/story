@@ -33,7 +33,7 @@ export class WithMementoProcessor implements PropertyProcessor {
       throw new Error(`WithMementoProcessor cannot process non-WithMemento value`);
     }
     
-    const objectId = value.getMementoId();
+    const objectId = value.getId();
     const newlyRegistered: string[] = [];
     
     // Check if object is already registered
