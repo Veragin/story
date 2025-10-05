@@ -1,7 +1,8 @@
 import { Observer } from 'code/utils/Observer';
-import { ClickableVisualObject } from './ClickableVisualObject';
+import { ClickableVisualObject, MementoAwareClickableVisualObject } from './ClickableVisualObject';
 import { DragStrategy } from './dragAndDropMovingStrategies/DragStrategy';
 import { FreeDragStrategy } from './dragAndDropMovingStrategies/FreeDragStrategy';
+import { MementoAwareObserver } from '../../MementoSystem/MementoAwareObserver';
 
 export type DragStartChapter = {
     object: DraggableVisualObject;
@@ -121,6 +122,144 @@ export abstract class DraggableVisualObject extends ClickableVisualObject {
             mouseOffset: this._mouseOffset,
             startPosition: this._dragStartPosition!,
             currentPosition: this.position,
+        });
+
+        this.setPosition(finalPosition);
+
+        this._onDragEnd.notify({
+            object: this,
+            finalPosition: { ...finalPosition },
+            startPosition: { ...this._dragStartPosition! },
+        });
+
+        this._dragStartPosition = null;
+    }
+}
+
+
+export type MementoAwareDragStartChapter = {
+    object: MementoAwareDraggableVisualObject;
+    startPosition: TPoint;
+    mouseOffset: TPoint;
+};
+
+export type MementoAwareDragMoveChapter = {
+    object: MementoAwareDraggableVisualObject;
+    currentPosition: TPoint;
+    startPosition: TPoint;
+    mouseOffset: TPoint;
+};
+
+export type MementoAwareDragEndChapter = {
+    object: MementoAwareDraggableVisualObject;
+    finalPosition: TPoint;
+    startPosition: TPoint;
+};
+
+/**
+ * MementoAware variant of DraggableVisualObject
+ */
+export abstract class MementoAwareDraggableVisualObject extends MementoAwareClickableVisualObject {
+    private _isDragging: boolean = false;
+    private _isDraggable: boolean = true;
+    private _dragStartPosition: TPoint | null = null;
+    private _mouseOffset: TPoint = { x: 0, y: 0 };
+    private _dragStrategy: DragStrategy;
+
+    private _onDragStart = new MementoAwareObserver<MementoAwareDragStartChapter>(`${this.getId()}_dragStart`);
+    private _onDragMove = new MementoAwareObserver<MementoAwareDragMoveChapter>(`${this.getId()}_dragMove`);
+    private _onDragEnd = new MementoAwareObserver<MementoAwareDragEndChapter>(`${this.getId()}_dragEnd`);
+
+    get onDragStart(): MementoAwareObserver<MementoAwareDragStartChapter> {
+        return this._onDragStart;
+    }
+
+    get onDragMove(): MementoAwareObserver<MementoAwareDragMoveChapter> {
+        return this._onDragMove;
+    }
+
+    get onDragEnd(): MementoAwareObserver<MementoAwareDragEndChapter> {
+        return this._onDragEnd;
+    }
+
+    constructor(id: string, position: TPoint, size: TSize, zIndex: number = 0) {
+        super(id, position, size, zIndex);
+        this._dragStrategy = new FreeDragStrategy();
+        this._onDragStart = new MementoAwareObserver<MementoAwareDragStartChapter>(`${id}_dragStart`);
+        this._onDragMove = new MementoAwareObserver<MementoAwareDragMoveChapter>(`${id}_dragMove`);
+        this._onDragEnd = new MementoAwareObserver<MementoAwareDragEndChapter>(`${id}_dragEnd`);
+    }
+
+    isDragging(): boolean {
+        return this._isDragging;
+    }
+
+    isDraggable(): boolean {
+        return this._isDraggable;
+    }
+
+    setDragStrategy(strategy: DragStrategy): void {
+        this._dragStrategy = strategy;
+    }
+
+    getDragStrategy(): DragStrategy {
+        return this._dragStrategy;
+    }
+
+    setDraggable(draggable: boolean): void {
+        this._isDraggable = draggable;
+        if (!draggable && this._isDragging) {
+            this.endDrag(this.getPosition());
+        }
+    }
+
+    startDrag(point: TPoint): void {
+        if (!this._isDraggable) return;
+
+        this._isDragging = true;
+        this._dragStartPosition = { ...this.getPosition() };
+
+        this._mouseOffset = {
+            x: point.x - this.getPosition().x,
+            y: point.y - this.getPosition().y,
+        };
+
+        this._onDragStart.notify({
+            object: this,
+            startPosition: { ...this.getPosition() },
+            mouseOffset: { ...this._mouseOffset },
+        });
+    }
+
+    drag(point: TPoint): void {
+        if (!this._isDragging || !this._isDraggable) return;
+
+        const newPosition = this._dragStrategy.calculatePosition({
+            point,
+            mouseOffset: this._mouseOffset,
+            startPosition: this._dragStartPosition!,
+            currentPosition: this.getPosition(),
+        });
+
+        this.setPosition(newPosition);
+
+        this._onDragMove.notify({
+            object: this,
+            currentPosition: { ...newPosition },
+            startPosition: { ...this._dragStartPosition! },
+            mouseOffset: { ...this._mouseOffset },
+        });
+    }
+
+    endDrag(point: TPoint): void {
+        if (!this._isDragging) return;
+
+        this._isDragging = false;
+        const finalPosition = this._dragStrategy.calculatePosition({
+            point,
+            mouseOffset: this._mouseOffset,
+            startPosition: this._dragStartPosition!,
+            currentPosition: this.getPosition(),
         });
 
         this.setPosition(finalPosition);

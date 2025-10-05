@@ -1,79 +1,123 @@
-import { throttle } from 'code/utils/throttle';
-import { VisualObject } from '../Node/VisualObject';
-import { Observer } from 'code/utils/Observer';
+import { MementoAwareVisualObject } from '../Node/VisualObject';
 import { CanvasWorld } from './CanvasWorld';
+import { MementoAwareObserver } from '../../MementoSystem/MementoAwareObserver';
+import { WithMemento, MementoRecord, MementoRegistry } from '../../MementoSystem/Memento/mementoTypes';
+import { BaseMementoAwareListener } from '../../MementoSystem/MementoAwareListeners';
 
 /**
  * Interface for managing visible visual objects,
  * the objects that are currently visible in the viewport
  */
 export interface IVisibleVisualObjectsManager {
-    getVisibleObjects(): Set<VisualObject>;
-    onVisibleObjectsChanged: Observer<Set<VisualObject>>;
+    getVisibleObjects(): Set<MementoAwareVisualObject>;
+    onVisibleObjectsChanged: MementoAwareObserver<Set<MementoAwareVisualObject>>;
     setCanvasSize(size: TSize): void;
     destroy(): void;
 }
 
 export interface IVisibilityProvider {
-    getAllObjects(): Iterable<VisualObject>;
+    getAllObjects(): Iterable<MementoAwareVisualObject>;
     getCanvasSize(): TSize;
-    onObjectAdded: Observer<VisualObject>;
-    onObjectRemoved: Observer<VisualObject>;
-    onObjectPropertyChanged: Observer<{ object: VisualObject, property: string }>;
+    onObjectAdded: MementoAwareObserver<MementoAwareVisualObject>;
+    onObjectRemoved: MementoAwareObserver<MementoAwareVisualObject>;
+    onObjectPropertyChanged: MementoAwareObserver<{ object: MementoAwareVisualObject, property: string }>;
 }
 
-export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager {
-    protected visibleVisualObjects: Set<VisualObject> = new Set();
-    protected canvasWorld: CanvasWorld;
+export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager, WithMemento {
+
+    private CheckVisibilityListener = class extends BaseMementoAwareListener<any> {
+        constructor(id: string, private outer: VisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (_data: any): void => {
+            this.outer.checkAllVisualObjectsVisibility();
+        }
+    };
+
+    private ObjectAddedListener = class extends BaseMementoAwareListener<MementoAwareVisualObject> {
+        constructor(id: string, private outer: VisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (obj: MementoAwareVisualObject): void => {
+            this.outer.checkVisualObjectVisibility(obj);
+        }
+    };
+
+    private ObjectRemovedListener = class extends BaseMementoAwareListener<MementoAwareVisualObject> {
+        constructor(id: string, private outer: VisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (obj: MementoAwareVisualObject): void => {
+            if (this.outer.visibleVisualObjects.has(obj)) {
+                this.outer.visibleVisualObjects.delete(obj);
+                this.outer.onVisibleObjectsChanged.notify(this.outer.visibleVisualObjects);
+            }
+        }
+    };
+
+    private ObjectPropertyChangedListener = class extends BaseMementoAwareListener<{ object: MementoAwareVisualObject, property: string }> {
+        constructor(id: string, private outer: VisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (data: { object: MementoAwareVisualObject, property: string }): void => {
+            if (data.property === 'position' || data.property === 'size') {
+                this.outer.checkVisualObjectVisibility(data.object);
+            }
+        }
+    };
+
+    private id: string;
+    protected visibleVisualObjects: Set<MementoAwareVisualObject> = new Set();
+    private canvasWorld: CanvasWorld;
     protected provider: IVisibilityProvider;
 
-    public readonly onVisibleObjectsChanged = new Observer<Set<VisualObject>>();
+    public readonly onVisibleObjectsChanged: MementoAwareObserver<Set<MementoAwareVisualObject>>;
 
-    constructor(canvasWorld: CanvasWorld, provider: IVisibilityProvider) {
+    constructor(canvasWorld: CanvasWorld, provider: IVisibilityProvider, id: string = 'visible-objects-manager') {
+        this.id = id;
         this.canvasWorld = canvasWorld;
         this.provider = provider;
+        this.onVisibleObjectsChanged = new MementoAwareObserver<Set<MementoAwareVisualObject>>(`${id}_visibleObjectsChanged`);
 
-        // Remove throttle: call directly for immediate updates
-        this.canvasWorld.onViewPositionChange.subscribe(() => this.checkAllVisualObjectsVisibility());
-        this.canvasWorld.onPixelSizeChange.subscribe(() => this.checkAllVisualObjectsVisibility());
+        // Create specific MementoAware listeners
+        const checkVisibilityListener = new this.CheckVisibilityListener(`${id}_checkVisibility`, this);
+        const objectAddedListener = new this.ObjectAddedListener(`${id}_objectAdded`, this);
+        const objectRemovedListener = new this.ObjectRemovedListener(`${id}_objectRemoved`, this);
+        const propertyChangedListener = new this.ObjectPropertyChangedListener(`${id}_propertyChanged`, this);
 
-        this.provider.onObjectAdded.subscribe((obj) => this.handleObjectAdded(obj));
-        this.provider.onObjectRemoved.subscribe((obj) => this.handleObjectRemoved(obj));
-        this.provider.onObjectPropertyChanged.subscribe(({ object, property }) =>
-            this.handleVisualObjectPropertyChanged(object, property));
+        // Subscribe listeners
+        this.canvasWorld.onViewPositionChange.subscribe(checkVisibilityListener);
+        this.canvasWorld.onPixelSizeChange.subscribe(checkVisibilityListener);
+        this.provider.onObjectAdded.subscribe(objectAddedListener);
+        this.provider.onObjectRemoved.subscribe(objectRemovedListener);
+        this.provider.onObjectPropertyChanged.subscribe(propertyChangedListener);
 
         // Initial visibility check
         this.checkAllVisualObjectsVisibility();
     }
 
-    setCanvasSize(size: TSize) {
-        this.provider.getCanvasSize = () => size;
-        this.checkAllVisualObjectsVisibility();  // Direct call, no throttle
+    getId(): string {
+        return this.id;
     }
 
-    getVisibleObjects(): Set<VisualObject> {
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
+
+    setCanvasSize(size: TSize) {
+        this.provider.getCanvasSize = () => size;
+        this.checkAllVisualObjectsVisibility();
+    }
+
+    getVisibleObjects(): Set<MementoAwareVisualObject> {
         return this.visibleVisualObjects;
     }
 
-    protected handleObjectAdded(obj: VisualObject) {
-        this.checkVisualObjectVisibility(obj);
-    }
-
-    protected handleObjectRemoved(obj: VisualObject) {
-        if (this.visibleVisualObjects.has(obj)) {
-            this.visibleVisualObjects.delete(obj);
-            this.onVisibleObjectsChanged.notify(this.visibleVisualObjects);
-        }
-    }
-
-    protected handleVisualObjectPropertyChanged(obj: VisualObject, property: string) {
-        if (property === 'position' || property === 'size') {  // Fixed: 'size' lowercase
-            this.checkVisualObjectVisibility(obj);
-        }
-    }
-
-    // Now this is a regular method that can be overridden
-    protected checkAllVisualObjectsVisibility(): void {
+    private checkAllVisualObjectsVisibility(): void {
         const visibleBounds = this.canvasWorld.getVisibleWorldBounds(this.provider.getCanvasSize());
         const previousVisibleObjects = new Set(this.visibleVisualObjects);
         this.visibleVisualObjects.clear();
@@ -101,7 +145,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
         }
     }
 
-    protected checkVisualObjectVisibility(obj: VisualObject) {
+    private checkVisualObjectVisibility(obj: MementoAwareVisualObject) {
         const visibleBounds = this.canvasWorld.getVisibleWorldBounds(this.provider.getCanvasSize());
         const isVisible = this.isObjVisible(obj, visibleBounds);
         const wasVisible = this.visibleVisualObjects.has(obj);
@@ -116,7 +160,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
     }
 
     protected isObjVisible(
-        obj: VisualObject,
+        obj: MementoAwareVisualObject,
         visibleBounds: { min: TPoint; max: TPoint }
     ): boolean {
         const pos = obj.getPosition();

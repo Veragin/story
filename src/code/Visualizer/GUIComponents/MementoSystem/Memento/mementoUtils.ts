@@ -1,19 +1,5 @@
-import { PropertyDescriptor, PropertyType } from './mementoTypes';
+import { MementoRecord, PropertyDescriptor, PropertyType } from './mementoTypes';
 import { TypeGuards } from './TypeGuards';
-
-export function getObjectTypeName(obj: any): string {
-  if (obj === null) return 'null';
-  if (obj === undefined) return 'undefined';
-  
-  // Try to get constructor name
-  if (obj.constructor && obj.constructor.name) {
-    return obj.constructor.name;
-  }
-  
-  // Fallback to toString
-  const toString = Object.prototype.toString.call(obj);
-  return toString.slice(8, -1); // Extract type from "[object Type]"
-}
 
 export function getEnumerableProperties(obj: any): PropertyDescriptor[] {
   const properties: PropertyDescriptor[] = [];

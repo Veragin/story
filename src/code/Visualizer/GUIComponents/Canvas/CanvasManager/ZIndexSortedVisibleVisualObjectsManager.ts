@@ -1,8 +1,7 @@
-import { throttle } from 'code/utils/throttle';
-import { VisualObject } from '../Node/VisualObject';
-import { Observer } from 'code/utils/Observer';
+import { MementoAwareVisualObject } from '../Node/VisualObject';
 import { CanvasWorld } from './CanvasWorld';
 import { VisibleVisualObjectsManager, IVisibilityProvider, IVisibleVisualObjectsManager } from './VisibleVisualObjectsManager';
+import { BaseMementoAwareListener } from '../../MementoSystem/MementoAwareListeners';
 
 /**
  * Interface for managing visible visual objects with z-index sorting
@@ -14,44 +13,94 @@ export interface ISortedVisibleVisualObjectsManager extends IVisibleVisualObject
      * Objects with higher z-index appear later in the array (drawn on top)
      * Objects with same z-index are sorted by insertion order
      */
-    getSortedVisibleObjects(): VisualObject[];
+    getSortedVisibleObjects(): MementoAwareVisualObject[];
 }
 
 export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObjectsManager {
-    private _sortedVisibleVisualObjects: VisualObject[] = [];
-    private _insertionOrderMap: WeakMap<VisualObject, number> = new WeakMap();
-    private _objectPositions: WeakMap<VisualObject, number> = new WeakMap(); // O(1) removal lookup
+    private InsertionOrderListener = class extends BaseMementoAwareListener<MementoAwareVisualObject> {
+        constructor(id: string, private outer: ZIndexSortedVisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (obj: MementoAwareVisualObject): void => {
+            this.outer.trackInsertionOrder(obj);
+        }
+    };
+
+    private InsertionOrderCleanupListener = class extends BaseMementoAwareListener<MementoAwareVisualObject> {
+        constructor(id: string, private outer: ZIndexSortedVisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (obj: MementoAwareVisualObject): void => {
+            this.outer.cleanupInsertionOrder(obj);
+        }
+    };
+
+    private ZIndexChangeListener = class extends BaseMementoAwareListener<{ object: MementoAwareVisualObject, property: string }> {
+        constructor(id: string, private outer: ZIndexSortedVisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (data: { object: MementoAwareVisualObject, property: string }): void => {
+            if (data.property === 'zIndex' && this.outer.getVisibleObjects().has(data.object)) {
+                this.outer.handleZIndexChange(data.object);
+            }
+        }
+    };
+
+    private VisibilityChangedListener = class extends BaseMementoAwareListener<Set<MementoAwareVisualObject>> {
+        constructor(id: string, private outer: ZIndexSortedVisibleVisualObjectsManager) {
+            super(id);
+        }
+
+        onNotify = (_visibleObjects: Set<MementoAwareVisualObject>): void => {
+            this.outer.rebuildSortedArray();
+        }
+    };
+
+    private _sortedVisibleVisualObjects: MementoAwareVisualObject[] = [];
+    private _insertionOrderMap: WeakMap<MementoAwareVisualObject, number> = new WeakMap();
+    private _objectPositions: WeakMap<MementoAwareVisualObject, number> = new WeakMap(); // O(1) removal lookup
     private _nextInsertionOrder: number = 0;
 
-    constructor(canvasWorld: CanvasWorld, provider: IVisibilityProvider) {
-        super(canvasWorld, provider);
+    constructor(canvasWorld: CanvasWorld, provider: IVisibilityProvider, id: string = 'z-index-sorted-manager') {
+        super(canvasWorld, provider, id);
 
         // Initialize insertion order with existing objects
         for (const obj of this.provider.getAllObjects()) {
             this._insertionOrderMap.set(obj, this._nextInsertionOrder++);
         }
 
-        // Subscribe to object added and removed to maintain insertion order
-        this.provider.onObjectAdded.subscribe((obj) => {
-            this._insertionOrderMap.set(obj, this._nextInsertionOrder++);
-        });
+        // Create specific MementoAware listeners
+        const insertionOrderListener = new this.InsertionOrderListener(`${id}_insertionOrder`, this);
+        const cleanupListener = new this.InsertionOrderCleanupListener(`${id}_cleanup`, this);
+        const zIndexListener = new this.ZIndexChangeListener(`${id}_zIndex`, this);
+        const visibilityListener = new this.VisibilityChangedListener(`${id}_visibility`, this);
 
-        this.provider.onObjectRemoved.subscribe((obj) => {
-            this._insertionOrderMap.delete(obj);
-        });
+        // Subscribe to object added and removed to maintain insertion order
+        this.provider.onObjectAdded.subscribe(insertionOrderListener);
+        this.provider.onObjectRemoved.subscribe(cleanupListener);
 
         // Subscribe to z-index changes to maintain sort order
-        this.provider.onObjectPropertyChanged.subscribe(({ object, property }) => {
-            if (property === 'zIndex' && super.getVisibleObjects().has(object)) {
-                this.handleZIndexChange(object);
-            }
-        });
+        this.provider.onObjectPropertyChanged.subscribe(zIndexListener);
+
+        // Subscribe to visibility changes to rebuild sorted array
+        this.onVisibleObjectsChanged.subscribe(visibilityListener);
 
         // Initialize the sorted array with current visible objects
         this.rebuildSortedArray();
     }
 
-    getSortedVisibleObjects(): VisualObject[] {
+    private trackInsertionOrder(obj: MementoAwareVisualObject): void {
+        this._insertionOrderMap.set(obj, this._nextInsertionOrder++);
+    }
+
+    private cleanupInsertionOrder(obj: MementoAwareVisualObject): void {
+        this._insertionOrderMap.delete(obj);
+    }
+
+    getSortedVisibleObjects(): MementoAwareVisualObject[] {
         return this._sortedVisibleVisualObjects;
     }
 
@@ -60,12 +109,12 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         if (!this._objectPositions) {
             this._objectPositions = new WeakMap();
         }
-        
+
         // Ensure _insertionOrderMap is initialized
         if (!this._insertionOrderMap) {
             this._insertionOrderMap = new WeakMap();
         }
-        
+
         this._sortedVisibleVisualObjects = Array.from(super.getVisibleObjects()).sort((a, b) => {
             // First compare by z-index
             if (a.zIndex !== b.zIndex) {
@@ -83,60 +132,13 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         }
     }
 
-    protected override handleObjectAdded(obj: VisualObject): void {
-        // Track insertion order for new objects
-        if (!this._insertionOrderMap.has(obj)) {
-            this._insertionOrderMap.set(obj, this._nextInsertionOrder++);
-        }
 
-        const wasVisible = super.getVisibleObjects().has(obj);
-        super.handleObjectAdded(obj);
-        const isNowVisible = super.getVisibleObjects().has(obj);
-
-        // Only update sorted array if visibility actually changed
-        if (!wasVisible && isNowVisible) {
-            this.insertObjectInSortedPosition(obj);
-        }
-    }
-
-    protected override handleObjectRemoved(obj: VisualObject): void {
-        const wasVisible = super.getVisibleObjects().has(obj);
-        super.handleObjectRemoved(obj);
-
-        // Only update sorted array if object was actually visible
-        if (wasVisible) {
-            this.removeObjectFromSorted(obj);
-        }
-
-        // Clean up insertion order tracking
-        this._insertionOrderMap.delete(obj);
-    }
-
-    // Override for bulk visibility changes (like viewport changes)
-    protected override checkAllVisualObjectsVisibility(): void {
-        const previousVisibleObjects = new Set(this._sortedVisibleVisualObjects);
-        super.checkAllVisualObjectsVisibility();
-        const newVisibleObjects = super.getVisibleObjects();
-
-        // For bulk changes, it might be more efficient to rebuild if many objects changed
-        const changedCount = [...previousVisibleObjects].filter(obj => !newVisibleObjects.has(obj)).length +
-            [...newVisibleObjects].filter(obj => !previousVisibleObjects.has(obj)).length;
-
-        if (changedCount > newVisibleObjects.size * 0.5) {
-            // If more than 50% of objects changed, rebuild is more efficient
-            this.rebuildSortedArray();
-        } else {
-            // Otherwise, use incremental updates
-            this.updateSortedArrayEfficiently(newVisibleObjects, previousVisibleObjects);
-        }
-    }
-
-    private insertObjectInSortedPosition(obj: VisualObject): void {
+    private insertObjectInSortedPosition(obj: MementoAwareVisualObject): void {
         // Ensure _objectPositions is initialized
         if (!this._objectPositions) {
             this._objectPositions = new WeakMap();
         }
-        
+
         const insertionIndex = this.findInsertionPoint(obj);
         this._sortedVisibleVisualObjects.splice(insertionIndex, 0, obj);
 
@@ -146,13 +148,13 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         }
     }
 
-    private removeObjectFromSorted(obj: VisualObject): void {
+    private removeObjectFromSorted(obj: MementoAwareVisualObject): void {
         // Ensure _objectPositions is initialized
         if (!this._objectPositions) {
             this._objectPositions = new WeakMap();
             return;
         }
-        
+
         const index = this._objectPositions.get(obj);
         if (index !== undefined) {
             this._sortedVisibleVisualObjects.splice(index, 1);
@@ -165,7 +167,7 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         }
     }
 
-    private findInsertionPoint(obj: VisualObject): number {
+    private findInsertionPoint(obj: MementoAwareVisualObject): number {
         let left = 0;
         let right = this._sortedVisibleVisualObjects.length;
 
@@ -183,7 +185,7 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         return left;
     }
 
-    private compareObjects(a: VisualObject, b: VisualObject): number {
+    private compareObjects(a: MementoAwareVisualObject, b: MementoAwareVisualObject): number {
         // First compare by z-index
         if (a.zIndex !== b.zIndex) {
             return a.zIndex - b.zIndex;
@@ -195,44 +197,7 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         return orderA - orderB;
     }
 
-    private updateSortedArrayEfficiently(newVisibleObjects: Set<VisualObject>, previousVisibleObjects: Set<VisualObject>): void {
-        // Find objects to remove (were visible, now not visible)
-        const objectsToRemove: VisualObject[] = [];
-        for (const obj of previousVisibleObjects) {
-            if (!newVisibleObjects.has(obj)) {
-                objectsToRemove.push(obj);
-            }
-        }
-
-        // Find objects to add (weren't visible, now visible)
-        const objectsToAdd: VisualObject[] = [];
-        for (const obj of newVisibleObjects) {
-            if (!previousVisibleObjects.has(obj)) {
-                objectsToAdd.push(obj);
-            }
-        }
-
-        // Remove objects efficiently (O(1) lookup, but O(n) position updates)
-        for (const obj of objectsToRemove) {
-            this.removeObjectFromSorted(obj);
-        }
-
-        // Add objects efficiently using binary search insertion
-        for (const obj of objectsToAdd) {
-            this.insertObjectInSortedPosition(obj);
-        }
-    }
-
-    protected override handleVisualObjectPropertyChanged(obj: VisualObject, property: string): void {
-        super.handleVisualObjectPropertyChanged(obj, property);
-
-        if (property === 'zIndex' && super.getVisibleObjects().has(obj)) {
-            // Remove and re-add to maintain proper sorting
-            this.handleZIndexChange(obj);
-        }
-    }
-
-    private handleZIndexChange(obj: VisualObject): void {
+    private handleZIndexChange(obj: MementoAwareVisualObject): void {
         // Remove object from current position (O(1) lookup + O(n) position updates)
         this.removeObjectFromSorted(obj);
         // Insert it back in the correct position (O(log n) + O(n) position updates)

@@ -5,6 +5,7 @@
 // Base interface that objects must implement to be memento-able
 export interface WithMemento {
   getId(): string;
+  getObjectTypeName(): string;
   restoreFromMemento?: (memento: MementoRecord, registry: MementoRegistry) => void;
 }
 
@@ -27,11 +28,16 @@ export interface MementoCollection {
   items: MementoItem[];
 }
 
+/*
+* Represents an item of a collection of mementos
+*/
 export interface MementoItem {
   kind: 'primitive' | 'reference' | 'object';
   value?: PrimitiveValue;
   id?: string;
+  type?: string;  // For nested listener classes (e.g., "ParentClass.ListenerClass")
   primitives?: Record<string, PrimitiveValue>;
+  references?: Record<string, string>;
 }
 
 // Registry interface for dependency injection

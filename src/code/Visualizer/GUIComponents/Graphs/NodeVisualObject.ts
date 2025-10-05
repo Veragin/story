@@ -1,6 +1,7 @@
 import { BorderConfig } from '../Canvas/Node/BorderConfig';
-import { DraggableVisualObject } from '../Canvas/Node/DraggableVisualObject';
-import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from '../Canvas/Node/VisualObject';
+import { DraggableVisualObject, MementoAwareDraggableVisualObject } from '../Canvas/Node/DraggableVisualObject';
+import { TVisualObjectPropertyChangeArgs, VisualObject, MementoAwareVisualObject, visualObjectProperties, TMementoAwareVisualObjectPropertyChangeArgs } from '../Canvas/Node/VisualObject';
+import { IMementoAwareListener } from '../MementoSystem/MementoAwareObserver';
 
 export const nodeVisualObjectProperties = {
     border: 'border',
@@ -107,3 +108,127 @@ export class NodeVisualObject extends DraggableVisualObject {
     }
 }
 
+/**
+ * Internal listener for content position updates
+ */
+class MementoAwareContentPositionListener implements IMementoAwareListener<TMementoAwareVisualObjectPropertyChangeArgs> {
+    constructor(
+        private node: MementoAwareNodeVisualObject,
+        public id: string
+    ) {}
+
+    getId(): string {
+        return this.id;
+    }
+
+    onNotify(args: TMementoAwareVisualObjectPropertyChangeArgs): void {
+        if (args.property === nodeVisualObjectProperties.position) {
+            const newContentPosition = this.node.getContentPosition();
+            this.node.getContent().setPosition(newContentPosition);
+        }
+    }
+}
+
+/**
+ * MementoAware variant of NodeVisualObject
+ */
+export class MementoAwareNodeVisualObject extends MementoAwareDraggableVisualObject {
+    private border: BorderConfig;
+    private content: MementoAwareVisualObject;
+    private backgroundColor: string;
+    private static idCounter: number = 0;
+
+    // Store listener reference so it can be persisted
+    private contentPositionListener?: MementoAwareContentPositionListener;
+
+    constructor(
+        realPosition: TPoint,
+        size: TSize,
+        border: BorderConfig,
+        content: MementoAwareVisualObject,
+        backgroundColor: string = '#ffffff',
+        zIndex: number = 0
+    ) {
+        const nodeId = `node-${MementoAwareNodeVisualObject.idCounter++}`;
+        super(nodeId, realPosition, size, zIndex);
+
+        this.border = border;
+        this.content = content;
+        this.backgroundColor = backgroundColor;
+
+        // Create listener for content position updates
+        this.contentPositionListener = new MementoAwareContentPositionListener(
+            this,
+            `${this.id}_contentPositionListener`
+        );
+
+        this.subscribeToPropertyChanges(this.contentPositionListener);
+    }
+
+    override draw(ctx: CanvasRenderingContext2D): void {
+        // Draw background
+        ctx.fillStyle = this.backgroundColor;
+        ctx.beginPath();
+        if (this.border.radius) {
+            ctx.roundRect(this.position.x, this.position.y, this.size.width, this.size.height, this.border.radius);
+        } else {
+            ctx.rect(this.position.x, this.position.y, this.size.width, this.size.height);
+        }
+        ctx.fill();
+
+        // Draw border
+        ctx.strokeStyle = this.border.color;
+        ctx.lineWidth = this.border.width;
+        if (this.border.style === 'dashed') {
+            ctx.setLineDash([5, 5]);
+        } else if (this.border.style === 'dotted') {
+            ctx.setLineDash([2, 2]);
+        } else {
+            ctx.setLineDash([]);
+        }
+        ctx.stroke();
+
+        // Draw content
+        this.content.draw(ctx);
+    }
+
+    getContentPosition(): TPoint {
+        return {
+            x: this.position.x + this.size.width / 2 - this.content.getSize().width / 2,
+            y: this.position.y + this.size.height / 2 - this.content.getSize().height / 2,
+        };
+    }
+
+    getContent(): MementoAwareVisualObject {
+        return this.content;
+    }
+
+    getBorder(): BorderConfig {
+        return this.border;
+    }
+
+    setBorder(border: BorderConfig): void {
+        let change = this.border !== border;
+        this.border = border;
+        this.redraw(change, nodeVisualObjectProperties.border);
+    }
+
+    getBackgroundColor(): string {
+        return this.backgroundColor;
+    }
+
+    setBackgroundColor(backgroundColor: string): void {
+        let change = this.backgroundColor !== backgroundColor;
+        this.backgroundColor = backgroundColor;
+        this.redraw(change, nodeVisualObjectProperties.backgroundColor);
+    }
+
+    /**
+     * Cleanup method to unsubscribe listeners when node is destroyed
+     */
+    dispose(): void {
+        if (this.contentPositionListener) {
+            this.unsubscribeFromPropertyChanges(this.contentPositionListener);
+        }
+    }
+}

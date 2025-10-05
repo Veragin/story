@@ -3,7 +3,7 @@ import { WithMemento } from '../../../../../../src/code/Visualizer/GUIComponents
 
 export class MockMementoObject implements WithMemento {
     public getMementoIdSpy = sinon.stub();
-    
+
     constructor(
         public id: string,
         public name: string = 'test',
@@ -19,6 +19,10 @@ export class MockMementoObject implements WithMemento {
     getId(): string {
         return this.getMementoIdSpy();
     }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
 }
 
 export class EmptyMementoObject implements WithMemento {
@@ -26,6 +30,10 @@ export class EmptyMementoObject implements WithMemento {
 
     getId(): string {
         return this.id;
+    }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
     }
 }
 
@@ -44,12 +52,16 @@ export class ComplexMementoObject implements WithMemento {
     getId(): string {
         return this.id;
     }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
 }
 
 // Additional test helpers for WithMemento object testing
 export class MockMementoObjectWithReferences implements WithMemento {
     public getMementoIdSpy = sinon.stub();
-    
+
     constructor(
         public id: string,
         public name: string = 'test',
@@ -63,15 +75,23 @@ export class MockMementoObjectWithReferences implements WithMemento {
     getId(): string {
         return this.getMementoIdSpy();
     }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
 }
 
 export class MockMementoParent implements WithMemento {
     public children: MockMementoChild[] = [];
-    
+
     constructor(public id: string, public name: string = 'parent') {}
 
     getId(): string {
         return this.id;
+    }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
     }
 
     addChild(child: MockMementoChild): void {
@@ -82,10 +102,14 @@ export class MockMementoParent implements WithMemento {
 
 export class MockMementoChild implements WithMemento {
     public parent?: MockMementoParent;
-    
+
     constructor(public id: string, public name: string = 'child') {}
 
     getId(): string {
         return this.id;
+    }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
     }
 }

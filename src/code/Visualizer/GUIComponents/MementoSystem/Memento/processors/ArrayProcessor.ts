@@ -14,8 +14,36 @@ export class ArrayProcessor implements PropertyProcessor {
     return TypeGuards.isArray(value);
   }
 
+  /**
+   * Checks if an object is a nested listener class instance
+   */
+  private isNestedListenerInstance(value: any): boolean {
+    if (!value || typeof value !== 'object') return false;
+
+    const proto = Object.getPrototypeOf(value);
+    const constructor = proto?.constructor;
+
+    // Check if it has an 'outer' property pointing to parent
+    // This is the pattern used for nested listeners
+    return constructor &&
+           typeof constructor.name === 'string' &&
+           'outer' in value;
+  }
+
+  /**
+   * Gets the parent class name from a nested listener instance
+   */
+  private getParentClassName(listenerInstance: any): string {
+    // Access the outer/parent object
+    const parent = listenerInstance.outer;
+    if (parent && parent.constructor && parent.constructor.name) {
+      return parent.constructor.name;
+    }
+    return '';
+  }
+
   process(
-    propertyName: string,
+    _propertyName: string,
     value: any,
     context: MementoContext
   ): PropertyProcessResult {
@@ -36,6 +64,48 @@ export class ArrayProcessor implements PropertyProcessor {
         if (result.shouldInclude && result.primitiveValue !== undefined) {
           items.push({ kind: 'primitive', value: result.primitiveValue });
         }
+      } else if (this.isNestedListenerInstance(element)) {
+        // Check for nested listeners BEFORE checking WithMemento
+        // because nested listeners also implement WithMemento but need special handling
+        const parentClassName = this.getParentClassName(element);
+        const listenerClassName = element.constructor.name;
+        const fullTypeName = `${parentClassName}.${listenerClassName}`;
+
+        const itemPrimitives: Record<string, PrimitiveValue> = {};
+        const itemReferences: Record<string, string> = {};
+
+        // Get id from getId() method if available
+        if (typeof element.getId === 'function') {
+          itemPrimitives.id = element.getId();
+        }
+
+        // Extract other properties
+        const subProperties = getEnumerableProperties(element);
+        for (const subProp of subProperties) {
+          if (subProp.name === 'outer') continue; // Skip outer reference
+
+          if (primitiveProcessor.canProcess(subProp.value)) {
+            const res = primitiveProcessor.process(subProp.name, subProp.value, context);
+            if (res.shouldInclude && res.primitiveValue !== undefined) {
+              itemPrimitives[subProp.name] = res.primitiveValue;
+            }
+          } else if (withMementoProcessor.canProcess(subProp.value)) {
+            const res = withMementoProcessor.process(subProp.name, subProp.value, context);
+            if (res.shouldInclude && res.referenceId !== undefined) {
+              itemReferences[subProp.name] = res.referenceId;
+            }
+            if (res.newlyRegistered?.length) {
+              newlyRegistered.push(...res.newlyRegistered);
+            }
+          }
+        }
+
+        items.push({
+          kind: 'object',
+          type: fullTypeName,
+          primitives: itemPrimitives,
+          references: itemReferences
+        });
       } else if (withMementoProcessor.canProcess(element)) {
         const result = withMementoProcessor.process('arrayElement', element, context);
         if (result.shouldInclude && result.referenceId !== undefined) {
@@ -45,6 +115,7 @@ export class ArrayProcessor implements PropertyProcessor {
           newlyRegistered.push(...result.newlyRegistered);
         }
       } else if (TypeGuards.isPlainObject(element)) {
+        // Handle regular plain objects (nested listeners are handled above)
         const itemPrimitives: Record<string, PrimitiveValue> = {};
         const subProperties = getEnumerableProperties(element);
 

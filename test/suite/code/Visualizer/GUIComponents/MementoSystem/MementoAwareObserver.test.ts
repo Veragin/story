@@ -37,6 +37,10 @@ class TestListener implements IMementoAwareListener<TestListenerData> {
     return this.id;
   }
 
+  getObjectTypeName(): string {
+    return this.constructor.name;
+  }
+
   // Reset runtime state when restored from memento
   restoreFromMemento(): void {
     this._notificationCount = 0;

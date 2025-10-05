@@ -24,6 +24,10 @@ export class MementoAwareObserver<T> implements WithMemento {
     return this.id;
   }
 
+  getObjectTypeName(): string {
+    return this.constructor.name;
+  }
+
   subscribe(listener: IMementoAwareListener<T>): void {
     // Don't add duplicates
     if (!this.listeners.find(l => l.getId() === listener.getId())) {

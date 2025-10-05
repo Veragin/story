@@ -17,6 +17,10 @@ export class TestUser implements WithMemento {
     getId(): string {
         return `user-${this.id}`;
     }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
 }
 
 export class TestTask implements WithMemento {
@@ -33,11 +37,15 @@ export class TestTask implements WithMemento {
     getId(): string {
         return `task-${this.id}`;
     }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
+    }
 }
 
 export class TestProject implements WithMemento {
     public tasks: TestTask[] = [];
-    
+
     constructor(
         public id: string,
         public name: string,
@@ -49,6 +57,10 @@ export class TestProject implements WithMemento {
 
     getId(): string {
         return `project-${this.id}`;
+    }
+
+    getObjectTypeName(): string {
+        return this.constructor.name;
     }
 
     addTask(task: TestTask): void {

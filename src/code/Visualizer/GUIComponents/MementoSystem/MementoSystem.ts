@@ -5,7 +5,7 @@ import {
   MementoOptions,
   MementoResult
 } from './Memento/mementoTypes';
-import { createMemento } from './Memento/memento';
+import { createMemento, restoreObjectFromMemento } from './Memento/memento';
 import { MementoStorage } from './MementoStorage';
 import { MementoSerializer } from './MementoSerializer';
 import { MementoSystemOptions } from './MementoSystemOptions';
@@ -18,7 +18,6 @@ export class MementoSystem {
   private state: MementoSystemState = MementoSystemState.Uninitialized;
   private savedMementoIds = new Set<string>(); // Track what's been saved
   private serializer = new MementoSerializer();
-  private factories: Map<string, (memento: MementoRecord) => WithMemento> = new Map();
 
   constructor(
     private readonly systemId: string,
@@ -31,12 +30,6 @@ export class MementoSystem {
     this.initialize();
   }
 
-  /**
-   * Register a factory for a specific type
-   */
-  registerFactory(type: string, factory: (memento: MementoRecord) => WithMemento): void {
-    this.factories.set(type, factory);
-  }
 
   /**
    * Get the system ID
@@ -264,12 +257,7 @@ export class MementoSystem {
     const memento = await this.storage.loadMemento(objectId);
     if (!memento) return undefined;
 
-    const factory = this.factories.get(memento.type);
-    if (!factory) {
-      throw new Error(`No factory registered for type '${memento.type}'`);
-    }
-
-    const obj = restoreObjectFromMemento(memento, this.registry, factory);
+    const obj = restoreObjectFromMemento(memento, this.registry);
     this.registry.register(obj);
 
     if (obj.restoreFromMemento) {
@@ -296,11 +284,8 @@ export class MementoSystem {
     // Phase 1: Create and register all objects with primitives
     const objects = new Map<string, WithMemento>();
     for (const memento of mementoMap.values()) {
-      const factory = this.factories.get(memento.type);
-      if (!factory) throw new Error(`No factory for type '${memento.type}'`);
-
-      const obj = factory(memento);
-
+      var obj = restoreObjectFromMemento(memento, this.registry);
+      
       // Set primitives
       for (const [key, value] of Object.entries(memento.primitives)) {
         (obj as any)[key] = value;
@@ -372,50 +357,4 @@ export class MementoSystem {
     this.savedMementoIds.clear();
     await this.storage.clear();
   }
-}
-
-function restoreObjectFromMemento(
-  memento: MementoRecord,
-  registry: MementoRegistry,
-  factory: (memento: MementoRecord) => WithMemento
-): WithMemento {
-  const obj = factory(memento);
-
-  // Set primitives
-  for (const [key, value] of Object.entries(memento.primitives)) {
-    (obj as any)[key] = value;
-  }
-
-  // Set collections
-  for (const [colKey, col] of Object.entries(memento.collections)) {
-    if (col.type === 'array') {
-      const arr: any[] = [];
-      for (const item of col.items ?? []) {
-        if (item.kind === 'primitive') {
-          arr.push(item.value);
-        } else if (item.kind === 'reference') {
-          const ref = registry.get(item.id!);
-          if (ref === undefined) throw new Error(`Missing reference ${item.id}`);
-          arr.push(ref);
-        } else if (item.kind === 'object') {
-          const sub: Record<string, any> = {};
-          for (const [pkey, pval] of Object.entries(item.primitives ?? {})) {
-            sub[pkey] = pval;
-          }
-          arr.push(sub);
-        }
-      }
-      (obj as any)[colKey] = arr;
-    }
-    // TODO: handle set/map if needed
-  }
-
-  // Set references
-  for (const [refKey, refId] of Object.entries(memento.references)) {
-    const ref = registry.get(refId);
-    if (ref === undefined) throw new Error(`Missing reference ${refId}`);
-    (obj as any)[refKey] = ref;
-  }
-
-  return obj;
 }

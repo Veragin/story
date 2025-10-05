@@ -1,5 +1,7 @@
-import { NodeVisualObject } from './NodeVisualObject';
-import { ClickableVisualObject } from '../Canvas/Node/ClickableVisualObject';
+import { NodeVisualObject, MementoAwareNodeVisualObject } from './NodeVisualObject';
+import { ClickableVisualObject, MementoAwareClickableVisualObject } from '../Canvas/Node/ClickableVisualObject';
+import { TVisualObjectPropertyChangeArgs, TMementoAwareVisualObjectPropertyChangeArgs } from '../Canvas/Node/VisualObject';
+import { IMementoAwareListener } from '../MementoSystem/MementoAwareObserver';
 
 export const edgeVisualObjectProperties = {
     source: 'source',
@@ -183,5 +185,244 @@ export class EdgeVisualObject extends ClickableVisualObject {
 
     getStyle(): TLineType {
         return this._style;
+    }
+}
+
+/**
+ * Internal listener for source node changes
+ */
+class MementoAwareSourceNodeListener implements IMementoAwareListener<TMementoAwareVisualObjectPropertyChangeArgs> {
+    constructor(
+        private edge: MementoAwareEdgeVisualObject,
+        public id: string
+    ) {}
+
+    getId(): string {
+        return this.id;
+    }
+
+    onNotify(args: TMementoAwareVisualObjectPropertyChangeArgs): void {
+        this.edge['redraw'](true, edgeVisualObjectProperties.source);
+    }
+}
+
+/**
+ * Internal listener for target node changes
+ */
+class MementoAwareTargetNodeListener implements IMementoAwareListener<TMementoAwareVisualObjectPropertyChangeArgs> {
+    constructor(
+        private edge: MementoAwareEdgeVisualObject,
+        public id: string
+    ) {}
+
+    getId(): string {
+        return this.id;
+    }
+
+    onNotify(args: TMementoAwareVisualObjectPropertyChangeArgs): void {
+        this.edge['redraw'](true, edgeVisualObjectProperties.target);
+    }
+}
+
+/**
+ * MementoAware variant of EdgeVisualObject
+ */
+export class MementoAwareEdgeVisualObject extends MementoAwareClickableVisualObject {
+    protected _source: MementoAwareNodeVisualObject;
+    protected _target: MementoAwareNodeVisualObject;
+    protected _color: string;
+    protected _width: number;
+    protected _arrow: boolean;
+    protected _style: TLineType;
+
+    // Store listener references so they can be persisted
+    private sourceNodeListener?: MementoAwareSourceNodeListener;
+    private targetNodeListener?: MementoAwareTargetNodeListener;
+
+    constructor(
+        source: MementoAwareNodeVisualObject,
+        target: MementoAwareNodeVisualObject,
+        color: string = '#000000',
+        width: number = 1,
+        arrow: boolean = true,
+        zIndex: number = 0,
+        style: TLineType = 'solid'
+    ) {
+        // should be always less than source and target
+        if (zIndex >= source.zIndex) {
+            zIndex = source.zIndex - 1;
+        }
+        if (zIndex >= target.zIndex) {
+            zIndex = target.zIndex - 1;
+        }
+
+        const edgeId = `edge-${source.getId()}-${target.getId()}`;
+        super(edgeId, source.getPosition(), { width: 0, height: 0 }, zIndex);
+
+        this._source = source;
+        this._target = target;
+        this._color = color;
+        this._width = width;
+        this._arrow = arrow;
+        this._style = style;
+
+        // Create listeners with unique IDs
+        this.sourceNodeListener = new MementoAwareSourceNodeListener(
+            this,
+            `${edgeId}_sourceListener`
+        );
+
+        this.targetNodeListener = new MementoAwareTargetNodeListener(
+            this,
+            `${edgeId}_targetListener`
+        );
+
+        // Subscribe to node position changes
+        this._source.subscribeToPropertyChanges(this.sourceNodeListener);
+        this._target.subscribeToPropertyChanges(this.targetNodeListener);
+    }
+
+    private getPositionOfEndpointInSourceOrTargetNode(node: MementoAwareNodeVisualObject): TVec {
+        return {
+            x: node.getSize().width / 2,
+            y: node.getSize().height / 2,
+        };
+    }
+
+    override draw(ctx: CanvasRenderingContext2D): void {
+        // Calculate source and target endpoint positions
+        const sourceRealPos = this._source.getPosition();
+        const sourceOffset = this.getPositionOfEndpointInSourceOrTargetNode(this._source);
+        const sourcePos = {
+            x: sourceRealPos.x + sourceOffset.x,
+            y: sourceRealPos.y + sourceOffset.y,
+        };
+
+        const targetRealPos = this._target.getPosition();
+        const targetOffset = this.getPositionOfEndpointInSourceOrTargetNode(this._target);
+        const targetPos = {
+            x: targetRealPos.x + targetOffset.x,
+            y: targetRealPos.y + targetOffset.y,
+        };
+
+        // Draw line
+        ctx.beginPath();
+        ctx.strokeStyle = this._color;
+        ctx.lineWidth = this._width;
+
+        // Set line style
+        switch (this._style) {
+            case 'dashed':
+                ctx.setLineDash([8, 4]);
+                break;
+            case 'dotted':
+                ctx.setLineDash([2, 2]);
+                break;
+            case 'solid':
+            default:
+                ctx.setLineDash([]);
+                break;
+        }
+
+        ctx.moveTo(sourcePos.x, sourcePos.y);
+        ctx.lineTo(targetPos.x, targetPos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        this.drawArrow(ctx, sourcePos, targetPos);
+    }
+
+    protected drawArrow(ctx: CanvasRenderingContext2D, sourcePos: TVec, targetPos: TVec): void {
+        if (this._arrow) {
+            const angle = Math.atan2(targetPos.y - sourcePos.y, targetPos.x - sourcePos.x);
+            const arrowLength = 10;
+
+            ctx.beginPath();
+            ctx.fillStyle = this._color;
+
+            // Calculate arrow points, 2/3 of the way from source to target
+            const arrowTip = {
+                x: sourcePos.x + (2 / 3) * (targetPos.x - sourcePos.x),
+                y: sourcePos.y + (2 / 3) * (targetPos.y - sourcePos.y),
+            };
+
+            ctx.moveTo(arrowTip.x, arrowTip.y);
+            ctx.lineTo(
+                arrowTip.x - arrowLength * Math.cos(angle - Math.PI / 6),
+                arrowTip.y - arrowLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                arrowTip.x - arrowLength * Math.cos(angle + Math.PI / 6),
+                arrowTip.y - arrowLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    getSource(): MementoAwareNodeVisualObject {
+        return this._source;
+    }
+
+    getTarget(): MementoAwareNodeVisualObject {
+        return this._target;
+    }
+
+    setColor(color: string): void {
+        const change = this._color !== color;
+        this._color = color;
+        this.redraw(change, edgeVisualObjectProperties.color);
+    }
+
+    setWidth(width: number): void {
+        const change = this._width !== width;
+        this._width = width;
+        this.redraw(change, edgeVisualObjectProperties.width);
+    }
+
+    setArrow(arrow: boolean): void {
+        const change = this._arrow !== arrow;
+        this._arrow = arrow;
+        this.redraw(change, edgeVisualObjectProperties.arrow);
+    }
+
+    override setZIndex(zIndex: number): void {
+        // should be always less than source and target
+        if (zIndex >= this._source.zIndex) {
+            zIndex = this._source.zIndex - 1;
+        }
+        if (zIndex >= this._target.zIndex) {
+            zIndex = this._target.zIndex - 1;
+        }
+        super.setZIndex(zIndex);
+    }
+
+    getColor(): string {
+        return this._color;
+    }
+
+    getWidth(): number {
+        return this._width;
+    }
+
+    hasArrow(): boolean {
+        return this._arrow;
+    }
+
+    getStyle(): TLineType {
+        return this._style;
+    }
+
+    /**
+     * Cleanup method to unsubscribe listeners when edge is destroyed
+     */
+    dispose(): void {
+        if (this.sourceNodeListener && this._source) {
+            this._source.unsubscribeFromPropertyChanges(this.sourceNodeListener);
+        }
+
+        if (this.targetNodeListener && this._target) {
+            this._target.unsubscribeFromPropertyChanges(this.targetNodeListener);
+        }
     }
 }
