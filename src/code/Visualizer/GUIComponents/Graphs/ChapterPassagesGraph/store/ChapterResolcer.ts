@@ -2,7 +2,7 @@ import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
 import { register } from 'data/register';
 import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { Time } from 'time/Time';
 
 export class ChapterResolver {
@@ -13,11 +13,7 @@ export class ChapterResolver {
     /**
      * Resolves and returns a specific chapter by ID
      */
-    static getChapter<E extends TChapterId>(
-        chapterId: E,
-        worldState?: TWorldState,
-        engine?: Engine
-    ): TChapter<E> {
+    static getChapter<E extends TChapterId>(chapterId: E, worldState?: TWorldState, engine?: Engine): TChapter<E> {
         // Check cache first
         if (this.chapterCache.has(chapterId)) {
             return this.chapterCache.get(chapterId) as TChapter<E>;
@@ -37,9 +33,7 @@ export class ChapterResolver {
      * Gets all available chapters
      */
     static getAllChapters(): TChapter<TChapterId>[] {
-        return Object.keys(register.chapters).map(chapterId => 
-            this.getChapter(chapterId as TChapterId)
-        );
+        return Object.keys(register.chapters).map((chapterId) => this.getChapter(chapterId as TChapterId));
     }
 
     /**
@@ -54,7 +48,7 @@ export class ChapterResolver {
      */
     static getChaptersWithPassages(): TChapter<TChapterId>[] {
         const chapterIdsWithPassages = Object.keys(register.passages) as TChapterId[];
-        return chapterIdsWithPassages.map(chapterId => this.getChapter(chapterId));
+        return chapterIdsWithPassages.map((chapterId) => this.getChapter(chapterId));
     }
 
     /**
@@ -63,8 +57,8 @@ export class ChapterResolver {
     static getChaptersWithoutPassages(): TChapter<TChapterId>[] {
         const allChapterIds = this.getAvailableChapterIds();
         const chapterIdsWithPassages = Object.keys(register.passages) as TChapterId[];
-        const chapterIdsWithoutPassages = allChapterIds.filter(id => !chapterIdsWithPassages.includes(id));
-        return chapterIdsWithoutPassages.map(chapterId => this.getChapter(chapterId));
+        const chapterIdsWithoutPassages = allChapterIds.filter((id) => !chapterIdsWithPassages.includes(id));
+        return chapterIdsWithoutPassages.map((chapterId) => this.getChapter(chapterId));
     }
 
     /**
@@ -94,11 +88,12 @@ export class ChapterResolver {
     static searchChapters(searchTerm: string): TChapter<TChapterId>[] {
         const allChapters = this.getAllChapters();
         const lowerSearchTerm = searchTerm.toLowerCase();
-        
-        return allChapters.filter(chapter => 
-            chapter.title.toLowerCase().includes(lowerSearchTerm) ||
-            chapter.description.toLowerCase().includes(lowerSearchTerm) ||
-            chapter.chapterId.toLowerCase().includes(lowerSearchTerm)
+
+        return allChapters.filter(
+            (chapter) =>
+                chapter.title.toLowerCase().includes(lowerSearchTerm) ||
+                chapter.description.toLowerCase().includes(lowerSearchTerm) ||
+                chapter.chapterId.toLowerCase().includes(lowerSearchTerm)
         );
     }
 
@@ -106,9 +101,9 @@ export class ChapterResolver {
      * Gets chapters formatted for dropdown/select components
      */
     static getChaptersForSelect(): Array<{ value: TChapterId; label: string }> {
-        return this.getAllChapters().map(chapter => ({
+        return this.getAllChapters().map((chapter) => ({
             value: chapter.chapterId,
-            label: chapter.title
+            label: chapter.title,
         }));
     }
 
@@ -116,16 +111,18 @@ export class ChapterResolver {
      * Gets only chapters with passages for dropdown/select components
      */
     static getChaptersWithPassagesForSelect(): Array<{ value: TChapterId; label: string }> {
-        return this.getChaptersWithPassages().map(chapter => ({
+        return this.getChaptersWithPassages().map((chapter) => ({
             value: chapter.chapterId,
-            label: chapter.title
+            label: chapter.title,
         }));
     }
 
     /**
      * Gets chapter details including passage count
      */
-    static async getChapterDetails<E extends TChapterId>(chapterId: E): Promise<{
+    static async getChapterDetails<E extends TChapterId>(
+        chapterId: E
+    ): Promise<{
         chapter: TChapter<E>;
         passageCount?: number;
         passageIds?: string[];
@@ -157,9 +154,7 @@ export class ChapterResolver {
      */
     static getChapterByTitle(chapterTitle: string): TChapter<TChapterId> | null {
         const allChapters = this.getAllChapters();
-        return allChapters.find(chapter => 
-            chapter.title.toLowerCase() === chapterTitle.toLowerCase()
-        ) || null;
+        return allChapters.find((chapter) => chapter.title.toLowerCase() === chapterTitle.toLowerCase()) || null;
     }
 
     /**
@@ -167,7 +162,7 @@ export class ChapterResolver {
      */
     static getChaptersByLocation(locationId: string): TChapter<TChapterId>[] {
         const allChapters = this.getAllChapters();
-        return allChapters.filter(chapter => chapter.location === locationId);
+        return allChapters.filter((chapter) => chapter.location === locationId);
     }
 
     /**
@@ -180,19 +175,19 @@ export class ChapterResolver {
     static getChaptersByTimeRange(startTime?: Time, endTime?: Time): TChapter<TChapterId>[];
     static getChaptersByTimeRange(startTime?: number | Time, endTime?: number | Time): TChapter<TChapterId>[] {
         if (!startTime && !endTime) return [];
-        
+
         // Convert Time objects to seconds if needed
         const startTimeS = startTime instanceof Time ? startTime.s : startTime;
         const endTimeS = endTime instanceof Time ? endTime.s : endTime;
-        
+
         const allChapters = this.getAllChapters();
-        return allChapters.filter(chapter => {
+        return allChapters.filter((chapter) => {
             const chapterTimeRange = chapter.timeRange;
             if (!chapterTimeRange) return false;
-            
+
             const chapterStart = chapterTimeRange.start.s; // Convert Time to seconds
-            const chapterEnd = chapterTimeRange.end.s;     // Convert Time to seconds
-            
+            const chapterEnd = chapterTimeRange.end.s; // Convert Time to seconds
+
             if (startTimeS && endTimeS) {
                 return chapterStart <= endTimeS && chapterEnd >= startTimeS;
             } else if (startTimeS) {
@@ -208,7 +203,7 @@ export class ChapterResolver {
      * Gets multiple chapters by IDs
      */
     static getMultipleChapters<E extends TChapterId>(chapterIds: E[]): TChapter<E>[] {
-        return chapterIds.map(id => this.getChapter(id));
+        return chapterIds.map((id) => this.getChapter(id));
     }
 
     /**
@@ -216,7 +211,7 @@ export class ChapterResolver {
      */
     static getChildChapters<E extends TChapterId>(chapterId: E): TChapter<TChapterId>[] {
         const chapter = this.getChapter(chapterId);
-        return chapter.children.map(child => child.chapter);
+        return chapter.children.map((child) => child.chapter);
     }
 
     /**
@@ -232,7 +227,7 @@ export class ChapterResolver {
      */
     static preloadAllChapters(): void {
         const allChapterIds = this.getAvailableChapterIds();
-        allChapterIds.forEach(chapterId => {
+        allChapterIds.forEach((chapterId) => {
             this.getChapter(chapterId); // This will cache the chapter
         });
     }
@@ -255,26 +250,28 @@ export class ChapterResolver {
     } {
         const allChapters = this.getAllChapters();
         const chaptersWithPassages = this.getChaptersWithPassages();
-        
+
         // Count chapters by location
         const chaptersByLocation: { [locationId: string]: number } = {};
-        allChapters.forEach(chapter => {
+        allChapters.forEach((chapter) => {
             const location = chapter.location;
             chaptersByLocation[location] = (chaptersByLocation[location] || 0) + 1;
         });
-        
+
         return {
             totalChapters: allChapters.length,
             chaptersWithPassages: chaptersWithPassages.length,
             chaptersWithoutPassages: allChapters.length - chaptersWithPassages.length,
-            chaptersByLocation
+            chaptersByLocation,
         };
     }
 
     /**
      * Validates chapter structure
      */
-    static validateChapter<E extends TChapterId>(chapterId: E): {
+    static validateChapter<E extends TChapterId>(
+        chapterId: E
+    ): {
         isValid: boolean;
         errors: string[];
         warnings: string[];
@@ -288,7 +285,7 @@ export class ChapterResolver {
         }
 
         const chapter = this.getChapter(chapterId);
-        
+
         if (!chapter.title?.trim()) {
             errors.push(`Chapter '${chapterId}' has no title`);
         }
@@ -308,7 +305,7 @@ export class ChapterResolver {
         return {
             isValid: errors.length === 0,
             errors,
-            warnings
+            warnings,
         };
     }
 
@@ -317,7 +314,7 @@ export class ChapterResolver {
      */
     static getRelatedChaptersByLocation<E extends TChapterId>(chapterId: E): TChapter<TChapterId>[] {
         const chapter = this.getChapter(chapterId);
-        return this.getChaptersByLocation(chapter.location).filter(e => e.chapterId !== chapterId);
+        return this.getChaptersByLocation(chapter.location).filter((e) => e.chapterId !== chapterId);
     }
 
     /**
@@ -326,8 +323,9 @@ export class ChapterResolver {
     static getRelatedChaptersByTime<E extends TChapterId>(chapterId: E): TChapter<TChapterId>[] {
         const chapter = this.getChapter(chapterId);
         if (!chapter.timeRange) return [];
-        
-        return this.getChaptersByTimeRange(chapter.timeRange.start.s, chapter.timeRange.end.s)
-            .filter(e => e.chapterId !== chapterId);
+
+        return this.getChaptersByTimeRange(chapter.timeRange.start.s, chapter.timeRange.end.s).filter(
+            (e) => e.chapterId !== chapterId
+        );
     }
 }

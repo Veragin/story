@@ -13,7 +13,7 @@ import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Context';
 import { register } from 'data/register';
 import { Nav } from '../components/Nav';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
 import { ChapterPassagesGraph } from '../Passages/ChapterPassagesGraph';
 import { ScreenPassageCreationForm } from '../Passages/ScreenPassageCreationForm/ScreenPassageCreationForm';
@@ -59,7 +59,7 @@ const darkTheme = createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(50, 50, 50, 0.8)',
+                        'backgroundColor': 'rgba(50, 50, 50, 0.8)',
                         '& fieldset': {
                             borderColor: 'rgba(255, 255, 255, 0.3)',
                         },
@@ -71,7 +71,7 @@ const darkTheme = createTheme({
                         },
                     },
                     '& .MuiInputLabel-root': {
-                        color: 'rgba(255, 255, 255, 0.7)',
+                        'color': 'rgba(255, 255, 255, 0.7)',
                         '&.Mui-focused': {
                             color: '#64b5f6',
                         },
@@ -92,13 +92,13 @@ const darkTheme = createTheme({
         MuiMenuItem: {
             styleOverrides: {
                 root: {
-                    backgroundColor: '#2a2a2a',
-                    color: '#ffffff',
+                    'backgroundColor': '#2a2a2a',
+                    'color': '#ffffff',
                     '&:hover': {
                         backgroundColor: '#3a3a3a',
                     },
                     '&.Mui-selected': {
-                        backgroundColor: '#4a4a4a',
+                        'backgroundColor': '#4a4a4a',
                         '&:hover': {
                             backgroundColor: '#5a5a5a',
                         },
@@ -109,16 +109,16 @@ const darkTheme = createTheme({
         MuiButton: {
             styleOverrides: {
                 outlined: {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    color: '#ffffff',
+                    'borderColor': 'rgba(255, 255, 255, 0.3)',
+                    'color': '#ffffff',
                     '&:hover': {
                         borderColor: 'rgba(255, 255, 255, 0.5)',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     },
                 },
                 contained: {
-                    backgroundColor: '#64b5f6',
-                    color: '#ffffff',
+                    'backgroundColor': '#64b5f6',
+                    'color': '#ffffff',
                     '&:hover': {
                         backgroundColor: '#42a5f5',
                     },
@@ -128,7 +128,7 @@ const darkTheme = createTheme({
         MuiAccordion: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'transparent',
+                    'backgroundColor': 'transparent',
                     '&:before': {
                         display: 'none',
                     },
@@ -138,7 +138,7 @@ const darkTheme = createTheme({
         MuiAccordionSummary: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'rgba(50, 50, 50, 0.5)',
+                    'backgroundColor': 'rgba(50, 50, 50, 0.5)',
                     '&:hover': {
                         backgroundColor: 'rgba(60, 60, 60, 0.5)',
                     },
@@ -177,7 +177,7 @@ const darkTheme = createTheme({
         MuiCardContent: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'rgba(40, 40, 40, 0.3)',
+                    'backgroundColor': 'rgba(40, 40, 40, 0.3)',
                     '&:last-child': {
                         paddingBottom: '12px',
                     },
@@ -227,8 +227,9 @@ export const ChapterPassages = ({ chapterId }: Props) => {
                     <SFormControl size="small">
                         <Autocomplete
                             value={
-                                chapters.find((chapter) => chapter.id === chapterId) ??
-                                null
+                                chapters.find(
+                                    (chapter) => chapter.id === chapterId
+                                ) ?? null
                             }
                             onChange={(_, newValue) => {
                                 store.setActiveTab(
@@ -257,7 +258,7 @@ export const ChapterPassages = ({ chapterId }: Props) => {
                     </SFormControl>
                 </SRow>
             </Nav>
-            
+
             <SContentArea>
                 <ResizableSplitter
                     leftContent={<ChapterPassagesGraph chapterId={chapterId} />}
@@ -373,26 +374,26 @@ const SFormContainer = styled('div')`
     overflow-y: auto;
     padding: ${spacingCss(1.5)};
     background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    
+
     /* Custom scrollbar for dark theme */
     &::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     &::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 4px;
     }
-    
+
     &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.3);
         border-radius: 4px;
-        
+
         &:hover {
             background: rgba(255, 255, 255, 0.5);
         }
     }
-    
+
     /* Ensure form fits well */
     & > * {
         max-width: 100%;

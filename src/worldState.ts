@@ -1,6 +1,6 @@
 import { TWorldState } from 'data/TWorldState';
 import { register } from 'data/register';
-import { TCharacterId, TChapterId, TSideCharacterId } from 'types/TIds';
+import { TCharacterId, TChapterId, TSideCharacterId } from 'types/ids';
 import { TLocationId } from 'types/TLocation';
 import { Engine } from 'code/Engine/ts/Engine';
 import { itemInfo } from 'data/items/itemInfo';

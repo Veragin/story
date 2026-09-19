@@ -6,7 +6,7 @@ import { TLinkCost } from 'types/TPassage';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from 'code/utils/parsePassageId';
 import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 
 export class Processor {
     private chapterList: TChapter<TChapterId>[];
@@ -35,7 +35,7 @@ export class Processor {
         turn.onStart?.();
 
         const { chapterId } = parsePassageId(turn.passageId);
-        const passageFun = await (register.passages[chapterId] as any)(); // TODO create new type 
+        const passageFun = await (register.passages[chapterId] as any)(); // TODO create new type
         this.e.activePassage = (passageFun.default as any)[turn.passageId](this.s, this.e);
 
         if (this.e.activePassage.type === 'transition') {
@@ -116,7 +116,9 @@ export class Processor {
     };
 
     private get activeChapters() {
-        return this.chapterList.filter((chapter) => isInRange(chapter.timeRange.start, chapter.timeRange.end)(this.s.time));
+        return this.chapterList.filter((chapter) =>
+            isInRange(chapter.timeRange.start, chapter.timeRange.end)(this.s.time)
+        );
     }
 }
 

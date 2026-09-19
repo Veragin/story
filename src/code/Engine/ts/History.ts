@@ -2,7 +2,7 @@ import { parsePassageId } from 'code/utils/parsePassageId';
 import { Time } from 'time/Time';
 import { register } from 'data/register';
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TChapterCharacterPassageId, TChapterId, TPassageId } from 'types/TIds';
+import { TCharacterId, TChapterCharacterPassageId, TChapterId, TPassageId } from 'types/ids';
 
 export class History {
     data: Partial<Record<TCharacterId, THistoryItem[]>> = {};

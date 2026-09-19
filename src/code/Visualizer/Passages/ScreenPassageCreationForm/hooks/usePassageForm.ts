@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { TChapterPassageType } from 'types/TPassage';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { PassageResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/PassageResolver';
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';
@@ -30,14 +30,14 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
             try {
                 const ids = await PassageResolver.getAvailablePassageIds(chapterId);
                 setExistingPassageIds(ids);
-                
+
                 // Get all passage IDs from all chapters for redirect options
                 const allChapterIds = ChapterResolver.getAvailableChapterIds();
                 const allPassageIds: string[] = [];
                 for (const evId of allChapterIds) {
                     try {
                         const passageIds = await PassageResolver.getAvailablePassageIds(evId);
-                        passageIds.forEach(pId => {
+                        passageIds.forEach((pId) => {
                             // Check if the passage ID already contains the chapter ID to avoid duplication
                             if (pId.startsWith(`${evId}-`)) {
                                 allPassageIds.push(pId);
@@ -62,91 +62,97 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
     }, [chapterId]);
 
     const handleInputChange = useCallback((field: string, value: any) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             [field]: value,
         }));
     }, []);
 
     const handleBodyItemChange = useCallback((index: number, field: string, value: any) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            body: prev.body.map((item, i) => 
-                i === index ? { ...item, [field]: value } : item
-            ),
+            body: prev.body.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
         }));
     }, []);
 
     const addBodyItem = useCallback(() => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             body: [...prev.body, { text: '', links: [] }],
         }));
     }, []);
 
     const removeBodyItem = useCallback((index: number) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             body: prev.body.filter((_, i) => i !== index),
         }));
     }, []);
 
     const handleLinkChange = useCallback((bodyIndex: number, linkIndex: number, field: string, value: any) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            body: prev.body.map((item, i) => 
-                i === bodyIndex ? {
-                    ...item,
-                    links: item.links?.map((link, li) => 
-                        li === linkIndex ? { ...link, [field]: value } : link
-                    ) || []
-                } : item
+            body: prev.body.map((item, i) =>
+                i === bodyIndex
+                    ? {
+                          ...item,
+                          links:
+                              item.links?.map((link, li) => (li === linkIndex ? { ...link, [field]: value } : link)) ||
+                              [],
+                      }
+                    : item
             ),
         }));
     }, []);
 
     const handleLinkCostChange = useCallback((bodyIndex: number, linkIndex: number, newCost: TLinkCost | undefined) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            body: prev.body.map((item, i) => 
-                i === bodyIndex ? {
-                    ...item,
-                    links: item.links?.map((link, li) => 
-                        li === linkIndex ? { ...link, cost: newCost } : link
-                    ) || []
-                } : item
+            body: prev.body.map((item, i) =>
+                i === bodyIndex
+                    ? {
+                          ...item,
+                          links:
+                              item.links?.map((link, li) => (li === linkIndex ? { ...link, cost: newCost } : link)) ||
+                              [],
+                      }
+                    : item
             ),
         }));
     }, []);
 
     const addLink = useCallback((bodyIndex: number) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            body: prev.body.map((item, i) => 
-                i === bodyIndex ? {
-                    ...item,
-                    links: [...(item.links || []), { text: '', passageId: '', autoPriority: 0 }]
-                } : item
+            body: prev.body.map((item, i) =>
+                i === bodyIndex
+                    ? {
+                          ...item,
+                          links: [...(item.links || []), { text: '', passageId: '', autoPriority: 0 }],
+                      }
+                    : item
             ),
         }));
     }, []);
 
     const removeLink = useCallback((bodyIndex: number, linkIndex: number) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            body: prev.body.map((item, i) => 
-                i === bodyIndex ? {
-                    ...item,
-                    links: item.links?.filter((_, li) => li !== linkIndex) || []
-                } : item
+            body: prev.body.map((item, i) =>
+                i === bodyIndex
+                    ? {
+                          ...item,
+                          links: item.links?.filter((_, li) => li !== linkIndex) || [],
+                      }
+                    : item
             ),
         }));
     }, []);
 
     const toggleLinkExpanded = useCallback((linkKey: string) => {
-        setExpandedLinks(prev => ({
+        setExpandedLinks((prev) => ({
             ...prev,
-            [linkKey]: !prev[linkKey]
+            [linkKey]: !prev[linkKey],
         }));
     }, []);
 
@@ -155,7 +161,7 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
             showToast(_('Passage ID is required'), { variant: 'error' });
             return false;
         }
-        
+
         if (existingPassageIds.includes(passageId.trim())) {
             showToast(_('Passage ID already exists'), { variant: 'error' });
             return false;
@@ -183,25 +189,24 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
                 title: formData.title.trim() || 'Untitled Screen',
                 image: formData.image.trim() || '',
                 body: formData.body
-                    .filter(item => 
-                        item.text?.trim() || 
-                        item.redirect?.trim() || 
-                        (item.links && item.links.length > 0)
+                    .filter(
+                        (item) => item.text?.trim() || item.redirect?.trim() || (item.links && item.links.length > 0)
                     )
-                    .map(item => ({
+                    .map((item) => ({
                         text: item.text,
                         redirect: item.redirect,
-                        links: item.links?.map(link => ({
-                            text: link.text || '',
-                            passageId: link.passageId || '',
-                            autoPriority: link.autoPriority || 0,
-                            cost: link.cost
-                        })) || []
-                    }))
+                        links:
+                            item.links?.map((link) => ({
+                                text: link.text || '',
+                                passageId: link.passageId || '',
+                                autoPriority: link.autoPriority || 0,
+                                cost: link.cost,
+                            })) || [],
+                    })),
             };
 
             await agent.addScreenPassage(passageId.trim(), passageData);
-            
+
             // Reset form
             handleReset();
 
@@ -239,10 +244,10 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
         isSubmitting,
         isLoadingPassages,
         expandedLinks,
-        
+
         // Setters
         setPassageId,
-        
+
         // Handlers
         handleInputChange,
         handleBodyItemChange,

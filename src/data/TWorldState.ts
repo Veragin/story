@@ -10,10 +10,9 @@ import { TLocation } from 'types/TLocation';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
-import { TCharacterId } from 'types/TIds';
+import { TCharacterId } from 'types/ids';
 import { THistoryItem } from 'code/Engine/ts/History';
 import { THappening } from 'types/THappening';
-
 
 export type TWorldState = {
     time: Time;
@@ -30,13 +29,13 @@ export type TWorldState = {
     };
 
     chapters: {
-    	village: { ref: TChapter<'village'> } & TVillageChapterData;
+        village: { ref: TChapter<'village'> } & TVillageChapterData;
         kingdom: { ref: TChapter<'kingdom'> } & TKingdomChapterData;
-    	wedding: { ref: TChapter <'wedding'> } & TWeddingChapterData;
+        wedding: { ref: TChapter<'wedding'> } & TWeddingChapterData;
     };
     locations: {
-    	village: { ref: TLocation<'village'> } & TVillageLocationData;
-    	kingdom: { ref: TLocation<'kingdom'> } & Partial<TKingdomLocationData>;
+        village: { ref: TLocation<'village'> } & TVillageLocationData;
+        kingdom: { ref: TLocation<'kingdom'> } & Partial<TKingdomLocationData>;
     };
     happenings: {
         village_under_attack: { ref: THappening<'village_under_attack'> };

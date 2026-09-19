@@ -1,6 +1,6 @@
 import { DeltaTime } from 'time/Time';
 import { TWorldState } from 'data/TWorldState';
-import { TPassageId } from 'types/TIds';
+import { TPassageId } from 'types/ids';
 import { TLinkCost } from 'types/TPassage';
 import { Engine } from './Engine';
 import { parsePassageId } from 'code/utils/parsePassageId';

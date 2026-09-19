@@ -1,7 +1,7 @@
 import { CanvasManager } from 'code/Visualizer/GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { ChapterStore } from '../ChapterStore';
 import { register } from 'data/register';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { TChapter } from 'types/TChapter';
 import { ChapterNode } from './ChapterNode';
 import { TLocationId } from 'types/TLocation';
@@ -127,7 +127,8 @@ export class TimelineChapters {
 
 const areChaptersOverLaping = (chapter1: TChapter<TChapterId>, chapter2: TChapter<TChapterId>) => {
     return (
-        !chapter1.timeRange.start.isAfter(chapter2.timeRange.end) && !chapter2.timeRange.start.isAfter(chapter1.timeRange.end)
+        !chapter1.timeRange.start.isAfter(chapter2.timeRange.end) &&
+        !chapter2.timeRange.start.isAfter(chapter1.timeRange.end)
     );
 };
 

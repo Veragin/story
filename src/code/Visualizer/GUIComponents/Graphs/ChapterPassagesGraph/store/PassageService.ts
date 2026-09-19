@@ -1,5 +1,5 @@
 import { register } from 'data/register';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
 import { TChapterPassage } from 'types/TPassage';
@@ -35,7 +35,7 @@ export class PassageService {
     ): Promise<TChapterPassage<TChapterId>> {
         // Ensure module is loaded
         await this.preloadPassageModule(chapterId);
-        
+
         const passageModule = this.loadedModules.get(chapterId);
         if (!passageModule) {
             throw new Error(`Passage module not loaded for chapter: ${chapterId}`);

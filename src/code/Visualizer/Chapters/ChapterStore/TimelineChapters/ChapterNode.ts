@@ -1,5 +1,5 @@
 import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { ChapterStore } from '../ChapterStore';
 import { ChapterNodeBox } from './ChapterNodeBox';
 
@@ -12,7 +12,8 @@ export class ChapterNode<E extends TChapterId> {
     }
 
     updateNodeByChapter = (store: ChapterStore) => {
-        const x = (this.chapter.timeRange.start.s - store.timelineStartTime.s) * store.durationHelper.timeToLengthFactor;
+        const x =
+            (this.chapter.timeRange.start.s - store.timelineStartTime.s) * store.durationHelper.timeToLengthFactor;
         const width =
             (this.chapter.timeRange.end.s - this.chapter.timeRange.start.s) * store.durationHelper.timeToLengthFactor;
 

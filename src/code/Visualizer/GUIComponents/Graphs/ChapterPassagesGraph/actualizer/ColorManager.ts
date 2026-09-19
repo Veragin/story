@@ -1,4 +1,4 @@
-import { TCharacterId } from "types/TIds";
+import { TCharacterId } from 'types/ids';
 
 export class ColorManager {
     private static readonly colorPalette = [
@@ -16,7 +16,7 @@ export class ColorManager {
 
     initializeCharacterColors(passages: Record<TCharacterId, any>): void {
         const characterIds = new Set<TCharacterId>();
-        
+
         for (const passageId of Object.keys(passages)) {
             const parts = passageId.split('-');
             if (parts.length >= 2) {

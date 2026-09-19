@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation.ts/GraphAnimationHandler';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { CanvasManager } from '../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { GraphProvider } from '../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
 

@@ -1,13 +1,8 @@
 import React from 'react';
-import {
-    Button,
-    Typography,
-    Divider,
-    Tooltip,
-} from '@mui/material';
+import { Button, Typography, Divider, Tooltip } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { usePassageForm } from './hooks/usePassageForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
 import { BodyItemSection } from './components/BodyItemSection';
@@ -20,7 +15,12 @@ type Props = {
     chapterId: TChapterId;
 };
 
-export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, chapterId }: Props) => {
+export const ScreenPassageCreationForm = ({
+    onPassageCreated,
+    onCancel,
+    agent,
+    chapterId,
+}: Props) => {
     const {
         formData,
         passageId,
@@ -46,8 +46,15 @@ export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, c
     return (
         <SFormContainer>
             <SHeader>
-                <Tooltip title="Screen passages are interactive screens with choices and links" arrow>
-                    <Typography variant="h6" component="h2" sx={{ cursor: 'help' }}>
+                <Tooltip
+                    title="Screen passages are interactive screens with choices and links"
+                    arrow
+                >
+                    <Typography
+                        variant="h6"
+                        component="h2"
+                        sx={{ cursor: 'help' }}
+                    >
                         {_('Create New Screen Passage')}
                     </Typography>
                 </Tooltip>
@@ -64,7 +71,11 @@ export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, c
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 500, mb: 1 }}>
+                <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontSize: '1rem', fontWeight: 500, mb: 1 }}
+                >
                     {_('Passage Content')}
                 </Typography>
 
@@ -125,7 +136,9 @@ export const ScreenPassageCreationForm = ({ onPassageCreated, onCancel, agent, c
                         size="small"
                         sx={{ fontSize: '0.8rem' }}
                     >
-                        {isSubmitting ? _('Creating...') : _('Create Screen Passage')}
+                        {isSubmitting
+                            ? _('Creating...')
+                            : _('Create Screen Passage')}
                     </Button>
                 </SButtonRow>
             </SFormContent>

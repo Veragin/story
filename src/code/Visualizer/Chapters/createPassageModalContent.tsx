@@ -2,7 +2,7 @@ import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Row } from 'code/components/Basic';
 import { useVisualizerStore } from 'code/Context';
 import { ReactNode, useState } from 'react';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Text } from 'code/components/Text';

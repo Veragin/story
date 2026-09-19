@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { Inventory } from './Inventory';
 import { TChapterPassage } from 'types/TPassage';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { DUMMY_PASSAGE } from './const';
 import { History } from './History';
 import { Processor } from './Processor';

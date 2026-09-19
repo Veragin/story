@@ -1,4 +1,4 @@
-import { TCharacterId, TChapterId, TChapterPassageId } from 'types/TIds';
+import { TCharacterId, TChapterId, TChapterPassageId } from 'types/ids';
 import { TChapterPassage, TPassageScreen } from 'types/TPassage';
 
 export const DUMMY_PASSAGE: TChapterPassage<'village'> = {

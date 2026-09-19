@@ -3,7 +3,7 @@ import { Column, Row } from 'code/components/Basic';
 import { useVisualizerStore } from 'code/Context';
 import { ReactNode, useState } from 'react';
 import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
@@ -11,11 +11,15 @@ import { SmallText, Text } from 'code/components/Text';
 import { spacingCss } from 'code/components/css';
 import { Modal } from 'code/components/Modal';
 
-export const createChapterModalContent = (chapter: TChapter<TChapterId>): ReactNode => (
-    <ChapterModalContent chapter={chapter} />
-);
+export const createChapterModalContent = (
+    chapter: TChapter<TChapterId>
+): ReactNode => <ChapterModalContent chapter={chapter} />;
 
-const ChapterModalContent = ({ chapter }: { chapter: TChapter<TChapterId> }) => {
+const ChapterModalContent = ({
+    chapter,
+}: {
+    chapter: TChapter<TChapterId>;
+}) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();
 
@@ -29,7 +33,9 @@ const ChapterModalContent = ({ chapter }: { chapter: TChapter<TChapterId> }) => 
         <SColumn>
             <Tooltip title={_('Copy to clipboard')} placement="top">
                 <SText
-                    onClick={() => navigator.clipboard.writeText(chapter.chapterId)}
+                    onClick={() =>
+                        navigator.clipboard.writeText(chapter.chapterId)
+                    }
                 >
                     {chapter.chapterId}
                 </SText>
@@ -40,7 +46,9 @@ const ChapterModalContent = ({ chapter }: { chapter: TChapter<TChapterId> }) => 
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openChapter(chapter.chapterId)}
+                        onClick={() =>
+                            store.agent.openChapter(chapter.chapterId)
+                        }
                     >
                         <OpenInBrowserIcon />
                     </Button>
@@ -49,7 +57,9 @@ const ChapterModalContent = ({ chapter }: { chapter: TChapter<TChapterId> }) => 
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openChapter(chapter.chapterId)}
+                        onClick={() =>
+                            store.agent.openChapter(chapter.chapterId)
+                        }
                     >
                         <AccessTimeFilledIcon />
                     </Button>

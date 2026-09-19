@@ -1,7 +1,7 @@
 import { css, styled } from '@mui/material';
 import { useEngine } from 'code/Context';
 import { itemInfo } from 'data/items/itemInfo';
-import { TPassageId } from 'types/TIds';
+import { TPassageId } from 'types/ids';
 import { TItemId } from 'types/TItem';
 import { TLink } from 'types/TPassage';
 

@@ -1,7 +1,7 @@
 import { TimeManager } from 'time/TimeManager';
 import { ChapterStore } from '../Chapters/ChapterStore/ChapterStore';
 import { action, makeObservable, observable } from 'mobx';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 import { CanvasHandler } from './CanvasHandler';
 import { Agent } from './Agent';
 import { ReactNode } from 'react';
@@ -51,17 +51,16 @@ export class Store {
 type TActiveTab =
     | null
     | {
-        tab: 'chapters';
-    }
+          tab: 'chapters';
+      }
     | {
-        tab: 'chapter';
-        chapterId: TChapterId;
-    }
+          tab: 'chapter';
+          chapterId: TChapterId;
+      }
     | {
-        tab: 'map';
-        mapId: string;
-    }
+          tab: 'map';
+          mapId: string;
+      }
     | {
-        tab: 'worldEvents';
-    };
-
+          tab: 'worldEvents';
+      };

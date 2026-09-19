@@ -5,7 +5,7 @@ import { HorizontalDragStrategy } from 'code/Visualizer/GUIComponents/Canvas/Nod
 import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/GUIComponents/Canvas/Node/HorizontallyScalableNodeVisualObject';
 import { TextContent } from 'code/Visualizer/GUIComponents/Canvas/Node/TextContent';
 import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/TIds';
+import { TChapterId } from 'types/ids';
 
 export const EVENT_NODE_HEIGHT = 60;
 

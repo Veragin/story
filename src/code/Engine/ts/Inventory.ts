@@ -1,5 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId } from 'types/TIds';
+import { TCharacterId } from 'types/ids';
 import { TItemId, TItemPartial } from 'types/TItem';
 import { Engine } from './Engine';
 import { itemInfo } from 'data/items/itemInfo';

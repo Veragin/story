@@ -1,4 +1,4 @@
-import { TCharacterId, TChapterId, TPassageId } from 'types/TIds';
+import { TCharacterId, TChapterId, TPassageId } from 'types/ids';
 
 export const parsePassageId = (passageId: TPassageId) => {
     const [chapterId, characterId, ...rest] = passageId.split('-');
