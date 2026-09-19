@@ -20,6 +20,7 @@ Will be used for writing a book, gamebooks or online single or multiplayer text 
     -   chapter can have multiple end passages (every end pasage points to another chapter)
     -   we can display a tree of from passage can user get where
     -   each chapter can have time triggers
+    -   each chapter has defined time period
 
 -   character
 
@@ -34,6 +35,7 @@ Will be used for writing a book, gamebooks or online single or multiplayer text 
 
     -   locations are describing the map of the world
     -   each person has to be on some location
+    -   location knows its position by points of polygon mash shape
 
 -   time triggers
 
@@ -47,90 +49,100 @@ Will be used for writing a book, gamebooks or online single or multiplayer text 
 
     -   keeps the world informations during the play
 
-## Service components
+## Folder structure
 
 -   types
 
-    -   defines the structore of the data
+    -   defines the structure of the data
 
 -   data
 
     -   folder where the story files are located
 
--   Engine
+-   SingleEngine
 
-    -   is able to play the story for single player
+    -   a service that can play the story for single player
     -   only client implementation
+    -   fully implemented
 
--   Multiplayer Engine
-    -   is able to play the story for multiple players
+-   MultiEngine
+
+    -   a service that can play the story for multiple players
     -   has server and client part
     -   server handles the world state and story progress
+    -   client handles ui and comunicate with server
+    -   not implemented yet
 
-## Basic Concepts
+-   Visualizer
 
--   **world** is composed of a set of objects with properties.
--   **state of the world** refers to the values of the properties of the world's objects.
--   **chapter** is used to describe happenings in the world and consists of:
-    -   a set of changes in the properties of the world's objects
-    -   a set of pairs ("condition", chapter). The condition describes under what circumstances the next chapter should occur.
-    -   a time interval that indicates within which time range the chapter can happen.
--   **passage** describes the state the player is currently in and also describes the options available to the player, allowing them to transition to a different passage. In the case of a playable gamebook, it refers to the code for rendering buttons to transition to another passage.
-    -   each passage can be assigned an chapter it relates to.
+    -   a service for creating and viewing the story and the world
+    -   used by the author of the game
+    -   partially implemented
 
 ## Visualizer
 
--   timeline,
-    -   display chapters
-    -   2 view: by location, by concrete character, by connections
-    -   toggle display connections
-    -   zoom
-    -   display time triggers
-    -   edit chapter?
-        -   nodejs server + api
-        -   browser (rights for all files vscode in browser) ???
-        -   chapter time range (drag, move)
--   passage in chapter
-    -   save position of passages to solo file
-    -   display passage layout
-    -   display chapter info
-    -   time mode (can click throw passages) => display world state
--   display map with locations
-    -   display characters position in time
--   api calls vscode server
+-   this service is for creating the story data
+-   user interface to edit data files
 
-MVP:
+### UI
 
--   timeline: display chapter, toggle connections, zoom
-    -   display timeline with labels
-    -   everywhere mouse wheel can zoom (zoom levels: [den, 3 hodiny], [7 dní, den], [měsíc, 5dní], [rok, 2 měsíce])
-    -   drag and drop timeline only
-    -   display chapters
-    -   toggle connections button, add spacesc to display arrows
-    -   sort by connections
-    -   double click open passage in chapter of the chapter
--   passage in chapter (bez time modu)
-    -   same as in twine
--   display map location
+-   tabs: map. timeline, entities, structure
 
-## UX
+-   map
 
--   Chapter Timeline
+    -   display locations on canvas
+    -   user can draw there with brush (change colors)
+    -   user can add notes ed. draw a river and add name on it
+    -   add/edit/remove new location as polygon mash
+    -   user can open location in location view
 
-    -   button with modla window => add new chapter file in VS (API PUT `/chapter/<chapterId>`)
-    -   single click select open info window
-        -   open chapter file in VS (API POST `/chapter/<chapterId>/open`)
-        -   open chapter file in VS (API DELETE `/chapter/<chapterId>`)
-    -   holding ctrl will open chapter file instead
-    -   by drag and drop edit start/end time (API POST `/chapter/<chapterId>/setTime`)
-    -   double-click opens Chapter pasage view
+-   location view
 
--   Chapter pasage view
-    -   button with modla window => add new passage file in VS (API PUT `/passage/<passageId>`)
-    -   single click select open info window
-        -   open passage file in VS (API POST `/passage/<passageId>/open`)
-        -   open passage file in VS (API DELETE `/passage/<passageId>`)
-    -   holding ctrl will open chapter file instead
+    -   manage location
+
+-   timeline
+
+    -   display chapters on timeline per character
+    -   user can move the timeline by dragging
+    -   user can add/delete new chapter
+    -   user can move chapter by dragging (needs to hold ctrl)
+    -   user can open chapter by clicking
+    -   display (toggle on/off) connections between the chapters (end passages are pointing to some)
+    -   display chapter description on hover
+    -   partially implemented
+    -   display (toggle) time triggers
+
+-   chapter view
+
+    -   user can manage passages in the chapter
+    -   save position of passages to solo file (we have to save somewhere the position of the passage on the plate ... not important for the play)
+    -   user can edit chapter informations
+
+-   entities
+
+    -   persons
+    -   items
+    -   other entites added by user
+
+-   structure
+    -   user can manage entites (eg add race)
+    -   user can edit required types (eg. person can have race)
+
+## MultiEngine
+
+-   every player picks his character
+-   they are going throuh passages - waiting for each other on time
+-   moving between passages costs some time, player has to wait till everyone played prevoius pasages
+-   server that handles world state
+
+## Not implemented/decied yet
+
+-   how Visualizer will work, multiple options:
+    -   running nodejs server
+    -   vscode extension maybe
+    -   electron
+-   api communication
+-   MuiltiEngine
 
 ## API
 
@@ -167,33 +179,3 @@ MVP:
 -   GET `/map`
     -   mapId: String
     -   title: String
-
-## Insights
-
-### Objekty sveta
-
-Samotne objekty sveta muzeme vyjadrit jako singletony.
-Typy pro definovani spolecnych vlastnosti vice objektu pak mohou rozsirovat tyto objekty.
-
-Staticka vlastnost singletonu lze vyuzit primym odkazem v nejake pasazi. Zaroven by takovy objekt vlastnil
-svuj typ, coz by znamenalo, ze pri spatnem napsani vlastnosti by se kompilator mohl ozvat pri kontrole.
-
-Hodilo by se, kdybychom mohli rikat z pohledu uzivatele, ve kterych udalostech je pro nas dana vlastnost, respektive mnozina vlastnosti
-daneho objektu dulezita.
-
-Realne, pri psani zmen vlastnosti v pasazi by naseptavac naseptaval vlastnosti podle udalosti, ktere se tyka.
-
-### Typy pasazi
-
-Uzivatel by mel mit moznost nadefinovat vlastni typ pasaze spolu s vlastnim frameworkem.
-
-# TODO
-
--   přejmenovat events na chapter
--   prejmenovat trigger na event
--   každý even má pole triggerů
-
--   místo na pasní poznámek
--   odebrat happenning
--   key chapter - dochází k rozhodujicímu splitu v příběhu
--   location list
