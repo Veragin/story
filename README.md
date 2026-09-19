@@ -1,4 +1,71 @@
-The goal is to create a program that allows the creation of a playable gamebook. In the same world, within a similar timeframe, it should be possible to play as different characters and observe the chapters in the world from various perspectives. At the same time, the chapters in the world should be influenced by the decisions of individual characters. The program should support multiple people working on the same project.
+# Story template
+
+This project is software for creating and managing a story. User can create a world (characters, map, objects etc.) and describe a nonlinear story. While playing player can make story changing decisions. There should be possibility to play it as a multiplayer.
+Will be used for writing a book, gamebooks or online single or multiplayer text games.
+
+## Data structure
+
+-   passage
+
+    -   means one screen that is displayed to player
+    -   contains image, text and options for player to decide how to continue
+    -   passage is written as a file with given structure (see src/data/chapters/village/village.chapter.ts)
+    -   filename is in format `<chapter>.<passage>.ts`
+
+-   chapter
+
+    -   story is splitted into the chapters
+    -   chapter consists of set of passages
+    -   chapter has one starting passage
+    -   chapter can have multiple end passages (every end pasage points to another chapter)
+    -   we can display a tree of from passage can user get where
+    -   each chapter can have time triggers
+
+-   character
+
+    -   is a playable person in the world
+    -   there can be multiple of them, played as multiplayer or singleplayer (user choose and others are played by engine)
+
+-   sidecharacter
+
+    -   is non-playable but important person
+
+-   location
+
+    -   locations are describing the map of the world
+    -   each person has to be on some location
+
+-   time triggers
+
+    -   an event triggered by time => something has happened
+
+-   items
+
+    -   item in the world to unify it
+
+-   world state
+
+    -   keeps the world informations during the play
+
+## Service components
+
+-   types
+
+    -   defines the structore of the data
+
+-   data
+
+    -   folder where the story files are located
+
+-   Engine
+
+    -   is able to play the story for single player
+    -   only client implementation
+
+-   Multiplayer Engine
+    -   is able to play the story for multiple players
+    -   has server and client part
+    -   server handles the world state and story progress
 
 ## Basic Concepts
 
