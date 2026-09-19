@@ -59,6 +59,11 @@ Will be used for writing a book, gamebooks or online single or multiplayer text 
 
     -   folder where the story files are located
 
+-   shared
+
+    -   shared code between services
+    -   time
+
 -   SingleEngine
 
     -   a service that can play the story for single player
