@@ -27,14 +27,14 @@ export const useChapterForm = (agent: Agent) => {
     }, []);
 
     const handleInputChange = useCallback((field: keyof TChapterFormData, value: any) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             [field]: value,
         }));
     }, []);
 
     const handleTimeRangeChange = useCallback((timeRange: TTimeRange) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             timeRange,
         }));
@@ -45,7 +45,7 @@ export const useChapterForm = (agent: Agent) => {
             showToast(_('Chapter ID is required'), { variant: 'error' });
             return false;
         }
-        
+
         if (existingChapterIds.includes(chapterId.trim())) {
             showToast(_('Chapter ID already exists'), { variant: 'error' });
             return false;
@@ -89,15 +89,15 @@ export const useChapterForm = (agent: Agent) => {
                 location: formData.location.trim(),
                 timeRange: {
                     start: formData.timeRange.start || '',
-                    end: formData.timeRange.end || ''
+                    end: formData.timeRange.end || '',
                 },
-                children: formData.children
+                children: formData.children,
             };
 
             console.log('Creating chapter with data:', { chapterId: chapterId.trim(), chapterData });
 
             await agent.updateChapter(chapterId.trim(), chapterData);
-            
+
             // Reset form
             handleReset();
 
@@ -126,10 +126,10 @@ export const useChapterForm = (agent: Agent) => {
         chapterId,
         existingChapterIds,
         isSubmitting,
-        
+
         // Setters
         setChapterId,
-        
+
         // Handlers
         handleInputChange,
         handleTimeRangeChange,

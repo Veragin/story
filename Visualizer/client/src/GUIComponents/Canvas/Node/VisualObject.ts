@@ -25,7 +25,7 @@ export abstract class VisualObject {
     get onPropertyChanged(): Observer<TVisualObjectPropertyChangeArgs> {
         return this._onPropertyChanged;
     }
-    
+
     get zIndex(): number {
         return this._zIndex;
     }

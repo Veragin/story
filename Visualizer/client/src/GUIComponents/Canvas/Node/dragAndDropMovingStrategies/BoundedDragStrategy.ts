@@ -1,5 +1,5 @@
 import { TPoint } from '@story/types';
-import { DragStrategy } from "./DragStrategy";
+import { DragStrategy } from './DragStrategy';
 
 /**
  * BoundedDragStrategy is a strategy that keeps the object within specified bounds.
@@ -12,7 +12,7 @@ export class BoundedDragStrategy implements DragStrategy {
         maxY: number;
     };
 
-    constructor(bounds: { minX: number; maxX: number; minY: number; maxY: number; }) {
+    constructor(bounds: { minX: number; maxX: number; minY: number; maxY: number }) {
         this.bounds = bounds;
     }
 
@@ -27,7 +27,7 @@ export class BoundedDragStrategy implements DragStrategy {
 
         return {
             x: Math.max(this.bounds.minX, Math.min(this.bounds.maxX, rawX)),
-            y: Math.max(this.bounds.minY, Math.min(this.bounds.maxY, rawY))
+            y: Math.max(this.bounds.minY, Math.min(this.bounds.maxY, rawY)),
         };
     }
 }

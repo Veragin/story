@@ -19,7 +19,7 @@ export class ItemResolver {
             const item = {
                 id: itemId,
                 amount: 1, // default amount
-                ...itemInfo[itemId]
+                ...itemInfo[itemId],
             } as TItem<I>;
             this.itemCache.set(itemId, item);
             return item;
@@ -32,9 +32,7 @@ export class ItemResolver {
      * Gets all available items
      */
     static getAllItems(): TItem<TItemId>[] {
-        return Object.keys(itemInfo).map(itemId => 
-            this.getItem(itemId as TItemId)
-        );
+        return Object.keys(itemInfo).map((itemId) => this.getItem(itemId as TItemId));
     }
 
     /**
@@ -49,17 +47,17 @@ export class ItemResolver {
      */
     static getItemsByType(type: string): TItem<TItemId>[] {
         const allItems = this.getAllItems();
-        return allItems.filter(item => item.type === type);
+        return allItems.filter((item) => item.type === type);
     }
 
     /**
      * Gets items formatted for dropdown/select components
      */
     static getItemsForSelect(): Array<{ value: TItemId; label: string; type: string }> {
-        return this.getAllItems().map(item => ({
+        return this.getAllItems().map((item) => ({
             value: item.id,
             label: item.name,
-            type: item.type
+            type: item.type,
         }));
     }
 
@@ -67,9 +65,9 @@ export class ItemResolver {
      * Gets items by type formatted for dropdown/select components
      */
     static getItemsByTypeForSelect(type: string): Array<{ value: TItemId; label: string }> {
-        return this.getItemsByType(type).map(item => ({
+        return this.getItemsByType(type).map((item) => ({
             value: item.id,
-            label: item.name
+            label: item.name,
         }));
     }
 
@@ -84,9 +82,9 @@ export class ItemResolver {
      * Gets tools formatted for dropdown/select components
      */
     static getToolsForSelect(): Array<{ value: TItemId; label: string }> {
-        return this.getTools().map(item => ({
+        return this.getTools().map((item) => ({
             value: item.id,
-            label: item.name
+            label: item.name,
         }));
     }
 
@@ -131,18 +129,21 @@ export class ItemResolver {
     static searchItems(searchTerm: string): TItem<TItemId>[] {
         const allItems = this.getAllItems();
         const lowerSearchTerm = searchTerm.toLowerCase();
-        
-        return allItems.filter(item => 
-            item.name.toLowerCase().includes(lowerSearchTerm) ||
-            item.id.toLowerCase().includes(lowerSearchTerm) ||
-            item.type.toLowerCase().includes(lowerSearchTerm)
+
+        return allItems.filter(
+            (item) =>
+                item.name.toLowerCase().includes(lowerSearchTerm) ||
+                item.id.toLowerCase().includes(lowerSearchTerm) ||
+                item.type.toLowerCase().includes(lowerSearchTerm)
         );
     }
 
     /**
      * Gets item details with additional metadata
      */
-    static getItemDetails<I extends TItemId>(itemId: I): {
+    static getItemDetails<I extends TItemId>(
+        itemId: I
+    ): {
         item: TItem<I>;
         hasSpecialProperties: boolean;
         specialProperties: string[];
@@ -154,12 +155,12 @@ export class ItemResolver {
         const item = this.getItem(itemId);
         const baseProperties = ['id', 'name', 'type', 'amount'];
         const allProperties = Object.keys(item);
-        const specialProperties = allProperties.filter(prop => !baseProperties.includes(prop));
+        const specialProperties = allProperties.filter((prop) => !baseProperties.includes(prop));
 
         return {
             item,
             hasSpecialProperties: specialProperties.length > 0,
-            specialProperties
+            specialProperties,
         };
     }
 
@@ -170,7 +171,7 @@ export class ItemResolver {
         const baseItem = this.getItem(itemId);
         return {
             ...baseItem,
-            amount: Math.max(0, Math.floor(amount))
+            amount: Math.max(0, Math.floor(amount)),
         };
     }
 
@@ -183,31 +184,33 @@ export class ItemResolver {
         itemsWithSpecialProperties: number;
     } {
         const allItems = this.getAllItems();
-        
+
         // Count items by type
         const itemsByType: { [type: string]: number } = {};
-        allItems.forEach(item => {
+        allItems.forEach((item) => {
             itemsByType[item.type] = (itemsByType[item.type] || 0) + 1;
         });
 
         // Count items with special properties
-        const itemsWithSpecialProperties = allItems.filter(item => {
+        const itemsWithSpecialProperties = allItems.filter((item) => {
             const baseProperties = ['id', 'name', 'type', 'amount'];
             const allProperties = Object.keys(item);
-            return allProperties.some(prop => !baseProperties.includes(prop));
+            return allProperties.some((prop) => !baseProperties.includes(prop));
         }).length;
-        
+
         return {
             totalItems: allItems.length,
             itemsByType,
-            itemsWithSpecialProperties
+            itemsWithSpecialProperties,
         };
     }
 
     /**
      * Validates item structure
      */
-    static validateItem<I extends TItemId>(itemId: I): {
+    static validateItem<I extends TItemId>(
+        itemId: I
+    ): {
         isValid: boolean;
         errors: string[];
         warnings: string[];
@@ -221,7 +224,7 @@ export class ItemResolver {
         }
 
         const item = this.getItem(itemId);
-        
+
         if (!item.name || (typeof item.name === 'string' && !item.name.trim())) {
             errors.push(`Item '${itemId}' has no name`);
         }
@@ -237,7 +240,7 @@ export class ItemResolver {
         return {
             isValid: errors.length === 0,
             errors,
-            warnings
+            warnings,
         };
     }
 
@@ -246,7 +249,7 @@ export class ItemResolver {
      */
     static preloadAllItems(): void {
         const allItemIds = this.getAvailableItemIds();
-        allItemIds.forEach(itemId => {
+        allItemIds.forEach((itemId) => {
             this.getItem(itemId); // This will cache the item
         });
     }
@@ -264,14 +267,14 @@ export class ItemResolver {
     static getItemsGroupedByType(): { [type: string]: TItem<TItemId>[] } {
         const allItems = this.getAllItems();
         const grouped: { [type: string]: TItem<TItemId>[] } = {};
-        
-        allItems.forEach(item => {
+
+        allItems.forEach((item) => {
             if (!grouped[item.type]) {
                 grouped[item.type] = [];
             }
             grouped[item.type].push(item);
         });
-        
+
         return grouped;
     }
 

@@ -1,4 +1,3 @@
-
 /**
  * HTTP Error Handler utility for processing API responses and extracting error messages
  */
@@ -21,17 +20,15 @@ export class HttpErrorHandler {
         }
 
         let errorMessage = `Failed to ${context}`;
-        
+
         try {
             // Try to parse the error response body
             const errorBody = await response.json();
             console.log('Error response body:', errorBody); // Debug log
-            
+
             // Extract and log specific error messages for easier debugging
             if (errorBody.errors && Array.isArray(errorBody.errors)) {
-                const specificErrors = errorBody.errors.map((err: any) => 
-                    `${err.path}: ${err.msg}`
-                ).join(', ');
+                const specificErrors = errorBody.errors.map((err: any) => `${err.path}: ${err.msg}`).join(', ');
                 console.error(`🔴 Validation Errors: ${specificErrors}`);
                 errorMessage = `${errorMessage}: ${specificErrors}`;
             } else if (errorBody.error) {
@@ -63,11 +60,7 @@ export class HttpErrorHandler {
     /**
      * Enhanced fetch wrapper that automatically handles errors
      */
-    static async fetchWithErrorHandling(
-        url: string, 
-        options: RequestInit, 
-        context: string
-    ): Promise<any> {
+    static async fetchWithErrorHandling(url: string, options: RequestInit, context: string): Promise<any> {
         try {
             const response = await fetch(url, options);
             return await HttpErrorHandler.handleResponse(response, context);

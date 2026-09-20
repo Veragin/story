@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, InputAdornment, Box, Typography, Tooltip } from '@mui/material';
+import {
+    TextField,
+    InputAdornment,
+    Box,
+    Typography,
+    Tooltip,
+} from '@mui/material';
 import { AccessTime, HelpOutline } from '@mui/icons-material';
 import { DeltaTime } from '@story/shared';
-import { formatTimeInput, parseTimeInput, timeInputToDeltaTime, TTimeInput } from '../../types';
+import {
+    formatTimeInput,
+    parseTimeInput,
+    timeInputToDeltaTime,
+    TTimeInput,
+} from '../../types';
 
 type Props = {
     value?: DeltaTime;
@@ -11,9 +22,18 @@ type Props = {
     placeholder?: string;
 };
 
-export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholder }: Props) => {
+export const TimeCostInput = ({
+    value,
+    onChange,
+    label = 'Time Cost',
+    placeholder,
+}: Props) => {
     const [textValue, setTextValue] = useState<string>('');
-    const [timeInput, setTimeInput] = useState<TTimeInput>({ days: 0, hours: 0, minutes: 0 });
+    const [timeInput, setTimeInput] = useState<TTimeInput>({
+        days: 0,
+        hours: 0,
+        minutes: 0,
+    });
     const [hasError, setHasError] = useState<boolean>(false);
 
     // Convert DeltaTime to formatted string when value changes from outside
@@ -37,7 +57,7 @@ export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholde
 
     const handleTextInputChange = (text: string) => {
         setTextValue(text);
-        
+
         // If empty, clear the value
         if (!text.trim()) {
             setTimeInput({ days: 0, hours: 0, minutes: 0 });
@@ -47,9 +67,13 @@ export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholde
         }
 
         // Custom parsing logic that's more forgiving for typing
-        const parseCustomTimeInput = (input: string): { parsed: TTimeInput; isComplete: boolean } => {
+        const parseCustomTimeInput = (
+            input: string
+        ): { parsed: TTimeInput; isComplete: boolean } => {
             const text = input.toLowerCase().trim();
-            let days = 0, hours = 0, minutes = 0;
+            let days = 0,
+                hours = 0,
+                minutes = 0;
             let hasValidInput = false;
 
             // Match patterns like "1d", "2h", "30min", "1d 2h", "1d 2h 30min", etc.
@@ -76,30 +100,45 @@ export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholde
             days = Math.max(0, days);
 
             // Check if this looks like an incomplete input
-            const hasIncompleteNumbers = /\d+$/.test(text) && !/(d|h|min|m)$/.test(text);
+            const hasIncompleteNumbers =
+                /\d+$/.test(text) && !/(d|h|min|m)$/.test(text);
             const isComplete = hasValidInput && !hasIncompleteNumbers;
 
             return { parsed: { days, hours, minutes }, isComplete };
         };
 
         const result = parseCustomTimeInput(text);
-        
+
         // Only update the actual value if we have a complete, valid input
-        if (result.isComplete && (result.parsed.days > 0 || result.parsed.hours > 0 || result.parsed.minutes > 0)) {
+        if (
+            result.isComplete &&
+            (result.parsed.days > 0 ||
+                result.parsed.hours > 0 ||
+                result.parsed.minutes > 0)
+        ) {
             setTimeInput(result.parsed);
             onChange(timeInputToDeltaTime(result.parsed));
             setHasError(false);
-        } else if (result.isComplete && result.parsed.days === 0 && result.parsed.hours === 0 && result.parsed.minutes === 0) {
+        } else if (
+            result.isComplete &&
+            result.parsed.days === 0 &&
+            result.parsed.hours === 0 &&
+            result.parsed.minutes === 0
+        ) {
             // If complete but all zeros, clear
             setTimeInput({ days: 0, hours: 0, minutes: 0 });
             onChange(undefined);
             setHasError(false);
         } else {
             // Incomplete input - don't change the value, but check for obvious errors
-            const hasAnyValidFormat = /\d+[dhm]/.test(text) || /\d+\s*(min|minutes)/.test(text);
+            const hasAnyValidFormat =
+                /\d+[dhm]/.test(text) || /\d+\s*(min|minutes)/.test(text);
             const hasOnlyValidChars = /^[\d\s]+$|^[\d\sdhmint\s]+$/.test(text);
-            
-            if (text.length > 0 && (!hasOnlyValidChars || (text.length > 3 && !hasAnyValidFormat))) {
+
+            if (
+                text.length > 0 &&
+                (!hasOnlyValidChars || (text.length > 3 && !hasAnyValidFormat))
+            ) {
                 setHasError(true);
             } else {
                 setHasError(false);
@@ -121,22 +160,31 @@ export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholde
     return (
         <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                    variant="subtitle2"
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                >
                     <AccessTime fontSize="small" />
                     {label}
                 </Typography>
                 <Tooltip title="Format: 1d, 2h, 30min, 1d 2h 30min" arrow>
-                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                    <HelpOutline
+                        sx={{
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                            cursor: 'help',
+                        }}
+                    />
                 </Tooltip>
             </Box>
-            
+
             <TextField
                 label="Time Input"
                 value={textValue}
                 onChange={(e) => handleTextInputChange(e.target.value)}
                 size="small"
                 fullWidth
-                placeholder={placeholder || "1d 2h 30min"}
+                placeholder={placeholder || '1d 2h 30min'}
                 error={hasError}
                 slotProps={{
                     input: {
@@ -148,10 +196,10 @@ export const TimeCostInput = ({ value, onChange, label = 'Time Cost', placeholde
                     },
                 }}
             />
-            
-            <Typography 
-                variant="caption" 
-                color={hasError ? "error" : "text.secondary"} 
+
+            <Typography
+                variant="caption"
+                color={hasError ? 'error' : 'text.secondary'}
                 sx={{ mt: 0.5, display: 'block', fontSize: '0.7rem' }}
             >
                 {formatDisplayText()}

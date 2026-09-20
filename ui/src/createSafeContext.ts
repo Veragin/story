@@ -5,10 +5,7 @@ import { assertNotNullish } from '@story/shared';
 export const useSafeContext = <T>(context: Context<T>) => {
     const contextValue = useContext(context);
 
-    assertNotNullish(
-        contextValue,
-        `Context '${context.displayName ?? 'Unknown Context'}' is not provided.`
-    );
+    assertNotNullish(contextValue, `Context '${context.displayName ?? 'Unknown Context'}' is not provided.`);
 
     return contextValue;
 };

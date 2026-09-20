@@ -1,41 +1,32 @@
-import { CanvasPluginBase } from "./CanvasPluginBase";
-import { TPoint } from "../CanvasManager/CanvasWorld";
-import { MouseButton } from "../CanvasManager/InputConstants";
-import { DraggableVisualObject } from "../Node/DraggableVisualObject";
-import { VisualObject } from "../Node/VisualObject";
-import { isPointInside } from "../Node/utils";
+import { CanvasPluginBase } from './CanvasPluginBase';
+import { TPoint } from '../CanvasManager/CanvasWorld';
+import { MouseButton } from '../CanvasManager/InputConstants';
+import { DraggableVisualObject } from '../Node/DraggableVisualObject';
+import { VisualObject } from '../Node/VisualObject';
+import { isPointInside } from '../Node/utils';
 
 const isDraggableObject = (obj: any): obj is DraggableVisualObject => {
     return 'isDragging' in obj && 'isDraggable' in obj;
 };
 
 export class DraggingPlugin extends CanvasPluginBase {
-    readonly name = "DraggingPlugin";
+    readonly name = 'DraggingPlugin';
     private draggedObject: DraggableVisualObject | null = null;
 
     protected onInitialize(): void {
         const canvasManagerCore = this.canvasManagerCore;
-        canvasManagerCore.eventDispatcher.registerMouseDown(
-            "start_drag",
-            MouseButton.LEFT,
-            (e, sp, wp) => this.handleMouseDown(e, sp, wp)
+        canvasManagerCore.eventDispatcher.registerMouseDown('start_drag', MouseButton.LEFT, (e, sp, wp) =>
+            this.handleMouseDown(e, sp, wp)
         );
-        canvasManagerCore.eventDispatcher.registerMouseMove(
-            "drag",
-            (e, sp) => this.handleMouseMove(e, sp)
-        );
-        canvasManagerCore.eventDispatcher.registerMouseUp(
-            "end_drag",
-            MouseButton.LEFT,
-            (e, sp, wp) => this.handleMouseUp(e, sp, wp)
+        canvasManagerCore.eventDispatcher.registerMouseMove('drag', (e, sp) => this.handleMouseMove(e, sp));
+        canvasManagerCore.eventDispatcher.registerMouseUp('end_drag', MouseButton.LEFT, (e, sp, wp) =>
+            this.handleMouseUp(e, sp, wp)
         );
     }
 
-    protected onDestroy(): void {
-    }
+    protected onDestroy(): void {}
 
-    protected onEnable(): void {
-    }
+    protected onEnable(): void {}
 
     protected onDisable(): void {
         if (this.draggedObject) {
@@ -44,15 +35,11 @@ export class DraggingPlugin extends CanvasPluginBase {
         }
     }
 
-    private handleMouseDown(
-        event: MouseEvent,
-        screenPoint: TPoint,
-        worldPoint: TPoint): boolean {
-
+    private handleMouseDown(event: MouseEvent, screenPoint: TPoint, worldPoint: TPoint): boolean {
         const objectsAtPoint = this.getTopObjectsAtVisiblePoint(worldPoint);
-        const draggableObject = objectsAtPoint.find((obj) =>
-            isDraggableObject(obj) && obj.isDraggable()
-        ) as DraggableVisualObject | undefined;
+        const draggableObject = objectsAtPoint.find((obj) => isDraggableObject(obj) && obj.isDraggable()) as
+            | DraggableVisualObject
+            | undefined;
         if (draggableObject) {
             this.draggedObject = draggableObject;
             draggableObject.startDrag(worldPoint);
@@ -77,14 +64,15 @@ export class DraggingPlugin extends CanvasPluginBase {
     }
 
     private getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {
-        return this.canvasManagerCore.visibleVisualObjectsManager.getSortedVisibleObjects()
+        return this.canvasManagerCore.visibleVisualObjectsManager
+            .getSortedVisibleObjects()
             .filter((obj: VisualObject) => isPointInside(worldPoint, obj.getPosition(), obj.getSize()))
             .reverse();
     }
 
     private bringToFront(obj: VisualObject): void {
         const allObjects = Array.from(this.canvasManagerCore.allObjects as Iterable<VisualObject>);
-        const highestZIndex = Math.max(...allObjects.map(o => o.zIndex));
+        const highestZIndex = Math.max(...allObjects.map((o) => o.zIndex));
         obj.setZIndex(highestZIndex + 1);
     }
 }

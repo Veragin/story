@@ -3,7 +3,10 @@ import { VisualObject } from '../Node/VisualObject';
 import { isPointInside } from '../Node/utils';
 import { CanvasWorld, TPoint, TSize } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
-import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';
+import {
+    ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager,
+    ZIndexSortedVisibleVisualObjectsManager,
+} from './ZIndexSortedVisibleVisualObjectsManager';
 import { GuiEventDispatcher } from './EventDispatcher';
 import { CanvasEventManager } from './CanvasEventManager';
 
@@ -38,13 +41,11 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     protected nextInsertionOrder: number = 0;
     readonly onObjectAdded = new Observer<VisualObject>();
     readonly onObjectRemoved = new Observer<VisualObject>();
-    readonly onObjectPropertyChanged = new Observer<{ object: VisualObject, property: string }>();
-    readonly onCanvasResize = new ConditionalObserver<TSize>(
-        (lastSize, newSize) => {
-            if (!lastSize || !newSize) return false;
-            return lastSize.width !== newSize.width || lastSize.height !== newSize.height;
-        }
-    );
+    readonly onObjectPropertyChanged = new Observer<{ object: VisualObject; property: string }>();
+    readonly onCanvasResize = new ConditionalObserver<TSize>((lastSize, newSize) => {
+        if (!lastSize || !newSize) return false;
+        return lastSize.width !== newSize.width || lastSize.height !== newSize.height;
+    });
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -85,13 +86,14 @@ export class CanvasManagerCore implements ICanvasManagerCore, IVisibilityProvide
     private handleVisualObjectChange = (args: { property: string; VisualObject: VisualObject }) => {
         this.onObjectPropertyChanged.notify({
             object: args.VisualObject,
-            property: args.property
+            property: args.property,
         });
         this.draw();
     };
 
     protected getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {
-        return this.visibleVisualObjectsManager.getSortedVisibleObjects()
+        return this.visibleVisualObjectsManager
+            .getSortedVisibleObjects()
             .filter((obj: VisualObject) => isPointInside(worldPoint, obj.getPosition(), obj.getSize()))
             .reverse();
     }

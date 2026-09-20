@@ -49,7 +49,7 @@ export class MapStore {
 
     setEditMode = (editMode: boolean) => {
         this.editMode = editMode;
-    }
+    };
 
     deinit = () => {
         this.canvasHandler.unregisterCanvas('map');

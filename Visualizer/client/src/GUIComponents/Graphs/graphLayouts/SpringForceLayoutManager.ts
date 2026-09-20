@@ -1,12 +1,12 @@
 import { TSize } from '@story/types';
-import { GraphLayoutManager } from "./GraphLayoutManager";
-import { NodeVisualObject } from "../NodeVisualObject";
-import { Graph } from "../Graph";
-import { EdgeVisualObject } from "../EdgeVisualObject";
-import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";
-import { DraggableVisualObject } from "../../Canvas/Node/DraggableVisualObject";
-import { CircularInitializePositionStrategy, InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
-import { PassageNodeVisualObject } from "../ChapterPassagesGraph/PassageNodeVisualObject";
+import { GraphLayoutManager } from './GraphLayoutManager';
+import { NodeVisualObject } from '../NodeVisualObject';
+import { Graph } from '../Graph';
+import { EdgeVisualObject } from '../EdgeVisualObject';
+import { LeftToRightInitializePositionStrategy } from './LeftToRightInitializePositionStrategy';
+import { DraggableVisualObject } from '../../Canvas/Node/DraggableVisualObject';
+import { CircularInitializePositionStrategy, InitializePositionStrategy } from './KamadaKawaiLayoutManager';
+import { PassageNodeVisualObject } from '../ChapterPassagesGraph/PassageNodeVisualObject';
 
 interface Force {
     dx: number;
@@ -50,15 +50,14 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     private initializeVelocities(): void {
-        this.nodes.forEach(node => {
+        this.nodes.forEach((node) => {
             this.nodeVelocities.set(node.getId(), { vx: 0, vy: 0 });
         });
     }
 
     layout(graph: Graph): void {
         this.nodes = graph.getAllNodes();
-        if (this.nodes.length === 0) 
-            return;
+        if (this.nodes.length === 0) return;
 
         this.initialTemp = 1000;
         this.minMovement = 1;
@@ -68,7 +67,6 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         this.centeringK = 0.001;
         this.repulsionK = 0.01;
         this.attractionK = 0.01;
-
 
         this.initializePositions(this.nodes, graph.getAllEdges());
         this.initializeVelocities();
@@ -92,7 +90,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         if (magnitude > 0) {
             return {
                 dx: (force.dx / magnitude) * Math.min(magnitude, this.maxSpeed),
-                dy: (force.dy / magnitude) * Math.min(magnitude, this.maxSpeed)
+                dy: (force.dy / magnitude) * Math.min(magnitude, this.maxSpeed),
             };
         }
         return force;
@@ -110,7 +108,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private calculateRepulsiveForces(maxRepulsionDistance = 1000): Map<string, Force> {
         const forces = new Map<string, Force>();
 
-        this.nodes.forEach(node => {
+        this.nodes.forEach((node) => {
             forces.set(node.getId(), { dx: 0, dy: 0 });
         });
 
@@ -130,7 +128,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
                 }
 
                 const optimalDistance = this.getOptimalDistance(node1, node2);
-                const force = this.repulsionK * optimalDistance * optimalDistance / (distance * distance);
+                const force = (this.repulsionK * optimalDistance * optimalDistance) / (distance * distance);
                 const forceX = (dx / distance) * force;
                 const forceY = (dy / distance) * force;
 
@@ -153,7 +151,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     private calculateAttractiveForces(graph: Graph, forces: Map<string, Force>): void {
-        graph.getAllEdges().forEach(edge => {
+        graph.getAllEdges().forEach((edge) => {
             const source = edge.getSource();
             const target = edge.getTarget();
             const pos1 = source.getPosition();
@@ -182,7 +180,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
         const centerX = this.width / 2;
         const centerY = this.height / 2;
 
-        this.nodes.forEach(node => {
+        this.nodes.forEach((node) => {
             // Skip mounted or dragging nodes
             if (node instanceof PassageNodeVisualObject && (node as PassageNodeVisualObject).isMounted) {
                 return;
@@ -193,7 +191,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
 
             const pos = node.getPosition();
             const force = forces.get(node.getId())!;
-            
+
             // Calculate distance from center
             const dx = centerX - pos.x;
             const dy = centerY - pos.y;
@@ -210,7 +208,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     private applyForces(forces: Map<string, Force>): number {
         let totalMovement = 0;
 
-        this.nodes.forEach(node => {
+        this.nodes.forEach((node) => {
             const nodeId = node.getId();
 
             if (node instanceof PassageNodeVisualObject) {
@@ -241,7 +239,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
             if (Math.abs(velocity.vx) > this.minMovement || Math.abs(velocity.vy) > this.minMovement) {
                 const newPos = {
                     x: pos.x + velocity.vx,
-                    y: pos.y + velocity.vy
+                    y: pos.y + velocity.vy,
                 };
                 node.setPosition(newPos);
                 totalMovement += Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
@@ -259,7 +257,7 @@ export class SpringForceLayoutManager implements GraphLayoutManager {
     }
 
     private adjustNodePositionsToMoveInBounderiesOnly(): void {
-        this.nodes.forEach(node => {
+        this.nodes.forEach((node) => {
             if (node instanceof DraggableVisualObject && (node as DraggableVisualObject).isDragging()) {
                 return;
             }

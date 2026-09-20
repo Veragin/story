@@ -1,29 +1,25 @@
-import { FreeDragStrategy } from "../../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { TextContent, TTextAlignment } from "../../../../Canvas/Node/TextContent";
-import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
-import { ColorManager } from "../ColorManager";
-
+import { FreeDragStrategy } from '../../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy';
+import { TextContent, TTextAlignment } from '../../../../Canvas/Node/TextContent';
+import { PassageNodeVisualObject } from '../../PassageNodeVisualObject';
+import { ColorManager } from '../ColorManager';
 
 type NodeTextConfig = {
     font: string;
     color: string;
     alignment: TTextAlignment;
-}
+};
 
 type NodeDimensions = {
     width: number;
     height: number;
-}
-
+};
 
 export abstract class AbstractPassageNodeCreator {
     protected static readonly MIN_NODE_WIDTH = 120;
     protected static readonly PADDING = 30;
     protected static readonly DEFAULT_FONT = '16px Roboto';
 
-    constructor(
-        protected readonly colorManager: ColorManager,
-    ) {}
+    constructor(protected readonly colorManager: ColorManager) {}
 
     protected createTextContent(
         text: string,
@@ -37,7 +33,7 @@ export abstract class AbstractPassageNodeCreator {
             text,
             font: config.font,
             color: config.color,
-            alignment: config.alignment
+            alignment: config.alignment,
         });
     }
 
@@ -47,7 +43,7 @@ export abstract class AbstractPassageNodeCreator {
 
         return {
             width: Math.max(AbstractPassageNodeCreator.MIN_NODE_WIDTH, textWidth + AbstractPassageNodeCreator.PADDING),
-            height: textHeight + AbstractPassageNodeCreator.PADDING
+            height: textHeight + AbstractPassageNodeCreator.PADDING,
         };
     }
 
@@ -73,7 +69,7 @@ export abstract class AbstractPassageNodeCreator {
             node.setBorder({
                 ...node.getBorder(),
                 color: '#000000',
-                width: 2
+                width: 2,
             });
         });
 
@@ -81,7 +77,7 @@ export abstract class AbstractPassageNodeCreator {
             node.setBorder({
                 ...node.getBorder(),
                 color: '#999999',
-                width: 1
+                width: 1,
             });
         });
     }

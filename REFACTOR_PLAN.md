@@ -25,12 +25,12 @@ under `src/code`, resolved through `baseUrl: src` path imports (`code/*`, `data/
 
 **Baseline is not green.** `npx tsc -b` reports 8 errors today:
 
-| Error | File |
-| --- | --- |
-| `Cannot find module 'types/THappening'` | `src/data/TWorldState.ts:15` |
-| `Property 'happenings' does not exist` | `src/code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/WorldStateCopy.ts:63` |
+| Error                                                      | File                                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Cannot find module 'types/THappening'`                    | `src/data/TWorldState.ts:15`                                                                |
+| `Property 'happenings' does not exist`                     | `src/code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/WorldStateCopy.ts:63`        |
 | `Namespace 'React' has no exported member 'ChangeChapter'` | `src/code/Visualizer/Passages/ScreenPassageCreationForm/components/BasicInfoSection.tsx:46` |
-| 5 × unresolved imports / wrong method names | `src/code/Visualizer/Graphs/**` (dead duplicate tree) |
+| 5 × unresolved imports / wrong method names                | `src/code/Visualizer/Graphs/**` (dead duplicate tree)                                       |
 
 Fixing these is Phase 0 — a refactor cannot be verified against a red baseline.
 
@@ -45,7 +45,7 @@ Fixing these is Phase 0 — a refactor cannot be verified against a red baseline
    sets `window.s` / `window.e`. That is `data → app → engine → data`, a cycle across three
    would-be packages. Four more `data/` files import `code/Engine/ts/{Engine,History}` for types.
 3. **`code/Context.ts` mixes both services** — it declares the engine store/world-state/engine
-   contexts *and* the visualizer store context in one module, so every consumer drags in both.
+   contexts _and_ the visualizer store context in one module, so every consumer drags in both.
 
 ### Dead code / naming to clean up
 
@@ -117,19 +117,19 @@ concrete consequences:
   `types/`/`data/`, engine changes only in the rest. Nothing in `types/` or `data/` may import from
   a service, and lint enforces it (§7).
 
-The Visualizer's "structure" tab (README: *user can edit required types, eg. person can have race*)
+The Visualizer's "structure" tab (README: _user can edit required types, eg. person can have race_)
 writes into `types/`, and its other tabs write into `data/` — the same two folders, which is why
 they stay plain and legible rather than packaged.
 
 ### Ports
 
-| Service | Port |
-| --- | --- |
-| SingleEngine (vite) | 8100 |
-| Visualizer client (vite) | 8101 |
-| MultiEngine client (vite) | 8102 |
-| Visualizer server (vite) — *not built yet* | 8123 |
-| MultiEngine server (node) | 8124 |
+| Service                                    | Port |
+| ------------------------------------------ | ---- |
+| SingleEngine (vite)                        | 8100 |
+| Visualizer client (vite)                   | 8101 |
+| MultiEngine client (vite)                  | 8102 |
+| Visualizer server (vite) — _not built yet_ | 8123 |
+| MultiEngine server (node)                  | 8124 |
 
 `docker-compose.yml` currently publishes `8180` and `5178`, neither of which any service uses —
 replace with the list above.
@@ -144,10 +144,10 @@ addressed when that server is actually built (§8).
 
 ### `types/` — `@story/types` (author-edited, flat)
 
-| From | To |
-| --- | --- |
-| `src/types/*.ts` | `types/` |
-| — | `types/THappening.ts` **new** — currently imported but missing (Phase 0) |
+| From             | To                                                                       |
+| ---------------- | ------------------------------------------------------------------------ |
+| `src/types/*.ts` | `types/`                                                                 |
+| —                | `types/THappening.ts` **new** — currently imported but missing (Phase 0) |
 
 `src/@types/global.d.ts` splits: `TPoint`/`TSize`/`TVec` → `types/geometry.ts` (prefer real exports
 over ambient globals); `declare let _` → `ui/src/translations.d.ts`; the `Window { e, s }`
@@ -156,67 +156,67 @@ augmentation → `SingleEngine/src/global.d.ts` (a debug hook of that app only).
 
 ### `data/` — `@story/data` (author-edited, flat)
 
-| From | To |
-| --- | --- |
-| `src/data/{chapters,characters,sideCharacters,locations,items}/**` | `data/` (shape unchanged) |
-| `src/data/register.ts` | `data/register.ts` |
-| `public/{story,hunter}.png` | `data/assets/` — `hunter` is referenced by two passages as `image: 'hunter'`; story art belongs with the story, where the author can add to it |
+| From                                                               | To                                                                                                                                             |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/data/{chapters,characters,sideCharacters,locations,items}/**` | `data/` (shape unchanged)                                                                                                                      |
+| `src/data/register.ts`                                             | `data/register.ts`                                                                                                                             |
+| `public/{story,hunter}.png`                                        | `data/assets/` — `hunter` is referenced by two passages as `image: 'hunter'`; story art belongs with the story, where the author can add to it |
 
 `src/data/TWorldState.ts` does **not** stay here — it moves to `core/` (see below) so that `data/`
 can depend on `core/` without a cycle. It is engine plumbing, not authored content.
 
 ### `shared/` — `@story/shared`
 
-| From | To |
-| --- | --- |
-| `src/time/{Time,TimeManager,const}.ts` | `shared/src/time/` |
-| `src/code/utils/{Observer,throttle,typeguards,misc,parsePassageId}.ts` | `shared/src/` |
+| From                                                                   | To                 |
+| ---------------------------------------------------------------------- | ------------------ |
+| `src/time/{Time,TimeManager,const}.ts`                                 | `shared/src/time/` |
+| `src/code/utils/{Observer,throttle,typeguards,misc,parsePassageId}.ts` | `shared/src/`      |
 
 ### `ui/` — `@story/ui`
 
-| From | To |
-| --- | --- |
-| `src/code/components/{Basic,Text,css}.ts`, `Modal.tsx` | `ui/src/components/` |
-| `src/code/theme/{theme.ts,GlobalThemeWrapper.tsx}` | `ui/src/theme/` |
-| `src/code/index.css` | `ui/src/index.css` |
-| `src/code/utils/createSafeContext.ts` | `ui/src/createSafeContext.ts` (React) |
-| `src/code/utils/translations.ts` | `ui/src/translations.ts` (installs the global `_`) |
+| From                                                   | To                                                 |
+| ------------------------------------------------------ | -------------------------------------------------- |
+| `src/code/components/{Basic,Text,css}.ts`, `Modal.tsx` | `ui/src/components/`                               |
+| `src/code/theme/{theme.ts,GlobalThemeWrapper.tsx}`     | `ui/src/theme/`                                    |
+| `src/code/index.css`                                   | `ui/src/index.css`                                 |
+| `src/code/utils/createSafeContext.ts`                  | `ui/src/createSafeContext.ts` (React)              |
+| `src/code/utils/translations.ts`                       | `ui/src/translations.ts` (installs the global `_`) |
 
 `showToast` currently lives in `GlobalThemeWrapper.tsx` and is imported by `Visualizer/stores/Agent.ts`.
 Move it to `ui/src/toast.ts` so a non-component module isn't importing a component module.
 
 ### `core/` — `@story/core`
 
-| From | To |
-| --- | --- |
-| `src/code/Engine/ts/{Engine,Story,Processor,History,Inventory,Store,const}.ts` | `core/src/engine/` |
-| `src/code/utils/loadWorldState.ts` | `core/src/worldState/loadWorldState.ts` |
-| `src/worldState.ts` (logic only) | `core/src/worldState/createWorldState.ts` — see §4 |
-| `src/data/TWorldState.ts` | `core/src/worldState/TWorldState.ts` |
+| From                                                                           | To                                                 |
+| ------------------------------------------------------------------------------ | -------------------------------------------------- |
+| `src/code/Engine/ts/{Engine,Story,Processor,History,Inventory,Store,const}.ts` | `core/src/engine/`                                 |
+| `src/code/utils/loadWorldState.ts`                                             | `core/src/worldState/loadWorldState.ts`            |
+| `src/worldState.ts` (logic only)                                               | `core/src/worldState/createWorldState.ts` — see §4 |
+| `src/data/TWorldState.ts`                                                      | `core/src/worldState/TWorldState.ts`               |
 
 Every `from 'data/TWorldState'` (14 sites) becomes `from '@story/core'`.
 
 ### `SingleEngine/` — `@story/single-engine`
 
-| From | To |
-| --- | --- |
-| `index.html` | `SingleEngine/index.html` |
-| `src/engineEntry.tsx` | `SingleEngine/src/main.tsx` |
-| `src/code/Engine/{Engine,Wrapper,CharacterPicker}.tsx` | `SingleEngine/src/` |
-| `src/code/Engine/templates/**` | `SingleEngine/src/templates/` |
-| `src/code/Context.ts` (engine half) | `SingleEngine/src/context.ts` |
-| `src/worldState.ts` (singleton + `window.s/e`) | `SingleEngine/src/worldState.ts` |
+| From                                                   | To                               |
+| ------------------------------------------------------ | -------------------------------- |
+| `index.html`                                           | `SingleEngine/index.html`        |
+| `src/engineEntry.tsx`                                  | `SingleEngine/src/main.tsx`      |
+| `src/code/Engine/{Engine,Wrapper,CharacterPicker}.tsx` | `SingleEngine/src/`              |
+| `src/code/Engine/templates/**`                         | `SingleEngine/src/templates/`    |
+| `src/code/Context.ts` (engine half)                    | `SingleEngine/src/context.ts`    |
+| `src/worldState.ts` (singleton + `window.s/e`)         | `SingleEngine/src/worldState.ts` |
 
 ### `Visualizer/client/` — `@story/visualizer-client`
 
 Moved verbatim; no internal restructuring in this refactor.
 
-| From | To |
-| --- | --- |
-| `visualizer.html` | `Visualizer/client/index.html` |
-| `src/visualizerEntry.tsx` | `Visualizer/client/src/main.tsx` |
-| `src/code/Visualizer/**` (minus the dead tree) | `Visualizer/client/src/` |
-| `src/code/Context.ts` (visualizer half) | `Visualizer/client/src/context.ts` |
+| From                                           | To                                 |
+| ---------------------------------------------- | ---------------------------------- |
+| `visualizer.html`                              | `Visualizer/client/index.html`     |
+| `src/visualizerEntry.tsx`                      | `Visualizer/client/src/main.tsx`   |
+| `src/code/Visualizer/**` (minus the dead tree) | `Visualizer/client/src/`           |
+| `src/code/Context.ts` (visualizer half)        | `Visualizer/client/src/context.ts` |
 
 The existing subtrees (`Chapters/`, `Passages/`, `MapEditor/`, `WorldEventsEditor/`,
 `GUIComponents/`, `stores/`, `components/`) keep their names and contents. Only the two renames
@@ -262,15 +262,15 @@ force `ui` to depend on `core`.
 
 Every `baseUrl`-relative import becomes a package import. Mechanical, but ~226 files:
 
-| Old | New |
-| --- | --- |
-| `types/X` | `@story/types` |
-| `time/X`, `code/utils/X` | `@story/shared` |
-| `code/components/X`, `code/theme/X` | `@story/ui` |
-| `code/Engine/ts/X`, `data/TWorldState`, `code/utils/loadWorldState` | `@story/core` |
-| `data/register`, `data/items/...` | `@story/data` |
-| `code/Engine/*.tsx` | relative, inside SingleEngine |
-| `code/Visualizer/*` | relative, inside Visualizer/client |
+| Old                                                                 | New                                |
+| ------------------------------------------------------------------- | ---------------------------------- |
+| `types/X`                                                           | `@story/types`                     |
+| `time/X`, `code/utils/X`                                            | `@story/shared`                    |
+| `code/components/X`, `code/theme/X`                                 | `@story/ui`                        |
+| `code/Engine/ts/X`, `data/TWorldState`, `code/utils/loadWorldState` | `@story/core`                      |
+| `data/register`, `data/items/...`                                   | `@story/data`                      |
+| `code/Engine/*.tsx`                                                 | relative, inside SingleEngine      |
+| `code/Visualizer/*`                                                 | relative, inside Visualizer/client |
 
 Each package exposes a single `index.ts` barrel; no deep imports across packages — except `@story/data`,
 where the author's tree is the public surface and deep paths (`@story/data/chapters/village/...`)
@@ -286,20 +286,20 @@ Run the rewrite with `jscodeshift` or a scripted `sed` pass per rule, then let `
 Each phase ends green — `yarn build` (all workspaces) + `yarn lint` + both apps boot and render.
 Each is a separate commit; no phase leaves the repo broken.
 
-| # | Phase | Gate |
-| --- | --- | --- |
-| 0 | Fix the 8 tsc errors; delete dead `Visualizer/Graphs/**`; rename `animation.ts/` dir and `' nodeServerTypes.ts'`; delete `package-lock.json`, `.mocharc.json`, `tsconfig.test.json`, tsbuildinfo | `tsc` clean — **baseline** |
-| 1 | Coupling breaks (a), (b), (c) — still one package | `tsc` clean, both apps boot |
-| 2 | Root workspace skeleton: root `package.json` with `workspaces`, `tsconfig.base.json`, empty `types/`, `shared/`, `ui/`, `core/`, `data/` packages | `yarn install` resolves |
-| 3 | Move `types/` + `shared/`; rewrite their importers | build green |
-| 4 | Move `ui/` | build green |
-| 5 | Move `core/` (engine + `TWorldState` + world-state factory) | build green |
-| 6 | Move `data/` | build green; editing a passage hot-reloads |
-| 7 | `SingleEngine/` becomes its own vite app on :8100 | app plays a story end-to-end |
-| 8 | `Visualizer/client/` becomes its own vite app on :8101 | all four tabs render as before |
-| 9 | `MultiEngine/{client,server}` scaffolds | `yarn dev` starts them; they report "not implemented" |
-| 10 | Vitest setup; first `core` engine tests | `yarn test` green |
-| 11 | Tooling: root scripts, eslint boundaries, docker, Makefile, README | `make start` brings up every service |
+| #   | Phase                                                                                                                                                                                            | Gate                                                  |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| 0   | Fix the 8 tsc errors; delete dead `Visualizer/Graphs/**`; rename `animation.ts/` dir and `' nodeServerTypes.ts'`; delete `package-lock.json`, `.mocharc.json`, `tsconfig.test.json`, tsbuildinfo | `tsc` clean — **baseline**                            |
+| 1   | Coupling breaks (a), (b), (c) — still one package                                                                                                                                                | `tsc` clean, both apps boot                           |
+| 2   | Root workspace skeleton: root `package.json` with `workspaces`, `tsconfig.base.json`, empty `types/`, `shared/`, `ui/`, `core/`, `data/` packages                                                | `yarn install` resolves                               |
+| 3   | Move `types/` + `shared/`; rewrite their importers                                                                                                                                               | build green                                           |
+| 4   | Move `ui/`                                                                                                                                                                                       | build green                                           |
+| 5   | Move `core/` (engine + `TWorldState` + world-state factory)                                                                                                                                      | build green                                           |
+| 6   | Move `data/`                                                                                                                                                                                     | build green; editing a passage hot-reloads            |
+| 7   | `SingleEngine/` becomes its own vite app on :8100                                                                                                                                                | app plays a story end-to-end                          |
+| 8   | `Visualizer/client/` becomes its own vite app on :8101                                                                                                                                           | all four tabs render as before                        |
+| 9   | `MultiEngine/{client,server}` scaffolds                                                                                                                                                          | `yarn dev` starts them; they report "not implemented" |
+| 10  | Vitest setup; first `core` engine tests                                                                                                                                                          | `yarn test` green                                     |
+| 11  | Tooling: root scripts, eslint boundaries, docker, Makefile, README                                                                                                                               | `make start` brings up every service                  |
 
 Phases 3–6 are the bulk of the churn; 7–8 are mostly config.
 

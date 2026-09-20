@@ -1,8 +1,6 @@
-
 import { EdgeVisualObject, TLineType } from '../EdgeVisualObject';
 import { NodeVisualObject } from '../NodeVisualObject';
 import { PassageNodeVisualObject, selectableVisualProperties } from './PassageNodeVisualObject';
-
 
 export class PassageEdgeVisualObject extends EdgeVisualObject {
     _onTargetSelectedColor: string = '#0000ff';
@@ -71,7 +69,6 @@ export class PassageEdgeVisualObject extends EdgeVisualObject {
                     this.setZIndex(this.zIndex - 1);
                 }
             }
-
         });
     }
 }

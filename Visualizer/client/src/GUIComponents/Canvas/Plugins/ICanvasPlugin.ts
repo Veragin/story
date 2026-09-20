@@ -1,4 +1,4 @@
-import { ICanvasManagerCore } from "../CanvasManager/CanvasManagerCore";
+import { ICanvasManagerCore } from '../CanvasManager/CanvasManagerCore';
 
 /**
  * Base interface for all canvas plugins
@@ -6,16 +6,16 @@ import { ICanvasManagerCore } from "../CanvasManager/CanvasManagerCore";
 export interface ICanvasPlugin {
     /** Unique identifier for the plugin */
     readonly name: string;
-    
+
     /** Initialize the plugin with the canvas core */
     initialize(core: ICanvasManagerCore): void;
-    
+
     /** Clean up resources when plugin is removed */
     destroy(): void;
-    
+
     /** Enable or disable the plugin */
     setEnabled(enabled: boolean): void;
-    
+
     /** Check if plugin is currently enabled */
     isEnabled(): boolean;
 }

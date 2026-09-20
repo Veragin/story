@@ -1,6 +1,6 @@
 export enum MementoSystemState {
-  Uninitialized = 'uninitialized',
-  Initializing = 'initializing',
-  Ready = 'ready',
-  Error = 'error'
+    Uninitialized = 'uninitialized',
+    Initializing = 'initializing',
+    Ready = 'ready',
+    Error = 'error',
 }

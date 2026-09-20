@@ -1,12 +1,12 @@
 import React from 'react';
-import {
-    TextField,
-    Typography,
-    Box,
-    Tooltip,
-} from '@mui/material';
+import { TextField, Typography, Box, Tooltip } from '@mui/material';
 import { Schedule, HelpOutline, AccessTime } from '@mui/icons-material';
-import { SFormRow, STimeRangeContainer, STimeInputGroup, SDurationDisplay } from '../styles';
+import {
+    SFormRow,
+    STimeRangeContainer,
+    STimeInputGroup,
+    SDurationDisplay,
+} from '../styles';
 import { TTimeRange, calculateDuration, validateTimeRange } from '../types';
 
 type Props = {
@@ -28,18 +28,49 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
 
     return (
         <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 500, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+                variant="h6"
+                gutterBottom
+                sx={{
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    mb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                }}
+            >
                 <Schedule fontSize="small" />
                 {_('Time Range')}
             </Typography>
 
             <Box sx={{ mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                    }}
+                >
+                    <Typography
+                        component="label"
+                        variant="body2"
+                        sx={{ fontSize: '0.875rem' }}
+                    >
                         {_('Chapter Duration')} *
                     </Typography>
-                    <Tooltip title="Required - Define when this chapter occurs in the game timeline" arrow>
-                        <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                    <Tooltip
+                        title="Required - Define when this chapter occurs in the game timeline"
+                        arrow
+                    >
+                        <HelpOutline
+                            sx={{
+                                fontSize: '0.875rem',
+                                color: 'text.secondary',
+                                cursor: 'help',
+                            }}
+                        />
                     </Tooltip>
                 </Box>
 
@@ -84,8 +115,14 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
                             <Typography variant="caption" component="div">
                                 {_('Duration')}
                             </Typography>
-                            <Typography variant="body2" className="duration-value">
-                                <AccessTime fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                            <Typography
+                                variant="body2"
+                                className="duration-value"
+                            >
+                                <AccessTime
+                                    fontSize="small"
+                                    sx={{ mr: 0.5, verticalAlign: 'middle' }}
+                                />
                                 {duration}
                             </Typography>
                         </SDurationDisplay>
@@ -93,8 +130,14 @@ export const TimeRangeSection = ({ value, onChange }: Props) => {
                 </STimeRangeContainer>
             </Box>
 
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block' }}>
-                {_('Both start and end times are required for creating chapters')}
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: '0.7rem', display: 'block' }}
+            >
+                {_(
+                    'Both start and end times are required for creating chapters'
+                )}
             </Typography>
         </Box>
     );

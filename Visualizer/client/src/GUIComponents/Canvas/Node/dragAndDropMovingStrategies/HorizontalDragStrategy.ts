@@ -1,7 +1,5 @@
 import { TPoint } from '@story/types';
-import { DragStrategy } from "./DragStrategy";
-
-
+import { DragStrategy } from './DragStrategy';
 
 export class HorizontalDragStrategy implements DragStrategy {
     calculatePosition(params: {
@@ -12,7 +10,7 @@ export class HorizontalDragStrategy implements DragStrategy {
     }): TPoint {
         return {
             x: params.point.x - params.mouseOffset.x,
-            y: params.startPosition.y
+            y: params.startPosition.y,
         };
     }
 }

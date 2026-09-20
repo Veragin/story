@@ -1,7 +1,5 @@
-import { Graph } from "../Graph";
-import { GraphLayoutManager } from "./GraphLayoutManager";
-
-
+import { Graph } from '../Graph';
+import { GraphLayoutManager } from './GraphLayoutManager';
 
 export class CircularGraphLayoutManager implements GraphLayoutManager {
     private centerX: number;
@@ -31,11 +29,10 @@ export class CircularGraphLayoutManager implements GraphLayoutManager {
     }
 
     performSingleIteration(): void {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
     }
 
     destroy(): void {
         // Nothing to do
     }
-
 }

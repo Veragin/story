@@ -21,24 +21,28 @@ export class CanvasWorld {
         (newPos, lastPos) => !lastPos || newPos.x !== lastPos.x || newPos.y !== lastPos.y
     );
 
-    public onPixelSizeChange = new ConditionalObserver<TSize>(
-        (newSize, lastSize) => {
-            if (!lastSize) return true;
-            return Math.abs(newSize.width - lastSize.width) > 0.00001 || Math.abs(newSize.height - lastSize.height) > 0.00001;
-        }
-    );
+    public onPixelSizeChange = new ConditionalObserver<TSize>((newSize, lastSize) => {
+        if (!lastSize) return true;
+        return (
+            Math.abs(newSize.width - lastSize.width) > 0.00001 || Math.abs(newSize.height - lastSize.height) > 0.00001
+        );
+    });
 
-    get viewPosition(): TPoint { return this._viewPosition; }
+    get viewPosition(): TPoint {
+        return this._viewPosition;
+    }
     set viewPosition(position: TPoint) {
         this._viewPosition = position;
         this.onViewPositionChange.notify(position);
     }
 
-    get pixelSizeInWorldUnits(): TSize { return this._pixelSizeInWorldUnits; }
+    get pixelSizeInWorldUnits(): TSize {
+        return this._pixelSizeInWorldUnits;
+    }
     set pixelSizeInWorldUnits(size: TSize) {
         this._pixelSizeInWorldUnits = {
             width: Math.max(0.00001, size.width),
-            height: Math.max(0.00001, size.height)
+            height: Math.max(0.00001, size.height),
         };
         this.onPixelSizeChange.notify(this._pixelSizeInWorldUnits);
     }
@@ -46,10 +50,7 @@ export class CanvasWorld {
     /**
      * Perform atomic updates to both zoom and position without intermediate notifications
      */
-    public atomicZoomAndPositionUpdate(updates: {
-        pixelSizeInWorldUnits?: TSize;
-        viewPosition?: TPoint;
-    }): void {
+    public atomicZoomAndPositionUpdate(updates: { pixelSizeInWorldUnits?: TSize; viewPosition?: TPoint }): void {
         // Store old values for comparison
         const oldPixelSize = { ...this._pixelSizeInWorldUnits };
         const oldViewPosition = { ...this._viewPosition };
@@ -58,7 +59,7 @@ export class CanvasWorld {
         if (updates.pixelSizeInWorldUnits !== undefined) {
             this._pixelSizeInWorldUnits = {
                 width: Math.max(0.00001, updates.pixelSizeInWorldUnits.width),
-                height: Math.max(0.00001, updates.pixelSizeInWorldUnits.height)
+                height: Math.max(0.00001, updates.pixelSizeInWorldUnits.height),
             };
         }
 
@@ -67,8 +68,10 @@ export class CanvasWorld {
         }
 
         // Send notifications only for what actually changed
-        if (Math.abs(this._pixelSizeInWorldUnits.width - oldPixelSize.width) > 0.00001 ||
-            Math.abs(this._pixelSizeInWorldUnits.height - oldPixelSize.height) > 0.00001) {
+        if (
+            Math.abs(this._pixelSizeInWorldUnits.width - oldPixelSize.width) > 0.00001 ||
+            Math.abs(this._pixelSizeInWorldUnits.height - oldPixelSize.height) > 0.00001
+        ) {
             this.onPixelSizeChange.notify(this._pixelSizeInWorldUnits);
         }
 
@@ -87,7 +90,7 @@ export class CanvasWorld {
         // Calculate new values
         const newPixelSize = {
             width: Math.max(0.00001, this._pixelSizeInWorldUnits.width / zoomFactor),
-            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactor)
+            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactor),
         };
 
         // Temporarily update pixel size to calculate new world point
@@ -99,13 +102,13 @@ export class CanvasWorld {
         // Calculate new view position
         const newViewPosition = {
             x: this._viewPosition.x + worldPointBefore.x - worldPointAfter.x,
-            y: this._viewPosition.y + worldPointBefore.y - worldPointAfter.y
+            y: this._viewPosition.y + worldPointBefore.y - worldPointAfter.y,
         };
 
         // Apply both updates atomically
         this.atomicZoomAndPositionUpdate({
             pixelSizeInWorldUnits: newPixelSize,
-            viewPosition: newViewPosition
+            viewPosition: newViewPosition,
         });
     }
 
@@ -119,7 +122,7 @@ export class CanvasWorld {
         // Calculate new values
         const newPixelSize = {
             width: Math.max(0.00001, this._pixelSizeInWorldUnits.width / zoomFactors.width),
-            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactors.height)
+            height: Math.max(0.00001, this._pixelSizeInWorldUnits.height / zoomFactors.height),
         };
 
         // Temporarily update pixel size to calculate new world point
@@ -131,41 +134,41 @@ export class CanvasWorld {
         // Calculate new view position
         const newViewPosition = {
             x: this._viewPosition.x + worldPointBefore.x - worldPointAfter.x,
-            y: this._viewPosition.y + worldPointBefore.y - worldPointAfter.y
+            y: this._viewPosition.y + worldPointBefore.y - worldPointAfter.y,
         };
 
         // Apply both updates atomically
         this.atomicZoomAndPositionUpdate({
             pixelSizeInWorldUnits: newPixelSize,
-            viewPosition: newViewPosition
+            viewPosition: newViewPosition,
         });
     }
 
     screenToWorld(screenPoint: TPoint): TPoint {
         return {
-            x: this._viewPosition.x + (screenPoint.x * this._pixelSizeInWorldUnits.width),
-            y: this._viewPosition.y + (screenPoint.y * this._pixelSizeInWorldUnits.height)
+            x: this._viewPosition.x + screenPoint.x * this._pixelSizeInWorldUnits.width,
+            y: this._viewPosition.y + screenPoint.y * this._pixelSizeInWorldUnits.height,
         };
     }
 
     worldToScreen(worldPoint: TPoint): TPoint {
         return {
             x: (worldPoint.x - this._viewPosition.x) / this._pixelSizeInWorldUnits.width,
-            y: (worldPoint.y - this._viewPosition.y) / this._pixelSizeInWorldUnits.height
+            y: (worldPoint.y - this._viewPosition.y) / this._pixelSizeInWorldUnits.height,
         };
     }
 
     screenDeltaToWorldDelta(screenDelta: TPoint): TPoint {
         return {
             x: screenDelta.x * this._pixelSizeInWorldUnits.width,
-            y: screenDelta.y * this._pixelSizeInWorldUnits.height
+            y: screenDelta.y * this._pixelSizeInWorldUnits.height,
         };
     }
 
     worldDeltaToScreenDelta(worldDelta: TPoint): TPoint {
         return {
             x: worldDelta.x / this._pixelSizeInWorldUnits.width,
-            y: worldDelta.y / this._pixelSizeInWorldUnits.height
+            y: worldDelta.y / this._pixelSizeInWorldUnits.height,
         };
     }
 
@@ -179,7 +182,7 @@ export class CanvasWorld {
         const visibleBounds = this.getVisibleWorldBounds(canvasSize);
         return {
             x: (visibleBounds.min.x + visibleBounds.max.x) / 2,
-            y: (visibleBounds.min.y + visibleBounds.max.y) / 2
+            y: (visibleBounds.min.y + visibleBounds.max.y) / 2,
         };
     }
 
@@ -187,14 +190,14 @@ export class CanvasWorld {
         const worldDelta = this.screenDeltaToWorldDelta(screenDelta);
         this.viewPosition = {
             x: this._viewPosition.x - worldDelta.x,
-            y: this._viewPosition.y - worldDelta.y
+            y: this._viewPosition.y - worldDelta.y,
         };
     }
 
     resetView(): void {
         this.atomicZoomAndPositionUpdate({
             viewPosition: { x: 0, y: 0 },
-            pixelSizeInWorldUnits: { width: 1, height: 1 }
+            pixelSizeInWorldUnits: { width: 1, height: 1 },
         });
     }
 

@@ -20,11 +20,15 @@ type Props = {
     existingChapterIds: string[];
 };
 
-export const ChildrenSection = ({ value, onChange, existingChapterIds }: Props) => {
+export const ChildrenSection = ({
+    value,
+    onChange,
+    existingChapterIds,
+}: Props) => {
     const handleAddChild = () => {
         const newChild: TChildChapter = {
             condition: '',
-            chapterId: ''
+            chapterId: '',
         };
         onChange([...value, newChild]);
     };
@@ -34,34 +38,73 @@ export const ChildrenSection = ({ value, onChange, existingChapterIds }: Props) 
         onChange(newChildren);
     };
 
-    const handleChildChange = (index: number, field: keyof TChildChapter, newValue: string) => {
+    const handleChildChange = (
+        index: number,
+        field: keyof TChildChapter,
+        newValue: string
+    ) => {
         const newChildren = [...value];
         newChildren[index] = {
             ...newChildren[index],
-            [field]: newValue
+            [field]: newValue,
         };
         onChange(newChildren);
     };
 
     return (
         <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 500, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+                variant="h6"
+                gutterBottom
+                sx={{
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    mb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                }}
+            >
                 <FamilyRestroom fontSize="small" />
                 {_('Child Chapters')}
             </Typography>
 
             <Box sx={{ mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1,
+                    }}
+                >
+                    <Typography
+                        component="label"
+                        variant="body2"
+                        sx={{ fontSize: '0.875rem' }}
+                    >
                         {_('Conditional Child Chapters')}
                     </Typography>
-                    <Tooltip title="Optional - Define chapters that can be triggered based on conditions" arrow>
-                        <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                    <Tooltip
+                        title="Optional - Define chapters that can be triggered based on conditions"
+                        arrow
+                    >
+                        <HelpOutline
+                            sx={{
+                                fontSize: '0.875rem',
+                                color: 'text.secondary',
+                                cursor: 'help',
+                            }}
+                        />
                     </Tooltip>
                 </Box>
 
                 {value.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', fontStyle: 'italic', mb: 2 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.8rem', fontStyle: 'italic', mb: 2 }}
+                    >
                         {_('No child chapters defined')}
                     </Typography>
                 ) : (
@@ -75,45 +118,92 @@ export const ChildrenSection = ({ value, onChange, existingChapterIds }: Props) 
                                     mb: 1,
                                     border: '1px solid',
                                     borderColor: 'divider',
-                                    borderRadius: 1
+                                    borderRadius: 1,
                                 }}
                             >
-                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 1,
+                                    }}
+                                >
                                     <Box sx={{ flex: 1 }}>
                                         <SFormRow>
                                             <SFormControl sx={{ flex: 1 }}>
-                                                <Typography component="label" variant="caption" sx={{ fontSize: '0.75rem', mb: 0.5, display: 'block' }}>
+                                                <Typography
+                                                    component="label"
+                                                    variant="caption"
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        mb: 0.5,
+                                                        display: 'block',
+                                                    }}
+                                                >
                                                     {_('Condition')}
                                                 </Typography>
                                                 <TextField
                                                     value={child.condition}
-                                                    onChange={(e) => handleChildChange(index, 'condition', e.target.value)}
+                                                    onChange={(e) =>
+                                                        handleChildChange(
+                                                            index,
+                                                            'condition',
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     variant="outlined"
                                                     size="small"
                                                     placeholder="condition expression"
                                                     fullWidth
                                                 />
                                             </SFormControl>
-                                            
+
                                             <SFormControl sx={{ flex: 1 }}>
-                                                <Typography component="label" variant="caption" sx={{ fontSize: '0.75rem', mb: 0.5, display: 'block' }}>
+                                                <Typography
+                                                    component="label"
+                                                    variant="caption"
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        mb: 0.5,
+                                                        display: 'block',
+                                                    }}
+                                                >
                                                     {_('Chapter')}
                                                 </Typography>
                                                 <Select
                                                     value={child.chapterId}
-                                                    onChange={(e) => handleChildChange(index, 'chapterId', e.target.value)}
+                                                    onChange={(e) =>
+                                                        handleChildChange(
+                                                            index,
+                                                            'chapterId',
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     size="small"
                                                     displayEmpty
                                                     fullWidth
                                                 >
                                                     <MenuItem value="" disabled>
-                                                        <em>{_('Select an chapter')}</em>
+                                                        <em>
+                                                            {_(
+                                                                'Select an chapter'
+                                                            )}
+                                                        </em>
                                                     </MenuItem>
-                                                    {existingChapterIds.filter(id => id !== '').map((chapterId) => (
-                                                        <MenuItem key={chapterId} value={chapterId}>
-                                                            {chapterId}
-                                                        </MenuItem>
-                                                    ))}
+                                                    {existingChapterIds
+                                                        .filter(
+                                                            (id) => id !== ''
+                                                        )
+                                                        .map((chapterId) => (
+                                                            <MenuItem
+                                                                key={chapterId}
+                                                                value={
+                                                                    chapterId
+                                                                }
+                                                            >
+                                                                {chapterId}
+                                                            </MenuItem>
+                                                        ))}
                                                 </Select>
                                             </SFormControl>
                                         </SFormRow>
@@ -144,8 +234,14 @@ export const ChildrenSection = ({ value, onChange, existingChapterIds }: Props) 
                 </Button>
             </Box>
 
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block' }}>
-                {_('Child chapters will be conditionally triggered based on the specified conditions')}
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: '0.7rem', display: 'block' }}
+            >
+                {_(
+                    'Child chapters will be conditionally triggered based on the specified conditions'
+                )}
             </Typography>
         </Box>
     );

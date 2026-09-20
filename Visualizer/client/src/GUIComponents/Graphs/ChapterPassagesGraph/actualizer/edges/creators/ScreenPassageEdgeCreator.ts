@@ -1,5 +1,5 @@
-import { PassageEdgeVisualObject } from "../../../PassageEdgeVisualObject";
-import { AbstractPassageEdgeCreator, EdgeCreationParams } from "../AbstractPassageEdgeCreator";
+import { PassageEdgeVisualObject } from '../../../PassageEdgeVisualObject';
+import { AbstractPassageEdgeCreator, EdgeCreationParams } from '../AbstractPassageEdgeCreator';
 
 export class ScreenPassageEdgeCreator extends AbstractPassageEdgeCreator {
     createEdges(params: EdgeCreationParams): PassageEdgeVisualObject[] {
@@ -7,7 +7,6 @@ export class ScreenPassageEdgeCreator extends AbstractPassageEdgeCreator {
         const edges: PassageEdgeVisualObject[] = [];
 
         for (const section of passage.body) {
-            
             // Handle links
             if (section.links) {
                 for (const link of section.links) {
@@ -19,7 +18,7 @@ export class ScreenPassageEdgeCreator extends AbstractPassageEdgeCreator {
                                 target: targetNode,
                                 zIndex: 1,
                                 color: '#999999',
-                                style: 'solid'
+                                style: 'solid',
                             })
                         );
                     }
@@ -36,7 +35,7 @@ export class ScreenPassageEdgeCreator extends AbstractPassageEdgeCreator {
                             target: targetNode,
                             zIndex: 0,
                             color: '#ff0000',
-                            style: 'solid'
+                            style: 'solid',
                         })
                     );
                 }

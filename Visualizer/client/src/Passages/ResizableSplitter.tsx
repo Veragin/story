@@ -27,20 +27,23 @@ export const ResizableSplitter = ({
         setIsDragging(true);
     }, []);
 
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!isDragging || !containerRef.current) return;
+    const handleMouseMove = useCallback(
+        (e: MouseEvent) => {
+            if (!isDragging || !containerRef.current) return;
 
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const containerWidth = containerRect.width;
-        const mouseX = e.clientX - containerRect.left;
-        
-        const newLeftWidth = Math.min(
-            Math.max((mouseX / containerWidth) * 100, minLeftWidth),
-            maxLeftWidth
-        );
-        
-        setLeftWidth(newLeftWidth);
-    }, [isDragging, minLeftWidth, maxLeftWidth]);
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const containerWidth = containerRect.width;
+            const mouseX = e.clientX - containerRect.left;
+
+            const newLeftWidth = Math.min(
+                Math.max((mouseX / containerWidth) * 100, minLeftWidth),
+                maxLeftWidth
+            );
+
+            setLeftWidth(newLeftWidth);
+        },
+        [isDragging, minLeftWidth, maxLeftWidth]
+    );
 
     const handleMouseUp = useCallback(() => {
         setIsDragging(false);
@@ -64,21 +67,17 @@ export const ResizableSplitter = ({
 
     return (
         <SContainer ref={containerRef}>
-            <SBackgroundPanel>
-                {leftContent}
-            </SBackgroundPanel>
-            <SOverlayPanel 
+            <SBackgroundPanel>{leftContent}</SBackgroundPanel>
+            <SOverlayPanel
                 style={{ width: `${100 - leftWidth}%` }}
                 ref={containerRef}
             >
-                <SSplitter 
+                <SSplitter
                     style={{ width: `${splitterWidth}px` }}
                     onMouseDown={handleMouseDown}
                     $isDragging={isDragging}
                 />
-                <SRightContent>
-                    {rightContent}
-                </SRightContent>
+                <SRightContent>{rightContent}</SRightContent>
             </SOverlayPanel>
         </SContainer>
     );
@@ -124,19 +123,19 @@ const SRightContent = styled('div')`
 `;
 
 const SSplitter = styled('div')<{ $isDragging: boolean }>`
-    background-color: ${({ $isDragging }) => 
+    background-color: ${({ $isDragging }) =>
         $isDragging ? 'rgba(100, 150, 255, 0.8)' : 'rgba(100, 100, 100, 0.6)'};
     cursor: col-resize;
     transition: background-color 0.2s ease;
     border-radius: 0 4px 4px 0;
-    
+
     &:hover {
         background-color: rgba(100, 150, 255, 0.8);
     }
-    
+
     /* Add a visual indicator */
     position: relative;
-    
+
     &::after {
         content: '';
         position: absolute;

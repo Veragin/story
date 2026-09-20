@@ -9,8 +9,8 @@ Will be used for writing a book, gamebooks or online single or multiplayer text 
 
 That makes exactly two folders the author's working surface:
 
--   **`types/`** — the shape of the world (what a character _is_, what a location _has_)
--   **`data/`** — the story itself (chapters, passages, characters, locations, items, art)
+- **`types/`** — the shape of the world (what a character _is_, what a location _has_)
+- **`data/`** — the story itself (chapters, passages, characters, locations, items, art)
 
 Everything else — `shared/`, `ui/`, `core/`, `SingleEngine/`, `Visualizer/`, `MultiEngine/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts` and saving it hot-reloads the running app.
 
@@ -38,28 +38,30 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
 ### Ports
 
-| Service                       | Port | Status                                     |
-| ----------------------------- | ---- | ------------------------------------------ |
-| SingleEngine (vite)           | 8100 | implemented                                |
-| Visualizer client (vite)      | 8101 | partially implemented                      |
-| MultiEngine client (vite)     | 8102 | scaffold                                   |
-| Visualizer server             | 8123 | **not built yet**                          |
-| MultiEngine server (node/tsx) | 8124 | scaffold — every route answers `501`       |
+| Service                       | Port | Status                               |
+| ----------------------------- | ---- | ------------------------------------ |
+| SingleEngine (vite)           | 8100 | implemented                          |
+| Visualizer client (vite)      | 8101 | partially implemented                |
+| MultiEngine client (vite)     | 8102 | scaffold                             |
+| Visualizer server             | 8123 | **not built yet**                    |
+| MultiEngine server (node/tsx) | 8124 | scaffold — every route answers `501` |
 
 `docker-compose.yml` publishes 8100, 8101, 8102 and 8124. 8123 is reserved, not published, because nothing listens on it yet.
 
 ## Data structure
 
--   passage
-
-    -   means one screen that is displayed to player
-    -   contains image, text and options for player to decide how to continue
-    -   passage is written as a file with given structure (see `data/chapters/village/village.chapter.ts`)
-    -   filename is in format `<chapter>.<passage>.ts`
-    -   **a passage file exports a function, not an object**: it receives `(s, e)` — the world state and the engine — and returns the passage:
+- passage
+    - means one screen that is displayed to player
+    - contains image, text and options for player to decide how to continue
+    - passage is written as a file with given structure (see `data/chapters/village/village.chapter.ts`)
+    - filename is in format `<chapter>.<passage>.ts`
+    - **a passage file exports a function, not an object**: it receives `(s, e)` — the world state and the engine — and returns the passage:
 
         ```ts
-        export const forestPassage = (s: TWorldState, e: Engine): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
+        export const forestPassage = (
+            s: TWorldState,
+            e: Engine
+        ): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
             chapterId: 'village',
             characterId: 'thomas',
             id: 'forest',
@@ -70,7 +72,13 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
                 {
                     condition: true,
                     text: 'text',
-                    links: [{ text: 'Lets hunt', passageId: 'village-thomas-intro', cost: DeltaTime.fromMin(s.time.s < 10 ? 1 : 2) }],
+                    links: [
+                        {
+                            text: 'Lets hunt',
+                            passageId: 'village-thomas-intro',
+                            cost: DeltaTime.fromMin(s.time.s < 10 ? 1 : 2),
+                        },
+                    ],
                 },
             ],
         });
@@ -78,42 +86,35 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
         Both arguments are optional to declare — most passages need neither and take none. The rule is that a passage reads live state **through its arguments only**: it must never import the running app or a world-state singleton. A passage that reaches for the app ties the story to one service, so it could not be replayed by the Visualizer, simulated by the MultiEngine server, or tested. `s` is the world state; `e` is the engine, for the few passages that need to ask it something rather than just read state.
 
--   chapter
+- chapter
+    - story is splitted into the chapters
+    - chapter consists of set of passages
+    - chapter has one starting passage
+    - chapter can have multiple end passages (every end pasage points to another chapter)
+    - we can display a tree of from passage can user get where
+    - each chapter can have time triggers
+    - each chapter has defined time period
 
-    -   story is splitted into the chapters
-    -   chapter consists of set of passages
-    -   chapter has one starting passage
-    -   chapter can have multiple end passages (every end pasage points to another chapter)
-    -   we can display a tree of from passage can user get where
-    -   each chapter can have time triggers
-    -   each chapter has defined time period
+- character
+    - is a playable person in the world
+    - there can be multiple of them, played as multiplayer or singleplayer (user choose and others are played by engine)
 
--   character
+- sidecharacter
+    - is non-playable but important person
 
-    -   is a playable person in the world
-    -   there can be multiple of them, played as multiplayer or singleplayer (user choose and others are played by engine)
+- location
+    - locations are describing the map of the world
+    - each person has to be on some location
+    - location knows its position by points of polygon mash shape
 
--   sidecharacter
+- time triggers
+    - an event triggered by time => something has happened
 
-    -   is non-playable but important person
+- items
+    - item in the world to unify it
 
--   location
-
-    -   locations are describing the map of the world
-    -   each person has to be on some location
-    -   location knows its position by points of polygon mash shape
-
--   time triggers
-
-    -   an event triggered by time => something has happened
-
--   items
-
-    -   item in the world to unify it
-
--   world state
-
-    -   keeps the world informations during the play
+- world state
+    - keeps the world informations during the play
 
 ## Folder structure
 
@@ -121,165 +122,150 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 
 ### Author-edited
 
--   types
+- types
+    - defines the structure of the data
+    - edited by the author (directly, or through the Visualizer's "structure" tab)
 
-    -   defines the structure of the data
-    -   edited by the author (directly, or through the Visualizer's "structure" tab)
-
--   data
-
-    -   folder where the story files are located
-    -   edited by the author (directly, or through the Visualizer's other tabs)
-    -   also holds the story's art, in `data/assets/`
+- data
+    - folder where the story files are located
+    - edited by the author (directly, or through the Visualizer's other tabs)
+    - also holds the story's art, in `data/assets/`
 
 ### Engine packages
 
--   shared
+- shared
+    - shared code between services
+    - time
+    - the bottom of the stack: depends on nothing
 
-    -   shared code between services
-    -   time
-    -   the bottom of the stack: depends on nothing
+- ui
+    - the React pieces both front-ends need: theme, layout primitives, toasts, the global stylesheet
+    - exists so SingleEngine, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
 
--   ui
-
-    -   the React pieces both front-ends need: theme, layout primitives, toasts, the global stylesheet
-    -   exists so SingleEngine, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
-
--   core
-
-    -   the headless story runtime: engine, story, processor, history, inventory, world state
-    -   no React, no rendering — it is the same runtime whether it runs in a browser tab (SingleEngine), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
+- core
+    - the headless story runtime: engine, story, processor, history, inventory, world state
+    - no React, no rendering — it is the same runtime whether it runs in a browser tab (SingleEngine), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
 
 ### Services
 
--   SingleEngine
+- SingleEngine
+    - a service that can play the story for single player
+    - only client implementation
+    - fully implemented
 
-    -   a service that can play the story for single player
-    -   only client implementation
-    -   fully implemented
+- MultiEngine
+    - a service that can play the story for multiple players
+    - splits into `MultiEngine/client/` and `MultiEngine/server/`
+    - server handles the world state and story progress
+    - client handles ui and comunicate with server
+    - not implemented yet — both halves are scaffolds; the server boots and answers `501` to everything
 
--   MultiEngine
-
-    -   a service that can play the story for multiple players
-    -   splits into `MultiEngine/client/` and `MultiEngine/server/`
-    -   server handles the world state and story progress
-    -   client handles ui and comunicate with server
-    -   not implemented yet — both halves are scaffolds; the server boots and answers `501` to everything
-
--   Visualizer
-
-    -   a service for creating and viewing the story and the world
-    -   used by the author of the game
-    -   currently `Visualizer/client/` only; it will gain a `Visualizer/server/` the same way MultiEngine has one (see "Not implemented/decied yet" below)
-    -   partially implemented
+- Visualizer
+    - a service for creating and viewing the story and the world
+    - used by the author of the game
+    - currently `Visualizer/client/` only; it will gain a `Visualizer/server/` the same way MultiEngine has one (see "Not implemented/decied yet" below)
+    - partially implemented
 
 ## Visualizer
 
--   this service is for creating the story data
--   user interface to edit data files
+- this service is for creating the story data
+- user interface to edit data files
 
 ### UI
 
--   tabs: map. timeline, entities, structure
+- tabs: map. timeline, entities, structure
 
--   map
+- map
+    - display locations on canvas
+    - user can draw there with brush (change colors)
+    - user can add notes ed. draw a river and add name on it
+    - add/edit/remove new location as polygon mash
+    - user can open location in location view
 
-    -   display locations on canvas
-    -   user can draw there with brush (change colors)
-    -   user can add notes ed. draw a river and add name on it
-    -   add/edit/remove new location as polygon mash
-    -   user can open location in location view
+- location view
+    - manage location
 
--   location view
+- timeline
+    - display chapters on timeline per character
+    - user can move the timeline by dragging
+    - user can add/delete new chapter
+    - user can move chapter by dragging (needs to hold ctrl)
+    - user can open chapter by clicking
+    - display (toggle on/off) connections between the chapters (end passages are pointing to some)
+    - display chapter description on hover
+    - partially implemented
+    - display (toggle) time triggers
 
-    -   manage location
+- chapter view
+    - user can manage passages in the chapter
+    - save position of passages to solo file (we have to save somewhere the position of the passage on the plate ... not important for the play)
+    - user can edit chapter informations
 
--   timeline
+- entities
+    - persons
+    - items
+    - other entites added by user
 
-    -   display chapters on timeline per character
-    -   user can move the timeline by dragging
-    -   user can add/delete new chapter
-    -   user can move chapter by dragging (needs to hold ctrl)
-    -   user can open chapter by clicking
-    -   display (toggle on/off) connections between the chapters (end passages are pointing to some)
-    -   display chapter description on hover
-    -   partially implemented
-    -   display (toggle) time triggers
-
--   chapter view
-
-    -   user can manage passages in the chapter
-    -   save position of passages to solo file (we have to save somewhere the position of the passage on the plate ... not important for the play)
-    -   user can edit chapter informations
-
--   entities
-
-    -   persons
-    -   items
-    -   other entites added by user
-
--   structure
-    -   user can manage entites (eg add race)
-    -   user can edit required types (eg. person can have race)
+- structure
+    - user can manage entites (eg add race)
+    - user can edit required types (eg. person can have race)
 
 ## MultiEngine
 
--   every player picks his character
--   they are going throuh passages - waiting for each other on time
--   moving between passages costs some time, player has to wait till everyone played prevoius pasages
--   server that handles world state
+- every player picks his character
+- they are going throuh passages - waiting for each other on time
+- moving between passages costs some time, player has to wait till everyone played prevoius pasages
+- server that handles world state
 
 ## Not implemented/decied yet
 
--   how Visualizer will work, multiple options:
-    -   running nodejs server
-    -   vscode extension maybe
-    -   electron
--   api communication
--   MuiltiEngine
+- how Visualizer will work, multiple options:
+    - running nodejs server
+    - vscode extension maybe
+    - electron
+- api communication
+- MuiltiEngine
 
 **Still open.** The client already speaks a protocol (see API below) and `Visualizer/client/src/stores/Store.ts` hardcodes `http://localhost:3123` for a server that does not exist. If the nodejs option wins, it lands at `Visualizer/server/` on :8123 and the client proxies `/api` to it; the hard part is that it has to read and write the `.ts` files in `data/` and `types/`, emitting valid TypeScript while preserving hand-written passage logic. That is why it is a separate piece of work and not just another service. The other two options (vscode extension, electron) are still on the table and would not need the port at all.
 
 ## API
 
--   **not implemented, and the two descriptions of it disagree.** The routes below are as originally specified. `Visualizer/client/src/stores/Agent.ts` calls a different set:
-
-    -   everything is under an `/api` prefix — `/api/chapter/<chapterId>`, not `/chapter/<chapterId>`
-    -   the passage routes carry the passage type in the path — `/api/passage/screen/<passageId>`, not `/passage/<passageId>`
-    -   the client has an `/api/passage/screen/<passageId>/setTime` that is not documented here at all
+- **not implemented, and the two descriptions of it disagree.** The routes below are as originally specified. `Visualizer/client/src/stores/Agent.ts` calls a different set:
+    - everything is under an `/api` prefix — `/api/chapter/<chapterId>`, not `/chapter/<chapterId>`
+    - the passage routes carry the passage type in the path — `/api/passage/screen/<passageId>`, not `/passage/<passageId>`
+    - the client has an `/api/passage/screen/<passageId>/setTime` that is not documented here at all
 
     Neither description has been made authoritative, because nothing serves these routes yet. It gets settled when the Visualizer server is built.
 
--   data sent as JSON body
+- data sent as JSON body
 
--   PUT `/chapter/<chapterId>`
-    -   title: String
-    -   description: String
-    -   location: String
-    -   startTime: TimeString
-    -   endTime: TimeString
--   POST `/chapter/<chapterId>/open`
--   DELETE `/chapter/<chapterId>`
+- PUT `/chapter/<chapterId>`
+    - title: String
+    - description: String
+    - location: String
+    - startTime: TimeString
+    - endTime: TimeString
+- POST `/chapter/<chapterId>/open`
+- DELETE `/chapter/<chapterId>`
 
--   POST `/chapter/<chapterId>/setTime`
+- POST `/chapter/<chapterId>/setTime`
+    - startTime: TimeString
+    - endTime: TimeString
 
-    -   startTime: TimeString
-    -   endTime: TimeString
+- PUT `/passage/<passageId>`
+    - title: String
+    - type: 'screen' | 'linear' | 'transition'
+- POST `/passage/<passageId>/open`
+- DELETE `/passage/<passageId>`
 
--   PUT `/passage/<passageId>`
-    -   title: String
-    -   type: 'screen' | 'linear' | 'transition'
--   POST `/passage/<passageId>/open`
--   DELETE `/passage/<passageId>`
-
--   PUT `/map/<mapId>`
-    -   title: String
-    -   width: Int
-    -   height: Int
-    -   data: { tile: String; title?: String }[][]
-    -   locations: { i: Int; j: Int; locationId: String }[]
-    -   maps: { i: Int; j: Int; mapId: String }[]
--   GET `/map/<mapId>`
--   GET `/map`
-    -   mapId: String
-    -   title: String
+- PUT `/map/<mapId>`
+    - title: String
+    - width: Int
+    - height: Int
+    - data: { tile: String; title?: String }[][]
+    - locations: { i: Int; j: Int; locationId: String }[]
+    - maps: { i: Int; j: Int; mapId: String }[]
+- GET `/map/<mapId>`
+- GET `/map`
+    - mapId: String
+    - title: String

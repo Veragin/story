@@ -1,14 +1,14 @@
 import { TPoint, TSize } from '@story/types';
-import { BorderConfig } from "../../Canvas/Node/BorderConfig";
-import { HorizontallyScalableNodeVisualObject } from "../../Canvas/Node/HorizontallyScalableNodeVisualObject";
-import { nodeVisualObjectProperties } from "../NodeVisualObject";
-import { VisualObject } from "../../Canvas/Node/VisualObject";
+import { BorderConfig } from '../../Canvas/Node/BorderConfig';
+import { HorizontallyScalableNodeVisualObject } from '../../Canvas/Node/HorizontallyScalableNodeVisualObject';
+import { nodeVisualObjectProperties } from '../NodeVisualObject';
+import { VisualObject } from '../../Canvas/Node/VisualObject';
 import { TRegisterPassageId } from '@story/data';
 
 export const selectableVisualProperties = {
     isSelected: 'isSelected',
     isMounted: 'isMounted',
-    ...nodeVisualObjectProperties
+    ...nodeVisualObjectProperties,
 };
 
 export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObject {

@@ -1,7 +1,7 @@
-import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
-import { EdgeCreationParams } from "./AbstractPassageEdgeCreator";
-import { LinearPassageEdgeCreator } from "./creators/LinearPassageEdgeCreator";
-import { ScreenPassageEdgeCreator } from "./creators/ScreenPassageEdgeCreator";
+import { PassageEdgeVisualObject } from '../../PassageEdgeVisualObject';
+import { EdgeCreationParams } from './AbstractPassageEdgeCreator';
+import { LinearPassageEdgeCreator } from './creators/LinearPassageEdgeCreator';
+import { ScreenPassageEdgeCreator } from './creators/ScreenPassageEdgeCreator';
 
 export class EdgeFactory {
     private screenEdgeCreator: ScreenPassageEdgeCreator;

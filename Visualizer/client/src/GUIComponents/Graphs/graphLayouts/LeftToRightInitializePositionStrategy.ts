@@ -1,6 +1,6 @@
-import { EdgeVisualObject } from "../EdgeVisualObject";
-import { NodeVisualObject } from "../NodeVisualObject";
-import { InitializePositionStrategy } from "./KamadaKawaiLayoutManager";
+import { EdgeVisualObject } from '../EdgeVisualObject';
+import { NodeVisualObject } from '../NodeVisualObject';
+import { InitializePositionStrategy } from './KamadaKawaiLayoutManager';
 
 /**
  * Initializes node positions in a left-to-right manner.
@@ -27,18 +27,14 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
     private readonly VERTICAL_GAP = 200; // Gap between SCCs vertically
     private readonly SCC_RADIUS = 100; // Radius for circular layout within SCCs
 
-    initializePositions(
-        nodes: NodeVisualObject[],
-        edges: EdgeVisualObject[],
-        width: number,
-        height: number): void {
+    initializePositions(nodes: NodeVisualObject[], edges: EdgeVisualObject[], width: number, height: number): void {
         this.edges = edges;
 
         // Get neighbors for each node
         this.nodesNeighbors = this.findNeighbors(nodes, edges);
 
         // Create a map of node IDs to nodes for easier lookup
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
             const nodeId = node.getId();
             this.nodeMap.set(nodeId, node);
         });
@@ -54,12 +50,12 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
     findEdgesBetweenSCCs(sccs: Set<NodeVisualObject>[]) {
         const sccsEdges = new Map<Set<NodeVisualObject>, Set<EdgeVisualObject>>();
-        sccs.forEach(scc => sccsEdges.set(scc, new Set<EdgeVisualObject>()));
-        this.edges.forEach(edge => {
+        sccs.forEach((scc) => sccsEdges.set(scc, new Set<EdgeVisualObject>()));
+        this.edges.forEach((edge) => {
             const source = edge.getSource();
             const target = edge.getTarget();
-            const sourceScc = sccs.find(scc => scc.has(source));
-            const targetScc = sccs.find(scc => scc.has(target));
+            const sourceScc = sccs.find((scc) => scc.has(source));
+            const targetScc = sccs.find((scc) => scc.has(target));
             if (sourceScc !== targetScc) {
                 sccsEdges.get(sourceScc!)!.add(edge);
             }
@@ -69,7 +65,7 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
     // Tarjan's algorithm for finding SCCs
     private findStronglyConnectedComponents(nodes: NodeVisualObject[]): Set<NodeVisualObject>[] {
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
             if (!this.nodeIndex.has(node)) {
                 this.strongConnect(node);
             }
@@ -86,14 +82,12 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
         const neighbors = this.nodesNeighbors.get(node)!;
 
-        neighbors.forEach(neighborId => {
+        neighbors.forEach((neighborId) => {
             if (!this.nodeIndex.has(neighborId)) {
                 this.strongConnect(neighborId);
-                this.lowLink.set(node,
-                    Math.min(this.lowLink.get(node)!, this.lowLink.get(neighborId)!));
+                this.lowLink.set(node, Math.min(this.lowLink.get(node)!, this.lowLink.get(neighborId)!));
             } else if (this.visitedNodes.has(neighborId)) {
-                this.lowLink.set(node,
-                    Math.min(this.lowLink.get(node)!, this.nodeIndex.get(neighborId)!));
+                this.lowLink.set(node, Math.min(this.lowLink.get(node)!, this.nodeIndex.get(neighborId)!));
             }
         });
 
@@ -118,11 +112,14 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
         });
     }
 
-    private findNeighbors(nodes: NodeVisualObject[], edges: EdgeVisualObject[]): Map<NodeVisualObject, NodeVisualObject[]> {
+    private findNeighbors(
+        nodes: NodeVisualObject[],
+        edges: EdgeVisualObject[]
+    ): Map<NodeVisualObject, NodeVisualObject[]> {
         const neighbors = new Map<NodeVisualObject, NodeVisualObject[]>();
-        nodes.forEach(node => neighbors.set(node, []));
+        nodes.forEach((node) => neighbors.set(node, []));
 
-        edges.forEach(edge => {
+        edges.forEach((edge) => {
             const source = edge.getSource();
             const target = edge.getTarget();
             neighbors.get(source)!.push(target);
@@ -130,10 +127,6 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
         return neighbors;
     }
-
-
-
-
 
     private layoutSCCs(
         sccs: Set<NodeVisualObject>[],
@@ -143,16 +136,16 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
     ): void {
         // Find root SCCs (those with no incoming edges)
         const incomingEdges = new Map<Set<NodeVisualObject>, number>();
-        sccs.forEach(scc => incomingEdges.set(scc, 0));
+        sccs.forEach((scc) => incomingEdges.set(scc, 0));
 
         sccsEdges.forEach((edges) => {
-            edges.forEach(edge => {
-                const targetScc = sccs.find(scc => scc.has(edge.getTarget()))!;
+            edges.forEach((edge) => {
+                const targetScc = sccs.find((scc) => scc.has(edge.getTarget()))!;
                 incomingEdges.set(targetScc, (incomingEdges.get(targetScc) || 0) + 1);
             });
         });
 
-        const rootSccs = sccs.filter(scc => incomingEdges.get(scc) === 0);
+        const rootSccs = sccs.filter((scc) => incomingEdges.get(scc) === 0);
 
         // Calculate positions for each SCC using a modified level-based layout
         const sccLevels = this.assignSCCLevels(sccs, sccsEdges, rootSccs);
@@ -208,14 +201,14 @@ export class LeftToRightInitializePositionStrategy implements InitializePosition
 
             // Find all target SCCs
             const edges = sccsEdges.get(scc) || new Set<EdgeVisualObject>();
-            edges.forEach(edge => {
-                const targetScc = sccs.find(s => s.has(edge.getTarget()))!;
+            edges.forEach((edge) => {
+                const targetScc = sccs.find((s) => s.has(edge.getTarget()))!;
                 assignLevel(targetScc, level + 1);
             });
         };
 
         // Start from each root SCC
-        rootSccs.forEach(scc => assignLevel(scc, 0));
+        rootSccs.forEach((scc) => assignLevel(scc, 0));
 
         return levels;
     }

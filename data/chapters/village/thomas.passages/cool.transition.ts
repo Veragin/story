@@ -12,4 +12,3 @@ const coolPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> =
 });
 
 export default coolPassage;
-    

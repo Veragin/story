@@ -19,7 +19,7 @@ export interface IVisibilityProvider {
     getCanvasSize(): TSize;
     onObjectAdded: Observer<VisualObject>;
     onObjectRemoved: Observer<VisualObject>;
-    onObjectPropertyChanged: Observer<{ object: VisualObject, property: string }>;
+    onObjectPropertyChanged: Observer<{ object: VisualObject; property: string }>;
 }
 
 export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager {
@@ -40,7 +40,8 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
         this.provider.onObjectAdded.subscribe((obj) => this.handleObjectAdded(obj));
         this.provider.onObjectRemoved.subscribe((obj) => this.handleObjectRemoved(obj));
         this.provider.onObjectPropertyChanged.subscribe(({ object, property }) =>
-            this.handleVisualObjectPropertyChanged(object, property));
+            this.handleVisualObjectPropertyChanged(object, property)
+        );
 
         // Initial visibility check
         this.checkAllVisualObjectsVisibility();
@@ -48,7 +49,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
 
     setCanvasSize(size: TSize) {
         this.provider.getCanvasSize = () => size;
-        this.checkAllVisualObjectsVisibility();  // Direct call, no throttle
+        this.checkAllVisualObjectsVisibility(); // Direct call, no throttle
     }
 
     getVisibleObjects(): Set<VisualObject> {
@@ -67,7 +68,8 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
     }
 
     protected handleVisualObjectPropertyChanged(obj: VisualObject, property: string) {
-        if (property === 'position' || property === 'size') {  // Fixed: 'size' lowercase
+        if (property === 'position' || property === 'size') {
+            // Fixed: 'size' lowercase
             this.checkVisualObjectVisibility(obj);
         }
     }
@@ -115,10 +117,7 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
         }
     }
 
-    protected isObjVisible(
-        obj: VisualObject,
-        visibleBounds: { min: TPoint; max: TPoint }
-    ): boolean {
+    protected isObjVisible(obj: VisualObject, visibleBounds: { min: TPoint; max: TPoint }): boolean {
         const pos = obj.getPosition();
         const size = obj.getSize();
 
@@ -140,6 +139,5 @@ export class VisibleVisualObjectsManager implements IVisibleVisualObjectsManager
         );
     }
 
-    destroy() {
-    }
+    destroy() {}
 }

@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-    Typography,
-    Box,
-    MenuItem,
-    Select,
-    Tooltip,
-} from '@mui/material';
+import { Typography, Box, MenuItem, Select, Tooltip } from '@mui/material';
 import { LocationOn, HelpOutline } from '@mui/icons-material';
 import { SFormRow, SFormControl } from '../styles';
 import { LocationResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/LocationResolver';
@@ -19,24 +13,57 @@ export const LocationSection = ({ value, onChange }: Props) => {
     const availableLocations = LocationResolver.getAllLocations();
 
     const truncateText = (text: string, maxLength: number = 60) => {
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        return text.length > maxLength
+            ? text.substring(0, maxLength) + '...'
+            : text;
     };
 
     return (
         <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 500, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+                variant="h6"
+                gutterBottom
+                sx={{
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    mb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                }}
+            >
                 <LocationOn fontSize="small" />
                 {_('Location')}
             </Typography>
 
             <SFormRow>
                 <SFormControl fullWidth>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Typography component="label" variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            mb: 1,
+                        }}
+                    >
+                        <Typography
+                            component="label"
+                            variant="body2"
+                            sx={{ fontSize: '0.875rem' }}
+                        >
                             {_('Chapter Location')} *
                         </Typography>
-                        <Tooltip title="Required - Location where this chapter takes place" arrow>
-                            <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                        <Tooltip
+                            title="Required - Location where this chapter takes place"
+                            arrow
+                        >
+                            <HelpOutline
+                                sx={{
+                                    fontSize: '0.875rem',
+                                    color: 'text.secondary',
+                                    cursor: 'help',
+                                }}
+                            />
                         </Tooltip>
                     </Box>
                     <Select
@@ -52,11 +79,15 @@ export const LocationSection = ({ value, onChange }: Props) => {
                         {availableLocations.map((location) => (
                             <MenuItem key={location.id} value={location.id}>
                                 <Box>
-                                    <Typography variant="body2" component="span" sx={{ fontSize: '0.875rem' }}>
+                                    <Typography
+                                        variant="body2"
+                                        component="span"
+                                        sx={{ fontSize: '0.875rem' }}
+                                    >
                                         {location.name}
                                     </Typography>
-                                    <Typography 
-                                        variant="caption" 
+                                    <Typography
+                                        variant="caption"
                                         color="text.secondary"
                                         component="span"
                                         sx={{ ml: 1, fontSize: '0.75rem' }}
@@ -64,13 +95,20 @@ export const LocationSection = ({ value, onChange }: Props) => {
                                         ({_('Location')})
                                     </Typography>
                                     {location.description && (
-                                        <Typography 
-                                            variant="caption" 
+                                        <Typography
+                                            variant="caption"
                                             color="text.secondary"
                                             component="div"
-                                            sx={{ mt: 0.25, fontStyle: 'italic', fontSize: '0.7rem' }}
+                                            sx={{
+                                                mt: 0.25,
+                                                fontStyle: 'italic',
+                                                fontSize: '0.7rem',
+                                            }}
                                         >
-                                            {truncateText(location.description, 60)}
+                                            {truncateText(
+                                                location.description,
+                                                60
+                                            )}
                                         </Typography>
                                     )}
                                 </Box>

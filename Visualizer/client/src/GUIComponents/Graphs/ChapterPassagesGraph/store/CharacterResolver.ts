@@ -19,11 +19,7 @@ export class CharacterResolver {
     /**
      * Resolves and returns a specific character by ID
      */
-    static getCharacter(
-        characterId: string,
-        worldState?: TWorldState,
-        engine?: Engine
-    ): any {
+    static getCharacter(characterId: string, worldState?: TWorldState, engine?: Engine): any {
         // Check main characters first
         if (register.characters[characterId as keyof typeof register.characters]) {
             const character = register.characters[characterId as keyof typeof register.characters];
@@ -57,26 +53,26 @@ export class CharacterResolver {
         const characters: TCharacterInfo[] = [];
 
         // Add main characters
-        Object.keys(register.characters).forEach(key => {
+        Object.keys(register.characters).forEach((key) => {
             const character = register.characters[key as keyof typeof register.characters];
             characters.push({
                 id: key,
                 name: character.name || key,
                 type: 'main',
                 character: character,
-                description: character.description || ''
+                description: character.description || '',
             });
         });
 
         // Add side characters
-        Object.keys(register.sideCharacters).forEach(key => {
+        Object.keys(register.sideCharacters).forEach((key) => {
             const character = register.sideCharacters[key as keyof typeof register.sideCharacters];
             characters.push({
                 id: key,
                 name: character.name || key,
                 type: 'side',
                 character: character,
-                description: character.description || ''
+                description: character.description || '',
             });
         });
 
@@ -97,14 +93,14 @@ export class CharacterResolver {
      * Gets only main characters
      */
     static getMainCharacters(): TCharacterInfo[] {
-        return this.getAllCharacters().filter(char => char.type === 'main');
+        return this.getAllCharacters().filter((char) => char.type === 'main');
     }
 
     /**
      * Gets only side characters
      */
     static getSideCharacters(): TCharacterInfo[] {
-        return this.getAllCharacters().filter(char => char.type === 'side');
+        return this.getAllCharacters().filter((char) => char.type === 'side');
     }
 
     /**
@@ -149,7 +145,7 @@ export class CharacterResolver {
      */
     static getCharacterInfo(characterId: string): TCharacterInfo | null {
         const allCharacters = this.getAllCharacters();
-        return allCharacters.find(char => char.id === characterId) || null;
+        return allCharacters.find((char) => char.id === characterId) || null;
     }
 
     /**
@@ -158,10 +154,10 @@ export class CharacterResolver {
     static searchCharactersByName(searchTerm: string): TCharacterInfo[] {
         const allCharacters = this.getAllCharacters();
         const lowerSearchTerm = searchTerm.toLowerCase();
-        
-        return allCharacters.filter(char => 
-            char.name.toLowerCase().includes(lowerSearchTerm) ||
-            char.id.toLowerCase().includes(lowerSearchTerm)
+
+        return allCharacters.filter(
+            (char) =>
+                char.name.toLowerCase().includes(lowerSearchTerm) || char.id.toLowerCase().includes(lowerSearchTerm)
         );
     }
 
@@ -169,10 +165,10 @@ export class CharacterResolver {
      * Gets characters formatted for dropdown/select components
      */
     static getCharactersForSelect(): Array<{ value: string; label: string; type: TCharacterType }> {
-        return this.getAllCharacters().map(char => ({
+        return this.getAllCharacters().map((char) => ({
             value: char.id,
             label: char.name,
-            type: char.type
+            type: char.type,
         }));
     }
 
@@ -181,7 +177,7 @@ export class CharacterResolver {
      */
     static preloadAllCharacters(): void {
         const allCharacters = this.getAllCharacters();
-        allCharacters.forEach(char => {
+        allCharacters.forEach((char) => {
             this.characterCache.set(char.id, char.character);
         });
     }
@@ -205,8 +201,8 @@ export class CharacterResolver {
         const allCharacters = this.getAllCharacters();
         return {
             totalCharacters: allCharacters.length,
-            mainCharacters: allCharacters.filter(char => char.type === 'main').length,
-            sideCharacters: allCharacters.filter(char => char.type === 'side').length,
+            mainCharacters: allCharacters.filter((char) => char.type === 'main').length,
+            sideCharacters: allCharacters.filter((char) => char.type === 'side').length,
         };
     }
 }

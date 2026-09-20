@@ -1,7 +1,7 @@
-import { CanvasPluginBase } from "./CanvasPluginBase";
-import { IPluginWithControls } from "./ICanvasPlugin";
-import { TPoint, TSize } from "../CanvasManager/CanvasWorld";
-import { isValidKeyCode, KeyCode, KeyCodeType } from "../CanvasManager/InputConstants";
+import { CanvasPluginBase } from './CanvasPluginBase';
+import { IPluginWithControls } from './ICanvasPlugin';
+import { TPoint, TSize } from '../CanvasManager/CanvasWorld';
+import { isValidKeyCode, KeyCode, KeyCodeType } from '../CanvasManager/InputConstants';
 
 /**
  * Configuration for zooming behavior
@@ -68,13 +68,13 @@ const DEFAULT_CONFIG: IZoomingConfig = {
     zoomKeys: {
         zoomIn: [KeyCode.EQUAL, KeyCode.NUMPAD_ADD, KeyCode.KEY_Z],
         zoomOut: [KeyCode.MINUS, KeyCode.NUMPAD_SUBTRACT, KeyCode.KEY_X],
-        resetZoom: [KeyCode.NUMPAD_0, KeyCode.KEY0]
+        resetZoom: [KeyCode.NUMPAD_0, KeyCode.KEY0],
     },
     smoothZooming: true,
     zoomSmoothingFactor: 0.2,
     zoomAtCursor: true,
     preventWheelDefault: true,
-    keyboardZoomSpeed: 1.2
+    keyboardZoomSpeed: 1.2,
 };
 
 interface SmoothZoomTarget {
@@ -86,7 +86,7 @@ interface SmoothZoomTarget {
  * Plugin that adds zooming functionality to the canvas
  */
 export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithControls<IZoomingControls> {
-    readonly name = "ZoomingPlugin";
+    readonly name = 'ZoomingPlugin';
 
     private config: IZoomingConfig;
     private currentScale = 1;
@@ -141,8 +141,8 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
             ...newConfig,
             zoomKeys: {
                 ...this.config.zoomKeys,
-                ...(newConfig.zoomKeys || {})
-            }
+                ...(newConfig.zoomKeys || {}),
+            },
         };
 
         if (this.isEnabled() && this.config.smoothZooming !== oldSmoothZooming) {
@@ -231,7 +231,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         } else {
             this.smoothZoomTarget = {
                 screenPoint: { ...screenPoint },
-                worldPoint: { ...worldPointAtZoomStart }
+                worldPoint: { ...worldPointAtZoomStart },
             };
             this.targetScale = newTargetScale;
         }
@@ -282,12 +282,12 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
 
         const newViewPosition: TPoint = {
             x: centerX - (canvasSize.width / 2) * newPixelSize.width,
-            y: centerY - (canvasSize.height / 2) * newPixelSize.height
+            y: centerY - (canvasSize.height / 2) * newPixelSize.height,
         };
 
         core.canvasWorld.atomicZoomAndPositionUpdate({
             pixelSizeInWorldUnits: newPixelSize,
-            viewPosition: newViewPosition
+            viewPosition: newViewPosition,
         });
 
         this.currentScale = newZoom;
@@ -299,7 +299,7 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         return {
             current: this.currentScale,
             target: this.targetScale,
-            isZooming: this.isZooming()
+            isZooming: this.isZooming(),
         };
     }
 
@@ -361,19 +361,18 @@ export class ZoomingPlugin extends CanvasPluginBase implements IPluginWithContro
         const newPixelSize: TSize = { width: 1 / this.currentScale, height: 1 / this.currentScale };
 
         if (this.smoothZoomTarget) {
-
             const newViewPosition: TPoint = {
                 x: this.smoothZoomTarget.worldPoint.x - this.smoothZoomTarget.screenPoint.x * newPixelSize.width,
-                y: this.smoothZoomTarget.worldPoint.y - this.smoothZoomTarget.screenPoint.y * newPixelSize.height
+                y: this.smoothZoomTarget.worldPoint.y - this.smoothZoomTarget.screenPoint.y * newPixelSize.height,
             };
 
             core.canvasWorld.atomicZoomAndPositionUpdate({
                 pixelSizeInWorldUnits: newPixelSize,
-                viewPosition: newViewPosition
+                viewPosition: newViewPosition,
             });
         } else {
             core.canvasWorld.atomicZoomAndPositionUpdate({
-                pixelSizeInWorldUnits: newPixelSize
+                pixelSizeInWorldUnits: newPixelSize,
             });
         }
     }
@@ -395,17 +394,11 @@ class ZoomEventHandlers {
         const eventDispatcher = this.plugin.canvasManagerCore.eventDispatcher;
         const config = this.plugin.getConfiguration();
 
-        eventDispatcher.registerWheel(
-            "zoom ",
-            (e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
+        eventDispatcher.registerWheel('zoom ', (e, sp, wp) => this.plugin.handleWheel(e, sp, wp));
 
         const allKeys = this.collectAllKeys(config.zoomKeys);
         for (const key of allKeys) {
-            eventDispatcher.registerKeyDown(
-                "zoom " + key,
-                key,
-                e => this.plugin.handleKeyDown(e)
-            );
+            eventDispatcher.registerKeyDown('zoom ' + key, key, (e) => this.plugin.handleKeyDown(e));
             this.registeredKeys.add(key);
         }
     }
@@ -416,15 +409,15 @@ class ZoomEventHandlers {
 
     private collectAllKeys(zoomKeys: IZoomingConfig['zoomKeys']): Set<KeyCodeType> {
         const keys = new Set<KeyCodeType>();
-        zoomKeys.zoomIn.forEach(k => keys.add(k));
-        zoomKeys.zoomOut.forEach(k => keys.add(k));
-        zoomKeys.resetZoom.forEach(k => keys.add(k));
+        zoomKeys.zoomIn.forEach((k) => keys.add(k));
+        zoomKeys.zoomOut.forEach((k) => keys.add(k));
+        zoomKeys.resetZoom.forEach((k) => keys.add(k));
         return keys;
     }
 }
 
 class ZoomingControls implements IZoomingControls {
-    constructor(private plugin: ZoomingPlugin) { }
+    constructor(private plugin: ZoomingPlugin) {}
 
     setConfig(config: Partial<IZoomingConfig>): void {
         this.plugin.updateConfig(config);

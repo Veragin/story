@@ -1,31 +1,24 @@
 import { TRegisterPassageId } from '@story/data';
-import { NodeVisualObject } from "../../../NodeVisualObject";
-import { worldStateCopy } from "../../WorldStateCopy";
-import { ColorManager } from "../ColorManager";
-import { LinearPassageNodeCreator } from "./creators/LinearPassageNodeCreator";
-import { ScreenPassageNodeCreator } from "./creators/ScreenPassageNodeCreator";
-import { TransitionPassageNodeCreator } from "./creators/TransitionPassageNodeCreator";
+import { NodeVisualObject } from '../../../NodeVisualObject';
+import { worldStateCopy } from '../../WorldStateCopy';
+import { ColorManager } from '../ColorManager';
+import { LinearPassageNodeCreator } from './creators/LinearPassageNodeCreator';
+import { ScreenPassageNodeCreator } from './creators/ScreenPassageNodeCreator';
+import { TransitionPassageNodeCreator } from './creators/TransitionPassageNodeCreator';
 
 export class NodeFactory {
     private screenNodeCreator: ScreenPassageNodeCreator;
     private transitionNodeCreator: TransitionPassageNodeCreator;
     private linearNodeCreator: LinearPassageNodeCreator;
 
-    constructor(
-        colorManager: ColorManager,
-    ) {
+    constructor(colorManager: ColorManager) {
         this.screenNodeCreator = new ScreenPassageNodeCreator(colorManager);
         this.transitionNodeCreator = new TransitionPassageNodeCreator(colorManager);
         this.linearNodeCreator = new LinearPassageNodeCreator(colorManager);
     }
 
-    async createNode(
-        passageId: TRegisterPassageId,
-        passageData: any
-    ): Promise<NodeVisualObject | undefined> {
-        const passage = typeof passageData === 'function'
-            ? passageData(worldStateCopy)
-            : passageData;
+    async createNode(passageId: TRegisterPassageId, passageData: any): Promise<NodeVisualObject | undefined> {
+        const passage = typeof passageData === 'function' ? passageData(worldStateCopy) : passageData;
 
         switch (passage.type) {
             case 'screen':

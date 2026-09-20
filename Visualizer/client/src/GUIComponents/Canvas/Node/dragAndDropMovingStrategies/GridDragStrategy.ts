@@ -1,5 +1,5 @@
 import { TPoint } from '@story/types';
-import { DragStrategy } from "./DragStrategy";
+import { DragStrategy } from './DragStrategy';
 
 /**
  * GridDragStrategy is a strategy that snaps the object to a grid.
@@ -24,7 +24,7 @@ export class GridDragStrategy implements DragStrategy {
 
         return {
             x: Math.round(rawX / this.gridSize) * this.gridSize,
-            y: Math.round(rawY / this.gridSize) * this.gridSize
+            y: Math.round(rawY / this.gridSize) * this.gridSize,
         };
     }
 }

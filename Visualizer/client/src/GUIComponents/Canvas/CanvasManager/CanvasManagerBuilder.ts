@@ -1,5 +1,5 @@
-import { CanvasManagerCore, ICanvasManagerCore } from "./CanvasManagerCore";
-import { ICanvasPlugin, IPluginWithControls } from "../Plugins/ICanvasPlugin";
+import { CanvasManagerCore, ICanvasManagerCore } from './CanvasManagerCore';
+import { ICanvasPlugin, IPluginWithControls } from '../Plugins/ICanvasPlugin';
 
 /**
  * Result of building a canvas manager with plugins
@@ -18,11 +18,11 @@ export interface ICanvasManagerBuildResult {
 export class CanvasManagerBuilder {
     private canvas: HTMLCanvasElement;
     private plugins: Map<string, ICanvasPlugin> = new Map();
-    
+
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
     }
-    
+
     /**
      * Add a plugin to the canvas manager
      */
@@ -30,21 +30,21 @@ export class CanvasManagerBuilder {
         if (this.plugins.has(plugin.name)) {
             throw new Error(`Plugin with name '${plugin.name}' already exists`);
         }
-        
+
         this.plugins.set(plugin.name, plugin);
         return this;
     }
-    
+
     /**
      * Build the canvas manager with all configured plugins
      */
     build(): ICanvasManagerBuildResult {
         const core = new CanvasManagerCore(this.canvas);
-        
+
         for (const plugin of this.plugins.values()) {
             plugin.initialize(core);
         }
-        
+
         return new CanvasManagerBuildResult(core, this.plugins);
     }
 }
@@ -57,30 +57,30 @@ class CanvasManagerBuildResult implements ICanvasManagerBuildResult {
         public readonly core: CanvasManagerCore,
         public readonly plugins: Map<string, ICanvasPlugin>
     ) {}
-    
+
     getPlugin<T extends ICanvasPlugin>(name: string): T | undefined {
         return this.plugins.get(name) as T | undefined;
     }
-    
+
     getPluginControls<TControls>(name: string): TControls | undefined {
         const plugin = this.plugins.get(name);
-        
+
         if (!plugin) {
             return undefined;
         }
-        
+
         // Check if plugin has controls
         if (this.hasControls(plugin)) {
             return plugin.getControls() as TControls;
         }
-        
+
         return undefined;
     }
-    
+
     private hasControls(plugin: ICanvasPlugin): plugin is IPluginWithControls<any> {
         return 'getControls' in plugin && typeof (plugin as any).getControls === 'function';
     }
-    
+
     /**
      * Destroy all plugins and the core
      */
@@ -94,7 +94,7 @@ class CanvasManagerBuildResult implements ICanvasManagerBuildResult {
                 console.error(`Error destroying plugin '${pluginArray[i].name}':`, error);
             }
         }
-        
+
         // Dispose core
         this.core.destroy();
     }

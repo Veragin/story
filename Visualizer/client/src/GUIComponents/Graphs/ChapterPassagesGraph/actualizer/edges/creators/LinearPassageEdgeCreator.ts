@@ -1,6 +1,5 @@
-import { PassageEdgeVisualObject } from "../../../PassageEdgeVisualObject";
-import { AbstractPassageEdgeCreator, EdgeCreationParams } from "../AbstractPassageEdgeCreator";
-
+import { PassageEdgeVisualObject } from '../../../PassageEdgeVisualObject';
+import { AbstractPassageEdgeCreator, EdgeCreationParams } from '../AbstractPassageEdgeCreator';
 
 export class LinearPassageEdgeCreator extends AbstractPassageEdgeCreator {
     createEdges(params: EdgeCreationParams): PassageEdgeVisualObject[] {
@@ -16,7 +15,7 @@ export class LinearPassageEdgeCreator extends AbstractPassageEdgeCreator {
                         target: targetNode,
                         zIndex: 0,
                         color: '#666666',
-                        style: 'solid'
+                        style: 'solid',
                     })
                 );
             }

@@ -1,27 +1,21 @@
-import { CanvasPluginBase } from "./CanvasPluginBase";
-import { TPoint } from "../CanvasManager/CanvasWorld";
-import { HoverableVisualObject } from "../Node/HoverableVisualObject";
-import { VisualObject } from "../Node/VisualObject";
+import { CanvasPluginBase } from './CanvasPluginBase';
+import { TPoint } from '../CanvasManager/CanvasWorld';
+import { HoverableVisualObject } from '../Node/HoverableVisualObject';
+import { VisualObject } from '../Node/VisualObject';
 
 const isHoverableObject = (obj: any): obj is HoverableVisualObject => {
     return 'handleHover' in obj && 'isHovered' in obj && 'isPointInside' in obj;
 };
 
 export class HoveringPlugin extends CanvasPluginBase {
-    readonly name = "HoveringPlugin";
+    readonly name = 'HoveringPlugin';
     private hoveredObjects: Set<HoverableVisualObject> = new Set();
 
     protected onInitialize(): void {
         const core = this.canvasManagerCore;
-        core.eventDispatcher.registerMouseMove(
-            "hover",
-            (e, sp) => this.handleMouseMove(e, sp)
-        );
+        core.eventDispatcher.registerMouseMove('hover', (e, sp) => this.handleMouseMove(e, sp));
 
-        core.eventDispatcher.registerMouseLeave(
-            "hover leave",
-            () => this.handleMouseLeave()
-        );
+        core.eventDispatcher.registerMouseLeave('hover leave', () => this.handleMouseLeave());
     }
 
     protected onDestroy(): void {
@@ -78,7 +72,8 @@ export class HoveringPlugin extends CanvasPluginBase {
     }
 
     private getTopObjectsAtVisiblePoint(worldPoint: TPoint): VisualObject[] {
-        return this.canvasManagerCore.visibleVisualObjectsManager.getSortedVisibleObjects()
+        return this.canvasManagerCore.visibleVisualObjectsManager
+            .getSortedVisibleObjects()
             .filter((obj: VisualObject) => isHoverableObject(obj) && obj.isPointInside(worldPoint))
             .reverse();
     }

@@ -1,13 +1,13 @@
-import { TLineType } from "../../../EdgeVisualObject";
-import { NodeVisualObject } from "../../../NodeVisualObject";
-import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
+import { TLineType } from '../../../EdgeVisualObject';
+import { NodeVisualObject } from '../../../NodeVisualObject';
+import { PassageEdgeVisualObject } from '../../PassageEdgeVisualObject';
 
 export type EdgeCreationParams = {
     passage: any;
     passageId: string;
     sourceNode: NodeVisualObject;
     getTargetNode: (targetId: string) => NodeVisualObject | undefined;
-}
+};
 
 export abstract class AbstractPassageEdgeCreator {
     protected createEdge(params: {
@@ -17,23 +17,9 @@ export abstract class AbstractPassageEdgeCreator {
         color?: string;
         style?: TLineType;
     }): PassageEdgeVisualObject {
-        const {
-            source,
-            target,
-            zIndex = 1,
-            color = '#999999',
-            style = 'solid'
-        } = params;
+        const { source, target, zIndex = 1, color = '#999999', style = 'solid' } = params;
 
-        const edge = new PassageEdgeVisualObject(
-            source,
-            target,
-            color,
-            1,
-            true,
-            zIndex,
-            style
-        );
+        const edge = new PassageEdgeVisualObject(source, target, color, 1, true, zIndex, style);
 
         edge.onTargetSelectedColor = 'black';
         edge.onSourceSelectedColor = '#1976d2';

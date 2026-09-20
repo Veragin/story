@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-    Button, 
-    IconButton, 
-    Typography, 
-    Box, 
-    FormControl, 
-    InputLabel, 
-    Select, 
+import {
+    Button,
+    IconButton,
+    Typography,
+    Box,
+    FormControl,
+    InputLabel,
+    Select,
     MenuItem,
-    Tooltip
+    Tooltip,
 } from '@mui/material';
 import { Add, Remove, Build, HelpOutline } from '@mui/icons-material';
 import { TItemId } from '@story/types';
@@ -40,12 +40,21 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
     return (
         <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                    variant="subtitle2"
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                >
                     <Build fontSize="small" />
                     Required Tools
                 </Typography>
                 <Tooltip title="Tools needed but not consumed" arrow>
-                    <HelpOutline sx={{ fontSize: '0.875rem', color: 'text.secondary', cursor: 'help' }} />
+                    <HelpOutline
+                        sx={{
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                            cursor: 'help',
+                        }}
+                    />
                 </Tooltip>
             </Box>
 
@@ -56,19 +65,30 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
                             <InputLabel>Tool</InputLabel>
                             <Select
                                 value={toolId}
-                                onChange={(e) => handleToolChange(index, e.target.value as TItemId)}
+                                onChange={(e) =>
+                                    handleToolChange(
+                                        index,
+                                        e.target.value as TItemId
+                                    )
+                                }
                                 label="Tool"
                             >
                                 {availableTools.map((tool) => (
-                                    <MenuItem key={tool.value} value={tool.value}>
-                                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                                    <MenuItem
+                                        key={tool.value}
+                                        value={tool.value}
+                                    >
+                                        <Typography
+                                            variant="body2"
+                                            sx={{ fontSize: '0.875rem' }}
+                                        >
                                             {tool.label}
                                         </Typography>
                                     </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
-                        
+
                         <IconButton
                             onClick={() => removeTool(index)}
                             size="small"
@@ -84,7 +104,11 @@ export const ToolsCostInput = ({ value, onChange }: Props) => {
                     onClick={addTool}
                     startIcon={<Add fontSize="small" />}
                     size="small"
-                    sx={{ alignSelf: 'flex-start', fontSize: '0.8rem', py: 0.5 }}
+                    sx={{
+                        alignSelf: 'flex-start',
+                        fontSize: '0.8rem',
+                        py: 0.5,
+                    }}
                 >
                     Add Tool
                 </Button>

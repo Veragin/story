@@ -10,11 +10,7 @@ export class LocationResolver {
     /**
      * Resolves and returns a specific location by ID
      */
-    static getLocation<L extends TLocationId>(
-        locationId: L,
-        worldState?: TWorldState,
-        engine?: Engine
-    ): TLocation<L> {
+    static getLocation<L extends TLocationId>(locationId: L, worldState?: TWorldState, engine?: Engine): TLocation<L> {
         // Check cache first
         if (this.locationCache.has(locationId)) {
             return this.locationCache.get(locationId) as TLocation<L>;
@@ -34,9 +30,7 @@ export class LocationResolver {
      * Gets all available locations
      */
     static getAllLocations(): TLocation<TLocationId>[] {
-        return Object.keys(register.locations).map(locationId => 
-            this.getLocation(locationId as TLocationId)
-        );
+        return Object.keys(register.locations).map((locationId) => this.getLocation(locationId as TLocationId));
     }
 
     /**
@@ -59,11 +53,12 @@ export class LocationResolver {
     static searchLocations(searchTerm: string): TLocation<TLocationId>[] {
         const allLocations = this.getAllLocations();
         const lowerSearchTerm = searchTerm.toLowerCase();
-        
-        return allLocations.filter(location => 
-            location.name.toLowerCase().includes(lowerSearchTerm) ||
-            location.description.toLowerCase().includes(lowerSearchTerm) ||
-            location.id.toLowerCase().includes(lowerSearchTerm)
+
+        return allLocations.filter(
+            (location) =>
+                location.name.toLowerCase().includes(lowerSearchTerm) ||
+                location.description.toLowerCase().includes(lowerSearchTerm) ||
+                location.id.toLowerCase().includes(lowerSearchTerm)
         );
     }
 
@@ -71,9 +66,9 @@ export class LocationResolver {
      * Gets locations formatted for dropdown/select components
      */
     static getLocationsForSelect(): Array<{ value: TLocationId; label: string }> {
-        return this.getAllLocations().map(location => ({
+        return this.getAllLocations().map((location) => ({
             value: location.id,
-            label: location.name
+            label: location.name,
         }));
     }
 
@@ -82,16 +77,14 @@ export class LocationResolver {
      */
     static getLocationByName(locationName: string): TLocation<TLocationId> | null {
         const allLocations = this.getAllLocations();
-        return allLocations.find(location => 
-            location.name.toLowerCase() === locationName.toLowerCase()
-        ) || null;
+        return allLocations.find((location) => location.name.toLowerCase() === locationName.toLowerCase()) || null;
     }
 
     /**
      * Gets multiple locations by IDs
      */
     static getMultipleLocations<L extends TLocationId>(locationIds: L[]): TLocation<L>[] {
-        return locationIds.map(id => this.getLocation(id));
+        return locationIds.map((id) => this.getLocation(id));
     }
 
     /**
@@ -100,7 +93,7 @@ export class LocationResolver {
     static getConnectedLocations<L extends TLocationId>(locationId: L): TLocation<TLocationId>[] {
         const location = this.getLocation(locationId);
         if (!location.sublocations) return [];
-        
+
         return location.sublocations;
     }
 
@@ -109,7 +102,7 @@ export class LocationResolver {
      */
     static getLocationsByMapId(mapId: string): TLocation<TLocationId>[] {
         const allLocations = this.getAllLocations();
-        return allLocations.filter(location => location.mapId === mapId);
+        return allLocations.filter((location) => location.mapId === mapId);
     }
 
     /**
@@ -117,34 +110,32 @@ export class LocationResolver {
      */
     static getLocationsByCharacterName(characterName: string): TLocation<TLocationId>[] {
         const allLocations = this.getAllLocations();
-        return allLocations.filter(location => 
-            location.localCharacters.some(character => 
-                character.name.toLowerCase() === characterName.toLowerCase()
-            )
+        return allLocations.filter((location) =>
+            location.localCharacters.some((character) => character.name.toLowerCase() === characterName.toLowerCase())
         );
     }
 
     /**
      * Gets all local characters across all locations
      */
-    static getAllLocalCharacters(): Array<{ 
-        character: { name: string; description: string }; 
+    static getAllLocalCharacters(): Array<{
+        character: { name: string; description: string };
         locationId: TLocationId;
         locationName: string;
     }> {
         const allLocations = this.getAllLocations();
-        const characters: Array<{ 
-            character: { name: string; description: string }; 
+        const characters: Array<{
+            character: { name: string; description: string };
             locationId: TLocationId;
             locationName: string;
         }> = [];
 
-        allLocations.forEach(location => {
-            location.localCharacters.forEach(character => {
+        allLocations.forEach((location) => {
+            location.localCharacters.forEach((character) => {
                 characters.push({
                     character,
                     locationId: location.id,
-                    locationName: location.name
+                    locationName: location.name,
                 });
             });
         });
@@ -157,9 +148,7 @@ export class LocationResolver {
      */
     static getParentLocations(): TLocation<TLocationId>[] {
         const allLocations = this.getAllLocations();
-        return allLocations.filter(location => 
-            location.sublocations && location.sublocations.length > 0
-        );
+        return allLocations.filter((location) => location.sublocations && location.sublocations.length > 0);
     }
 
     /**
@@ -167,7 +156,7 @@ export class LocationResolver {
      */
     static preloadAllLocations(): void {
         const allLocationIds = this.getAvailableLocationIds();
-        allLocationIds.forEach(locationId => {
+        allLocationIds.forEach((locationId) => {
             this.getLocation(locationId); // This will cache the location
         });
     }
@@ -190,39 +179,41 @@ export class LocationResolver {
         totalCharacters: number;
     } {
         const allLocations = this.getAllLocations();
-        
+
         // Count locations by map ID
         const locationsByMapId: { [mapId: string]: number } = {};
         let locationsWithSublocations = 0;
         let totalCharacters = 0;
-        
-        allLocations.forEach(location => {
+
+        allLocations.forEach((location) => {
             // Count by map ID
             const mapId = location.mapId || 'no-map';
             locationsByMapId[mapId] = (locationsByMapId[mapId] || 0) + 1;
-            
+
             // Count sublocations
             if (location.sublocations && location.sublocations.length > 0) {
                 locationsWithSublocations++;
             }
-            
+
             // Count characters
             totalCharacters += location.localCharacters.length;
         });
-        
+
         return {
             totalLocations: allLocations.length,
             locationsByMapId,
             locationsWithSublocations,
             averageCharactersPerLocation: allLocations.length > 0 ? totalCharacters / allLocations.length : 0,
-            totalCharacters
+            totalCharacters,
         };
     }
 
     /**
      * Validates location structure
      */
-    static validateLocation<L extends TLocationId>(locationId: L): {
+    static validateLocation<L extends TLocationId>(
+        locationId: L
+    ): {
         isValid: boolean;
         errors: string[];
         warnings: string[];
@@ -236,7 +227,7 @@ export class LocationResolver {
         }
 
         const location = this.getLocation(locationId);
-        
+
         if (!location.name?.trim()) {
             errors.push(`Location '${locationId}' has no name`);
         }
@@ -265,7 +256,9 @@ export class LocationResolver {
         if (location.sublocations) {
             location.sublocations.forEach((sublocation, index) => {
                 if (!this.locationExists(sublocation.id)) {
-                    errors.push(`Location '${locationId}' references non-existent sublocation '${sublocation.id}' at index ${index}`);
+                    errors.push(
+                        `Location '${locationId}' references non-existent sublocation '${sublocation.id}' at index ${index}`
+                    );
                 }
             });
         }
@@ -273,7 +266,7 @@ export class LocationResolver {
         return {
             isValid: errors.length === 0,
             errors,
-            warnings
+            warnings,
         };
     }
 
@@ -288,7 +281,7 @@ export class LocationResolver {
      * Finds the shortest path between two locations (basic BFS implementation using sublocations)
      */
     static findPath<L1 extends TLocationId, L2 extends TLocationId>(
-        fromLocationId: L1, 
+        fromLocationId: L1,
         toLocationId: L2
     ): TLocationId[] | null {
         if ((fromLocationId as TLocationId) === (toLocationId as TLocationId)) return [fromLocationId];
@@ -296,26 +289,26 @@ export class LocationResolver {
 
         const visited = new Set<TLocationId>();
         const queue: { locationId: TLocationId; path: TLocationId[] }[] = [
-            { locationId: fromLocationId, path: [fromLocationId] }
+            { locationId: fromLocationId, path: [fromLocationId] },
         ];
 
         while (queue.length > 0) {
             const { locationId, path } = queue.shift()!;
-            
+
             if (visited.has(locationId)) continue;
             visited.add(locationId);
 
             const sublocations = this.getConnectedLocations(locationId);
-            
+
             for (const sublocation of sublocations) {
                 if (sublocation.id === toLocationId) {
                     return [...path, sublocation.id];
                 }
-                
+
                 if (!visited.has(sublocation.id)) {
                     queue.push({
                         locationId: sublocation.id,
-                        path: [...path, sublocation.id]
+                        path: [...path, sublocation.id],
                     });
                 }
             }
@@ -328,37 +321,36 @@ export class LocationResolver {
      * Gets all locations within a specified distance from a starting location
      */
     static getLocationsWithinDistance<L extends TLocationId>(
-        locationId: L, 
+        locationId: L,
         maxDistance: number
     ): Array<{ location: TLocation<TLocationId>; distance: number }> {
         if (!this.locationExists(locationId)) return [];
 
         const result: Array<{ location: TLocation<TLocationId>; distance: number }> = [];
         const visited = new Set<TLocationId>();
-        const queue: { locationId: TLocationId; distance: number }[] = [
-            { locationId, distance: 0 }
-        ];
+        const queue: { locationId: TLocationId; distance: number }[] = [{ locationId, distance: 0 }];
 
         while (queue.length > 0) {
             const { locationId: currentId, distance } = queue.shift()!;
-            
+
             if (visited.has(currentId) || distance > maxDistance) continue;
             visited.add(currentId);
 
-            if (distance > 0) { // Don't include the starting location
+            if (distance > 0) {
+                // Don't include the starting location
                 result.push({
                     location: this.getLocation(currentId),
-                    distance
+                    distance,
                 });
             }
 
             if (distance < maxDistance) {
                 const sublocations = this.getConnectedLocations(currentId);
-                sublocations.forEach(sublocation => {
+                sublocations.forEach((sublocation) => {
                     if (!visited.has(sublocation.id)) {
                         queue.push({
                             locationId: sublocation.id,
-                            distance: distance + 1
+                            distance: distance + 1,
                         });
                     }
                 });

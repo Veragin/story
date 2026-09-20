@@ -1,25 +1,24 @@
-import { GraphLayoutManager } from "./GraphLayoutManager";
-import { NodeVisualObject } from "../NodeVisualObject";
-import { Graph } from "../Graph";
-import { EdgeVisualObject } from "../EdgeVisualObject";
-import { LeftToRightInitializePositionStrategy } from "./LeftToRightInitializePositionStrategy";
+import { GraphLayoutManager } from './GraphLayoutManager';
+import { NodeVisualObject } from '../NodeVisualObject';
+import { Graph } from '../Graph';
+import { EdgeVisualObject } from '../EdgeVisualObject';
+import { LeftToRightInitializePositionStrategy } from './LeftToRightInitializePositionStrategy';
 
 type NodeGradient = {
     dx: number;
     dy: number;
     delta: number;
-}
-
+};
 
 export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     private width: number;
     private height: number;
-    private idealEdgeLength: number;                // Ideal edge length between nodes
-    private springConstant: number;                // Spring constant
-    private epsilon: number = 0.01;    // Threshold for convergence
+    private idealEdgeLength: number; // Ideal edge length between nodes
+    private springConstant: number; // Spring constant
+    private epsilon: number = 0.01; // Threshold for convergence
     private innerIterations: number = 10; // Max inner loop iterations for each node
     private initializePositionStrategy: InitializePositionStrategy;
-    
+
     constructor(width: number, height: number, L?: number, K: number = 100) {
         this.width = width;
         this.height = height * 1.5;
@@ -28,7 +27,7 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         this.springConstant = K;
         this.initializePositionStrategy = new LeftToRightInitializePositionStrategy();
     }
-    
+
     private prevEnergy = Infinity;
     private currentEnergy: number = 0;
     private springConstants: number[][] = [];
@@ -36,11 +35,9 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     private nodes: NodeVisualObject[] = [];
     layout(graph: Graph): void {
         this.nodes = graph.getAllNodes();
-        if (this.nodes.length === 0) return;  // Exit if no nodes are present
+        if (this.nodes.length === 0) return; // Exit if no nodes are present
 
         this.initializePositions(this.nodes, graph.getAllEdges());
-
-
 
         // Calculate shortest paths between all pairs of nodes
         const distances = this.calculateAllPairsShortestPaths(graph);
@@ -48,8 +45,8 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         // Calculate average distance in the graph for normalizing distances
         let avgDistance = 0;
         let count = 0;
-        distances.forEach(row => {
-            row.forEach(d => {
+        distances.forEach((row) => {
+            row.forEach((d) => {
                 if (d !== Infinity && d !== 0) {
                     avgDistance += d;
                     count++;
@@ -59,8 +56,8 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         avgDistance = count > 0 ? avgDistance / count : 1;
 
         // Normalize distances by dividing each by the average distance
-        const normalizedDistances = distances.map(row =>
-            row.map(d => (d === Infinity ? avgDistance * 2 : d / avgDistance))
+        const normalizedDistances = distances.map((row) =>
+            row.map((d) => (d === Infinity ? avgDistance * 2 : d / avgDistance))
         );
 
         // Calculate spring constants and ideal lengths between each pair of nodes
@@ -71,7 +68,8 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
             this.idealLengths[i] = [];
             for (let j = 0; j < this.nodes.length; j++) {
                 if (i !== j) {
-                    this.springConstants[i][j] = this.springConstant / (normalizedDistances[i][j] * normalizedDistances[i][j]);
+                    this.springConstants[i][j] =
+                        this.springConstant / (normalizedDistances[i][j] * normalizedDistances[i][j]);
                     this.idealLengths[i][j] = this.idealEdgeLength * normalizedDistances[i][j];
                 }
             }
@@ -89,7 +87,6 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         // Final adjustments to node positions, ensuring layout fits within boundaries
         this.adjustNodePositions(this.nodes);
     }
-
 
     private calculateTotalEnergy(
         nodes: NodeVisualObject[],
@@ -162,17 +159,12 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
 
         const newPos = {
             x: pos.x - stepSize * gradient.dx,
-            y: pos.y - stepSize * gradient.dy
+            y: pos.y - stepSize * gradient.dy,
         };
 
         node.setPosition(newPos);
 
-        const newGradient = this.calculateNodeGradient(
-            nodeIndex,
-            nodes,
-            springConstants,
-            idealLengths
-        );
+        const newGradient = this.calculateNodeGradient(nodeIndex, nodes, springConstants, idealLengths);
 
         return newGradient.delta;
     }
@@ -180,7 +172,9 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     private calculateAllPairsShortestPaths(graph: Graph): number[][] {
         const nodes = graph.getAllNodes();
         const n = nodes.length;
-        const distances: number[][] = Array(n).fill(0).map(() => Array(n).fill(Infinity));
+        const distances: number[][] = Array(n)
+            .fill(0)
+            .map(() => Array(n).fill(Infinity));
 
         // Initialize distances
         for (let i = 0; i < n; i++) {
@@ -189,9 +183,9 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
 
         // Set direct connections
         const edges = graph.getAllEdges();
-        edges.forEach(edge => {
-            const sourceIndex = nodes.findIndex(n => n.getId() === edge.getSource().getId());
-            const targetIndex = nodes.findIndex(n => n.getId() === edge.getTarget().getId());
+        edges.forEach((edge) => {
+            const sourceIndex = nodes.findIndex((n) => n.getId() === edge.getSource().getId());
+            const targetIndex = nodes.findIndex((n) => n.getId() === edge.getTarget().getId());
             distances[sourceIndex][targetIndex] = 1;
             distances[targetIndex][sourceIndex] = 1;
         });
@@ -201,10 +195,7 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
             for (let i = 0; i < n; i++) {
                 for (let j = 0; j < n; j++) {
                     if (distances[i][k] !== Infinity && distances[k][j] !== Infinity) {
-                        distances[i][j] = Math.min(
-                            distances[i][j],
-                            distances[i][k] + distances[k][j]
-                        );
+                        distances[i][j] = Math.min(distances[i][j], distances[i][k] + distances[k][j]);
                     }
                 }
             }
@@ -218,12 +209,12 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
     }
 
     private adjustNodePositions(nodes: NodeVisualObject[]): void {
-        const padding = Math.min(this.width, this.height) * 0.1;  // Relative padding
-        nodes.forEach(node => {
+        const padding = Math.min(this.width, this.height) * 0.1; // Relative padding
+        nodes.forEach((node) => {
             const pos = node.getPosition();
             const adjustedPos = {
                 x: Math.max(padding, Math.min(this.width - padding, pos.x)),
-                y: Math.max(padding, Math.min(this.height - padding, pos.y))
+                y: Math.max(padding, Math.min(this.height - padding, pos.y)),
             };
             node.setPosition(adjustedPos);
         });
@@ -234,7 +225,7 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
         const gradients: NodeGradient[] = this.nodes.map((_, i) =>
             this.calculateNodeGradient(i, this.nodes, this.springConstants, this.idealLengths)
         );
-    
+
         // Find the node with the largest gradient delta to optimize its position
         let maxDelta = 0;
         let maxNode = 0;
@@ -244,11 +235,10 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
                 maxNode = index;
             }
         });
-    
+
         // Stop if change in energy is below the convergence threshold
-        if (Math.abs(this.prevEnergy - this.currentEnergy) < this.epsilon) 
-            return false;
-    
+        if (Math.abs(this.prevEnergy - this.currentEnergy) < this.epsilon) return false;
+
         // Optimize the position of the node with the largest gradient
         let innerIteration = 0;
         while (innerIteration++ < this.innerIterations) {
@@ -266,12 +256,11 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
                 this.idealLengths,
                 nodeGradient
             );
-    
+
             // Exit inner loop if position change is below a small threshold
-            if (nodeDelta < this.epsilon / 10) 
-                break;
+            if (nodeDelta < this.epsilon / 10) break;
         }
-    
+
         // Update energy values
         this.prevEnergy = this.currentEnergy;
         this.currentEnergy = this.calculateTotalEnergy(this.nodes, this.springConstants, this.idealLengths);
@@ -293,20 +282,11 @@ export class KamadaKawaiLayoutManager implements GraphLayoutManager {
 }
 
 export interface InitializePositionStrategy {
-    initializePositions(
-        nodes: NodeVisualObject[],
-        edges: EdgeVisualObject[],
-        width: number,
-        height: number): void;
+    initializePositions(nodes: NodeVisualObject[], edges: EdgeVisualObject[], width: number, height: number): void;
 }
 
 export class CircularInitializePositionStrategy implements InitializePositionStrategy {
-    initializePositions(
-        nodes: NodeVisualObject[],
-        edges: EdgeVisualObject[],
-        width: number,
-        height: number): void {
-
+    initializePositions(nodes: NodeVisualObject[], edges: EdgeVisualObject[], width: number, height: number): void {
         void edges;
         nodes.forEach((node, i) => {
             const angle = (2 * Math.PI * i) / nodes.length;
@@ -317,5 +297,3 @@ export class CircularInitializePositionStrategy implements InitializePositionStr
         });
     }
 }
-
-

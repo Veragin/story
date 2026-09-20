@@ -1,11 +1,11 @@
-import { CanvasManager } from "../../../Canvas/CanvasManager/CanvasManager";
-import { Graph } from "../../Graph";
-import { FreeDragStrategy } from "../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy";
-import { NodeVisualObject } from "../../NodeVisualObject";
-import { TextContent } from "../../../Canvas/Node/TextContent";
-import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
-import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
-import { GraphSerializer, SerializedGraph } from "./GraphSerializer";
+import { CanvasManager } from '../../../Canvas/CanvasManager/CanvasManager';
+import { Graph } from '../../Graph';
+import { FreeDragStrategy } from '../../../Canvas/Node/dragAndDropMovingStrategies/FreeDragStrategy';
+import { NodeVisualObject } from '../../NodeVisualObject';
+import { TextContent } from '../../../Canvas/Node/TextContent';
+import { PassageEdgeVisualObject } from '../PassageEdgeVisualObject';
+import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
+import { GraphSerializer, SerializedGraph } from './GraphSerializer';
 
 export class GraphDeserializer {
     /**
@@ -23,7 +23,7 @@ export class GraphDeserializer {
                 text: nodeData.content.text,
                 font: nodeData.content.font,
                 color: nodeData.content.color,
-                alignment: nodeData.content.alignment as any
+                alignment: nodeData.content.alignment as any,
             });
 
             const node = new PassageNodeVisualObject(
@@ -39,7 +39,7 @@ export class GraphDeserializer {
 
             // Set up node interactions
             this.setupNodeInteractions(node);
-            
+
             // Add to graph and store reference
             nodeMap.set(nodeData.id, node);
             graph.addNode(node, nodeData.passageId);
@@ -63,7 +63,7 @@ export class GraphDeserializer {
                 edgeData.width,
                 edgeData.arrow,
                 edgeData.zIndex,
-                edgeData.style,
+                edgeData.style
             );
             edge.onTargetSelectedColor = edgeData.onTargetSelectedColor;
             edge.onSourceSelectedColor = edgeData.onSourceSelectedColor;
@@ -84,7 +84,7 @@ export class GraphDeserializer {
             node.setBorder({
                 ...node.getBorder(),
                 color: '#000000',
-                width: 2
+                width: 2,
             });
         });
 
@@ -92,7 +92,7 @@ export class GraphDeserializer {
             node.setBorder({
                 ...node.getBorder(),
                 color: '#999999',
-                width: 1
+                width: 1,
             });
         });
     }

@@ -44,13 +44,11 @@ export class PassageResolver {
     /**
      * Gets all available passage IDs for a specific chapter
      */
-    static async getAvailablePassageIds<T extends TRegisterPassageId>(
-        chapterId: T
-    ): Promise<string[]> {
+    static async getAvailablePassageIds<T extends TRegisterPassageId>(chapterId: T): Promise<string[]> {
         if (!this.passageCache.has(chapterId)) {
             await this.preloadChapterPassages(chapterId);
         }
-        
+
         const chapterPassages = this.passageCache.get(chapterId);
         return Object.keys(chapterPassages);
     }

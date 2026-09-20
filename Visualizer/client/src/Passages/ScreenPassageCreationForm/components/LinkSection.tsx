@@ -7,12 +7,22 @@ import {
     MenuItem,
     Collapse,
 } from '@mui/material';
-import { Remove, ExpandMore, ExpandLess, MonetizationOn } from '@mui/icons-material';
+import {
+    Remove,
+    ExpandMore,
+    ExpandLess,
+    MonetizationOn,
+} from '@mui/icons-material';
 import { TBodyItemLink, TLinkCost } from '../types';
 import { TimeCostInput } from './cost/TimeCostInput';
 import { ItemsCostInput } from './cost/ItemsCostInput';
 import { ToolsCostInput } from './cost/ToolsCostInput';
-import { SLinkContainer, SCompactRow, SCompactColumn, SCostSection } from '../styles';
+import {
+    SLinkContainer,
+    SCompactRow,
+    SCompactColumn,
+    SCostSection,
+} from '../styles';
 
 type Props = {
     link: TBodyItemLink;
@@ -20,8 +30,17 @@ type Props = {
     linkIndex: number;
     availablePassageIds: string[];
     expandedLinks: { [key: string]: boolean };
-    onLinkChange: (bodyIndex: number, linkIndex: number, field: string, value: any) => void;
-    onLinkCostChange: (bodyIndex: number, linkIndex: number, newCost: TLinkCost | undefined) => void;
+    onLinkChange: (
+        bodyIndex: number,
+        linkIndex: number,
+        field: string,
+        value: any
+    ) => void;
+    onLinkCostChange: (
+        bodyIndex: number,
+        linkIndex: number,
+        newCost: TLinkCost | undefined
+    ) => void;
     onRemoveLink: (bodyIndex: number, linkIndex: number) => void;
     onToggleExpanded: (linkKey: string) => void;
 };
@@ -41,22 +60,30 @@ export const LinkSection = ({
     const isExpanded = expandedLinks[linkKey];
 
     const updateCost = (field: keyof TLinkCost, value: any) => {
-        const currentCost = link.cost || { time: undefined, items: [], tools: [] };
+        const currentCost = link.cost || {
+            time: undefined,
+            items: [],
+            tools: [],
+        };
         const newCost = { ...currentCost, [field]: value };
-        
+
         // Clean up empty cost
-        if (!newCost.time && (!newCost.items || newCost.items.length === 0) && (!newCost.tools || newCost.tools.length === 0)) {
+        if (
+            !newCost.time &&
+            (!newCost.items || newCost.items.length === 0) &&
+            (!newCost.tools || newCost.tools.length === 0)
+        ) {
             onLinkCostChange(bodyIndex, linkIndex, undefined);
         } else {
             onLinkCostChange(bodyIndex, linkIndex, newCost);
         }
     };
 
-    const hasCost = link.cost && (
-        link.cost.time || 
-        (link.cost.items && link.cost.items.length > 0) || 
-        (link.cost.tools && link.cost.tools.length > 0)
-    );
+    const hasCost =
+        link.cost &&
+        (link.cost.time ||
+            (link.cost.items && link.cost.items.length > 0) ||
+            (link.cost.tools && link.cost.tools.length > 0));
 
     return (
         <SLinkContainer>
@@ -65,7 +92,14 @@ export const LinkSection = ({
                     <TextField
                         label={_('Link Text')}
                         value={link.text}
-                        onChange={(e) => onLinkChange(bodyIndex, linkIndex, 'text', e.target.value)}
+                        onChange={(e) =>
+                            onLinkChange(
+                                bodyIndex,
+                                linkIndex,
+                                'text',
+                                e.target.value
+                            )
+                        }
                         variant="outlined"
                         size="small"
                         sx={{ flex: 1 }}
@@ -74,7 +108,14 @@ export const LinkSection = ({
                     <TextField
                         label={_('Target Passage')}
                         value={link.passageId}
-                        onChange={(e) => onLinkChange(bodyIndex, linkIndex, 'passageId', e.target.value)}
+                        onChange={(e) =>
+                            onLinkChange(
+                                bodyIndex,
+                                linkIndex,
+                                'passageId',
+                                e.target.value
+                            )
+                        }
                         variant="outlined"
                         size="small"
                         select
@@ -89,7 +130,14 @@ export const LinkSection = ({
                     <TextField
                         label={_('Priority')}
                         value={link.autoPriority || 0}
-                        onChange={(e) => onLinkChange(bodyIndex, linkIndex, 'autoPriority', parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                            onLinkChange(
+                                bodyIndex,
+                                linkIndex,
+                                'autoPriority',
+                                parseInt(e.target.value) || 0
+                            )
+                        }
                         variant="outlined"
                         size="small"
                         type="number"
@@ -107,12 +155,19 @@ export const LinkSection = ({
                 {/* Cost Section */}
                 <SCostSection>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <MonetizationOn sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
+                        <MonetizationOn
+                            sx={{ mr: 1, color: 'text.secondary' }}
+                            fontSize="small"
+                        />
                         <Typography variant="subtitle2">
                             {_('Link Cost')}
                         </Typography>
                         {hasCost && (
-                            <Typography variant="caption" color="primary" sx={{ ml: 1, fontSize: '0.7rem' }}>
+                            <Typography
+                                variant="caption"
+                                color="primary"
+                                sx={{ ml: 1, fontSize: '0.7rem' }}
+                            >
                                 (configured)
                             </Typography>
                         )}
@@ -129,7 +184,9 @@ export const LinkSection = ({
                         <SCompactColumn>
                             <TimeCostInput
                                 value={link.cost?.time}
-                                onChange={(deltaTime) => updateCost('time', deltaTime)}
+                                onChange={(deltaTime) =>
+                                    updateCost('time', deltaTime)
+                                }
                                 label="Time Required"
                             />
 

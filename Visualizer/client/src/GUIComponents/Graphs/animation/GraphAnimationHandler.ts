@@ -1,6 +1,6 @@
-import { CanvasManager } from "../../Canvas/CanvasManager/CanvasManager";
-import { Graph } from "../Graph";
-import { GraphLayoutManager } from "../graphLayouts/GraphLayoutManager";
+import { CanvasManager } from '../../Canvas/CanvasManager/CanvasManager';
+import { Graph } from '../Graph';
+import { GraphLayoutManager } from '../graphLayouts/GraphLayoutManager';
 
 export class GraphAnimationHandler {
     private graph: Graph;
@@ -16,24 +16,21 @@ export class GraphAnimationHandler {
         this.layoutManager = graph.getLayoutManager();
         this.canvasManager = canvasManager;
     }
- 
+
     public startAnimation(): void {
-        if (this.isAnimationRunning) 
-            return;
-        
+        if (this.isAnimationRunning) return;
+
         this.isAnimationRunning = true;
         this.lastFrameTime = performance.now();
         this.animate();
     }
 
     private animate = (currentTime: number = 0): void => {
-        if (!this.isAnimationRunning) 
-            return;
+        if (!this.isAnimationRunning) return;
 
         // Calculate time since last frame
         const deltaTime = currentTime - this.lastFrameTime;
 
-    
         if (deltaTime >= this.frameInterval) {
             // Update last frame time, accounting for potential dropped frames
             this.lastFrameTime = currentTime - (deltaTime % this.frameInterval);
@@ -44,7 +41,7 @@ export class GraphAnimationHandler {
 
         // Request next frame
         this.animationFrameId = requestAnimationFrame(this.animate);
-    }
+    };
 
     public stopAnimation(): void {
         this.isAnimationRunning = false;

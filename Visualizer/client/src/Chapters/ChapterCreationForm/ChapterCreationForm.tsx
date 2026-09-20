@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-    Button,
-    Typography,
-    Divider,
-    Tooltip,
-} from '@mui/material';
+import { Button, Typography, Divider, Tooltip } from '@mui/material';
 import { Event } from '@mui/icons-material';
 import { Agent } from '../../stores/Agent';
 import { useChapterForm } from './hooks/useChapterForm';
@@ -20,7 +15,11 @@ type Props = {
     agent: Agent;
 };
 
-export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props) => {
+export const ChapterCreationForm = ({
+    onChapterCreated,
+    onCancel,
+    agent,
+}: Props) => {
     const {
         formData,
         chapterId,
@@ -36,8 +35,20 @@ export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props
     return (
         <SFormContainer>
             <SHeader>
-                <Tooltip title="Chapters are containers for passages and define game timeline" arrow>
-                    <Typography variant="h6" component="h2" sx={{ cursor: 'help', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Tooltip
+                    title="Chapters are containers for passages and define game timeline"
+                    arrow
+                >
+                    <Typography
+                        variant="h6"
+                        component="h2"
+                        sx={{
+                            cursor: 'help',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                        }}
+                    >
                         <Event fontSize="small" />
                         {_('Create New Chapter')}
                     </Typography>
@@ -57,7 +68,9 @@ export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props
 
                 <LocationSection
                     value={formData.location}
-                    onChange={(location) => handleInputChange('location', location)}
+                    onChange={(location) =>
+                        handleInputChange('location', location)
+                    }
                 />
 
                 <Divider sx={{ my: 2 }} />
@@ -71,7 +84,9 @@ export const ChapterCreationForm = ({ onChapterCreated, onCancel, agent }: Props
 
                 <ChildrenSection
                     value={formData.children}
-                    onChange={(children) => handleInputChange('children', children)}
+                    onChange={(children) =>
+                        handleInputChange('children', children)
+                    }
                     existingChapterIds={existingChapterIds}
                 />
 

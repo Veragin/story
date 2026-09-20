@@ -1,7 +1,11 @@
 import { Observer, throttle } from '@story/shared';
 import { VisualObject } from '../Node/VisualObject';
 import { CanvasWorld } from './CanvasWorld';
-import { VisibleVisualObjectsManager, IVisibilityProvider, IVisibleVisualObjectsManager } from './VisibleVisualObjectsManager';
+import {
+    VisibleVisualObjectsManager,
+    IVisibilityProvider,
+    IVisibleVisualObjectsManager,
+} from './VisibleVisualObjectsManager';
 
 /**
  * Interface for managing visible visual objects with z-index sorting
@@ -59,12 +63,12 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         if (!this._objectPositions) {
             this._objectPositions = new WeakMap();
         }
-        
+
         // Ensure _insertionOrderMap is initialized
         if (!this._insertionOrderMap) {
             this._insertionOrderMap = new WeakMap();
         }
-        
+
         this._sortedVisibleVisualObjects = Array.from(super.getVisibleObjects()).sort((a, b) => {
             // First compare by z-index
             if (a.zIndex !== b.zIndex) {
@@ -118,8 +122,9 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         const newVisibleObjects = super.getVisibleObjects();
 
         // For bulk changes, it might be more efficient to rebuild if many objects changed
-        const changedCount = [...previousVisibleObjects].filter(obj => !newVisibleObjects.has(obj)).length +
-            [...newVisibleObjects].filter(obj => !previousVisibleObjects.has(obj)).length;
+        const changedCount =
+            [...previousVisibleObjects].filter((obj) => !newVisibleObjects.has(obj)).length +
+            [...newVisibleObjects].filter((obj) => !previousVisibleObjects.has(obj)).length;
 
         if (changedCount > newVisibleObjects.size * 0.5) {
             // If more than 50% of objects changed, rebuild is more efficient
@@ -135,7 +140,7 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         if (!this._objectPositions) {
             this._objectPositions = new WeakMap();
         }
-        
+
         const insertionIndex = this.findInsertionPoint(obj);
         this._sortedVisibleVisualObjects.splice(insertionIndex, 0, obj);
 
@@ -151,7 +156,7 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
             this._objectPositions = new WeakMap();
             return;
         }
-        
+
         const index = this._objectPositions.get(obj);
         if (index !== undefined) {
             this._sortedVisibleVisualObjects.splice(index, 1);
@@ -194,7 +199,10 @@ export class ZIndexSortedVisibleVisualObjectsManager extends VisibleVisualObject
         return orderA - orderB;
     }
 
-    private updateSortedArrayEfficiently(newVisibleObjects: Set<VisualObject>, previousVisibleObjects: Set<VisualObject>): void {
+    private updateSortedArrayEfficiently(
+        newVisibleObjects: Set<VisualObject>,
+        previousVisibleObjects: Set<VisualObject>
+    ): void {
         // Find objects to remove (were visible, now not visible)
         const objectsToRemove: VisualObject[] = [];
         for (const obj of previousVisibleObjects) {

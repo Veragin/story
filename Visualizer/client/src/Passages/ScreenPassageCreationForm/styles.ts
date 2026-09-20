@@ -1,16 +1,19 @@
 import { styled, Paper, Box, FormControl } from '@mui/material';
 import { Column, Row, spacingCss } from '@story/ui';
 
-export const SFormContainer = styled(Paper)(({ theme }) => `
+export const SFormContainer = styled(Paper)(
+    ({ theme }) => `
     padding: ${spacingCss(1.5)};
     max-width: 1000px;
     margin: 0 auto;
     background-color: ${theme.palette.background.paper};
     color: ${theme.palette.text.primary};
     font-size: 0.875rem;
-`);
+`
+);
 
-export const SHeader = styled(Box)(({ theme }) => `
+export const SHeader = styled(Box)(
+    ({ theme }) => `
     margin-bottom: ${spacingCss(1.5)};
     border-bottom: 1px solid ${theme.palette.divider};
     padding-bottom: ${spacingCss(1)};
@@ -23,7 +26,8 @@ export const SHeader = styled(Box)(({ theme }) => `
     & .MuiTypography-body2 {
         font-size: 0.8rem;
     }
-`);
+`
+);
 
 export const SFormContent = styled(Column)`
     gap: ${spacingCss(1.5)};
@@ -39,7 +43,8 @@ export const SButtonRow = styled(Row)`
     margin-top: ${spacingCss(2)};
 `;
 
-export const SFormControl = styled(FormControl)(({ theme }) => `
+export const SFormControl = styled(FormControl)(
+    ({ theme }) => `
     min-width: 200px;
 
     & .MuiInputLabel-root {
@@ -79,9 +84,11 @@ export const SFormControl = styled(FormControl)(({ theme }) => `
     & .MuiMenuItem-root {
         font-size: 0.875rem;
     }
-`);
+`
+);
 
-export const SBodyItemContainer = styled(Box)(({ theme }) => `
+export const SBodyItemContainer = styled(Box)(
+    ({ theme }) => `
     border: 1px solid ${theme.palette.divider};
     border-radius: 6px;
     margin-bottom: ${spacingCss(1)};
@@ -100,17 +107,21 @@ export const SBodyItemContainer = styled(Box)(({ theme }) => `
     & .MuiAccordionDetails-root {
         padding: ${spacingCss(1)};
     }
-`);
+`
+);
 
-export const SLinkContainer = styled(Box)(({ theme }) => `
+export const SLinkContainer = styled(Box)(
+    ({ theme }) => `
     padding: ${spacingCss(1)};
     border: 1px solid ${theme.palette.divider};
     border-radius: 4px;
     margin-bottom: ${spacingCss(0.75)};
     background-color: ${theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]};
-`);
+`
+);
 
-export const SCostSection = styled(Box)(({ theme }) => `
+export const SCostSection = styled(Box)(
+    ({ theme }) => `
     padding: ${spacingCss(1)};
     border: 1px solid ${theme.palette.divider};
     border-radius: 4px;
@@ -125,15 +136,18 @@ export const SCostSection = styled(Box)(({ theme }) => `
     & .MuiTypography-caption {
         font-size: 0.7rem;
     }
-`);
+`
+);
 
-export const SCostCard = styled(Box)(({ theme }) => `
+export const SCostCard = styled(Box)(
+    ({ theme }) => `
     padding: ${spacingCss(1)};
     border: 1px solid ${theme.palette.divider};
     border-radius: 4px;
     background-color: ${theme.palette.background.paper};
     margin-bottom: ${spacingCss(0.75)};
-`);
+`
+);
 
 export const SCompactRow = styled(Row)`
     gap: ${spacingCss(0.75)};

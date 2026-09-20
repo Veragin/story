@@ -1,12 +1,12 @@
 import { TPoint, TSize } from '@story/types';
 import { TRegisterPassageId } from '@story/data';
-import { TLineType } from "../../EdgeVisualObject";
-import { Graph } from "../../Graph";
-import { BorderConfig } from "../../../Canvas/Node/BorderConfig";
-import { NodeVisualObject } from "../../NodeVisualObject";
-import { TextContent } from "../../../Canvas/Node/TextContent";
-import { PassageNodeVisualObject } from "../PassageNodeVisualObject";
-import { PassageEdgeVisualObject } from "../PassageEdgeVisualObject";
+import { TLineType } from '../../EdgeVisualObject';
+import { Graph } from '../../Graph';
+import { BorderConfig } from '../../../Canvas/Node/BorderConfig';
+import { NodeVisualObject } from '../../NodeVisualObject';
+import { TextContent } from '../../../Canvas/Node/TextContent';
+import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
+import { PassageEdgeVisualObject } from '../PassageEdgeVisualObject';
 
 export type SerializedNode = {
     id: string;
@@ -23,7 +23,7 @@ export type SerializedNode = {
     };
     zIndex: number;
     isMounted: boolean;
-}
+};
 
 export type SerializedEdge = {
     id: string;
@@ -37,12 +37,12 @@ export type SerializedEdge = {
     onTargetSelectedColor: string;
     onSourceSelectedColor: string;
     defaultColor: string;
-}
+};
 
 export type SerializedGraph = {
     nodes: SerializedNode[];
     edges: SerializedEdge[];
-}
+};
 
 export class GraphSerializer {
     /**
@@ -54,12 +54,11 @@ export class GraphSerializer {
 
         // Serialize nodes
         for (const [id, visNode] of Object.entries(graph.getAllNodes())) {
-            if (!(visNode instanceof PassageNodeVisualObject)) 
-                throw new Error('Not Implemented Exception');
-            
+            if (!(visNode instanceof PassageNodeVisualObject)) throw new Error('Not Implemented Exception');
+
             const node = visNode as PassageNodeVisualObject;
             const content = node.getContent() as TextContent;
-            
+
             nodes.push({
                 id,
                 passageId: node.passageId,
@@ -71,7 +70,7 @@ export class GraphSerializer {
                     text: content.getText(),
                     font: content.getFont(),
                     color: content.getColor(),
-                    alignment: content.getAlignment()
+                    alignment: content.getAlignment(),
                 },
                 zIndex: node.zIndex,
                 isMounted: (node as PassageNodeVisualObject).isMounted,
@@ -92,7 +91,7 @@ export class GraphSerializer {
                 zIndex: edge.zIndex,
                 onTargetSelectedColor: edge.onTargetSelectedColor,
                 onSourceSelectedColor: edge.onSourceSelectedColor,
-                defaultColor: edge.defaultColor
+                defaultColor: edge.defaultColor,
             });
         }
 

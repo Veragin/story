@@ -1,9 +1,9 @@
-import { Graph } from "../../../Graph";
-import { NodeVisualObject } from "../../../NodeVisualObject";
-import { PassageEdgeVisualObject } from "../../PassageEdgeVisualObject";
-import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";
-import { worldStateCopy } from "../../WorldStateCopy";
-import { EdgeFactory } from "./EdgeFactory";
+import { Graph } from '../../../Graph';
+import { NodeVisualObject } from '../../../NodeVisualObject';
+import { PassageEdgeVisualObject } from '../../PassageEdgeVisualObject';
+import { PassageNodeVisualObject } from '../../PassageNodeVisualObject';
+import { worldStateCopy } from '../../WorldStateCopy';
+import { EdgeFactory } from './EdgeFactory';
 
 export class EdgeActualizer {
     private edgeCounter = 0;
@@ -23,13 +23,11 @@ export class EdgeActualizer {
         this.removeObsoleteEdges(graph, existingEdges);
     }
 
-
     private mapExistingEdges(graph: Graph): Map<string, PassageEdgeVisualObject> {
         const existingEdges = new Map<string, PassageEdgeVisualObject>();
 
         for (const edge of graph.getAllEdges()) {
-            if (!(edge instanceof PassageEdgeVisualObject)) 
-                continue;
+            if (!(edge instanceof PassageEdgeVisualObject)) continue;
 
             let sourceId = this.getNodePassageId(edge.getSource());
             let targetId = this.getNodePassageId(edge.getTarget());
@@ -53,17 +51,15 @@ export class EdgeActualizer {
     ): Promise<void> {
         for (const [passageId, passageData] of Object.entries(passages)) {
             const sourceNode = graph.getNode(passageId);
-            if (!sourceNode) 
-                continue;
+            if (!sourceNode) continue;
 
-            const passage = typeof passageData === 'function' ?
-                passageData(worldStateCopy) : passageData;
+            const passage = typeof passageData === 'function' ? passageData(worldStateCopy) : passageData;
 
             const newEdges = this.edgeFactory.createEdges({
                 passage,
                 passageId,
                 sourceNode,
-                getTargetNode: (targetId: string) => graph.getNode(targetId)
+                getTargetNode: (targetId: string) => graph.getNode(targetId),
             });
 
             for (const edge of newEdges) {
@@ -79,10 +75,7 @@ export class EdgeActualizer {
         }
     }
 
-    private removeObsoleteEdges(
-        graph: Graph,
-        existingEdges: Map<string, PassageEdgeVisualObject>
-    ): void {
+    private removeObsoleteEdges(graph: Graph, existingEdges: Map<string, PassageEdgeVisualObject>): void {
         for (const [edgeKey, edge] of existingEdges) {
             for (const [id, graphEdge] of Object.entries(graph.getAllEdges())) {
                 if (graphEdge === edge) {
