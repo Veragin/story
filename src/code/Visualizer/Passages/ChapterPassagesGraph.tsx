@@ -3,7 +3,7 @@ import { useVisualizerStore } from 'code/Context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';
-import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation.ts/GraphAnimationHandler';
+import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation/GraphAnimationHandler';
 import { TChapterId } from 'types/ids';
 import { CanvasManager } from '../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { GraphProvider } from '../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';

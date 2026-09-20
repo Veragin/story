@@ -6,7 +6,7 @@ import { PassageResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPas
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { TScreenPassageData } from 'code/Visualizer/stores/ nodeServerTypes';
+import { TScreenPassageData } from 'code/Visualizer/stores/nodeServerTypes';
 
 export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
     const [formData, setFormData] = useState<TPassageFormData>({

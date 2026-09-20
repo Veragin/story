@@ -4,6 +4,7 @@ import { Annie } from './characters/annie';
 import { Thomas } from './characters/thomas';
 import { kingdomChapter } from './chapters/kingdom/kingdom.chapter';
 import { villageChapter } from './chapters/village/village.chapter';
+import { villageUnderAttackHappening } from './happenings/village_under_attack';
 import { villageLocation } from './locations/village.location';
 import { Franta } from './sideCharacters/Franta';
 import { NobleMan } from './sideCharacters/NobleMan';
@@ -25,6 +26,9 @@ export const register = {
     locations: {
         village: villageLocation,
         kingdom: kingdomLocation,
+    },
+    happenings: {
+        village_under_attack: villageUnderAttackHappening,
     },
     passages: {
         village: () => import('./chapters/village/village.passages'),

@@ -3,7 +3,7 @@ import { showToast } from 'code/theme/GlobalThemeWrapper';
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TChapterFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange, validateChildren } from '../types';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { TChapterData } from 'code/Visualizer/stores/ nodeServerTypes';
+import { TChapterData } from 'code/Visualizer/stores/nodeServerTypes';
 
 export const useChapterForm = (agent: Agent) => {
     const [formData, setFormData] = useState<TChapterFormData>(DEFAULT_FORM_DATA);

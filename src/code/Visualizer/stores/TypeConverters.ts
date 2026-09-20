@@ -9,7 +9,7 @@ import {
     TChapterData,
     TPassageData,
     TScreenPassageData,
-} from './ nodeServerTypes';
+} from './nodeServerTypes';
 import { TChapterId } from 'types/ids';
 
 export class TypeConverters {

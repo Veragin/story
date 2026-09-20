@@ -4,7 +4,7 @@ import { TChapterPassageType } from 'types/TPassage';
 import { TMapData } from '../MapEditor/types';
 import { TypeConverters } from './TypeConverters';
 import { HttpErrorHandler } from './HttpErrorHandler';
-import { MapResponse, TChapterData, TScreenPassageData } from './ nodeServerTypes';
+import { MapResponse, TChapterData, TScreenPassageData } from './nodeServerTypes';
 
 /**
  * Agent class for handling API communication with the WorldsFactory backend

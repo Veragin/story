@@ -43,8 +43,8 @@ export const BasicInfoSection = ({
         }
     }, []);
 
-    const handleFileChange = useCallback((chapter: React.ChangeChapter<HTMLInputElement>) => {
-        const file = chapter.target.files?.[0];
+    const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
                 showToast(_('Please select an image file'), { variant: 'error' });
@@ -56,8 +56,8 @@ export const BasicInfoSection = ({
             showToast(_('Image selected successfully'), { variant: 'success' });
         }
         
-        if (chapter.target) {
-            chapter.target.value = '';
+        if (event.target) {
+            event.target.value = '';
         }
     }, [handleInputChange]);
 

@@ -1,6 +1,6 @@
 // worldState/WorldStateManager.ts
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TChapterId, TSideCharacterId } from 'types/ids';
+import { TCharacterId, TChapterId, THappeningId, TSideCharacterId } from 'types/ids';
 import { TLocationId } from 'types/TLocation';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
@@ -20,7 +20,7 @@ class WorldStateCopy {
             sideCharacters: {} as Record<TSideCharacterId, unknown>,
             chapters: {} as Record<TChapterId, unknown>,
             locations: {} as Record<TLocationId, unknown>,
-            happenings: {} as Record<string, unknown>,
+            happenings: {} as Record<THappeningId, unknown>,
         };
 
         // Initialize characters
@@ -60,8 +60,11 @@ class WorldStateCopy {
         });
 
         // Initialize happenings
-        Object.entries(register.happenings).forEach(([id, happening]) => {
-            baseState.happenings[id] = { ref: happening };
+        (Object.keys(register.happenings) as THappeningId[]).forEach((id) => {
+            baseState.happenings[id] = {
+                ...register.happenings[id].init,
+                ref: register.happenings[id],
+            };
         });
 
         return baseState as TWorldState;
