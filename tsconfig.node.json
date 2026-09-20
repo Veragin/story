@@ -18,11 +18,16 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
     },
-    /* Every Vite config in the repo: one per app, no root config (§7). The root one is gone as
-       of Phase 8, when the Visualizer got its own. */
+    /* The repo's node-side config files: one Vite config per app, no root config (§7; the root
+       one is gone as of Phase 8, when the Visualizer got its own), plus the single Vitest
+       workspace file added in Phase 10. They are checked here rather than in `tsconfig.json`
+       because they run in node, not in the browser — `lib` above has no DOM. The test files
+       themselves are *not* here: they are ordinary package source and are covered by
+       `tsconfig.json`'s `core` / `data` entries. */
     "include": [
         "SingleEngine/vite.config.ts",
         "Visualizer/client/vite.config.ts",
-        "MultiEngine/client/vite.config.ts"
+        "MultiEngine/client/vite.config.ts",
+        "vitest.workspace.ts"
     ]
 }

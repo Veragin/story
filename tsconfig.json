@@ -46,8 +46,11 @@
     "exclude": [
         "node_modules",
         "dist",
+
+        /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
         "SingleEngine/vite.config.ts",
         "Visualizer/client/vite.config.ts",
-        "MultiEngine/client/vite.config.ts"
+        "MultiEngine/client/vite.config.ts",
+        "vitest.workspace.ts"
     ]
 }

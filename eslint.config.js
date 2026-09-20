@@ -15,8 +15,13 @@ export default tseslint.config(
             // `require-await` and `no-floating-promises` below are type-aware rules; without
             // this they throw on the first file linted.
             parserOptions: {
-                // Vite/vitest configs live outside the app tsconfig's `include`.
-                projectService: { allowDefaultProject: ['*.config.ts', '*/*.config.ts', '*/*/*.config.ts'] },
+                // Vite/vitest configs live outside the app tsconfig's `include`. The project
+                // service looks for the *nearest* `tsconfig.json`, so listing these in the
+                // root `tsconfig.node.json` (which is what `yarn typecheck` uses) does not
+                // make them resolvable here — they need naming explicitly.
+                projectService: {
+                    allowDefaultProject: ['*.config.ts', '*/*.config.ts', '*/*/*.config.ts', 'vitest.workspace.ts'],
+                },
                 tsconfigRootDir: import.meta.dirname,
             },
         },
