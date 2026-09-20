@@ -12,7 +12,6 @@
     "dependencies": {
         "@story/core": "workspace:^",
         "@story/shared": "workspace:^",
-        "@story/types": "workspace:^",
-        "@story/ui": "workspace:^"
+        "@story/types": "workspace:^"
     }
 }

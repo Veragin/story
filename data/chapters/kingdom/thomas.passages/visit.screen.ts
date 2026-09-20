@@ -1,7 +1,7 @@
 import { DeltaTime } from '@story/shared';
 import { TPassage } from '@story/types';
 import { TKingdomThomasPassageId } from '../kingdom.passages';
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '../../../TWorldState';
 import type { Engine } from '@story/core';
 
 export const visitPassage = (s: TWorldState, e: Engine): TPassage<'kingdom', 'thomas', TKingdomThomasPassageId> => {

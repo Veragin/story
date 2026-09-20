@@ -1,8 +1,8 @@
 import { parsePassageId } from '../parsePassageId';
 import { Time } from '@story/shared';
 import { TChapterCharacterPassageId, TChapterId, TCharacterId, TPassageId } from '@story/types';
-import { register } from 'data/register';
-import type { TWorldState } from 'data/TWorldState';
+import { register } from '@story/data';
+import type { TWorldState } from '@story/data';
 
 export class History {
     data: Partial<Record<TCharacterId, THistoryItem[]>> = {};

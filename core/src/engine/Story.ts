@@ -1,10 +1,10 @@
 import { DeltaTime } from '@story/shared';
 import { TLinkCost, TPassageId } from '@story/types';
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { parsePassageId } from '../parsePassageId';
 import { showToast } from '@story/shared';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo } from '@story/data';
 import { action, makeObservable } from 'mobx';
 
 export class Story {

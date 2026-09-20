@@ -3,7 +3,7 @@ import { BorderConfig } from "../../Canvas/Node/BorderConfig";
 import { HorizontallyScalableNodeVisualObject } from "../../Canvas/Node/HorizontallyScalableNodeVisualObject";
 import { nodeVisualObjectProperties } from "../NodeVisualObject";
 import { VisualObject } from "../../Canvas/Node/VisualObject";
-import { TRegisterPassageId } from "data/register";
+import { TRegisterPassageId } from '@story/data';
 
 export const selectableVisualProperties = {
     isSelected: 'isSelected',

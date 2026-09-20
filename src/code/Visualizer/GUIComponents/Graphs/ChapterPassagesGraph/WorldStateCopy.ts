@@ -1,6 +1,5 @@
 import { buildWorldState } from '@story/core';
-import { register } from 'data/register';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo, register } from '@story/data';
 
 /**
  * The pristine, authored starting state the passage graph renders against.

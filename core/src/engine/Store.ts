@@ -1,4 +1,4 @@
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { action, makeObservable, observable } from 'mobx';
 import { TUnkownPassageScreen } from './const';
 

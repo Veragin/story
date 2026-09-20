@@ -1,4 +1,4 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { TLocationId } from './TLocation';
 import { TItem, TItemId, TItemPartial } from './TItem';
 import { TCharacterId, TCharacterPassageId, TSideCharacterId } from './ids';

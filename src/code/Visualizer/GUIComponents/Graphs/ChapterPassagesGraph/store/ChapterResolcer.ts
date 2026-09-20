@@ -1,6 +1,6 @@
-import { TWorldState } from 'data/TWorldState';
+import { TWorldState } from '@story/data';
 import { Engine } from '@story/core';
-import { register } from 'data/register';
+import { register } from '@story/data';
 import { Time } from '@story/shared';
 import { TChapter, TChapterId } from '@story/types';
 

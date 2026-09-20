@@ -1,4 +1,4 @@
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { Inventory } from './Inventory';
 import { TimeManager } from '@story/shared';
 import { TChapterId, TChapterPassage } from '@story/types';

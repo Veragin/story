@@ -1,6 +1,6 @@
 import { TLocation } from '@story/types';
 
-import { applyFormatting } from '@story/ui';
+import { applyFormatting } from '@story/shared';
 void applyFormatting;
 
 export const kingdomLocation: TLocation<'kingdom'> = {

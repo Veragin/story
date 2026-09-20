@@ -1,6 +1,6 @@
-import { register } from 'data/register';
+import { register } from '@story/data';
 import { TChapterId, TChapterPassage } from '@story/types';
-import { TWorldState } from 'data/TWorldState';
+import { TWorldState } from '@story/data';
 import { Engine } from '@story/core';
 
 export class PassageService {

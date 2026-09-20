@@ -1,5 +1,5 @@
 import type { Engine } from '@story/core';
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '../../TWorldState';
 import { TChapterPassage } from '@story/types';
 
 export type TWeddingPassageId = never;

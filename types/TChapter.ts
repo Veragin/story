@@ -1,4 +1,4 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { TChapterId } from './ids';
 import { TLocationId } from './TLocation';
 import { TimeRange } from '@story/shared';

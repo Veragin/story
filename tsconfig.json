@@ -4,7 +4,7 @@
         "baseUrl": ".",
         "paths": {
             /* Workspace packages — source-only, mapped straight at the .ts entry (§7).
-               Targets are placeholder barrels until Phases 3–6 fill them. */
+               All five are real packages as of Phase 6. */
             "@story/types": ["types/index.ts"],
             "@story/shared": ["shared/src/index.ts"],
             "@story/ui": ["ui/src/index.ts"],
@@ -20,10 +20,8 @@
                Gone as of Phase 5: the whole utils alias (createWorldState, loadWorldState,
                parsePassageId → `@story/core`) and the engine `ts/` subtree; the alias above
                now only resolves the four `.tsx` files still waiting on Phase 7.
-               `data/*` outlives Phase 5 on purpose: `@story/core` imports `TWorldState`
-               type-only and `register` / `itemInfo` at value level, and `data/` is not a
-               real package until Phase 6. */
-            "data/*": ["src/data/*"],
+               Gone as of Phase 6: `data/*` — the story is `@story/data` (barrel) plus
+               `@story/data/*` (the author's tree, a legal deep-import surface per §5). */
             "worldState": ["src/worldState.ts"]
         }
     },

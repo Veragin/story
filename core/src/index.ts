@@ -11,8 +11,11 @@
  *    author's tree; it pulls eight modules out of `data/` (locations, chapters, characters,
  *    sideCharacters), so hosting it here would create a value-shaped core → data edge.
  *    Core imports it **type-only**; `types ⇄ data` is an accepted, documented type-only cycle
- *    confined to the author's two folders (§2.1). The `data/TWorldState` specifier still goes
- *    through the legacy tsconfig path and becomes `@story/data` in Phase 6.
+ *    confined to the author's two folders (§2.1). As of Phase 6 the specifier is `@story/data`.
+ *    Note the remaining honest wart: `History`/`Processor`/`Inventory`/`Story` import
+ *    `register` / `itemInfo` from `@story/data` at **value** level, so `core → data` is a real
+ *    runtime edge today (declared in `core/package.json`). Injecting the register the way
+ *    `createWorldState` already does is the fix; it belongs with the SingleEngine work.
  *  - `parsePassageId` lands here rather than in `shared/` (§3). It imports `@story/types`, and
  *    `shared` may not — it would be `shared`'s only edge back to `types` under the confirmed
  *    layering. Its only consumers are the engine modules in this package.

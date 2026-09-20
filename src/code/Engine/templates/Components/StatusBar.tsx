@@ -1,6 +1,6 @@
 import { Button, styled, Tooltip } from '@mui/material';
 import { Modal, Row, spacingCss, Text } from '@story/ui';
-import { register } from 'data/register';
+import { register } from '@story/data';
 import { useState } from 'react';
 import { Inventory } from './Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';

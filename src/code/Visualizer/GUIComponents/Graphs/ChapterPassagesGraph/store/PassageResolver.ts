@@ -1,7 +1,7 @@
-import { TWorldState } from 'data/TWorldState';
+import { TWorldState } from '@story/data';
 import { Engine } from '@story/core';
 import { TChapterPassage } from '@story/types';
-import { register, TRegisterPassageId } from 'data/register';
+import { register, TRegisterPassageId } from '@story/data';
 
 export class PassageResolver {
     private static passageCache = new Map<TRegisterPassageId, any>();

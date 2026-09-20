@@ -1,5 +1,4 @@
-import { register } from 'data/register';
-import { TWorldState } from 'data/TWorldState';
+import type { register, TWorldState } from '@story/data';
 
 export type TLocation<L extends TLocationId> = {
     id: L;

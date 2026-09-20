@@ -1,7 +1,7 @@
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { TCharacterId, TItemId, TItemPartial } from '@story/types';
 import { Engine } from './Engine';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo } from '@story/data';
 
 export class Inventory {
     constructor(

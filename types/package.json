@@ -9,6 +9,7 @@
         ".": "./index.ts"
     },
     "dependencies": {
+        "@story/data": "workspace:^",
         "@story/shared": "workspace:^"
     }
 }

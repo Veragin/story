@@ -1,8 +1,8 @@
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from '@story/shared';
 import { TChapter, TChapterId, TLinkCost } from '@story/types';
-import { register } from 'data/register';
+import { register } from '@story/data';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from '../parsePassageId';
 

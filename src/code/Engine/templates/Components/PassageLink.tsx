@@ -1,6 +1,6 @@
 import { css, styled } from '@mui/material';
 import { useEngine } from 'code/Engine/context';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo } from '@story/data';
 import { TItemId, TLink, TPassageId } from '@story/types';
 
 type Props = {

@@ -1,4 +1,4 @@
-import { TRegisterPassageId } from 'data/register';
+import { TRegisterPassageId } from '@story/data';
 import { PassageNodeVisualObject } from '../../../PassageNodeVisualObject';
 import { AbstractPassageNodeCreator } from '../AbstractPassageNodeCreator';
 import { TCharacterId } from '@story/types';

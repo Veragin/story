@@ -1,4 +1,4 @@
-import { itemInfo } from 'data/items/itemInfo';
+import type { itemInfo } from '@story/data';
 
 export type TItemId = keyof typeof itemInfo;
 

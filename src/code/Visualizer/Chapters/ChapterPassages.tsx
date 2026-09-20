@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { Column, Row, spacingCss, WholeContainer } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
-import { register } from 'data/register';
+import { register } from '@story/data';
 import { Nav } from '../components/Nav';
 import { TChapterId } from '@story/types';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';

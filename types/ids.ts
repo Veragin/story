@@ -1,4 +1,4 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 
 export type TCharacterId = keyof TWorldState['characters'];
 export type TSideCharacterId = keyof TWorldState['sideCharacters'];

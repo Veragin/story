@@ -1,4 +1,4 @@
-import { register } from "data/register";
+import { register } from '@story/data';
 
 export class PassageLoader {
     async loadPassages(chapterId: string): Promise<Record<string, any> | null> {

@@ -1,4 +1,4 @@
-import { TRegisterPassageId } from "data/register";
+import { TRegisterPassageId } from '@story/data';
 import { NodeVisualObject } from "../../../NodeVisualObject";
 import { worldStateCopy } from "../../WorldStateCopy";
 import { ColorManager } from "../ColorManager";

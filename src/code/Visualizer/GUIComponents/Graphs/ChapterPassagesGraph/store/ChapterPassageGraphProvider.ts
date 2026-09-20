@@ -8,11 +8,10 @@ import { Store } from 'code/Visualizer/stores/Store';
 import { createPassageModalContent } from 'code/Visualizer/Chapters/createPassageModalContent';
 import { ChapterPassagesGraphStorageManager } from './ChapterPassagesGraphStorageManager';
 import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
-import { register, TRegisterPassageId } from 'data/register';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo, register, TRegisterPassageId } from '@story/data';
 import { PassageResolver } from './PassageResolver';
 import { createWorldState } from '@story/core';
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import type { Engine } from '@story/core';
 
 export class GraphProvider {

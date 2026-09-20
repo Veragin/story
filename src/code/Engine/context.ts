@@ -1,5 +1,5 @@
 import { createSafeContext } from '@story/ui';
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { Engine, Store } from '@story/core';
 
 export const [storeContext, useStore] = createSafeContext<Store>('StoreContext');

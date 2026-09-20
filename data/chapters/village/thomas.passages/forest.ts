@@ -1,6 +1,6 @@
 import { DeltaTime } from '@story/shared';
 import { TPassage } from '@story/types';
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '../../../TWorldState';
 import { TVillageThomasPassageId } from '../village.passages';
 
 export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({

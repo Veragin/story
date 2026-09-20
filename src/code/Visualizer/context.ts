@@ -1,5 +1,5 @@
 import { createSafeContext } from '@story/ui';
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { Store } from './stores/Store';
 
 export const [visualizerStoreContext, useVisualizerStore] = createSafeContext<Store>('VisualizerStoreContext');

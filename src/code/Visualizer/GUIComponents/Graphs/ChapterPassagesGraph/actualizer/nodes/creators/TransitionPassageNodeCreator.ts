@@ -1,7 +1,7 @@
-import { register, TRegisterPassageId } from "data/register";
+import { register, TRegisterPassageId } from '@story/data';
 import { PassageNodeVisualObject } from "../../../PassageNodeVisualObject";
 import { AbstractPassageNodeCreator } from "../AbstractPassageNodeCreator";
-import { TWorldState } from "data/TWorldState";
+import { TWorldState } from '@story/data';
 
 
 export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {

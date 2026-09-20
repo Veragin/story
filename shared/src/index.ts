@@ -22,3 +22,5 @@ export * from './typeguards';
 export * from './misc';
 /* showToast, setToastHandler, TToastHandler, TToastOptions, TToastVariant */
 export * from './toast';
+/* applyFormatting — evaluating this module also installs the global `_` */
+export * from './translations';

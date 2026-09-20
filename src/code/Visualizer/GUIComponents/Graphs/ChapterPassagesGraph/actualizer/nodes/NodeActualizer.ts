@@ -1,4 +1,4 @@
-import { TRegisterPassageId } from "data/register";
+import { TRegisterPassageId } from '@story/data';
 import { Graph } from "../../../Graph";
 import { NodeVisualObject } from "../../../NodeVisualObject";
 import { PassageNodeVisualObject } from "../../PassageNodeVisualObject";

@@ -1,5 +1,5 @@
 import coolPassage from './thomas.passages/cool.transition';
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '../../TWorldState';
 import { TChapterPassage } from '@story/types';
 import { introPassage } from './thomas.passages/intro';
 import { forestPassage } from './thomas.passages/forest';

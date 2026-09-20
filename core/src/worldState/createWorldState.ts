@@ -1,4 +1,4 @@
-import type { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from '@story/data';
 import { buildWorldState, type TItemInfoRegister, type TWorldStateRegister } from './buildWorldState';
 import { Engine } from '../engine/Engine';
 

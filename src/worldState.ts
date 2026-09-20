@@ -1,6 +1,5 @@
 import { createWorldState } from '@story/core';
-import { register } from 'data/register';
-import { itemInfo } from 'data/items/itemInfo';
+import { itemInfo, register } from '@story/data';
 
 /** The SingleEngine app's world state instance. Other apps build their own. */
 export const { s, e } = createWorldState(register, itemInfo);

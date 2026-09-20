@@ -24,7 +24,7 @@ export { default as appTheme } from './theme/theme';
 
 /* useSafeContext, createSafeContext */
 export * from './createSafeContext';
-/* applyFormatting — evaluating this module also installs the global `_` */
+/* applyFormatting — re-exported from `@story/shared`; importing it installs the global `_` */
 export * from './translations';
-/* showToast, setToastHandler */
+/* showToast, setToastHandler — re-exported from `@story/shared` */
 export * from './toast';
