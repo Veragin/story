@@ -1346,6 +1346,29 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@story/multi-engine-client@workspace:MultiEngine/client":
+  version: 0.0.0-use.local
+  resolution: "@story/multi-engine-client@workspace:MultiEngine/client"
+  dependencies:
+    "@story/ui": "workspace:^"
+    "@types/react": "npm:^18.3.3"
+    "@types/react-dom": "npm:^18.3.0"
+    "@vitejs/plugin-react": "npm:^4.3.2"
+    react: "npm:18.3.1"
+    react-dom: "npm:18.3.1"
+    vite: "npm:^5.4.9"
+  languageName: unknown
+  linkType: soft
+
+"@story/multi-engine-server@workspace:MultiEngine/server":
+  version: 0.0.0-use.local
+  resolution: "@story/multi-engine-server@workspace:MultiEngine/server"
+  dependencies:
+    "@story/core": "workspace:^"
+    "@story/data": "workspace:^"
+  languageName: unknown
+  linkType: soft
+
 "@story/shared@workspace:^, @story/shared@workspace:shared":
   version: 0.0.0-use.local
   resolution: "@story/shared@workspace:shared"

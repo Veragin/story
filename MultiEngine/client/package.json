@@ -1,0 +1,23 @@
+{
+    "name": "@story/multi-engine-client",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "comment:dependencies": "Only what `src/main.tsx` imports today. No `@mui/material` — every visual primitive comes through `@story/ui`'s barrel, so MUI stays the transitive detail of that package. No `@story/core`/`@story/data` either: a client that does not talk to a server yet has no use for the story runtime, and per REFACTOR_PLAN §3 the passage templates it will eventually render stay in SingleEngine until MultiEngine is actually built. `react`/`react-dom` are pinned to the same exact version as the other two apps and deduped by the root `resolutions` (§10 risk 3).",
+    "dependencies": {
+        "@story/ui": "workspace:^",
+        "react": "18.3.1",
+        "react-dom": "18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "@vitejs/plugin-react": "^4.3.2",
+        "vite": "^5.4.9"
+    }
+}

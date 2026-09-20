@@ -33,12 +33,21 @@
         "core",
         "data",
         "SingleEngine/src",
-        "Visualizer/client/src"
+        "Visualizer/client/src",
+        "MultiEngine/client/src",
+
+        /* The MultiEngine server is node-land, and this program carries the browser libs from
+           `tsconfig.base.json`. It is listed here anyway, because §7's rule is one root
+           `tsc --noEmit` over the whole graph and an unchecked workspace is worse than an
+           over-permissive one. `MultiEngine/server/tsconfig.json` is the stricter, DOM-less
+           view of the same files for editors and eslint. */
+        "MultiEngine/server/src"
     ],
     "exclude": [
         "node_modules",
         "dist",
         "SingleEngine/vite.config.ts",
-        "Visualizer/client/vite.config.ts"
+        "Visualizer/client/vite.config.ts",
+        "MultiEngine/client/vite.config.ts"
     ]
 }

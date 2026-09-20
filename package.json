@@ -13,12 +13,14 @@
         "Visualizer/*",
         "MultiEngine/*"
     ],
-    "comment:scripts": "Both apps are now workspaces with their own Vite config, so every app script here is a passthrough and the root has no Vite of its own (§7). Parallel `dev` orchestration and `test` are Phase 11.",
+    "comment:scripts": "Every service is a workspace with its own config, so every service script here is a passthrough and the root has no Vite of its own (§7). `dev:multi-engine-server` has no `build` sibling on purpose: the node server runs its TypeScript directly under `tsx`, no build step and no `dist/` (§7). Parallel `dev` orchestration and `test` are Phase 11.",
     "scripts": {
         "dev:engine": "yarn workspace @story/single-engine dev",
         "dev:visualizer": "yarn workspace @story/visualizer-client dev",
+        "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",
+        "dev:multi-engine-server": "yarn workspace @story/multi-engine-server dev",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-        "build": "yarn typecheck && yarn workspace @story/single-engine build && yarn workspace @story/visualizer-client build",
+        "build": "yarn typecheck && yarn workspace @story/single-engine build && yarn workspace @story/visualizer-client build && yarn workspace @story/multi-engine-client build",
         "lint": "eslint .",
         "pretty": "prettier . --write",
         "pretty:check": "prettier . --check"

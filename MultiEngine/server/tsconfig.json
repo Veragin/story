@@ -1,0 +1,26 @@
+{
+    /* Per-package config for editors and `eslint --projectService`. Type checking of record is
+       the single root `tsc --noEmit` over the whole graph (REFACTOR_PLAN §7), which also lists
+       this package in its `include`. */
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        /* This is the repo's one node-land source package, so three of the browser defaults in
+           `tsconfig.base.json` are wrong for it:
+             - `lib` drops `DOM`/`DOM.Iterable` — there is no document, no window, no fetch-shaped
+               browser surface here;
+             - `types: ["node"]` is what makes `node:http`, `process` and `console` resolve, rather
+               than leaning on whichever @types happen to be hoisted at the root;
+             - `jsx` is meaningless: no React, no `.tsx`.
+
+           Note what dropping DOM does *not* buy, because it is the phase's sharpest finding:
+           it does not catch `@story/core`'s use of `localStorage`. This package imports core as
+           source, `core/src/engine/Engine.ts` is therefore in this program, and it typechecks
+           clean anyway — `@types/node` declares `var localStorage: Storage` as a global (node 22
+           has webstorage, but only behind `--experimental-webstorage`, so it is absent at
+           runtime). The type system cannot see this problem at all; only running it does. */
+        "lib": ["ES2022"],
+        "types": ["node"],
+        "jsx": "preserve"
+    },
+    "include": ["src"]
+}

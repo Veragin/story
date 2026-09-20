@@ -22,6 +22,7 @@
        of Phase 8, when the Visualizer got its own. */
     "include": [
         "SingleEngine/vite.config.ts",
-        "Visualizer/client/vite.config.ts"
+        "Visualizer/client/vite.config.ts",
+        "MultiEngine/client/vite.config.ts"
     ]
 }
