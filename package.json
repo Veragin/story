@@ -13,41 +13,21 @@
         "Visualizer/*",
         "MultiEngine/*"
     ],
-    "comment:scripts": "The root Vite config now serves the Visualizer and nothing else — SingleEngine became its own app on :8100 in Phase 7, and the Visualizer follows in Phase 8, at which point every `*:visualizer` script here becomes a `yarn workspace` passthrough like `dev:engine` and the root config is deleted. Parallel `dev` orchestration is Phase 11.",
+    "comment:scripts": "Both apps are now workspaces with their own Vite config, so every app script here is a passthrough and the root has no Vite of its own (§7). Parallel `dev` orchestration and `test` are Phase 11.",
     "scripts": {
         "dev:engine": "yarn workspace @story/single-engine dev",
-        "dev:visualizer": "vite",
+        "dev:visualizer": "yarn workspace @story/visualizer-client dev",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-        "build": "yarn typecheck && yarn workspace @story/single-engine build && yarn build:visualizer",
-        "build:visualizer": "vite build",
-        "preview:visualizer": "vite preview",
+        "build": "yarn typecheck && yarn workspace @story/single-engine build && yarn workspace @story/visualizer-client build",
         "lint": "eslint .",
         "pretty": "prettier . --write",
         "pretty:check": "prettier . --check"
     },
-    "dependencies": {
-        "@emotion/react": "^11.13.3",
-        "@emotion/styled": "^11.13.0",
-        "@mui/icons-material": "^6.1.0",
-        "@mui/material": "^6.1.0",
-        "d3": "^7.9.0",
-        "jlouvain": "^2.0.0",
-        "mobx": "^6.13.2",
-        "mobx-react-lite": "^4.0.7",
-        "ngraph.forcelayout": "^3.3.1",
-        "ngraph.graph": "^20.0.1",
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1",
-        "vite-tsconfig-paths": "^5.0.1"
-    },
+    "comment:dependencies": "A real workspace root: tooling only (§7). Every runtime dependency now sits in the workspace that imports it. `react`/`react-dom` are not listed here — they are declared by the two apps at an exact version and pinned once through `resolutions` below, which is what keeps a single copy on disk (§10 risk 3). Deleted in Phase 8 rather than moved: `d3`, `@types/d3`, `jlouvain`, `ngraph.forcelayout`, `ngraph.graph` — zero imports anywhere in the repo, they predate the refactor; and `vite-tsconfig-paths`, whose last consumer was the deleted root Vite config. `jsdom`/`@types/jsdom` stay pending the Vitest setup in Phase 10.",
     "devDependencies": {
         "@eslint/js": "^9.9.0",
-        "@types/d3": "^7.4.3",
         "@types/jsdom": "^21.1.7",
         "@types/node": "^24.3.0",
-        "@types/react": "^18.3.3",
-        "@types/react-dom": "^18.3.0",
-        "@vitejs/plugin-react": "^4.3.2",
         "eslint": "^9.9.0",
         "eslint-plugin-react-hooks": "^5.1.0-rc.0",
         "eslint-plugin-react-refresh": "^0.4.9",
@@ -56,8 +36,7 @@
         "prettier": "^3.3.3",
         "tsx": "^4.20.5",
         "typescript": "^5.6.3",
-        "typescript-eslint": "^8.0.1",
-        "vite": "^5.4.9"
+        "typescript-eslint": "^8.0.1"
     },
     "resolutions": {
         "react": "18.3.1",

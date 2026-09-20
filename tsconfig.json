@@ -10,36 +10,35 @@
             "@story/ui": ["ui/src/index.ts"],
             "@story/core": ["core/src/index.ts"],
             "@story/data": ["data/index.ts"],
-            "@story/data/*": ["data/*"],
+            "@story/data/*": ["data/*"]
 
-            /* The last legacy `baseUrl: src` alias, belonging to the one app still living in
-               `src/`. It goes with the Visualizer in Phase 8, and `src/` with it.
+            /* No legacy `baseUrl: src` aliases are left: `src/` is gone as of Phase 8 and
+               every app resolves its own files relatively, inside its own workspace.
                Gone as of Phase 4: the components and theme aliases — now `@story/ui`.
                Gone as of Phase 5: the whole utils alias (createWorldState, loadWorldState,
                parsePassageId → `@story/core`) and the engine `ts/` subtree.
                Gone as of Phase 6: `data/*` — the story is `@story/data` (barrel) plus
                `@story/data/*` (the author's tree, a legal deep-import surface per §5).
-               Gone as of Phase 7: `code/Engine/*` and `worldState` — SingleEngine resolves
-               those relatively, inside its own workspace. */
-            "code/Visualizer/*": ["src/code/Visualizer/*"]
+               Gone as of Phase 7: `code/Engine/*` and `worldState`.
+               Gone as of Phase 8: the Visualizer alias, and with it `vite-tsconfig-paths`. */
         }
     },
-    /* One program over the whole graph (§7): every workspace plus the un-migrated `src/`.
+    /* One program over the whole graph (§7): every workspace, nothing un-migrated left.
        `paths` above is what makes the `@story/*` edges resolve to source rather than to a
        build output, so this must keep listing every package as it is extracted. */
     "include": [
-        "src",
         "types",
         "shared",
         "ui",
         "core",
         "data",
-        "SingleEngine/src"
+        "SingleEngine/src",
+        "Visualizer/client/src"
     ],
     "exclude": [
         "node_modules",
         "dist",
-        "vite.config.ts",
-        "SingleEngine/vite.config.ts"
+        "SingleEngine/vite.config.ts",
+        "Visualizer/client/vite.config.ts"
     ]
 }

@@ -18,6 +18,10 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
     },
-    /* Every Vite config in the repo: the root one (Visualizer, until Phase 8) and one per app. */
-    "include": ["vite.config.ts", "SingleEngine/vite.config.ts"]
+    /* Every Vite config in the repo: one per app, no root config (§7). The root one is gone as
+       of Phase 8, when the Visualizer got its own. */
+    "include": [
+        "SingleEngine/vite.config.ts",
+        "Visualizer/client/vite.config.ts"
+    ]
 }
