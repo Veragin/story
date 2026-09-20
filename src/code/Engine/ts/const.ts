@@ -1,5 +1,4 @@
-import { TCharacterId, TChapterId, TChapterPassageId } from 'types/ids';
-import { TChapterPassage, TPassageScreen } from 'types/TPassage';
+import { TChapterId, TChapterPassage, TChapterPassageId, TCharacterId, TPassageScreen } from '@story/types';
 
 export const DUMMY_PASSAGE: TChapterPassage<'village'> = {
     id: 'forest',

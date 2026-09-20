@@ -1,6 +1,6 @@
-import { throttle } from 'code/utils/throttle';
+import { TPoint, TSize } from '@story/types';
+import { Observer, throttle } from '@story/shared';
 import { VisualObject } from '../Node/VisualObject';
-import { Observer } from 'code/utils/Observer';
 import { CanvasWorld } from './CanvasWorld';
 
 /**

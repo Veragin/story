@@ -2,7 +2,7 @@ import React from 'react';
 import { Button, Typography, Divider, Tooltip } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { Agent } from 'code/Visualizer/stores/Agent';
-import { TChapterId } from 'types/ids';
+import { TChapterId } from '@story/types';
 import { usePassageForm } from './hooks/usePassageForm';
 import { BasicInfoSection } from './components/BasicInfoSection';
 import { BodyItemSection } from './components/BodyItemSection';

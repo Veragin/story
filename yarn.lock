@@ -1347,14 +1347,14 @@ __metadata:
 "@story/shared@workspace:^, @story/shared@workspace:shared":
   version: 0.0.0-use.local
   resolution: "@story/shared@workspace:shared"
-  dependencies:
-    "@story/types": "workspace:^"
   languageName: unknown
   linkType: soft
 
 "@story/types@workspace:^, @story/types@workspace:types":
   version: 0.0.0-use.local
   resolution: "@story/types@workspace:types"
+  dependencies:
+    "@story/shared": "workspace:^"
   languageName: unknown
   linkType: soft
 

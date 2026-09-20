@@ -1,4 +1,4 @@
-import { DeltaTime, Time } from 'time/Time';
+import { DeltaTime, Time } from '@story/shared';
 import { ChapterStore } from './ChapterStore';
 import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 

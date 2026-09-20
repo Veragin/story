@@ -1,5 +1,5 @@
-import { DeltaTime } from 'time/Time';
-import { TPassage } from 'types/TPassage';
+import { DeltaTime } from '@story/shared';
+import { TPassage } from '@story/types';
 import { TKingdomAnniePassageId } from '../kingdom.passages';
 
 export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomAnniePassageId> => {

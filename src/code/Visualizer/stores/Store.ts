@@ -1,7 +1,7 @@
-import { TimeManager } from 'time/TimeManager';
+import { TimeManager } from '@story/shared';
+import { TChapterId } from '@story/types';
 import { ChapterStore } from '../Chapters/ChapterStore/ChapterStore';
 import { action, makeObservable, observable } from 'mobx';
-import { TChapterId } from 'types/ids';
 import { CanvasHandler } from './CanvasHandler';
 import { Agent } from './Agent';
 import { ReactNode } from 'react';

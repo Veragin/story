@@ -1,5 +1,5 @@
-import { TimeRange } from 'time/Time';
-import { TChapter } from 'types/TChapter';
+import { TimeRange } from '@story/shared';
+import { TChapter } from '@story/types';
 
 export const weddingChapter: TChapter<'wedding'> = {
     chapterId: 'wedding',

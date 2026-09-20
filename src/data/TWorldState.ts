@@ -1,18 +1,24 @@
+import { Time } from '@story/shared';
 import { TKingdomLocationData } from './locations/kingdom.location';
 import { TWeddingChapterData } from './chapters/wedding/wedding.chapter';
 import { TVillageChapterData } from './chapters/village/village.chapter';
-import { TCharacter, TCharacterData, TSideCharacter, TSideCharacterData } from '../types/TCharacter';
 import { TThomasCharacterData } from './characters/thomas';
 import { TFrantaSideCharacterData } from './sideCharacters/Franta';
 import { TVillageLocationData } from './locations/village.location';
-import { TChapter } from 'types/TChapter';
-import { TLocation } from 'types/TLocation';
+import {
+    TChapter,
+    TCharacter,
+    TCharacterData,
+    TCharacterId,
+    THappening,
+    TLocation,
+    TSideCharacter,
+    TSideCharacterData,
+} from '@story/types';
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
-import { TCharacterId } from 'types/ids';
 import type { THistoryItem } from 'code/Engine/ts/History';
-import { THappening } from 'types/THappening';
 
 export type TWorldState = {
     time: Time;

@@ -7,7 +7,7 @@ import {
     MARKER_TIME_CLASS,
 } from './ChapterStore/TimelineRender/TimelineMarker';
 import { useEffect, useRef } from 'react';
-import { assertNotNullish } from 'code/utils/typeguards';
+import { assertNotNullish } from '@story/shared';
 import { ZoomSlider } from '../components/ZoomSlider';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';

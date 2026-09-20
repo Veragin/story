@@ -1,5 +1,4 @@
-import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/ids';
+import { TChapter, TChapterId } from '@story/types';
 import { ChapterStore } from '../ChapterStore';
 import { ChapterNodeBox } from './ChapterNodeBox';
 

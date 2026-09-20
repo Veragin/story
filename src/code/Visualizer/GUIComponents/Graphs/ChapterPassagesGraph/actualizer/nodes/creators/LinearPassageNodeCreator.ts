@@ -1,7 +1,7 @@
 import { TRegisterPassageId } from 'data/register';
 import { PassageNodeVisualObject } from '../../../PassageNodeVisualObject';
 import { AbstractPassageNodeCreator } from '../AbstractPassageNodeCreator';
-import { TCharacterId } from 'types/ids';
+import { TCharacterId } from '@story/types';
 
 export class LinearPassageNodeCreator extends AbstractPassageNodeCreator {
     async create(passageId: TRegisterPassageId, passage: any): Promise<PassageNodeVisualObject> {

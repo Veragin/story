@@ -1,3 +1,4 @@
+import { TPoint, TSize } from '@story/types';
 import { TRegisterPassageId } from "data/register";
 import { TLineType } from "../../EdgeVisualObject";
 import { Graph } from "../../Graph";

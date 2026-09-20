@@ -15,7 +15,7 @@ export class Observer<T> {
 
     // Notify all subscribed listeners with data
     public notify(data: T): void {
-        this.listeners.forEach(listener => listener(data));
+        this.listeners.forEach((listener) => listener(data));
     }
 }
 

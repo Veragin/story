@@ -1,8 +1,7 @@
 import { register } from 'data/register';
-import { TChapterId } from 'types/ids';
+import { TChapterId, TChapterPassage } from '@story/types';
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
-import { TChapterPassage } from 'types/TPassage';
 
 export class PassageService {
     private static loadedModules: Map<TChapterId, any> = new Map();

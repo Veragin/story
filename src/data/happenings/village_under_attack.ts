@@ -1,5 +1,5 @@
-import { TimeRange } from 'time/Time';
-import { THappening } from 'types/THappening';
+import { TimeRange } from '@story/shared';
+import { THappening } from '@story/types';
 
 export const villageUnderAttackHappening: THappening<'village_under_attack'> = {
     happeningId: 'village_under_attack',

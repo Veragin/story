@@ -12,7 +12,7 @@ import {
     Tooltip
 } from '@mui/material';
 import { Add, Remove, Inventory, HelpOutline } from '@mui/icons-material';
-import { TItemId } from 'types/TItem';
+import { TItemId } from '@story/types';
 import { ItemResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ItemResolver';
 import { SCompactColumn, SCompactRow } from '../../styles';
 

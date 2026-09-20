@@ -1,6 +1,6 @@
 import { Context, createContext, useContext } from 'react';
 
-import { assertNotNullish } from './typeguards';
+import { assertNotNullish } from '@story/shared';
 
 export const useSafeContext = <T>(context: Context<T>) => {
     const contextValue = useContext(context);

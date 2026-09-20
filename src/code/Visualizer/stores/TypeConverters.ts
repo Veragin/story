@@ -1,5 +1,4 @@
-import { TLocationId } from 'types/TLocation';
-import { TChapterPassageType } from 'types/TPassage';
+import { TChapterId, TChapterPassageType, TLocationId } from '@story/types';
 import { TMapData } from '../MapEditor/types';
 import {
     ChapterUpdateRequest,
@@ -10,7 +9,6 @@ import {
     TPassageData,
     TScreenPassageData,
 } from './nodeServerTypes';
-import { TChapterId } from 'types/ids';
 
 export class TypeConverters {
     // Chapter converters

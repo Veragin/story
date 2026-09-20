@@ -1,6 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { DeltaTime, Time } from 'time/Time';
-import { isNullish } from './typeguards';
+import { DeltaTime, isNullish, Time } from '@story/shared';
 
 export const copyWorldState = (state: TWorldState): TWorldState => {
     return loadWorldState(JSON.stringify(state));

@@ -1,6 +1,4 @@
-import { DAY_S, HOUR_S, MONTH_S, YEAR_S } from 'time/const';
-import { DeltaTime } from 'time/Time';
-import { TTimeRenderFormat } from 'time/TimeManager';
+import { DAY_S, DeltaTime, HOUR_S, MONTH_S, TTimeRenderFormat, YEAR_S } from '@story/shared';
 
 export const ZOOM_CONFIG: TZoomConfigItem[] = [
     {

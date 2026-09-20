@@ -1,3 +1,4 @@
+import { TPoint, TSize } from '@story/types';
 import { BorderConfig } from "../../Canvas/Node/BorderConfig";
 import { HorizontallyScalableNodeVisualObject } from "../../Canvas/Node/HorizontallyScalableNodeVisualObject";
 import { nodeVisualObjectProperties } from "../NodeVisualObject";

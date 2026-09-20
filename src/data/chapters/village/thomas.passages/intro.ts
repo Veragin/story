@@ -1,5 +1,5 @@
-import { DeltaTime } from 'time/Time';
-import { TPassage } from 'types/TPassage';
+import { DeltaTime } from '@story/shared';
+import { TPassage } from '@story/types';
 import { TVillageThomasPassageId } from '../village.passages';
 
 export const introPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({

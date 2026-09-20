@@ -1,3 +1,4 @@
+import { TPoint, TSize } from '@story/types';
 import { VisualObject } from './VisualObject';
 
 /**

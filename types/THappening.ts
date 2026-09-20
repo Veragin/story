@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { TChapterId, THappeningId } from './ids';
 import { TLocationId } from './TLocation';
-import { TimeRange } from 'time/Time';
+import { TimeRange } from '@story/shared';
 import { TChapter } from './TChapter';
 
 export type THappening<H extends THappeningId> = {

@@ -2,7 +2,7 @@ import { CanvasManager } from '../Canvas/CanvasManager/CanvasManager';
 import { EdgeVisualObject } from './EdgeVisualObject';
 import { GraphLayoutManager } from './graphLayouts/GraphLayoutManager';
 import { NodeVisualObject } from './NodeVisualObject';
-import { Observer } from 'code/utils/Observer';
+import { Observer } from '@story/shared';
 import { SpringForceLayoutManager } from './graphLayouts/SpringForceLayoutManager';
 
 export class Graph {

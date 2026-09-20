@@ -1,3 +1,4 @@
+import { TPoint } from '@story/types';
 type TColorId = string;
 
 export type TMapData = {

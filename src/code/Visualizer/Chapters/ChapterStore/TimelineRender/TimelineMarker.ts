@@ -1,5 +1,4 @@
-import { Time } from 'time/Time';
-import { TimeManager } from 'time/TimeManager';
+import { Time, TimeManager } from '@story/shared';
 
 export const MARKER_TIME_CLASS = 'timeline-marker-time';
 export const MARKER_LINE_CLASS = 'timeline-marker-line';

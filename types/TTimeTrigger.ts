@@ -1,4 +1,4 @@
-import { Time } from 'time/Time';
+import { Time } from '@story/shared';
 
 export type TTimeTrigger = {
     id: string;

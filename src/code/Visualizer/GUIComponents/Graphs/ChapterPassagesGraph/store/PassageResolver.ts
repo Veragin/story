@@ -1,6 +1,6 @@
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
-import { TChapterPassage } from 'types/TPassage';
+import { TChapterPassage } from '@story/types';
 import { register, TRegisterPassageId } from 'data/register';
 
 export class PassageResolver {

@@ -1,3 +1,4 @@
+import { TSize } from '@story/types';
 import { GraphLayoutManager } from "./GraphLayoutManager";
 import { NodeVisualObject } from "../NodeVisualObject";
 import { Graph } from "../Graph";

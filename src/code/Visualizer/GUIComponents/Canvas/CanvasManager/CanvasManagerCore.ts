@@ -1,8 +1,6 @@
-import { throttle } from 'code/utils/throttle';
+import { ConditionalObserver, Observer, assertNotNullish, throttle } from '@story/shared';
 import { VisualObject } from '../Node/VisualObject';
 import { isPointInside } from '../Node/utils';
-import { assertNotNullish } from 'code/utils/typeguards';
-import { ConditionalObserver, Observer } from 'code/utils/Observer';
 import { CanvasWorld, TPoint, TSize } from './CanvasWorld';
 import { IVisibilityProvider } from './VisibleVisualObjectsManager';
 import { ISortedVisibleVisualObjectsManager as IZIndexSortedVisibleVisualObjectsManager, ZIndexSortedVisibleVisualObjectsManager } from './ZIndexSortedVisibleVisualObjectsManager';

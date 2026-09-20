@@ -1,6 +1,6 @@
 import type { Engine } from 'code/Engine/ts/Engine';
 import { TWorldState } from 'data/TWorldState';
-import { TChapterPassage } from 'types/TPassage';
+import { TChapterPassage } from '@story/types';
 
 export type TWeddingPassageId = never;
 

@@ -13,7 +13,7 @@ import { spacingCss } from 'code/components/css';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { register } from 'data/register';
 import { Nav } from '../components/Nav';
-import { TChapterId } from 'types/ids';
+import { TChapterId } from '@story/types';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
 import { ChapterPassagesGraph } from '../Passages/ChapterPassagesGraph';
 import { ScreenPassageCreationForm } from '../Passages/ScreenPassageCreationForm/ScreenPassageCreationForm';

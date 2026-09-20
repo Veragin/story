@@ -1,4 +1,4 @@
-import { TLocation } from 'types/TLocation';
+import { TLocation } from '@story/types';
 
 import { applyFormatting } from 'code/utils/translations';
 void applyFormatting;

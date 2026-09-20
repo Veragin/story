@@ -1,4 +1,5 @@
-import { Observer } from 'code/utils/Observer';
+import { TPoint } from '@story/types';
+import { Observer } from '@story/shared';
 import { VisualObject } from './VisualObject';
 
 export abstract class HoverableVisualObject extends VisualObject {

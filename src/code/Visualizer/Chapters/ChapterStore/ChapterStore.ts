@@ -1,8 +1,7 @@
 import { action, makeObservable, observable } from 'mobx';
 import { ZOOM_CONFIG } from './TimelineRender/zoomConfig';
 import { TimelineRender } from './TimelineRender/TimelineRender';
-import { Time } from 'time/Time';
-import { TimeManager } from 'time/TimeManager';
+import { Time, TimeManager } from '@story/shared';
 import { CanvasManager } from '../../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { TimelineChapters } from './TimelineChapters/TimelineChapters';
 import { DurationHelper } from './DurationHelper';

@@ -1,3 +1,4 @@
+import { TPoint } from '@story/types';
 import { EdgeVisualObject } from './EdgeVisualObject';
 
 export class EdgeFromSide extends EdgeVisualObject {

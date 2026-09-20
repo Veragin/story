@@ -1,11 +1,10 @@
-import { assertNotNullish } from 'code/utils/typeguards';
+import { assertNotNullish } from '@story/shared';
+import { TChapter, TChapterId } from '@story/types';
 import { EdgeFromSide } from 'code/Visualizer/GUIComponents/Graphs/EdgeFromSide';
 import { Graph } from 'code/Visualizer/GUIComponents/Graphs/Graph';
 import { HorizontalDragStrategy } from 'code/Visualizer/GUIComponents/Canvas/Node/dragAndDropMovingStrategies/HorizontalDragStrategy';
 import { HorizontallyScalableNodeVisualObject } from 'code/Visualizer/GUIComponents/Canvas/Node/HorizontallyScalableNodeVisualObject';
 import { TextContent } from 'code/Visualizer/GUIComponents/Canvas/Node/TextContent';
-import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/ids';
 
 export const EVENT_NODE_HEIGHT = 60;
 

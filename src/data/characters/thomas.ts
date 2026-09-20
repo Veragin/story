@@ -1,4 +1,4 @@
-import { TCharacter } from 'types/TCharacter';
+import { TCharacter } from '@story/types';
 
 export const Thomas: TCharacter<'thomas'> = {
     id: 'thomas',

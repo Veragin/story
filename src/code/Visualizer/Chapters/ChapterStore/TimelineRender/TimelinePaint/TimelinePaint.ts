@@ -1,4 +1,4 @@
-import { TimeManager } from 'time/TimeManager';
+import { Time, TimeManager } from '@story/shared';
 import { ChapterStore } from '../../ChapterStore';
 import { TimelineDraw } from './TimelineDraw';
 

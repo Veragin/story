@@ -1,10 +1,10 @@
 import { styled } from '@mui/material';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { useEffect, useRef } from 'react';
-import { assertNotNullish } from 'code/utils/typeguards';
+import { assertNotNullish } from '@story/shared';
+import { TChapterId } from '@story/types';
 import { register } from 'data/register';
 import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation/GraphAnimationHandler';
-import { TChapterId } from 'types/ids';
 import { CanvasManager } from '../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { GraphProvider } from '../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
 

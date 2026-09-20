@@ -1,4 +1,4 @@
-import { throttle } from 'code/utils/throttle';
+import { throttle } from '@story/shared';
 import { RESOLUTION_FACTOR } from '../Chapters/ChapterStore/TimelineRender/constants';
 import { Store } from './Store';
 

@@ -1,3 +1,4 @@
+import { TVec } from '@story/types';
 import { NodeVisualObject } from './NodeVisualObject';
 import { ClickableVisualObject } from '../Canvas/Node/ClickableVisualObject';
 

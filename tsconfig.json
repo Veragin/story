@@ -14,10 +14,12 @@
 
             /* Legacy `baseUrl: src` style imports of the not-yet-moved app.
                Each of these disappears as its phase lands. */
-            "code/*": ["src/code/*"],
+            "code/Engine/*": ["src/code/Engine/*"],
+            "code/Visualizer/*": ["src/code/Visualizer/*"],
+            "code/components/*": ["src/code/components/*"],
+            "code/theme/*": ["src/code/theme/*"],
+            "code/utils/*": ["src/code/utils/*"],
             "data/*": ["src/data/*"],
-            "types/*": ["src/types/*"],
-            "time/*": ["src/time/*"],
             "worldState": ["src/worldState.ts"]
         }
     },

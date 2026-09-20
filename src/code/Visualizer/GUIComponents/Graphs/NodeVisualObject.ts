@@ -1,3 +1,4 @@
+import { TPoint, TSize } from '@story/types';
 import { BorderConfig } from '../Canvas/Node/BorderConfig';
 import { DraggableVisualObject } from '../Canvas/Node/DraggableVisualObject';
 import { TVisualObjectPropertyChangeArgs, VisualObject, visualObjectProperties } from '../Canvas/Node/VisualObject';

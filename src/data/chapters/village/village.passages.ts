@@ -1,6 +1,6 @@
 import coolPassage from './thomas.passages/cool.transition';
 import { TWorldState } from 'data/TWorldState';
-import { TChapterPassage } from 'types/TPassage';
+import { TChapterPassage } from '@story/types';
 import { introPassage } from './thomas.passages/intro';
 import { forestPassage } from './thomas.passages/forest';
 import type { Engine } from 'code/Engine/ts/Engine';

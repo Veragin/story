@@ -1,10 +1,8 @@
 import { CanvasManager } from 'code/Visualizer/GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { ChapterStore } from '../ChapterStore';
 import { register } from 'data/register';
-import { TChapterId } from 'types/ids';
-import { TChapter } from 'types/TChapter';
+import { TChapter, TChapterId, TLocationId } from '@story/types';
 import { ChapterNode } from './ChapterNode';
-import { TLocationId } from 'types/TLocation';
 import { Graph } from 'code/Visualizer/GUIComponents/Graphs/Graph';
 
 type TLocationLayout = {

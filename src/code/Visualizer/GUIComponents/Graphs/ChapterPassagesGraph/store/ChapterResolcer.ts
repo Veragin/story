@@ -1,9 +1,8 @@
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
 import { register } from 'data/register';
-import { TChapter } from 'types/TChapter';
-import { TChapterId } from 'types/ids';
-import { Time } from 'time/Time';
+import { Time } from '@story/shared';
+import { TChapter, TChapterId } from '@story/types';
 
 export class ChapterResolver {
     // Cache is used to avoid repeated expensive operations like dynamic imports or complex transformations

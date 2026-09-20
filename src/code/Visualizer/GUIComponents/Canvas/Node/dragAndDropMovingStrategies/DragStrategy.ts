@@ -1,3 +1,4 @@
+import { TPoint } from '@story/types';
 
 export type DragStrategy = {
     calculatePosition(params: {

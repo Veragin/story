@@ -1,6 +1,5 @@
-import { DeltaTime } from 'time/Time';
-import { TItemId } from 'types/TItem';
-import { TChapterId } from 'types/ids';
+import { DeltaTime } from '@story/shared';
+import { TChapterId, TItemId } from '@story/types';
 
 export type TLinkCost = {
     time?: DeltaTime;

@@ -1,7 +1,6 @@
-import { DeltaTime } from 'time/Time';
+import { DeltaTime } from '@story/shared';
+import { TLinkCost, TPassageId } from '@story/types';
 import { TWorldState } from 'data/TWorldState';
-import { TPassageId } from 'types/ids';
-import { TLinkCost } from 'types/TPassage';
 import { Engine } from './Engine';
 import { parsePassageId } from 'code/utils/parsePassageId';
 import { showToast } from 'code/theme/GlobalThemeWrapper';

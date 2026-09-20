@@ -1,5 +1,5 @@
 import { DAY_S, HOUR_S, MIN_S, MONTH_S, MONTH_NAME, YEAR_S, START_YEAR } from './const';
-import { Time } from './Time';
+import { DeltaTime, Time } from './Time';
 
 export class TimeManager {
     constructor(public startYear: number = START_YEAR) {}

@@ -1,6 +1,5 @@
 import { showToast } from 'code/theme/GlobalThemeWrapper';
-import { TLocationId } from 'types/TLocation';
-import { TChapterPassageType } from 'types/TPassage';
+import { TChapterPassageType, TLocationId } from '@story/types';
 import { TMapData } from '../MapEditor/types';
 import { TypeConverters } from './TypeConverters';
 import { HttpErrorHandler } from './HttpErrorHandler';

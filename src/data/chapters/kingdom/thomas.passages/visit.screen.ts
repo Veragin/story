@@ -1,5 +1,5 @@
-import { DeltaTime } from 'time/Time';
-import { TPassage } from 'types/TPassage';
+import { DeltaTime } from '@story/shared';
+import { TPassage } from '@story/types';
 import { TKingdomThomasPassageId } from '../kingdom.passages';
 import { TWorldState } from 'data/TWorldState';
 import type { Engine } from 'code/Engine/ts/Engine';

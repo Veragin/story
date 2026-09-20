@@ -1,10 +1,17 @@
 import type { TWorldState } from 'data/TWorldState';
-import type { TCharacterId, TChapterId, THappeningId, TSideCharacterId } from 'types/ids';
-import type { TCharacter, TSideCharacter } from 'types/TCharacter';
-import type { TChapter } from 'types/TChapter';
-import type { THappening } from 'types/THappening';
-import type { TItemId } from 'types/TItem';
-import type { TLocation, TLocationId } from 'types/TLocation';
+import type {
+    TChapter,
+    TChapterId,
+    TCharacter,
+    TCharacterId,
+    THappening,
+    THappeningId,
+    TItemId,
+    TLocation,
+    TLocationId,
+    TSideCharacter,
+    TSideCharacterId,
+} from '@story/types';
 import { Engine } from 'code/Engine/ts/Engine';
 
 /**

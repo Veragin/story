@@ -1,5 +1,5 @@
 import { itemInfo } from 'data/items/itemInfo';
-import { TItemId, TItem, TItemPartial } from 'types/TItem';
+import { TItem, TItemId, TItemPartial } from '@story/types';
 
 export class ItemResolver {
     // Cache for processed items

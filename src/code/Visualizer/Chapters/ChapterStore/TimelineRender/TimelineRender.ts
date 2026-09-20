@@ -1,4 +1,4 @@
-import { TimeManager } from 'time/TimeManager';
+import { TimeManager } from '@story/shared';
 import { ChapterStore } from '../ChapterStore';
 import { TimelineMouseListener } from './TimelineMouseListener';
 import { TimelinePaint } from './TimelinePaint/TimelinePaint';

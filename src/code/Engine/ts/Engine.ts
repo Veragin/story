@@ -1,13 +1,12 @@
 import { TWorldState } from 'data/TWorldState';
 import { Inventory } from './Inventory';
-import { TChapterPassage } from 'types/TPassage';
-import { TChapterId } from 'types/ids';
+import { TimeManager } from '@story/shared';
+import { TChapterId, TChapterPassage } from '@story/types';
 import { DUMMY_PASSAGE } from './const';
 import { History } from './History';
 import { Processor } from './Processor';
 import { Story } from './Story';
 import { Store } from './Store';
-import { TimeManager } from 'time/TimeManager';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from 'code/utils/loadWorldState';
 import { showToast } from 'code/theme/GlobalThemeWrapper';

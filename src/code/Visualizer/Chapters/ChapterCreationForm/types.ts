@@ -1,4 +1,4 @@
-import { TLocationId } from 'types/TLocation';
+import { TLocationId } from '@story/types';
 import { Agent } from 'code/Visualizer/stores/Agent';
 
 export type TChildChapter = {

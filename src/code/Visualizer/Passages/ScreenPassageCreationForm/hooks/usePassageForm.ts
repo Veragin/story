@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from 'code/theme/GlobalThemeWrapper';
-import { TChapterPassageType } from 'types/TPassage';
-import { TChapterId } from 'types/ids';
+import { TChapterId, TChapterPassageType } from '@story/types';
 import { PassageResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/PassageResolver';
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';

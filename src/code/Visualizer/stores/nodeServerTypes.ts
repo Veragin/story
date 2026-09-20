@@ -1,6 +1,4 @@
-import { TLocationId } from 'types/TLocation';
-import { TChapterPassageType } from 'types/TPassage';
-import { TChapterId } from 'types/ids';
+import { TChapterId, TChapterPassageType, TLocationId } from '@story/types';
 
 // Updated server types to include missing fields
 export interface TimeRange {

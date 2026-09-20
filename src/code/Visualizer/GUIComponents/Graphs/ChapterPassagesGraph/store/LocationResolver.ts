@@ -1,7 +1,7 @@
 import { TWorldState } from 'data/TWorldState';
 import { Engine } from 'code/Engine/ts/Engine';
 import { register } from 'data/register';
-import { TLocation, TLocationId } from 'types/TLocation';
+import { TLocation, TLocationId } from '@story/types';
 
 export class LocationResolver {
     // Cache is used to avoid repeated expensive operations like dynamic imports or complex transformations

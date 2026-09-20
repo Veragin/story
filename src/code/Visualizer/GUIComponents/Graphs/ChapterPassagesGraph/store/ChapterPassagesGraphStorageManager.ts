@@ -1,6 +1,6 @@
 import { Graph } from '../../Graph';
 import { GraphSerializer } from './GraphSerializer';
-import { throttle } from 'code/utils/throttle';
+import { throttle } from '@story/shared';
 
 export class ChapterPassagesGraphStorageManager {
     private static graphs: Map<string, Graph> = new Map();

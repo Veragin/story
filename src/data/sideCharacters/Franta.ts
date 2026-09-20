@@ -1,4 +1,4 @@
-import { TSideCharacter } from 'types/TCharacter';
+import { TSideCharacter } from '@story/types';
 
 export const Franta: TSideCharacter<'franta'> = {
     id: 'franta',

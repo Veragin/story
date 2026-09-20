@@ -1,4 +1,5 @@
-import { Observer } from 'code/utils/Observer';
+import { TPoint, TSize } from '@story/types';
+import { Observer } from '@story/shared';
 import { ClickableVisualObject } from './ClickableVisualObject';
 import { DragStrategy } from './dragAndDropMovingStrategies/DragStrategy';
 import { FreeDragStrategy } from './dragAndDropMovingStrategies/FreeDragStrategy';

@@ -1,5 +1,5 @@
-import { TChapter } from 'types/TChapter';
-import { Time } from 'time/Time';
+import { Time } from '@story/shared';
+import { TChapter } from '@story/types';
 import { nobleHouseRobberyTrigger } from './triggers';
 
 export const villageChapter: TChapter<'village'> = {

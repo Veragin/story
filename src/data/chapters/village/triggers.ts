@@ -1,5 +1,5 @@
-import { Time } from 'time/Time';
-import { TTimeTrigger } from 'types/TTimeTrigger';
+import { Time } from '@story/shared';
+import { TTimeTrigger } from '@story/types';
 
 export const nobleHouseRobberyTrigger: TTimeTrigger = {
     id: 'nobleHouseRobbery',

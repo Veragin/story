@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, InputAdornment, Box, Typography, Tooltip } from '@mui/material';
 import { AccessTime, HelpOutline } from '@mui/icons-material';
-import { DeltaTime } from 'time/Time';
+import { DeltaTime } from '@story/shared';
 import { formatTimeInput, parseTimeInput, timeInputToDeltaTime, TTimeInput } from '../../types';
 
 type Props = {

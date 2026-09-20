@@ -1,7 +1,6 @@
 // worldState/WorldStateManager.ts
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId, TChapterId, THappeningId, TSideCharacterId } from 'types/ids';
-import { TLocationId } from 'types/TLocation';
+import { TChapterId, TCharacterId, THappeningId, TLocationId, TSideCharacterId } from '@story/types';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 

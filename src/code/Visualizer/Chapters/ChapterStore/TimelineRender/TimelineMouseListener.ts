@@ -1,8 +1,7 @@
-import { throttle } from 'code/utils/throttle';
+import { DeltaTime, Time, throttle } from '@story/shared';
 import { ZOOM_SPEED_FACTOR } from './constants';
 import { ChapterStore } from '../ChapterStore';
 import { ZOOM_CONFIG } from './zoomConfig';
-import { DeltaTime, Time } from 'time/Time';
 import { TimelineMarker } from './TimelineMarker';
 
 export class TimelineMouseListener {

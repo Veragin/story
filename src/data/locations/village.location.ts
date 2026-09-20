@@ -1,4 +1,4 @@
-import { TLocation } from 'types/TLocation';
+import { TLocation } from '@story/types';
 
 export const villageLocation: TLocation<'village'> = {
     id: 'village',

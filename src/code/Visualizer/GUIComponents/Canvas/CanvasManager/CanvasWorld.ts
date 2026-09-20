@@ -1,4 +1,4 @@
-import { ConditionalObserver } from 'code/utils/Observer';
+import { ConditionalObserver } from '@story/shared';
 
 export interface TPoint {
     x: number;

@@ -1,11 +1,10 @@
-import { throttle } from 'code/utils/throttle';
+import { TPoint, TSize } from '@story/types';
+import { Observer, assertNotNullish, throttle } from '@story/shared';
 import { ClickableVisualObject } from '../Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../Node/DraggableVisualObject';
 import { HoverableVisualObject } from '../Node/HoverableVisualObject';
 import { VisualObject } from '../Node/VisualObject';
-import { assertNotNullish } from 'code/utils/typeguards';
 import { RESOLUTION_FACTOR } from '../../../Chapters/ChapterStore/TimelineRender/constants';
-import { Observer } from 'code/utils/Observer';
 
 export class CanvasManager {
     readonly canvas: HTMLCanvasElement;

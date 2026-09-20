@@ -1,4 +1,4 @@
-import { TCharacterId } from 'types/ids';
+import { TCharacterId } from '@story/types';
 
 export class ColorManager {
     private static readonly colorPalette = [

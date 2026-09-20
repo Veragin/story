@@ -1,3 +1,4 @@
+import { TPoint } from '@story/types';
 import { DragStrategy } from "./DragStrategy";
 
 export class FreeDragStrategy implements DragStrategy {

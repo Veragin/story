@@ -1,6 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { TCharacterId } from 'types/ids';
-import { TItemId, TItemPartial } from 'types/TItem';
+import { TCharacterId, TItemId, TItemPartial } from '@story/types';
 import { Engine } from './Engine';
 import { itemInfo } from 'data/items/itemInfo';
 

@@ -1,4 +1,4 @@
-import { assertNotNullish } from 'code/utils/typeguards';
+import { assertNotNullish } from '@story/shared';
 import { MapStore } from '../MapStore';
 import { HEX_POINTS, MAP_TILE_AVG_HEIGHT, MAP_TILE_WIDTH, WIDGET_BORDER_COLOR, WIDGET_BORDER_WIDTH } from './constants';
 import { computeTileIndex, computeTilePos, findNeighbor, minimapSize } from './utils';

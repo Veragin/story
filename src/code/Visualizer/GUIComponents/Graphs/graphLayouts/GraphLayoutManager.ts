@@ -1,3 +1,4 @@
+import { TSize } from '@story/types';
 import { Graph } from "../Graph";
 
 

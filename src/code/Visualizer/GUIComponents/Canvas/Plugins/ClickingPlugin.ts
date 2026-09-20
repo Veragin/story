@@ -1,3 +1,4 @@
+import { TPoint } from '@story/types';
 import { CanvasPluginBase } from "./CanvasPluginBase";
 import { MouseButton } from "../CanvasManager/InputConstants";
 import { ClickableVisualObject } from "../Node/ClickableVisualObject";

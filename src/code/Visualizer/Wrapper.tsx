@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { visualizerStoreContext } from './context';
-import { TimeManager } from 'time/TimeManager';
+import { TimeManager } from '@story/shared';
 import { Store } from './stores/Store';
 import { InfoModal } from './components/InfoModal';
 
