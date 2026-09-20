@@ -1,4 +1,4 @@
-import { Row } from 'code/components/Basic';
+import { Row, showToast, spacingCss } from '@story/ui';
 import { MapStore } from '../../MapStore';
 import { Button, Tooltip } from '@mui/material';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
@@ -6,8 +6,6 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { List } from './List';
 import { TextField } from 'code/Visualizer/components/TextField';
 import { useState } from 'react';
-import { showToast } from 'code/theme/GlobalThemeWrapper';
-import { spacingCss } from 'code/components/css';
 import styled from '@emotion/styled';
 
 type Props = {

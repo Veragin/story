@@ -6,8 +6,7 @@ import {
     createTheme,
     Typography,
 } from '@mui/material';
-import { Column, Row, WholeContainer } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Column, Row, spacingCss, WholeContainer } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { Nav } from '../components/Nav';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';

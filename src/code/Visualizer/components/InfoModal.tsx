@@ -1,6 +1,5 @@
 import { styled } from '@mui/material';
-import { Column } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Column, spacingCss } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { observer } from 'mobx-react-lite';
 

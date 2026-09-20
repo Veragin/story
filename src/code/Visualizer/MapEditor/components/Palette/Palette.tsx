@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { MapStore } from '../../MapStore';
 import styled from '@emotion/styled';
-import { Column } from 'code/components/Basic';
+import { Column } from '@story/ui';
 import {
     WIDGET_BORDER_COLOR,
     WIDGET_BORDER_WIDTH,

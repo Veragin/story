@@ -1362,7 +1362,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@story/ui@workspace:ui"
   dependencies:
+    "@emotion/react": "npm:^11.13.3"
+    "@emotion/styled": "npm:^11.13.0"
+    "@mui/icons-material": "npm:^6.1.0"
+    "@mui/material": "npm:^6.1.0"
     "@story/shared": "workspace:^"
+    notistack: "npm:^3.0.1"
+  peerDependencies:
+    react: ^18.3.1
+    react-dom: ^18.3.1
   languageName: unknown
   linkType: soft
 
@@ -4454,7 +4462,6 @@ __metadata:
     mobx-react-lite: "npm:^4.0.7"
     ngraph.forcelayout: "npm:^3.3.1"
     ngraph.graph: "npm:^20.0.1"
-    notistack: "npm:^3.0.1"
     prettier: "npm:^3.3.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"

@@ -1,6 +1,6 @@
 import { foodInfo } from './foodInfo';
 import { toolInfo } from './toolInfo';
-import { applyFormatting } from 'code/utils/translations';
+import { applyFormatting } from '@story/ui';
 void applyFormatting;
 
 export const itemInfo = {

@@ -16,7 +16,7 @@ import { ExpandMore, Delete, AddLink, HelpOutline } from '@mui/icons-material';
 import { TBodyItem, TLinkCost } from '../types';
 import { LinkSection } from './LinkSection';
 import { SBodyItemContainer, SCompactColumn } from '../styles';
-import { Column, Row } from 'code/components/Basic';
+import { Column, Row } from '@story/ui';
 
 type Props = {
     bodyItem: TBodyItem;

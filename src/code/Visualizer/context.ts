@@ -1,4 +1,4 @@
-import { createSafeContext } from 'code/utils/createSafeContext';
+import { createSafeContext } from '@story/ui';
 import type { TWorldState } from 'data/TWorldState';
 import { Store } from './stores/Store';
 

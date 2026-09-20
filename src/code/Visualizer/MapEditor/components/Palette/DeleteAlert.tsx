@@ -1,11 +1,10 @@
 import { Button, Tooltip } from '@mui/material';
-import { Row } from 'code/components/Basic';
+import { Row, spacingCss } from '@story/ui';
 import { MapStore } from '../../MapStore';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { List } from './List';
 import styled from '@emotion/styled';
-import { spacingCss } from 'code/components/css';
 
 type Props = {
     mapStore: MapStore;

@@ -1,6 +1,5 @@
 import styled from '@emotion/styled';
-import { Row } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Row, spacingCss } from '@story/ui';
 import { MapStore } from '../../MapStore';
 import { List } from './List';
 import { Button, Tooltip } from '@mui/material';

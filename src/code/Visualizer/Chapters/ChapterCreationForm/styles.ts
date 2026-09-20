@@ -1,6 +1,5 @@
 import { styled, Paper, Box, FormControl } from '@mui/material';
-import { Column, Row } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Column, Row, spacingCss } from '@story/ui';
 
 export const SFormContainer = styled(Paper)(({ theme }) => `
     padding: ${spacingCss(1.5)};

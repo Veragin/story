@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { worldStateContext, engineContext, storeContext } from './context';
 import { e, s } from 'worldState';
-import { applyFormatting } from '../utils/translations';
+import { applyFormatting } from '@story/ui';
 
 type Props = {
     children: ReactNode;

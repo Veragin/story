@@ -8,8 +8,7 @@ import {
     ThemeProvider,
     createTheme,
 } from '@mui/material';
-import { Column, Row, WholeContainer } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Column, Row, spacingCss, WholeContainer } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { register } from 'data/register';
 import { Nav } from '../components/Nav';

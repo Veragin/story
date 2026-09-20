@@ -1,10 +1,8 @@
-import { Row } from 'code/components/Basic';
+import { Modal, Row, spacingCss } from '@story/ui';
 import styled from '@emotion/styled';
 import { MapStore } from './MapStore';
 import { useEffect, useRef } from 'react';
-import { Modal } from 'code/components/Modal';
 import { ModalContent } from './components/ModalContent';
-import { spacingCss } from 'code/components/css';
 import { IconButton, Tooltip } from '@mui/material';
 import MapIcon from '@mui/icons-material/Map';
 import PaletteIcon from '@mui/icons-material/Palette';

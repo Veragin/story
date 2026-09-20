@@ -1,4 +1,4 @@
-import { showToast } from 'code/theme/GlobalThemeWrapper';
+import { showToast } from '@story/ui';
 import { TChapterPassageType, TLocationId } from '@story/types';
 import { TMapData } from '../MapEditor/types';
 import { TypeConverters } from './TypeConverters';

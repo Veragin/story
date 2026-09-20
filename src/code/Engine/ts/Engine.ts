@@ -9,7 +9,7 @@ import { Story } from './Story';
 import { Store } from './Store';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from 'code/utils/loadWorldState';
-import { showToast } from 'code/theme/GlobalThemeWrapper';
+import { showToast } from '@story/ui';
 
 export class Engine {
     inventory: Inventory;

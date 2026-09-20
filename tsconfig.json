@@ -16,8 +16,9 @@
                Each of these disappears as its phase lands. */
             "code/Engine/*": ["src/code/Engine/*"],
             "code/Visualizer/*": ["src/code/Visualizer/*"],
-            "code/components/*": ["src/code/components/*"],
-            "code/theme/*": ["src/code/theme/*"],
+            /* Gone as of Phase 4: the components and theme aliases — now `@story/ui`.
+               The utils alias is down to createWorldState / loadWorldState (→ `@story/core`)
+               and parsePassageId (→ `@story/shared`, §3), all of which move in Phase 5. */
             "code/utils/*": ["src/code/utils/*"],
             "data/*": ["src/data/*"],
             "worldState": ["src/worldState.ts"]

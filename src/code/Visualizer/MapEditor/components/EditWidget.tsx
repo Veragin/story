@@ -1,15 +1,13 @@
 import { observer } from 'mobx-react-lite';
 import { MapStore } from '../MapStore';
 import styled from '@emotion/styled';
-import { Column, Row } from 'code/components/Basic';
+import { Column, Row, SmallText, spacingCss } from '@story/ui';
 import {
     WIDGET_BORDER_COLOR,
     WIDGET_BORDER_WIDTH,
 } from '../MapEngine/constants';
 import { TextField } from 'code/Visualizer/components/TextField';
 import { runInAction } from 'mobx';
-import { spacingCss } from 'code/components/css';
-import { SmallText } from 'code/components/Text';
 import { Select } from 'code/Visualizer/components/Select';
 
 type Props = {

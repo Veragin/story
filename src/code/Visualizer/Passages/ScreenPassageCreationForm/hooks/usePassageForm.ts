@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { showToast } from 'code/theme/GlobalThemeWrapper';
+import { showToast } from '@story/ui';
 import { TChapterId, TChapterPassageType } from '@story/types';
 import { PassageResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/PassageResolver';
 import { ChapterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';

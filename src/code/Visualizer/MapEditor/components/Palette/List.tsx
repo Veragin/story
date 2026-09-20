@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { Column } from 'code/components/Basic';
+import { Column } from '@story/ui';
 
 export const List = styled(Column)`
     scrollbar-color: #999 black;

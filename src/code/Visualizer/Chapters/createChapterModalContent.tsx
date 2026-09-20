@@ -1,14 +1,11 @@
 import { Button, styled, Tooltip } from '@mui/material';
-import { Column, Row } from 'code/components/Basic';
+import { Column, Modal, Row, SmallText, spacingCss, Text } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { ReactNode, useState } from 'react';
 import { TChapter, TChapterId } from '@story/types';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
-import { SmallText, Text } from 'code/components/Text';
-import { spacingCss } from 'code/components/css';
-import { Modal } from 'code/components/Modal';
 
 export const createChapterModalContent = (
     chapter: TChapter<TChapterId>

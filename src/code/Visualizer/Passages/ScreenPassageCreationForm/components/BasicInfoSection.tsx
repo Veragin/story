@@ -11,7 +11,7 @@ import {
     Tooltip,
 } from '@mui/material';
 import { FolderOpen, HelpOutline } from '@mui/icons-material';
-import { showToast } from 'code/theme/GlobalThemeWrapper';
+import { showToast } from '@story/ui';
 import { SFormRow, SFormControl } from '../styles';
 import { CharacterResolver } from 'code/Visualizer/GUIComponents/Graphs/ChapterPassagesGraph/store/CharacterResolver';
 

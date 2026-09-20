@@ -1,13 +1,10 @@
 import { Button, styled, Tooltip } from '@mui/material';
-import { Column, Row } from 'code/components/Basic';
+import { Column, Modal, Row, spacingCss, Text } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 import { ReactNode, useState } from 'react';
 import { getWholePassageId, TChapterId, TChapterPassage } from '@story/types';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Text } from 'code/components/Text';
-import { spacingCss } from 'code/components/css';
-import { Modal } from 'code/components/Modal';
 
 export const createPassageModalContent = (
     passage: TChapterPassage<TChapterId>

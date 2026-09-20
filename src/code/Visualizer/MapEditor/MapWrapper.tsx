@@ -1,4 +1,4 @@
-import { Column, WholeContainer } from 'code/components/Basic';
+import { Column, Header, spacingCss, WholeContainer } from '@story/ui';
 import { useEffect, useState } from 'react';
 import { MapStore } from './MapStore';
 import { useVisualizerStore } from 'code/Visualizer/context';
@@ -7,9 +7,7 @@ import { ModalContent } from './components/ModalContent';
 import { createDefaultMapData } from './createDefaultMapData';
 import { TopBar } from './components/TopBar';
 import { CircularProgress } from '@mui/material';
-import { Header } from 'code/components/Text';
 import styled from '@emotion/styled';
-import { spacingCss } from 'code/components/css';
 
 type Props = {
     mapId: string;

@@ -1,6 +1,6 @@
 import { Slider, styled, Tooltip } from '@mui/material';
 import { ZOOM_CONFIG } from '../Chapters/ChapterStore/TimelineRender/zoomConfig';
-import { Row } from 'code/components/Basic';
+import { Row } from '@story/ui';
 
 type Props = {
     zoomLevel: number;

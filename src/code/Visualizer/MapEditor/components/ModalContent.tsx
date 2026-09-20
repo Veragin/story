@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { Column, Row } from 'code/components/Basic';
+import { Column, Row } from '@story/ui';
 import { TextField } from '../../components/TextField';
 import { useState } from 'react';
 import { Button } from '@mui/material';

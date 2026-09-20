@@ -1,6 +1,5 @@
 import { Button, styled } from '@mui/material';
-import { Row } from 'code/components/Basic';
-import { spacingCss } from 'code/components/css';
+import { Row, spacingCss } from '@story/ui';
 import { useVisualizerStore } from 'code/Visualizer/context';
 
 export const Nav = styled(Row)`
