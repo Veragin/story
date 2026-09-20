@@ -8,7 +8,7 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import { observer } from 'mobx-react-lite';
-import { useEngine, useWorldState } from 'code/Engine/context';
+import { useEngine, useWorldState } from '../../context';
 
 export const StatusBar = observer(() => {
     const e = useEngine();

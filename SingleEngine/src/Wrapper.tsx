@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { worldStateContext, engineContext, storeContext } from './context';
-import { e, s } from 'worldState';
+import { e, s } from './worldState';
 import { applyFormatting } from '@story/ui';
 
 type Props = {

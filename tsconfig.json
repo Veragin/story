@@ -12,19 +12,34 @@
             "@story/data": ["data/index.ts"],
             "@story/data/*": ["data/*"],
 
-            /* Legacy `baseUrl: src` style imports of the not-yet-moved app.
-               Each of these disappears as its phase lands. */
-            "code/Engine/*": ["src/code/Engine/*"],
-            "code/Visualizer/*": ["src/code/Visualizer/*"],
-            /* Gone as of Phase 4: the components and theme aliases — now `@story/ui`.
+            /* The last legacy `baseUrl: src` alias, belonging to the one app still living in
+               `src/`. It goes with the Visualizer in Phase 8, and `src/` with it.
+               Gone as of Phase 4: the components and theme aliases — now `@story/ui`.
                Gone as of Phase 5: the whole utils alias (createWorldState, loadWorldState,
-               parsePassageId → `@story/core`) and the engine `ts/` subtree; the alias above
-               now only resolves the four `.tsx` files still waiting on Phase 7.
+               parsePassageId → `@story/core`) and the engine `ts/` subtree.
                Gone as of Phase 6: `data/*` — the story is `@story/data` (barrel) plus
-               `@story/data/*` (the author's tree, a legal deep-import surface per §5). */
-            "worldState": ["src/worldState.ts"]
+               `@story/data/*` (the author's tree, a legal deep-import surface per §5).
+               Gone as of Phase 7: `code/Engine/*` and `worldState` — SingleEngine resolves
+               those relatively, inside its own workspace. */
+            "code/Visualizer/*": ["src/code/Visualizer/*"]
         }
     },
-    "include": ["src", "types", "shared", "ui", "core", "data"],
-    "exclude": ["node_modules", "dist", "vite.config.ts"]
+    /* One program over the whole graph (§7): every workspace plus the un-migrated `src/`.
+       `paths` above is what makes the `@story/*` edges resolve to source rather than to a
+       build output, so this must keep listing every package as it is extracted. */
+    "include": [
+        "src",
+        "types",
+        "shared",
+        "ui",
+        "core",
+        "data",
+        "SingleEngine/src"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "vite.config.ts",
+        "SingleEngine/vite.config.ts"
+    ]
 }

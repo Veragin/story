@@ -1,6 +1,6 @@
 import { Button, styled } from '@mui/material';
 import { Column, spacingCss, Title, WholeContainer } from '@story/ui';
-import { useEngine } from 'code/Engine/context';
+import { useEngine } from './context';
 
 export const CharacterPicker = () => {
     const e = useEngine();

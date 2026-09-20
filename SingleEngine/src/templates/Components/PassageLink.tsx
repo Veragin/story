@@ -1,5 +1,5 @@
 import { css, styled } from '@mui/material';
-import { useEngine } from 'code/Engine/context';
+import { useEngine } from '../../context';
 import { itemInfo } from '@story/data';
 import { TItemId, TLink, TPassageId } from '@story/types';
 

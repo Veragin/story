@@ -13,5 +13,9 @@
         "@story/core": "workspace:^",
         "@story/shared": "workspace:^",
         "@story/types": "workspace:^"
+    },
+    "comment:devDependencies": "`assets/index.ts` is built on `import.meta.glob` and carries its own `/// <reference types=\"vite/client\" />`. That reference used to resolve only because the root app hoisted vite; now that the apps own their own configs, the package that needs the types declares them.",
+    "devDependencies": {
+        "vite": "^5.4.9"
     }
 }

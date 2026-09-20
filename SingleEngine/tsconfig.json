@@ -1,0 +1,8 @@
+{
+    /* Per-package config for editors and `eslint --projectService`. Type checking of record is
+       the single root `tsc --noEmit` over the whole graph (REFACTOR_PLAN §7) — this one has no
+       `paths`, so it only resolves `@story/*` through the workspace symlinks.
+       `vite.config.ts` is node-land, not app-land: it is checked by `tsconfig.node.json`. */
+    "extends": "../tsconfig.base.json",
+    "include": ["src"]
+}

@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
-import { Engine } from 'code/Engine/Engine';
-import { Wrapper } from 'code/Engine/Wrapper';
+import { Engine } from './Engine';
+import { Wrapper } from './Wrapper';
 import { GlobalThemeWrapper } from '@story/ui';
 import '@story/ui/index.css';
 
