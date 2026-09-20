@@ -1,4 +1,4 @@
-import type { Engine } from 'code/Engine/ts/Engine';
+import type { Engine } from '@story/core';
 import { TWorldState } from 'data/TWorldState';
 import { TChapterPassage } from '@story/types';
 

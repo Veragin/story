@@ -1,9 +1,9 @@
 import { DeltaTime } from '@story/shared';
 import { TLinkCost, TPassageId } from '@story/types';
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
-import { parsePassageId } from 'code/utils/parsePassageId';
-import { showToast } from '@story/ui';
+import { parsePassageId } from '../parsePassageId';
+import { showToast } from '@story/shared';
 import { itemInfo } from 'data/items/itemInfo';
 import { action, makeObservable } from 'mobx';
 

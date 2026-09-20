@@ -1,4 +1,4 @@
-import { createWorldState } from 'code/utils/createWorldState';
+import { createWorldState } from '@story/core';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 

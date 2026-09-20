@@ -1330,6 +1330,7 @@ __metadata:
   dependencies:
     "@story/shared": "workspace:^"
     "@story/types": "workspace:^"
+    mobx: "npm:^6.13.2"
   languageName: unknown
   linkType: soft
 

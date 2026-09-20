@@ -29,8 +29,11 @@ export const GlobalThemeWrapper = ({ children }: Props) => {
 // elided as type-only.
 applyFormatting('we have to load _ finction', []);
 
+// Wrapped rather than passed straight through: `setToastHandler` takes the framework-agnostic
+// `TToastHandler` from `@story/shared` (plain string + variant), not notistack's overloaded
+// `EnqueueSnackbar`. This is the single place the two meet.
 const ToastWrapper = () => {
     const { enqueueSnackbar } = useSnackbar();
-    setToastHandler(enqueueSnackbar);
+    setToastHandler((message, options) => enqueueSnackbar(message, options));
     return null;
 };

@@ -14,6 +14,6 @@
  */
 
 declare interface Window {
-    e: import('code/Engine/ts/Engine').Engine;
+    e: import('@story/core').Engine;
     s: import('data/TWorldState').TWorldState;
 }

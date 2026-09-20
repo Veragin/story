@@ -2,7 +2,7 @@ import { styled } from '@mui/material';
 import { Header, Row, spacingCss, Text, WholeContainer } from '@story/ui';
 import { StatusBar } from './Components/StatusBar';
 import { PassageLink } from './Components/PassageLink';
-import { TUnkownPassageScreen } from '../ts/const';
+import { TUnkownPassageScreen } from '@story/core';
 
 type Props = {
     passage: TUnkownPassageScreen;

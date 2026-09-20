@@ -1,4 +1,4 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from 'data/TWorldState';
 import { DeltaTime, isNullish, Time } from '@story/shared';
 
 export const copyWorldState = (state: TWorldState): TWorldState => {

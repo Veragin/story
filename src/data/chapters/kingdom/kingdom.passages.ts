@@ -2,7 +2,7 @@ import { TChapterPassage } from '@story/types';
 import { introPassage } from './annie.passages/intro';
 import { palacePassage } from './annie.passages/palace';
 import { TWorldState } from 'data/TWorldState';
-import type { Engine } from 'code/Engine/ts/Engine';
+import type { Engine } from '@story/core';
 import { visitPassage } from './thomas.passages/visit.screen';
 
 export type TKingdomPassageId = TKingdomAnniePassageId | TKingdomThomasPassageId;

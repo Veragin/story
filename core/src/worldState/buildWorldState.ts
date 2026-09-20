@@ -12,7 +12,6 @@ import type {
     TSideCharacter,
     TSideCharacterId,
 } from '@story/types';
-import { Engine } from 'code/Engine/ts/Engine';
 
 /**
  * Structural shape of `data/register` — only the slices the world state is built from.
@@ -30,15 +29,16 @@ export type TWorldStateRegister = {
 export type TItemInfoRegister = { readonly [Id in TItemId]: object };
 
 /**
- * Builds a fresh world state from the story register and an `Engine` driving it.
+ * Builds a pristine world state from the story register: every character, side character,
+ * chapter, location and happening at its `init` values, with a `ref` back to its definition.
  *
- * Pure factory: no module-level side effects, no `window` writes, no auto start —
- * the calling app owns those.
+ * Deliberately *does not* construct an `Engine`. An `Engine` loads any saved game out of
+ * localStorage and mutates the state it is given, which is right for a play session and wrong
+ * for anything that needs the story's starting point — the Visualizer's passage graph renders
+ * passage bodies against this base state so the graph shows the story as authored, not as the
+ * last player left it. `createWorldState` is the play-session wrapper on top of this.
  */
-export const createWorldState = (
-    register: TWorldStateRegister,
-    itemInfo: TItemInfoRegister
-): { s: TWorldState; e: Engine } => {
+export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemInfoRegister): TWorldState => {
     const ss = {
         time: register.chapters.village.timeRange.start,
         mainCharacterId: 'thomas',
@@ -77,8 +77,5 @@ export const createWorldState = (
         ss.happenings[id] = { ...register.happenings[id].init, ref: register.happenings[id] };
     });
 
-    const s = ss as TWorldState;
-    const e = new Engine(s);
-
-    return { s, e };
+    return ss as TWorldState;
 };

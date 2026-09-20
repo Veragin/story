@@ -20,3 +20,5 @@ export * from './throttle';
 export * from './typeguards';
 /* getUniqueId, getUniqueClassName, capitalize, range, roundToDec, TFlavor */
 export * from './misc';
+/* showToast, setToastHandler, TToastHandler, TToastOptions, TToastVariant */
+export * from './toast';

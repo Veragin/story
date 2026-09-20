@@ -1,5 +1,5 @@
 import { TWorldState } from 'data/TWorldState';
-import { Engine } from 'code/Engine/ts/Engine';
+import { Engine } from '@story/core';
 import { TChapterPassage } from '@story/types';
 import { register, TRegisterPassageId } from 'data/register';
 

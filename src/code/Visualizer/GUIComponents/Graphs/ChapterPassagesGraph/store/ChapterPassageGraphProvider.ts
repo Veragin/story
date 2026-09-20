@@ -11,9 +11,9 @@ import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
 import { register, TRegisterPassageId } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 import { PassageResolver } from './PassageResolver';
-import { createWorldState } from 'code/utils/createWorldState';
+import { createWorldState } from '@story/core';
 import type { TWorldState } from 'data/TWorldState';
-import type { Engine } from 'code/Engine/ts/Engine';
+import type { Engine } from '@story/core';
 
 export class GraphProvider {
     private static readonly STORAGE_PREFIX = 'passage-graph-';

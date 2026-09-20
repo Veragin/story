@@ -1,4 +1,4 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from 'data/TWorldState';
 import { Inventory } from './Inventory';
 import { TimeManager } from '@story/shared';
 import { TChapterId, TChapterPassage } from '@story/types';
@@ -8,8 +8,8 @@ import { Processor } from './Processor';
 import { Story } from './Story';
 import { Store } from './Store';
 import { makeAutoObservable, runInAction } from 'mobx';
-import { loadWorldState } from 'code/utils/loadWorldState';
-import { showToast } from '@story/ui';
+import { loadWorldState } from '../worldState/loadWorldState';
+import { showToast } from '@story/shared';
 
 export class Engine {
     inventory: Inventory;

@@ -1,74 +1,18 @@
-// worldState/WorldStateManager.ts
-import { TWorldState } from 'data/TWorldState';
-import { TChapterId, TCharacterId, THappeningId, TLocationId, TSideCharacterId } from '@story/types';
+import { buildWorldState } from '@story/core';
 import { register } from 'data/register';
 import { itemInfo } from 'data/items/itemInfo';
 
-class WorldStateCopy {
-    /**
-     * Creates the initial base state with all required properties
-     * @returns The initialized base state
-     */
-    createBaseState(): TWorldState {
-        // Create initial state structure
-        const baseState = {
-            time: register.chapters.village.timeRange.start,
-            mainCharacterId: 'thomas',
-            currentHistory: {},
-            characters: {} as Record<TCharacterId, unknown>,
-            sideCharacters: {} as Record<TSideCharacterId, unknown>,
-            chapters: {} as Record<TChapterId, unknown>,
-            locations: {} as Record<TLocationId, unknown>,
-            happenings: {} as Record<THappeningId, unknown>,
-        };
-
-        // Initialize characters
-        (Object.keys(register.characters) as TCharacterId[]).forEach((id) => {
-            const { inventory, ...rest } = register.characters[id].init;
-            baseState.characters[id] = {
-                ...rest,
-                inventory: inventory.map((i) => ({ ...itemInfo[i.id], ...i })),
-                ref: register.characters[id],
-            };
-        });
-
-        // Initialize side characters
-        (Object.keys(register.sideCharacters) as TSideCharacterId[]).forEach((id) => {
-            const { inventory, ...rest } = register.sideCharacters[id].init;
-            baseState.sideCharacters[id] = {
-                ...rest,
-                inventory: inventory.map((i) => ({ ...itemInfo[i.id], ...i })),
-                ref: register.sideCharacters[id],
-            };
-        });
-
-        // Initialize chapters
-        (Object.keys(register.chapters) as TChapterId[]).forEach((id) => {
-            baseState.chapters[id] = {
-                ...register.chapters[id].init,
-                ref: register.chapters[id],
-            };
-        });
-
-        // Initialize locations
-        (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
-            baseState.locations[id] = {
-                ...register.locations[id].init,
-                ref: register.locations[id],
-            };
-        });
-
-        // Initialize happenings
-        (Object.keys(register.happenings) as THappeningId[]).forEach((id) => {
-            baseState.happenings[id] = {
-                ...register.happenings[id].init,
-                ref: register.happenings[id],
-            };
-        });
-
-        return baseState as TWorldState;
-    }
-}
-
-// Create a singleton instance for easy access
-export const worldStateCopy = new WorldStateCopy().createBaseState();
+/**
+ * The pristine, authored starting state the passage graph renders against.
+ *
+ * Passage bodies are functions of `(s, e)`; the node/edge actualizers call them with this
+ * state to read out titles, links and conditions. It must stay the *authored* base state —
+ * `createWorldState` is the wrong tool here because it also constructs an `Engine`, which
+ * replays whatever save sits in localStorage and would make the graph depend on how far the
+ * player got.
+ *
+ * The state-building itself used to be duplicated here verbatim from `createWorldState`;
+ * it now lives once in `@story/core`'s `buildWorldState`, which is the half of
+ * `createWorldState` that runs before the `Engine` is constructed.
+ */
+export const worldStateCopy = buildWorldState(register, itemInfo);

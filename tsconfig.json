@@ -17,9 +17,12 @@
             "code/Engine/*": ["src/code/Engine/*"],
             "code/Visualizer/*": ["src/code/Visualizer/*"],
             /* Gone as of Phase 4: the components and theme aliases — now `@story/ui`.
-               The utils alias is down to createWorldState / loadWorldState (→ `@story/core`)
-               and parsePassageId (→ `@story/shared`, §3), all of which move in Phase 5. */
-            "code/utils/*": ["src/code/utils/*"],
+               Gone as of Phase 5: the whole utils alias (createWorldState, loadWorldState,
+               parsePassageId → `@story/core`) and the engine `ts/` subtree; the alias above
+               now only resolves the four `.tsx` files still waiting on Phase 7.
+               `data/*` outlives Phase 5 on purpose: `@story/core` imports `TWorldState`
+               type-only and `register` / `itemInfo` at value level, and `data/` is not a
+               real package until Phase 6. */
             "data/*": ["src/data/*"],
             "worldState": ["src/worldState.ts"]
         }

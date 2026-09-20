@@ -1,10 +1,10 @@
-import { TWorldState } from 'data/TWorldState';
+import type { TWorldState } from 'data/TWorldState';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from '@story/shared';
 import { TChapter, TChapterId, TLinkCost } from '@story/types';
 import { register } from 'data/register';
 import { TUnkownPassageScreen } from './const';
-import { parsePassageId } from 'code/utils/parsePassageId';
+import { parsePassageId } from '../parsePassageId';
 
 export class Processor {
     private chapterList: TChapter<TChapterId>[];

@@ -18,7 +18,7 @@ import {
 import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
-import type { THistoryItem } from 'code/Engine/ts/History';
+import type { THistoryItem } from '@story/core';
 
 export type TWorldState = {
     time: Time;
