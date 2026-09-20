@@ -13,8 +13,10 @@
         "Visualizer/*",
         "MultiEngine/*"
     ],
-    "comment:scripts": "Every service is a workspace with its own config, so every service script here is a passthrough and the root has no Vite of its own (§7). `dev:multi-engine-server` has no `build` sibling on purpose: the node server runs its TypeScript directly under `tsx`, no build step and no `dist/` (§7). `test`/`test:watch` are Vitest and replace the mocha scripts Phase 0 deleted; the runner is at the root with one `vitest.workspace.ts` listing the packages that have tests (§7), so there is no per-workspace `test` passthrough to add. Parallel `dev` orchestration is Phase 11.",
+    "comment:scripts": "Every service is a workspace with its own config, so every service script here is a passthrough and the root has no Vite of its own (§7). `dev:multi-engine-server` has no `build` sibling on purpose: the node server runs its TypeScript directly under `tsx`, no build step and no `dist/` (§7). `test`/`test:watch` are Vitest and replace the mocha scripts Phase 0 deleted; the runner is at the root with one `vitest.workspace.ts` listing the packages that have tests (§7), so there is no per-workspace `test` passthrough to add.",
+    "comment:scripts:dev": "`dev` is Yarn 4's own `workspaces foreach` rather than `concurrently`: the root has no runtime deps and this keeps it that way (§7). `-A` selects every workspace and yarn skips the ones with no `dev` script (types, data, shared, ui, core), which leaves exactly the four services; `-p` runs them at once, `-i` interleaves their output live instead of buffering it until exit (a dev server never exits, so without `-i` you would see nothing), `-v` prefixes every line with its workspace name, and `--jobs unlimited` lifts the default cap of ~half the core count so a small machine still starts all four. `--exclude story-root` is load-bearing: `-A` also selects this workspace, and this very script is its `dev`. Yarn does guard against that (it skips a workspace when the script it is about to run is the one already executing), but the guard keys off `npm_lifecycle_event`, so it holds for `yarn dev` and silently does not for anyone who pastes the foreach line into a shell — where it forks a second copy of all four services and three `EADDRINUSE` failures. Naming the exclusion makes the invariant independent of how the command was reached. Deliberately NOT `-t/--topological`: that means \"wait for my dependencies to finish\", which deadlocks the day someone gives `core` or `data` a watch-mode `dev` script. Nothing in the run set depends on anything else in it today, so `-t` would be a no-op that only stores up that failure. Ctrl-C reaches the children because yarn runs them in its process group; SIGTERM to the yarn process tears them down too (both verified in Phase 11, no orphans).",
     "scripts": {
+        "dev": "yarn workspaces foreach -Apvi --jobs unlimited --exclude story-root run dev",
         "dev:engine": "yarn workspace @story/single-engine dev",
         "dev:visualizer": "yarn workspace @story/visualizer-client dev",
         "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",
@@ -35,6 +37,8 @@
         "@types/node": "^24.3.0",
         "@vitest/ui": "^3.2.4",
         "eslint": "^9.9.0",
+        "eslint-import-resolver-typescript": "^4.4.5",
+        "eslint-plugin-import": "^2.32.0",
         "eslint-plugin-react-hooks": "^5.1.0-rc.0",
         "eslint-plugin-react-refresh": "^0.4.9",
         "globals": "^15.9.0",

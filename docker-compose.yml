@@ -2,15 +2,36 @@ services:
   story-template:
     platform: linux/amd64
     image: pipeline/dev
+    # REFACTOR_PLAN §2 "Ports". Replaces 8180 and 5178, which no service has ever used.
+    # `make start` runs the root `yarn dev` inside this container, which binds all four —
+    # every vite config already sets `host: 0.0.0.0` + `strictPort`, which is what makes
+    # them reachable from the host rather than only from inside the container.
     ports:
-      - 8180:8180
-      - 5178:5178
+      - 8100:8100 # SingleEngine          (vite)
+      - 8101:8101 # Visualizer client     (vite)
+      - 8102:8102 # MultiEngine client    (vite)
+      - 8124:8124 # MultiEngine server    (node/tsx)
+      # 8123 — Visualizer server — is deliberately absent: it does not exist yet (§8).
     build:
       context: .
       dockerfile: docker/Dockerfile.dev
     volumes:
       - .:/app
       - ~/.gitconfig:/home/node/.gitconfig-host:ro
+    # §7 asks for `command` to run the root `yarn dev`. It is run by `make start` as a
+    # detached `exec` instead, and PID 1 stays a no-op on purpose:
+    #
+    #   `make ai` and `make bash` are `docker compose exec` into this container, so the
+    #   whole agent workflow is only alive while the container is. Making `yarn dev` PID 1
+    #   would wire the container's lifetime to four dev servers — one `EADDRINUSE`, one
+    #   missing `yarn install`, one syntax error in a vite config, and the container exits
+    #   and `make ai` answers "container is not running" instead of starting Claude. An
+    #   idle PID 1 cannot fail, and `make start` still brings every service up (the Phase 11
+    #   gate), so both requirements hold without trading one for the other.
+    #
+    # Consequence worth knowing: the dev servers' output is NOT in `docker compose logs`,
+    # because they are not PID 1. `make start` redirects them to `.dev.log` (bind-mounted,
+    # so it is readable from the host) and `make logs` tails it.
     command: tail -f /dev/stdout
     working_dir: /app
     user: node

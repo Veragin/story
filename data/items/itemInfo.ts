@@ -21,7 +21,6 @@ export const itemInfo = {
         asd: { asd: 'asdas', time: false },
     },
 } as const;
-console.log(itemInfo); // preloads all items
 
 export type TItemType = 'value' | 'resource' | 'tool' | 'food' | 'weapon';
 
