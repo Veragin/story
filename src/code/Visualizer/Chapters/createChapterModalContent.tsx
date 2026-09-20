@@ -1,6 +1,6 @@
 import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Row } from 'code/components/Basic';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { ReactNode, useState } from 'react';
 import { TChapter } from 'types/TChapter';
 import { TChapterId } from 'types/ids';

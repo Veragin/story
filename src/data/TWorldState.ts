@@ -11,7 +11,7 @@ import { TNobleManSideCharacterData } from './sideCharacters/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
 import { TCharacterId } from 'types/ids';
-import { THistoryItem } from 'code/Engine/ts/History';
+import type { THistoryItem } from 'code/Engine/ts/History';
 import { THappening } from 'types/THappening';
 
 export type TWorldState = {

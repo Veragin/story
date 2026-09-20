@@ -1,9 +1,9 @@
 import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
-import { s } from 'worldState';
+import { TWorldState } from 'data/TWorldState';
 import { TVillageThomasPassageId } from '../village.passages';
 
-export const forestPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
+export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVillageThomasPassageId> => ({
     chapterId: 'village',
     characterId: 'thomas',
     id: 'forest',

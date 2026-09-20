@@ -1,11 +1,8 @@
 import { createSafeContext } from 'code/utils/createSafeContext';
-import { Store } from './Engine/ts/Store';
-import { Store as VisStore } from './Visualizer/stores/Store';
-import { TWorldState } from 'data/TWorldState';
-import { Engine } from './Engine/ts/Engine';
+import type { TWorldState } from 'data/TWorldState';
+import { Store } from './ts/Store';
+import { Engine } from './ts/Engine';
 
 export const [storeContext, useStore] = createSafeContext<Store>('StoreContext');
 export const [worldStateContext, useWorldState] = createSafeContext<TWorldState>('WorldStateContext');
 export const [engineContext, useEngine] = createSafeContext<Engine>('EngineContext');
-
-export const [visualizerStoreContext, useVisualizerStore] = createSafeContext<VisStore>('VisualizerStoreContext');

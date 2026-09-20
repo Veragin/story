@@ -1,5 +1,5 @@
 import { styled } from '@mui/material';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from 'code/utils/typeguards';
 import { register } from 'data/register';

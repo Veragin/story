@@ -9,13 +9,27 @@ import { createPassageModalContent } from 'code/Visualizer/Chapters/createPassag
 import { ChapterPassagesGraphStorageManager } from './ChapterPassagesGraphStorageManager';
 import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
 import { register, TRegisterPassageId } from 'data/register';
-import { worldStateCopy } from '../WorldStateCopy';
+import { itemInfo } from 'data/items/itemInfo';
 import { PassageResolver } from './PassageResolver';
-import { e } from 'worldState';
+import { createWorldState } from 'code/utils/createWorldState';
+import type { TWorldState } from 'data/TWorldState';
+import type { Engine } from 'code/Engine/ts/Engine';
 
 export class GraphProvider {
     private static readonly STORAGE_PREFIX = 'passage-graph-';
     private static graphActualizer: GraphActualizer = new GraphActualizer();
+    private static worldState: { s: TWorldState; e: Engine } | null = null;
+
+    /**
+     * The Visualizer owns its own world state / engine pair — it must never reach for
+     * SingleEngine's singleton. Built lazily so merely importing this module stays side-effect free.
+     */
+    private static getWorldState(): { s: TWorldState; e: Engine } {
+        if (this.worldState === null) {
+            this.worldState = createWorldState(register, itemInfo);
+        }
+        return this.worldState;
+    }
 
     static async getGraph(chapterId: string, canvasManager: CanvasManager, store: Store): Promise<Graph> {
         // First check if graph exists in memory
@@ -88,15 +102,10 @@ export class GraphProvider {
                 const passageNodeRef = node as PassageNodeVisualObject;
 
                 passageNodeRef.onClick.subscribe(async () => {
-                    const passage = await PassageResolver.getPassage(
-                        typedChapterId,
-                        passageNodeRef.passageId,
-                        worldStateCopy,
-                        e
-                    );
+                    const { s, e } = this.getWorldState();
+                    const passage = await PassageResolver.getPassage(typedChapterId, passageNodeRef.passageId, s, e);
                     store.setModalContent(createPassageModalContent(passage));
                 });
-
             }
         }
     }

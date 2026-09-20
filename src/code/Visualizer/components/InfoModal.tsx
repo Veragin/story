@@ -1,7 +1,7 @@
 import { styled } from '@mui/material';
 import { Column } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { observer } from 'mobx-react-lite';
 
 export const InfoModal = observer(() => {

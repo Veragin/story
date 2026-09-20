@@ -1,7 +1,7 @@
 import { IconButton, styled, Tooltip } from '@mui/material';
 import { WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import {
     MARKER_LINE_CLASS,
     MARKER_TIME_CLASS,

@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@mui/material';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { Nav, NavPicker } from 'code/Visualizer/components/Nav';
 import { ZoomSlider } from 'code/Visualizer/components/ZoomSlider';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';

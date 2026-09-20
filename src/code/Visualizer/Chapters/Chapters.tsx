@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { Column, Row, WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { Nav } from '../components/Nav';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
 import { ChapterTimeline } from './ChapterTimeline';
@@ -55,7 +55,7 @@ const darkTheme = createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(50, 50, 50, 0.8)',
+                        'backgroundColor': 'rgba(50, 50, 50, 0.8)',
                         '& fieldset': {
                             borderColor: 'rgba(255, 255, 255, 0.3)',
                         },
@@ -67,7 +67,7 @@ const darkTheme = createTheme({
                         },
                     },
                     '& .MuiInputLabel-root': {
-                        color: 'rgba(255, 255, 255, 0.7)',
+                        'color': 'rgba(255, 255, 255, 0.7)',
                         '&.Mui-focused': {
                             color: '#64b5f6',
                         },
@@ -88,13 +88,13 @@ const darkTheme = createTheme({
         MuiMenuItem: {
             styleOverrides: {
                 root: {
-                    backgroundColor: '#2a2a2a',
-                    color: '#ffffff',
+                    'backgroundColor': '#2a2a2a',
+                    'color': '#ffffff',
                     '&:hover': {
                         backgroundColor: '#3a3a3a',
                     },
                     '&.Mui-selected': {
-                        backgroundColor: '#4a4a4a',
+                        'backgroundColor': '#4a4a4a',
                         '&:hover': {
                             backgroundColor: '#5a5a5a',
                         },
@@ -105,16 +105,16 @@ const darkTheme = createTheme({
         MuiButton: {
             styleOverrides: {
                 outlined: {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    color: '#ffffff',
+                    'borderColor': 'rgba(255, 255, 255, 0.3)',
+                    'color': '#ffffff',
                     '&:hover': {
                         borderColor: 'rgba(255, 255, 255, 0.5)',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     },
                 },
                 contained: {
-                    backgroundColor: '#64b5f6',
-                    color: '#ffffff',
+                    'backgroundColor': '#64b5f6',
+                    'color': '#ffffff',
                     '&:hover': {
                         backgroundColor: '#42a5f5',
                     },
@@ -124,7 +124,7 @@ const darkTheme = createTheme({
         MuiAccordion: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'transparent',
+                    'backgroundColor': 'transparent',
                     '&:before': {
                         display: 'none',
                     },
@@ -134,7 +134,7 @@ const darkTheme = createTheme({
         MuiAccordionSummary: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'rgba(50, 50, 50, 0.5)',
+                    'backgroundColor': 'rgba(50, 50, 50, 0.5)',
                     '&:hover': {
                         backgroundColor: 'rgba(60, 60, 60, 0.5)',
                     },
@@ -173,7 +173,7 @@ const darkTheme = createTheme({
         MuiCardContent: {
             styleOverrides: {
                 root: {
-                    backgroundColor: 'rgba(40, 40, 40, 0.3)',
+                    'backgroundColor': 'rgba(40, 40, 40, 0.3)',
                     '&:last-child': {
                         paddingBottom: '12px',
                     },
@@ -208,18 +208,26 @@ export const Chapters = () => {
                 <SRow>
                     <SNavTitle>
                         <Event fontSize="small" sx={{ mr: 1 }} />
-                        <Typography variant="h6" component="span" sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                        <Typography
+                            variant="h6"
+                            component="span"
+                            sx={{ fontSize: '1rem', fontWeight: 500 }}
+                        >
                             {_('Chapters Manager')}
                         </Typography>
                     </SNavTitle>
                     <SNavActions>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: '0.875rem' }}
+                        >
                             {_('Create and manage game chapters')}
                         </Typography>
                     </SNavActions>
                 </SRow>
             </Nav>
-            
+
             <SContentArea>
                 <ResizableSplitter
                     leftContent={
@@ -276,8 +284,9 @@ const STimelineContainer = styled('div')`
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background-color: ${({ theme }) => theme?.palette?.background?.default || '#fafafa'};
-    
+    background-color: ${({ theme }) =>
+        theme?.palette?.background?.default || '#fafafa'};
+
     /* Ensure timeline fits well */
     & > * {
         height: 100%;
@@ -290,26 +299,26 @@ const SFormContainer = styled('div')`
     overflow-y: auto;
     padding: ${spacingCss(1.5)};
     background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    
+
     /* Custom scrollbar for dark theme */
     &::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     &::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 4px;
     }
-    
+
     &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.3);
         border-radius: 4px;
-        
+
         &:hover {
             background: rgba(255, 255, 255, 0.5);
         }
     }
-    
+
     /* Ensure form fits well */
     & > * {
         max-width: 100%;

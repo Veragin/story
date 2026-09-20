@@ -1,95 +1,129 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { styled, useTheme } from '@mui/material';
-import { useVisualizerStore } from '../../Context';
+import { useVisualizerStore } from '../context';
 import { VisualObject } from '../GUIComponents/Canvas/Node/VisualObject';
 import { HoverableVisualObject } from '../GUIComponents/Canvas/Node/HoverableVisualObject';
 import { ClickableVisualObject } from '../GUIComponents/Canvas/Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../GUIComponents/Canvas/Node/DraggableVisualObject';
 import { Button, ButtonGroup, Typography, Box, Chip } from '@mui/material';
-import { ZoomIn, ZoomOut, CenterFocusStrong, RestartAlt } from '@mui/icons-material';
+import {
+    ZoomIn,
+    ZoomOut,
+    CenterFocusStrong,
+    RestartAlt,
+} from '@mui/icons-material';
 import { MouseButton } from '../GUIComponents/Canvas/CanvasManager/InputConstants';
 import { CanvasManagerCore } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerCore';
 import { CanvasManagerBuilder } from '../GUIComponents/Canvas/CanvasManager/CanvasManagerBuilder';
 import { PanningPlugin } from '../GUIComponents/Canvas/Plugins/PanningPlugin';
-import { ZoomingPlugin, IZoomingControls } from '../GUIComponents/Canvas/Plugins/ZoomingPlugin';
+import {
+    ZoomingPlugin,
+    IZoomingControls,
+} from '../GUIComponents/Canvas/Plugins/ZoomingPlugin';
 import { HoveringPlugin } from '../GUIComponents/Canvas/Plugins/HoveringPlugin';
 import { DraggingPlugin } from '../GUIComponents/Canvas/Plugins/DraggingPlugin';
 import { ClickingPlugin } from '../GUIComponents/Canvas/Plugins/ClickingPlugin';
 
 // Create a navigation bar with theme colors and zoom controls
 const NavBar = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '8px 16px',
-  backgroundColor: theme.palette.primary.dark, // #000814
-  borderBottom: `1px solid ${theme.palette.primary.main}`, // #003566
-  minHeight: '48px',
-  gap: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 16px',
+    backgroundColor: theme.palette.primary.dark, // #000814
+    borderBottom: `1px solid ${theme.palette.primary.main}`, // #003566
+    minHeight: '48px',
+    gap: '16px',
 }));
 
 const Title = styled('h2')(({ theme }) => ({
-  margin: 0,
-  color: theme.palette.secondary.main, // #ffc300
-  fontSize: '1.25rem',
-  fontWeight: 500,
-  flex: 1,
+    margin: 0,
+    color: theme.palette.secondary.main, // #ffc300
+    fontSize: '1.25rem',
+    fontWeight: 500,
+    flex: 1,
 }));
 
 const ZoomControls = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    color: 'white',
 }));
 
 const StyledCanvasEl = styled('canvas')(({ theme }) => ({
-  display: 'block',
-  background: theme.palette.background.default, // #000814
-  cursor: 'default',
+    display: 'block',
+    background: theme.palette.background.default, // #000814
+    cursor: 'default',
 }));
 
 const InstructionsOverlay = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: '16px',
-  right: '16px',
-  backgroundColor: 'rgba(0, 8, 20, 0.9)',
-  border: `1px solid ${theme.palette.primary.main}`,
-  borderRadius: '8px',
-  padding: '12px',
-  color: theme.palette.secondary.main,
-  fontSize: '0.875rem',
-  maxWidth: '300px',
-  zIndex: 1000,
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    backgroundColor: 'rgba(0, 8, 20, 0.9)',
+    border: `1px solid ${theme.palette.primary.main}`,
+    borderRadius: '8px',
+    padding: '12px',
+    color: theme.palette.secondary.main,
+    fontSize: '0.875rem',
+    maxWidth: '300px',
+    zIndex: 1000,
 }));
 
 // Example visual objects implementation using theme colors
 class RectangleVisual extends VisualObject {
-    constructor(position: TPoint, size: TSize, private color: string, zIndex: number = 0) {
+    constructor(
+        position: TPoint,
+        size: TSize,
+        private color: string,
+        zIndex: number = 0
+    ) {
         super(position, size, zIndex);
     }
 
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-        
+        ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
+
         // Add a border for better visibility
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
-        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        ctx.strokeRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
     }
 }
 
 class CircleVisual extends VisualObject {
-    constructor(position: TPoint, private radius: number, private color: string, zIndex: number = 0) {
+    constructor(
+        position: TPoint,
+        private radius: number,
+        private color: string,
+        zIndex: number = 0
+    ) {
         super(position, { width: radius * 2, height: radius * 2 }, zIndex);
     }
 
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(this.position.x + this.radius, this.position.y + this.radius, this.radius, 0, Math.PI * 2);
+        ctx.arc(
+            this.position.x + this.radius,
+            this.position.y + this.radius,
+            this.radius,
+            0,
+            Math.PI * 2
+        );
         ctx.fill();
-        
+
         // Add a border for better visibility
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
@@ -98,7 +132,13 @@ class CircleVisual extends VisualObject {
 }
 
 class HoverableRectangle extends HoverableVisualObject {
-    constructor(position: TPoint, size: TSize, private defaultColor: string, private hoverColor: string, zIndex: number = 0) {
+    constructor(
+        position: TPoint,
+        size: TSize,
+        private defaultColor: string,
+        private hoverColor: string,
+        zIndex: number = 0
+    ) {
         super(position, size, zIndex);
 
         this.onHoverEnter.subscribe(() => {
@@ -112,17 +152,35 @@ class HoverableRectangle extends HoverableVisualObject {
 
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.isHovered() ? this.hoverColor : this.defaultColor;
-        ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-        
+        ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
+
         // Add a border
-        ctx.strokeStyle = this.isHovered() ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.strokeStyle = this.isHovered()
+            ? 'rgba(255, 255, 255, 0.8)'
+            : 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = this.isHovered() ? 2 : 1;
-        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        ctx.strokeRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
     }
 }
 
 class ClickableCircle extends ClickableVisualObject {
-    constructor(position: TPoint, radius: number, private defaultColor: string, private clickColor: string, zIndex: number = 0) {
+    constructor(
+        position: TPoint,
+        radius: number,
+        private defaultColor: string,
+        private clickColor: string,
+        zIndex: number = 0
+    ) {
         super(position, { width: radius * 2, height: radius * 2 }, zIndex);
 
         this.onClick.subscribe(() => {
@@ -133,9 +191,15 @@ class ClickableCircle extends ClickableVisualObject {
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.defaultColor;
         ctx.beginPath();
-        ctx.arc(this.position.x + this.size.width / 2, this.position.y + this.size.height / 2, this.size.width / 2, 0, Math.PI * 2);
+        ctx.arc(
+            this.position.x + this.size.width / 2,
+            this.position.y + this.size.height / 2,
+            this.size.width / 2,
+            0,
+            Math.PI * 2
+        );
         ctx.fill();
-        
+
         // Add a border
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
@@ -144,7 +208,12 @@ class ClickableCircle extends ClickableVisualObject {
 }
 
 class DraggableBox extends DraggableVisualObject {
-    constructor(position: TPoint, size: TSize, private color: string, zIndex: number = 0) {
+    constructor(
+        position: TPoint,
+        size: TSize,
+        private color: string,
+        zIndex: number = 0
+    ) {
         super(position, size, zIndex);
 
         this.onDragStart.subscribe((event) => {
@@ -158,30 +227,48 @@ class DraggableBox extends DraggableVisualObject {
 
     draw(ctx: CanvasRenderingContext2D): void {
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-        
+        ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
+
         // Add a border and drag indicator
-        ctx.strokeStyle = this.isDragging() ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.strokeStyle = this.isDragging()
+            ? 'rgba(255, 255, 255, 0.8)'
+            : 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = this.isDragging() ? 2 : 1;
-        ctx.strokeRect(this.position.x, this.position.y, this.size.width, this.size.height);
-        
+        ctx.strokeRect(
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+        );
+
         // Add drag icon in center
         if (!this.isDragging()) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('⋮⋮', this.position.x + this.size.width / 2, this.position.y + this.size.height / 2 + 5);
+            ctx.fillText(
+                '⋮⋮',
+                this.position.x + this.size.width / 2,
+                this.position.y + this.size.height / 2 + 5
+            );
         }
     }
 }
 
 export const WorldEvents = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const managerRef = useRef<ReturnType<typeof CanvasManagerBuilder.prototype.build> | null>(null);
+    const managerRef = useRef<ReturnType<
+        typeof CanvasManagerBuilder.prototype.build
+    > | null>(null);
     const zoomControlsRef = useRef<IZoomingControls | null>(null);
     const store = useVisualizerStore();
     const theme = useTheme();
-    
+
     // State for zoom information display
     const [zoomLevel, setZoomLevel] = useState<number>(1);
     const [isZooming, setIsZooming] = useState<boolean>(false);
@@ -220,7 +307,9 @@ export const WorldEvents = () => {
         const core = manager.core;
 
         // Get controls
-        zoomControlsRef.current = manager.getPluginControls<IZoomingControls>("ZoomingPlugin") ?? null;
+        zoomControlsRef.current =
+            manager.getPluginControls<IZoomingControls>('ZoomingPlugin') ??
+            null;
 
         // Set canvas size with high-DPI support
         const resizeCanvas = () => {
@@ -238,7 +327,10 @@ export const WorldEvents = () => {
             canvasRef.current.style.height = `${cssHeight}px`;
 
             // Update visibility manager with logical size
-            core.visibleVisualObjectsManager.setCanvasSize({ width: cssWidth, height: cssHeight });
+            core.visibleVisualObjectsManager.setCanvasSize({
+                width: cssWidth,
+                height: cssHeight,
+            });
 
             core.requestRedraw();
         };
@@ -261,15 +353,15 @@ export const WorldEvents = () => {
 
         // Main visual objects
         const staticRect = new RectangleVisual(
-            { x: 50, y: 50 }, 
-            { width: 100, height: 80 }, 
+            { x: 50, y: 50 },
+            { width: 100, height: 80 },
             theme.palette.primary.main // #003566
         );
         core.addObject(staticRect);
 
         const staticCircle = new CircleVisual(
-            { x: 200, y: 80 }, 
-            40, 
+            { x: 200, y: 80 },
+            40,
             theme.palette.secondary.main // #ffc300
         );
         core.addObject(staticCircle);
@@ -278,7 +370,7 @@ export const WorldEvents = () => {
             { x: 300, y: 50 },
             { width: 120, height: 60 },
             theme.palette.secondary.light, // #ffd60a
-            theme.palette.secondary.main  // #ffc300
+            theme.palette.secondary.main // #ffc300
         );
         core.addObject(hoverableRect);
 
@@ -286,7 +378,7 @@ export const WorldEvents = () => {
             { x: 450, y: 80 },
             35,
             theme.palette.primary.light, // #001d3d
-            theme.palette.primary.main   // #003566
+            theme.palette.primary.main // #003566
         );
         core.addObject(clickableCircle);
 
@@ -298,13 +390,17 @@ export const WorldEvents = () => {
         core.addObject(draggableBox);
 
         // Add some scattered objects for zoom testing
-        const colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.primary.light];
+        const colors = [
+            theme.palette.primary.main,
+            theme.palette.secondary.main,
+            theme.palette.primary.light,
+        ];
         for (let i = 0; i < 20; i++) {
             const x = Math.random() * 1800 + 100;
             const y = Math.random() * 1300 + 200;
             const size = Math.random() * 50 + 20;
             const color = colors[Math.floor(Math.random() * colors.length)];
-            
+
             if (Math.random() > 0.5) {
                 const rect = new RectangleVisual(
                     { x, y },
@@ -313,11 +409,7 @@ export const WorldEvents = () => {
                 );
                 core.addObject(rect);
             } else {
-                const circle = new CircleVisual(
-                    { x, y },
-                    size / 2,
-                    color
-                );
+                const circle = new CircleVisual({ x, y }, size / 2, color);
                 core.addObject(circle);
             }
         }
@@ -325,7 +417,9 @@ export const WorldEvents = () => {
         // Update zoom level display
         const updateZoomDisplay = () => {
             setZoomLevel(zoomControlsRef.current?.getZoomLevel() ?? 1);
-            setIsZooming(zoomControlsRef.current?.isCurrentlyZooming() ?? false);
+            setIsZooming(
+                zoomControlsRef.current?.isCurrentlyZooming() ?? false
+            );
         };
 
         // Set up a timer to update zoom display
@@ -359,12 +453,15 @@ export const WorldEvents = () => {
 
     const handleFitToRect = () => {
         // Fit to a specific area of interest
-        zoomControlsRef.current?.fitToRect({
-            x: 0,
-            y: 0,
-            width: 800,
-            height: 400
-        }, 50);
+        zoomControlsRef.current?.fitToRect(
+            {
+                x: 0,
+                y: 0,
+                width: 800,
+                height: 400,
+            },
+            50
+        );
     };
 
     return (
@@ -379,22 +476,26 @@ export const WorldEvents = () => {
                     Back
                 </Button>
                 <Title>World Events (Pan & Zoom Enabled)</Title>
-                
+
                 <ZoomControls>
                     <Typography variant="body2">
                         Zoom: {(zoomLevel * 100).toFixed(0)}%
                     </Typography>
-                    
+
                     {isZooming && (
-                        <Chip 
-                            label="Zooming" 
-                            size="small" 
+                        <Chip
+                            label="Zooming"
+                            size="small"
                             color="secondary"
                             sx={{ fontSize: '0.7rem' }}
                         />
                     )}
-                    
-                    <ButtonGroup size="small" variant="outlined" sx={{ color: 'white' }}>
+
+                    <ButtonGroup
+                        size="small"
+                        variant="outlined"
+                        sx={{ color: 'white' }}
+                    >
                         <Button onClick={handleZoomOut} title="Zoom Out">
                             <ZoomOut fontSize="small" />
                         </Button>
@@ -405,19 +506,27 @@ export const WorldEvents = () => {
                             <ZoomIn fontSize="small" />
                         </Button>
                     </ButtonGroup>
-                    
-                    <ButtonGroup size="small" variant="outlined" sx={{ color: 'white' }}>
-                        <Button onClick={handleFitToRect} title="Fit to Area" sx={{ fontSize: '0.75rem' }}>
+
+                    <ButtonGroup
+                        size="small"
+                        variant="outlined"
+                        sx={{ color: 'white' }}
+                    >
+                        <Button
+                            onClick={handleFitToRect}
+                            title="Fit to Area"
+                            sx={{ fontSize: '0.75rem' }}
+                        >
                             Fit
                         </Button>
                         <Button onClick={handleResetView} title="Reset View">
                             <RestartAlt fontSize="small" />
                         </Button>
                     </ButtonGroup>
-                    
-                    <Button 
-                        size="small" 
-                        variant="text" 
+
+                    <Button
+                        size="small"
+                        variant="text"
                         onClick={() => setShowInstructions(!showInstructions)}
                         sx={{ color: 'white', fontSize: '0.75rem' }}
                     >
@@ -425,31 +534,44 @@ export const WorldEvents = () => {
                     </Button>
                 </ZoomControls>
             </NavBar>
-            
+
             <CanvasContainer>
                 <StyledCanvasEl ref={canvasRef} />
-                
+
                 {showInstructions && (
                     <InstructionsOverlay>
                         <Typography variant="subtitle2" gutterBottom>
                             🎮 Controls:
                         </Typography>
                         <Typography variant="body2" component="div">
-                            <strong>Zoom:</strong><br/>
-                            • Mouse wheel to zoom in/out<br/>
-                            • +/= or Z to zoom in<br/>
-                            • -/_ or X to zoom out<br/>
-                            • Numpad 5/0 or Esc to reset zoom<br/>
-                            <br/>
-                            <strong>Pan:</strong><br/>
-                            • Right-click + drag to pan<br/>
-                            • Arrow keys or WASD to pan<br/>
-                            • Home or R to reset position<br/>
-                            <br/>
-                            <strong>Interaction:</strong><br/>
-                            • Hover over rectangles<br/>
-                            • Click circles<br/>
-                            • Drag yellow boxes<br/>
+                            <strong>Zoom:</strong>
+                            <br />
+                            • Mouse wheel to zoom in/out
+                            <br />
+                            • +/= or Z to zoom in
+                            <br />
+                            • -/_ or X to zoom out
+                            <br />
+                            • Numpad 5/0 or Esc to reset zoom
+                            <br />
+                            <br />
+                            <strong>Pan:</strong>
+                            <br />
+                            • Right-click + drag to pan
+                            <br />
+                            • Arrow keys or WASD to pan
+                            <br />
+                            • Home or R to reset position
+                            <br />
+                            <br />
+                            <strong>Interaction:</strong>
+                            <br />
+                            • Hover over rectangles
+                            <br />
+                            • Click circles
+                            <br />
+                            • Drag yellow boxes
+                            <br />
                         </Typography>
                     </InstructionsOverlay>
                 )}

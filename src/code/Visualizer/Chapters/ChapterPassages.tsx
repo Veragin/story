@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { Column, Row, WholeContainer } from 'code/components/Basic';
 import { spacingCss } from 'code/components/css';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { register } from 'data/register';
 import { Nav } from '../components/Nav';
 import { TChapterId } from 'types/ids';

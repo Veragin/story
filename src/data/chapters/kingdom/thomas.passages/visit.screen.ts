@@ -2,7 +2,7 @@ import { DeltaTime } from 'time/Time';
 import { TPassage } from 'types/TPassage';
 import { TKingdomThomasPassageId } from '../kingdom.passages';
 import { TWorldState } from 'data/TWorldState';
-import { Engine } from 'code/Engine/ts/Engine';
+import type { Engine } from 'code/Engine/ts/Engine';
 
 export const visitPassage = (s: TWorldState, e: Engine): TPassage<'kingdom', 'thomas', TKingdomThomasPassageId> => {
     void s;

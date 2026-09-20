@@ -1,7 +1,7 @@
 import { Column, WholeContainer } from 'code/components/Basic';
 import { useEffect, useState } from 'react';
 import { MapStore } from './MapStore';
-import { useVisualizerStore } from 'code/Context';
+import { useVisualizerStore } from 'code/Visualizer/context';
 import { MapEditor } from './MapEditor';
 import { ModalContent } from './components/ModalContent';
 import { createDefaultMapData } from './createDefaultMapData';
