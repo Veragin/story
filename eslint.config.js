@@ -5,13 +5,20 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-    { ignores: ['dist'] },
+    { ignores: ['dist', '**/dist/**', 'node_modules'] },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
         files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 2020,
             globals: globals.browser,
+            // `require-await` and `no-floating-promises` below are type-aware rules; without
+            // this they throw on the first file linted.
+            parserOptions: {
+                // Vite/vitest configs live outside the app tsconfig's `include`.
+                projectService: { allowDefaultProject: ['*.config.ts', '*/*.config.ts', '*/*/*.config.ts'] },
+                tsconfigRootDir: import.meta.dirname,
+            },
         },
         plugins: {
             'react-hooks': reactHooks,

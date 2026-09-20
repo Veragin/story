@@ -1,0 +1,18 @@
+{
+    "name": "@story/data",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./index.ts",
+    "types": "./index.ts",
+    "exports": {
+        ".": "./index.ts",
+        "./*": "./*"
+    },
+    "dependencies": {
+        "@story/core": "workspace:^",
+        "@story/shared": "workspace:^",
+        "@story/types": "workspace:^",
+        "@story/ui": "workspace:^"
+    }
+}

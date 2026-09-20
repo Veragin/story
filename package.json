@@ -1,11 +1,22 @@
 {
-    "name": "demo",
+    "name": "story-root",
     "private": true,
     "version": "0.0.0",
     "type": "module",
+    "workspaces": [
+        "types",
+        "data",
+        "shared",
+        "ui",
+        "core",
+        "SingleEngine",
+        "Visualizer/*",
+        "MultiEngine/*"
+    ],
     "scripts": {
         "start": "vite",
-        "build": "tsc -b && vite build",
+        "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+        "build": "yarn typecheck && vite build",
         "lint": "eslint .",
         "preview": "vite preview",
         "pretty": "prettier . --write",
@@ -45,6 +56,10 @@
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.0.1",
         "vite": "^5.4.9"
+    },
+    "resolutions": {
+        "react": "18.3.1",
+        "react-dom": "18.3.1"
     },
     "packageManager": "yarn@4.5.0"
 }

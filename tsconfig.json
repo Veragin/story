@@ -1,14 +1,26 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
-  "compilerOptions": {
-    "baseUrl": "./src",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true
-  }
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            /* Workspace packages — source-only, mapped straight at the .ts entry (§7).
+               Targets are placeholder barrels until Phases 3–6 fill them. */
+            "@story/types": ["types/index.ts"],
+            "@story/shared": ["shared/src/index.ts"],
+            "@story/ui": ["ui/src/index.ts"],
+            "@story/core": ["core/src/index.ts"],
+            "@story/data": ["data/index.ts"],
+            "@story/data/*": ["data/*"],
+
+            /* Legacy `baseUrl: src` style imports of the not-yet-moved app.
+               Each of these disappears as its phase lands. */
+            "code/*": ["src/code/*"],
+            "data/*": ["src/data/*"],
+            "types/*": ["src/types/*"],
+            "time/*": ["src/time/*"],
+            "worldState": ["src/worldState.ts"]
+        }
+    },
+    "include": ["src", "types", "shared", "ui", "core", "data"],
+    "exclude": ["node_modules", "dist", "vite.config.ts"]
 }
