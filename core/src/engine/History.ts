@@ -1,6 +1,6 @@
 import { parsePassageId } from '../parsePassageId';
-import { Time } from '@story/shared';
-import { TChapterCharacterPassageId, TChapterId, TCharacterId, TPassageId } from '@story/types';
+import { Time, TPassageId } from '@story/shared';
+import { TChapterCharacterPassageId, TChapterId, TCharacterId } from '@story/types';
 import { register } from '@story/data';
 import type { TWorldState } from '@story/data';
 

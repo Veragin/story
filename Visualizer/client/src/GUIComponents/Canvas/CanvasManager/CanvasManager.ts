@@ -1,5 +1,4 @@
-import { TPoint, TSize } from '@story/types';
-import { Observer, assertNotNullish, throttle } from '@story/shared';
+import { Observer, assertNotNullish, throttle, TPoint, TSize } from '@story/shared';
 import { ClickableVisualObject } from '../Node/ClickableVisualObject';
 import { DraggableVisualObject } from '../Node/DraggableVisualObject';
 import { HoverableVisualObject } from '../Node/HoverableVisualObject';

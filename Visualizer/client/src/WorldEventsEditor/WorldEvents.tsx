@@ -1,4 +1,4 @@
-import { TPoint, TSize } from '@story/types';
+import { TPoint, TSize } from '@story/shared';
 import React, { useEffect, useRef, useState } from 'react';
 import { styled, useTheme } from '@mui/material';
 import { useVisualizerStore } from '../context';

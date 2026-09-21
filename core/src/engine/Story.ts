@@ -1,5 +1,5 @@
-import { DeltaTime } from '@story/shared';
-import { TLinkCost, TPassageId } from '@story/types';
+import { DeltaTime, TPassageId } from '@story/shared';
+import { TLinkCost } from '@story/types';
 import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { parsePassageId } from '../parsePassageId';

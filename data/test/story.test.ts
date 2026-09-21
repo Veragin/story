@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildWorldState } from '@story/core';
 import type { Engine } from '@story/core';
-import { DeltaTime, Time } from '@story/shared';
+import { DeltaTime, Time, type TPassageId } from '@story/shared';
 import { getWholePassageId } from '@story/types';
-import type { TChapterId, TLinkCost, TPassageId } from '@story/types';
+import type { TChapterId, TLinkCost } from '@story/types';
 import { itemInfo, register } from '../index';
 import type { TWorldState } from '../TWorldState';
 import { assets, resolveAsset } from '../assets';

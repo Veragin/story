@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildWorldState, parsePassageId, type Engine } from '@story/core';
-import { getWholePassageId, type TChapterId, type TChapterPassage, type TPassageId } from '@story/types';
+import type { TPassageId } from '@story/shared';
+import { getWholePassageId, type TChapterId, type TChapterPassage } from '@story/types';
 import { itemInfo, register, type TWorldState } from '@story/data';
 
 /**

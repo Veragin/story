@@ -1,4 +1,4 @@
-import { TPoint, TSize } from '@story/types';
+import { TPoint, TSize } from '@story/shared';
 import { VisualObject } from './VisualObject';
 
 /**

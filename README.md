@@ -125,6 +125,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 - types
     - defines the structure of the data
     - edited by the author (directly, or through the Visualizer's "structure" tab)
+    - only what the author edits: engine types that happen to be global (geometry, the passage-id format) live in `shared` instead
 
 - data
     - folder where the story files are located
@@ -136,6 +137,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 - shared
     - shared code between services
     - time
+    - the global engine types no author ever edits: `TPoint`/`TSize`/`TVec`, and the `<chapter>-<character>-<passage>` id format (`TPassageId`, `TPassageIdFor`)
     - the bottom of the stack: depends on nothing
 
 - ui
@@ -177,29 +179,44 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 
 - map
     - display locations on canvas
-    - user can draw there with brush (change colors)
-    - user can add notes ed. draw a river and add name on it
+    - zoom on scroll
+    - use WSAD or arrows to move in the map
+    - user can draw there with brush tool
+        - can select color
+        - change brush size
+        - by holding mouse it draws
+    - user can add notes eg. draw a river and put name on it
     - add/edit/remove new location as polygon mash
-    - user can open location in location view
+    - user can open location by double click in location view
+    - user can select location by click
+    - user can change location color
+    - user can move selected location by dragging
 
 - location view
-    - manage location
+    - location form allows to set informations about location
 
 - timeline
-    - display chapters on timeline per character
+    - display chapters on timeline per character, character selector
     - user can move the timeline by dragging
     - user can add/delete new chapter
-    - user can move chapter by dragging (needs to hold ctrl)
-    - user can open chapter by clicking
+    - user can select chapter or time trigger by click
+    - user can move selected chapter by dragging
+    - user can open chapter by double clicking
     - display (toggle on/off) connections between the chapters (end passages are pointing to some)
     - display chapter description on hover
-    - partially implemented
-    - display (toggle) time triggers
+    - display (toggle) time triggers of the chapter
+    - by double click on time trigegr open it in time trigger view
 
 - chapter view
-    - user can manage passages in the chapter
-    - save position of passages to solo file (we have to save somewhere the position of the passage on the plate ... not important for the play)
-    - user can edit chapter informations
+    - see twinery.org (similar implementation)
+    - user can add/edit/delete passages in the chapter
+    - display passages as boxes on canvas, move them by dragging
+    - display arrows between connected passages
+    - save position of passages to solo file (we have to save somewhere the position of the passage on the canvas)
+    - user can edit chapter informations in modal form
+
+- time trigger view
+    - form to set up time trigegr
 
 - entities
     - persons
@@ -207,8 +224,9 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
     - other entites added by user
 
 - structure
-    - user can manage entites (eg add race)
-    - user can edit required types (eg. person can have race)
+    - user can define entites (eg add new entity race)
+    - user can edit entites (eg. person can have race, or add new field to locations)
+    - he is editing @types folder
 
 ## MultiEngine
 

@@ -1,14 +1,14 @@
 /**
  * `@story/types` — the author's type surface (REFACTOR_PLAN §2.1: flat, no `src/`).
  *
- * Depends on `@story/shared` only (for `Time` / `DeltaTime` / `TimeRange`).
+ * Depends on `@story/shared` only (for `Time` / `DeltaTime` / `TimeRange` / `TPassageIdFor`).
+ *
+ * Engine types the author never edits are NOT here — they are exports of `@story/shared`:
+ * `TPoint` / `TSize` / `TVec` (geometry) and `TPassageId` / `TPassageIdFor` (the id format).
  */
 
-/* TPoint, TSize, TVec */
-export * from './geometry';
-
 /* TCharacterId, TSideCharacterId, TChapterId,
-   TPassageId, TChapterPassageId, TCharacterPassageId, TChapterCharacterPassageId */
+   TChapterPassageId, TCharacterPassageId, TChapterCharacterPassageId */
 export * from './ids';
 
 /* TChapter */

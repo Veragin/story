@@ -1,7 +1,8 @@
 import { css, styled } from '@mui/material';
 import { useEngine } from '../../context';
 import { itemInfo } from '@story/data';
-import { TItemId, TLink, TPassageId } from '@story/types';
+import { TPassageId } from '@story/shared';
+import { TItemId, TLink } from '@story/types';
 
 type Props = {
     link: TLink<TPassageId>;

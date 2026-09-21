@@ -1,4 +1,4 @@
-import { TSize } from '@story/types';
+import { TSize } from '@story/shared';
 import { Graph } from '../Graph';
 
 export interface GraphLayoutManager {

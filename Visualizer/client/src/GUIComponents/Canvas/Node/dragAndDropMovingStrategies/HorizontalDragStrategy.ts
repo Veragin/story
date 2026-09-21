@@ -1,4 +1,4 @@
-import { TPoint } from '@story/types';
+import { TPoint } from '@story/shared';
 import { DragStrategy } from './DragStrategy';
 
 export class HorizontalDragStrategy implements DragStrategy {

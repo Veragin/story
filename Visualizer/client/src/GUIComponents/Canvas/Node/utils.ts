@@ -1,4 +1,4 @@
-import { TPoint, TSize } from '@story/types';
+import { TPoint, TSize } from '@story/shared';
 export const isPointInside = (point: TPoint, areaPos: TPoint, areaSize: TSize): boolean => {
     return (
         point.x >= areaPos.x &&

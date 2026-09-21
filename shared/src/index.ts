@@ -12,6 +12,11 @@ export * from './time/TimeManager';
 /* MIN_S, HOUR_S, DAY_S, MONTH_S, YEAR_S, START_YEAR, MONTH_NAME */
 export * from './time/const';
 
+/* TPoint, TSize, TVec */
+export * from './geometry';
+/* TPassageId, TPassageIdFor */
+export * from './ids';
+
 /* Listener, Observer, ConditionalObserver */
 export * from './Observer';
 /* debounce, throttle, synchronize, RequestCanceledError */

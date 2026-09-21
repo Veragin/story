@@ -1,5 +1,4 @@
-import { TPoint, TSize } from '@story/types';
-import { Listener, Observer } from '@story/shared';
+import { Listener, Observer, TPoint, TSize } from '@story/shared';
 
 export type TVisualObjectPropertyChangeArgs = {
     property: string;

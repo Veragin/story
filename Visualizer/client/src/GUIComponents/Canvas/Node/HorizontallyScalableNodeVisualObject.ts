@@ -1,8 +1,7 @@
-import { TPoint, TSize } from '@story/types';
 import { BorderConfig } from './BorderConfig';
 import { NodeVisualObject } from '../../Graphs/NodeVisualObject';
 import { VisualObject } from './VisualObject';
-import { Observer } from '@story/shared';
+import { Observer, TPoint, TSize } from '@story/shared';
 
 export class HorizontallyScalableNodeVisualObject extends NodeVisualObject {
     private _isResizing: boolean = false;

@@ -1,5 +1,5 @@
-import { TCharacterId, TChapterCharacterPassageId, TChapterId, TChapterPassageId, TPassageId } from './ids';
-import { DeltaTime } from '@story/shared';
+import { TCharacterId, TChapterCharacterPassageId, TChapterId, TChapterPassageId } from './ids';
+import { DeltaTime, TPassageId } from '@story/shared';
 import { TItemId } from './TItem';
 
 export type TChapterPassage<E extends TChapterId> = TPassage<E, TCharacterId, TChapterPassageId<E>>;

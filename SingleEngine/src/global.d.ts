@@ -7,9 +7,10 @@
  * `@story/types`.
  *
  * This file is the last survivor of the old `src/@types/global.d.ts` parking spot: `TPoint` /
- * `TSize` / `TVec` became real exports of `@story/types` in Phase 3, `Time` / `DeltaTime`
- * exports of `@story/shared` in the same phase, and `declare let _` moved next to the module
- * that installs it (`shared/src/translations.{ts,d.ts}`) in Phase 4.
+ * `TSize` / `TVec` became real exports of `@story/types` in Phase 3 and moved on to
+ * `@story/shared` once `types/` was narrowed to what the author actually edits, `Time` /
+ * `DeltaTime` became exports of `@story/shared` in Phase 3, and `declare let _` moved next to
+ * the module that installs it (`shared/src/translations.{ts,d.ts}`) in Phase 4.
  */
 
 declare interface Window {
