@@ -4,8 +4,6 @@ import type {
     TChapterId,
     TCharacter,
     TCharacterId,
-    THappening,
-    THappeningId,
     TItemId,
     TLocation,
     TLocationId,
@@ -22,7 +20,6 @@ export type TWorldStateRegister = {
     sideCharacters: { readonly [Id in TSideCharacterId]: TSideCharacter<Id> };
     chapters: { readonly [Id in TChapterId]: TChapter<Id> };
     locations: { readonly [Id in TLocationId]: TLocation<Id> };
-    happenings: { readonly [Id in THappeningId]: THappening<Id> };
 };
 
 /** Structural shape of `data/items/itemInfo` — the static per-item data merged into inventories. */
@@ -30,7 +27,7 @@ export type TItemInfoRegister = { readonly [Id in TItemId]: object };
 
 /**
  * Builds a pristine world state from the story register: every character, side character,
- * chapter, location and happening at its `init` values, with a `ref` back to its definition.
+ * chapter and location at its `init` values, with a `ref` back to its definition.
  *
  * Deliberately *does not* construct an `Engine`. An `Engine` loads any saved game out of
  * localStorage and mutates the state it is given, which is right for a play session and wrong
@@ -48,7 +45,6 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
         sideCharacters: {} as Record<TSideCharacterId, unknown>,
         chapters: {} as Record<TChapterId, unknown>,
         locations: {} as Record<TLocationId, unknown>,
-        happenings: {} as Record<THappeningId, unknown>,
     };
 
     (Object.keys(register.characters) as TCharacterId[]).forEach((id) => {
@@ -73,9 +69,5 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
     (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
         ss.locations[id] = { ...register.locations[id].init, ref: register.locations[id] };
     });
-    (Object.keys(register.happenings) as THappeningId[]).forEach((id) => {
-        ss.happenings[id] = { ...register.happenings[id].init, ref: register.happenings[id] };
-    });
-
     return ss as TWorldState;
 };

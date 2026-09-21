@@ -5,15 +5,14 @@ import { Time } from '@story/shared';
 
 /**
  * `buildWorldState` turns the authored register into the pristine world state. It is a loop
- * per register slice, which is exactly the shape that rots quietly: Phase 1 shipped with the
- * `happenings` loop simply absent, and nothing failed until a passage read
- * `s.happenings.<id>`. The first test below is the regression lock for that class of bug —
- * it is driven off `register`'s own keys, so a *new* slice that nobody wired up fails here
- * too, not just the one that was already forgotten once.
+ * per register slice, which is exactly the shape that rots quietly: a slice whose loop is
+ * simply absent fails nothing until a passage reads `s.<slice>.<id>`. The first test below is
+ * the regression lock for that class of bug — it is driven off `register`'s own keys, so a
+ * *new* slice that nobody wired up fails here too.
  */
 describe('buildWorldState', () => {
     /** Every register slice that the world state is expected to mirror one-for-one. */
-    const MIRRORED_SLICES = ['characters', 'sideCharacters', 'chapters', 'locations', 'happenings'] as const;
+    const MIRRORED_SLICES = ['characters', 'sideCharacters', 'chapters', 'locations'] as const;
 
     it('populates every register slice, key for key', () => {
         const s = buildWorldState(register, itemInfo);
@@ -22,14 +21,6 @@ describe('buildWorldState', () => {
             expect(Object.keys(s[slice]).sort(), `slice "${slice}"`).toEqual(Object.keys(register[slice]).sort());
             expect(Object.keys(s[slice]).length, `slice "${slice}" is empty`).toBeGreaterThan(0);
         }
-    });
-
-    it('populates happenings — the slice Phase 1 shipped missing', () => {
-        const s = buildWorldState(register, itemInfo);
-
-        expect(s.happenings).toBeDefined();
-        expect(s.happenings.village_under_attack).toBeDefined();
-        expect(s.happenings.village_under_attack.ref).toBe(register.happenings.village_under_attack);
     });
 
     it('points every entry"s ref at the register object it was built from', () => {

@@ -1,7 +1,7 @@
 /**
- * `@story/data` — the story itself: chapters, passages, characters, locations, items,
- * happenings, and the art that goes with them (REFACTOR_PLAN §2.1: flat, no `src/`, consumed
- * as TypeScript source so an edit hot-reloads straight into the running app).
+ * `@story/data` — the story itself: chapters, passages, characters, locations, items, and the
+ * art that goes with them (REFACTOR_PLAN §2.1: flat, no `src/`, consumed as TypeScript source
+ * so an edit hot-reloads straight into the running app).
  *
  * Layering (REFACTOR_PLAN §2, as amended): shared → types → { ui, core } → data → services.
  *
@@ -12,7 +12,7 @@
  *     `core` would turn a type-only edge into a value-shaped `core → data` one. `core` imports
  *     it `import type`, so nothing of it survives to runtime.
  *  2. **A type-only `types ⇄ data` cycle is accepted.** `@story/types` derives its id unions
- *     from this story (`types/ids.ts`, `TChapter`, `TCharacter`, `TLocation`, `THappening` read
+ *     from this story (`types/ids.ts`, `TChapter`, `TCharacter`, `TLocation` read
  *     `TWorldState`; `TItem` reads `itemInfo`; `TLocation` reads `register`), while the story is
  *     typed by `@story/types`. Every one of those imports is an `import type` and is elided at
  *     runtime, so the cycle exists only in the type graph, where it is legal and resolved by
@@ -25,8 +25,8 @@
  * symbols the engine itself consumes.
  */
 
-/* register, TRegisterPassageId — every chapter, character, location and happening of the
-   story, plus the lazy `passages` map whose dynamic imports code-split the story per chapter */
+/* register, TRegisterPassageId — every chapter, character and location of the story, plus the
+   lazy `passages` map whose dynamic imports code-split the story per chapter */
 export * from './register';
 /* TWorldState — the shape of this story's world state (type-only: see note 1 above) */
 export type * from './TWorldState';

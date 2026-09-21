@@ -10,7 +10,6 @@ import {
     TCharacter,
     TCharacterData,
     TCharacterId,
-    THappening,
     TLocation,
     TSideCharacter,
     TSideCharacterData,
@@ -42,8 +41,5 @@ export type TWorldState = {
     locations: {
         village: { ref: TLocation<'village'> } & TVillageLocationData;
         kingdom: { ref: TLocation<'kingdom'> } & Partial<TKingdomLocationData>;
-    };
-    happenings: {
-        village_under_attack: { ref: THappening<'village_under_attack'> };
     };
 };

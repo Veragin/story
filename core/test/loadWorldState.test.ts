@@ -31,8 +31,6 @@ describe('loadWorldState / copyWorldState', () => {
         expect(copy.chapters.village.ref.timeRange.start).toBeInstanceOf(Time);
         expect(copy.chapters.village.ref.timeRange.end).toBeInstanceOf(Time);
         expect(copy.chapters.village.ref.timeRange.start.isEqual(register.chapters.village.timeRange.start)).toBe(true);
-
-        expect(copy.happenings.village_under_attack.ref.timeRange.start).toBeInstanceOf(Time);
     });
 
     it('revives Times held inside arrays', () => {

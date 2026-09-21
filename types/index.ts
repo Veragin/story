@@ -7,7 +7,7 @@
 /* TPoint, TSize, TVec */
 export * from './geometry';
 
-/* TCharacterId, TSideCharacterId, TChapterId, THappeningId,
+/* TCharacterId, TSideCharacterId, TChapterId,
    TPassageId, TChapterPassageId, TCharacterPassageId, TChapterCharacterPassageId */
 export * from './ids';
 
@@ -15,8 +15,6 @@ export * from './ids';
 export * from './TChapter';
 /* TCharacter, TCharacterData, TSideCharacter, TSideCharacterData */
 export * from './TCharacter';
-/* THappening */
-export * from './THappening';
 /* TItemId, TItem, TItemPartial */
 export * from './TItem';
 /* TLocation, TLocationId */

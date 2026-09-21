@@ -19,7 +19,7 @@ import tseslint from 'typescript-eslint';
  * Two documented exceptions this rule deliberately does NOT flag:
  *
  *  1. `types ⇄ data` is an accepted **type-only** cycle. `types/{ids,TChapter,TCharacter,
- *     TLocation,THappening,TItem}.ts` derive their id unions from the author's actual data,
+ *     TLocation,TItem}.ts` derive their id unions from the author's actual data,
  *     which is the point of §2.1 — the two author-edited folders are one surface. Every one
  *     of those imports is an `import type`, so it vanishes at runtime.
  *  2. **`core → data` is a real value edge and a known wart**: `Processor`/`History` import

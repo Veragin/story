@@ -161,21 +161,15 @@ describe('register', () => {
         for (const [id, location] of Object.entries(register.locations)) {
             expect(location.id).toBe(id);
         }
-        for (const [id, happening] of Object.entries(register.happenings)) {
-            expect(happening.happeningId).toBe(id);
-        }
     });
 
-    it('gives every chapter and happening a well-ordered time range', () => {
+    it('gives every chapter a well-ordered time range', () => {
         for (const [id, chapter] of Object.entries(register.chapters)) {
             expect(chapter.timeRange.start, `chapters.${id}.timeRange.start`).toBeInstanceOf(Time);
             expect(chapter.timeRange.end, `chapters.${id}.timeRange.end`).toBeInstanceOf(Time);
             expect(chapter.timeRange.end.isAfter(chapter.timeRange.start), `chapters.${id} ends before it starts`).toBe(
                 true
             );
-        }
-        for (const [id, happening] of Object.entries(register.happenings)) {
-            expect(happening.timeRange.end.isAfter(happening.timeRange.start), `happenings.${id}`).toBe(true);
         }
     });
 });
@@ -291,10 +285,6 @@ describe('reference integrity', () => {
 
         for (const [id, chapter] of Object.entries(register.chapters)) {
             expect(locationIds, `chapters.${id}.location`).toContain(chapter.location);
-        }
-        for (const [id, happening] of Object.entries(register.happenings)) {
-            if (happening.location === undefined) continue;
-            expect(locationIds, `happenings.${id}.location`).toContain(happening.location);
         }
         for (const [id, character] of Object.entries({ ...register.characters, ...register.sideCharacters })) {
             if (character.init.location === undefined) continue;
