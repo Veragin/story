@@ -171,29 +171,59 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 ## Visualizer
 
 - this service is for creating the story data
-- user interface to edit data files
+- user interface to edit files in data and types folder
+
+### Canvas library
+
+- create library that will power this service
+- you can reuse whats already implemented, but dont be afraid to rewrite it
+- scene that holds canvas and all objects
+- user can select object by clicking, move the selected object by dragging
+- edit selected objects by addding more vertexes or dragging the vertexes, remove them by rightclick
+- set color and border of object
+- by double click call an action
+- should be able to draw a line between two points
+
+### Map tiles library
+
+- implement https://github.com/Veragin/mapMaker
+- user can fill tiles with color they want
+- user can set description to a tile ... rendered on canvas
 
 ### UI
 
-- tabs: map. timeline, entities, structure
+- top menu tabs => user can switch between pages:
+  map. timeline, entities, structure
 
-- map
-    - display locations on canvas
-    - zoom on scroll
-    - use WSAD or arrows to move in the map
-    - user can draw there with brush tool
-        - can select color
-        - change brush size
-        - by holding mouse it draws
-    - user can add notes eg. draw a river and put name on it
-    - add/edit/remove new location as polygon mash
-    - user can open location by double click in location view
-    - user can select location by click
-    - user can change location color
-    - user can move selected location by dragging
+### Map UI
 
-- location view
-    - location form allows to set informations about location
+- consists of 2 layers Map tiles and Locations (Canvas library)
+- Locations over the Map tiles
+- in top bar is mode switch
+- autosave with debounce
+
+- Modes:
+    - view
+        - block any edit
+        - user is able to zoom and move via WSAD or arrows
+        - double click on location will open location form
+        - no tooling row
+    - Locations edit
+        - allow edit locations (Canvas library editaion: select, drag, edit)
+        - display tooling row
+            - add new location
+            - change location color (color picker)
+            - open location form (as well as doubleclick on location)
+            - delete selected location
+    - Map tiles
+        - hide Locations layer
+        - same funcionality as in mapMaker (drawing tiles)
+        - display tooling row similar as is for mapMaker
+        - allow to add description to map tile
+        - save map tiles data to file in data/locations/map.json
+
+- location form
+    - open modal with location form
 
 - timeline
     - display chapters on timeline per character, character selector
