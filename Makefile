@@ -64,7 +64,7 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build dev dev-engine dev-visualizer dev-multi-engine logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-multi-engine logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
 # 8102 MultiEngine client, 8124 MultiEngine server). The container itself stays idle at
@@ -89,6 +89,16 @@ up:
 
 stop:
 	$(COMPOSE) down
+
+# Rebuild the image to pick up a newer claude CLI. `make up`/`make start` already pass
+# --build, but the `npm install -g @anthropic-ai/claude-code` layer is cached and would
+# keep whatever version was current when the image was first built, so this passes a fresh
+# CLAUDE_REBUILD value to invalidate it. Everything above that line in docker/Dockerfile.dev
+# (apt, playwright browsers) stays cached. Leaves the container up, without the dev servers.
+rebuild: stop
+	$(COMPOSE) build --pull --build-arg CLAUDE_REBUILD=$(shell date +%s) story-template
+	$(COMPOSE) up -d --remove-orphans
+	@$(DEV_EXEC) claude --version
 
 bash:
 	$(COMPOSE) exec -w /app story-template bash
