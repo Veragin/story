@@ -19,6 +19,8 @@ export * from './TCharacter';
 export * from './TItem';
 /* TLocation, TLocationId */
 export * from './TLocation';
+/* TMap, TMapId */
+export * from './TMap';
 /* TChapterPassage, TPassage, TPassageScreen, TPassageTransition, TPassageLinear,
    TLink, TLinkCost, TChapterPassageType, getWholePassageId */
 export * from './TPassage';

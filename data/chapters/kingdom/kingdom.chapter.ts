@@ -6,10 +6,7 @@ export const kingdomChapter: TChapter<'kingdom'> = {
     chapterId: 'kingdom',
     title: 'Kingdom Chapter',
     description: 'A Kingdom chapter is happening',
-    timeRange: {
-        start: Time.fromString('2.1. 8:00'),
-        end: Time.fromString('5.1. 8:00'),
-    },
+    timeRange: { start: Time.fromS(137325), end: Time.fromS(396525) },
     location: 'village',
 
     children: [

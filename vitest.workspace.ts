@@ -51,4 +51,59 @@ export default defineWorkspace([
             include: ['test/**/*.test.ts'],
         },
     },
+    {
+        /**
+         * `@story/canvas` (VISUALIZER_PLAN §3.3). `jsdom`, not `node` — and the reason is the
+         * one thing §3.3 is actually about: Konva cannot run under node without the native
+         * `canvas` package, so `Scene` talks to a renderer *port* and the tests drive it with
+         * `FakeRenderer`. The fake needs no DOM either, but `Scene.mount` takes an
+         * `HTMLElement` and uses a `ResizeObserver`, and conjuring those by hand in every test
+         * would be more fiction than using the environment that has them. Konva itself is never
+         * imported by a test.
+         *
+         * The pure modules — `geometry/`, `layout/`, `Viewport` math — do not care which
+         * environment they run in, and are in the same project rather than a second one so that
+         * `yarn test` stays one pass over one file list.
+         */
+        test: {
+            name: 'canvas',
+            root: './canvas',
+            environment: 'jsdom',
+            include: ['test/**/*.test.ts'],
+        },
+    },
+    {
+        /**
+         * `@story/visualizer-server` (VISUALIZER_PLAN §7, Phases 4–5). `node`, because it is a
+         * node server: it reads and writes real files in a temp directory and there is no DOM
+         * anywhere in it.
+         *
+         * `esbuild.tsconfigRaw` is load-bearing. The server's sources carry NestJS decorators,
+         * and Vite's esbuild transform defaults to the TC39 standard proposal, under which
+         * `@Injectable()` on a class with parameter properties is a syntax error. The server's
+         * own `tsconfig.json` sets `experimentalDecorators`, but esbuild does not read a
+         * tsconfig from a directory other than the Vite root, so it is restated here.
+         *
+         * `emitDecoratorMetadata` is deliberately *not* set: esbuild cannot emit it (that is
+         * §5.2's whole finding, and the reason the server runs under swc rather than tsx), and
+         * asking for it would only produce a warning. Nothing under test needs it — these tests
+         * construct services directly rather than through Nest's injector, precisely so that
+         * what they exercise is the file and writer logic rather than the DI container.
+         */
+        test: {
+            name: 'visualizer-server',
+            root: './Visualizer/server',
+            environment: 'node',
+            include: ['test/**/*.test.ts'],
+        },
+        esbuild: {
+            tsconfigRaw: {
+                compilerOptions: {
+                    experimentalDecorators: true,
+                    useDefineForClassFields: false,
+                    target: 'es2022',
+                },
+            },
+        },
+    },
 ]);

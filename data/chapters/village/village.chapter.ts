@@ -22,6 +22,11 @@ export const villageChapter: TChapter<'village'> = {
             asd: 'asd',
         },
     },
+    layout: {
+        'village-thomas-cool': { x: 170, y: 92 },
+        'village-thomas-forest': { x: 170, y: 366 },
+        'village-thomas-intro': { x: 306, y: 213 },
+    },
 };
 
 export type TVillageChapterData = {

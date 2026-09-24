@@ -12,6 +12,18 @@ export const villageLocation: TLocation<'village'> = {
         },
     ],
 
+    shape: {
+        mapId: 'global',
+        points: [
+            { x: 380, y: 420 },
+            { x: 760, y: 380 },
+            { x: 880, y: 620 },
+            { x: 700, y: 820 },
+            { x: 420, y: 740 },
+        ],
+        color: '#c0504d',
+    },
+
     init: {},
 };
 

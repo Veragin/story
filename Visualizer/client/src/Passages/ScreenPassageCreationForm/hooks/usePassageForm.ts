@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from '@story/ui';
 import { TChapterId, TChapterPassageType } from '@story/types';
-import { PassageResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/PassageResolver';
-import { ChapterResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
+import { PassageResolver } from '../../../story/PassageResolver';
+import { ChapterResolver } from '../../../story/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';
 import { Agent } from '../../../stores/Agent';
 import { TScreenPassageData } from '../../../stores/nodeServerTypes';

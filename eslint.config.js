@@ -10,6 +10,7 @@ import tseslint from 'typescript-eslint';
  * §2 as written has `types → shared`; it is inverted here (see "Outcome / deviations").
  *
  *   shared    →  nothing
+ *   canvas    →  shared            (VISUALIZER_PLAN §3.1 — deliberately no edge to the story)
  *   types     →  shared            (+ data, type-only — accepted cycle, see below)
  *   ui        →  shared, types
  *   core      →  shared, types, data
@@ -40,7 +41,7 @@ const SERVICES = ['SingleEngine', 'Visualizer', 'MultiEngine'];
 const zone = (target, from, message) => ({ target, from, message });
 
 /** Every package directory except the ones listed — used to express "may import only X". */
-const PACKAGES = ['types', 'data', 'shared', 'ui', 'core'];
+const PACKAGES = ['types', 'data', 'shared', 'ui', 'core', 'canvas'];
 const packagesExcept = (...allowed) => PACKAGES.filter((p) => !allowed.includes(p)).map((p) => `./${p}`);
 
 const boundaryZones = [
@@ -59,6 +60,15 @@ const boundaryZones = [
         'types/ may import only @story/shared (and @story/data type-only).'
     ),
 
+    /* canvas is a rendering library that happens to live here (VISUALIZER_PLAN §3.1): it may
+       name a point and a colour, and nothing else internal. No types, no data, no core — the
+       day it renders something that is not this story, nothing has to be untangled. */
+    zone(
+        './canvas',
+        packagesExcept('shared', 'canvas'),
+        'canvas/ may import only @story/shared — VISUALIZER_PLAN §3.1. It must not learn about the story (types, data) or the runtime (core).'
+    ),
+
     /* ui is React-land and headless-runtime-free: no core, no data. */
     zone(
         './ui',
@@ -74,8 +84,35 @@ const boundaryZones = [
     ),
 
     /* data is the author's tree: no ui either — translations and showToast live in shared
-       for exactly this reason (see "Outcome / deviations" #3). */
-    zone('./data', packagesExcept('shared', 'types', 'core', 'data'), 'data/ may not import @story/ui.'),
+       for exactly this reason (see "Outcome / deviations" #3).
+
+       The target is the authored story rather than the whole folder, because `data/test/`
+       gets one extra edge the story itself must never have: `@story/canvas`
+       (VISUALIZER_PLAN §4.2/§4.3). `data/test/maps.test.ts` asserts that stored polygons hold
+       the invariants the Visualizer normalises them to — open ring, clockwise, no
+       self-intersection — and those predicates are implemented once, in `canvas/geometry`.
+       Re-deriving a shoelace formula in the test would let the test pass while the writer was
+       wrong, which is the one outcome worth ruling out. `canvas` imports only `shared`, so
+       this adds no cycle; it is a leaf library used as one, by a test, never by a story file. */
+    zone(
+        [
+            './data/*.ts',
+            './data/assets/**',
+            './data/chapters/**',
+            './data/characters/**',
+            './data/items/**',
+            './data/locations/**',
+            './data/maps/**',
+            './data/sideCharacters/**',
+        ],
+        packagesExcept('shared', 'types', 'core', 'data'),
+        'data/ may not import @story/ui or @story/canvas — the authored story is not a consumer of the renderer. (data/test/ may import @story/canvas; see eslint.config.js.)'
+    ),
+    zone(
+        './data/test/**',
+        packagesExcept('shared', 'types', 'core', 'data', 'canvas'),
+        'data/test/ may import @story/canvas (for the polygon invariants) but not @story/ui.'
+    ),
 
     /* THE §7 RULE. Anything under a service directory is off limits to the author's folders. */
     zone(
@@ -90,7 +127,7 @@ const boundaryZones = [
     ),
 
     /* …and the packages below the services may not reach up into them either. */
-    ...['shared', 'ui', 'core'].map((p) =>
+    ...['shared', 'ui', 'core', 'canvas'].map((p) =>
         zone(
             `./${p}`,
             SERVICES.map((s) => `./${s}`),

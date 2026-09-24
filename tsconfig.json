@@ -7,6 +7,8 @@
                All five are real packages as of Phase 6. */
             "@story/types": ["types/index.ts"],
             "@story/shared": ["shared/src/index.ts"],
+            "@story/canvas": ["canvas/src/index.ts"],
+            "@story/canvas/react": ["canvas/src/react/index.ts"],
             "@story/ui": ["ui/src/index.ts"],
             "@story/core": ["core/src/index.ts"],
             "@story/data": ["data/index.ts"],
@@ -29,6 +31,7 @@
     "include": [
         "types",
         "shared",
+        "canvas",
         "ui",
         "core",
         "data",
@@ -42,6 +45,22 @@
            over-permissive one. `MultiEngine/server/tsconfig.json` is the stricter, DOM-less
            view of the same files for editors and eslint. */
         "MultiEngine/server/src"
+
+        /* `Visualizer/server/src` is deliberately NOT here, and it is the one package that
+           cannot be.
+
+           VISUALIZER_PLAN §5.4 asks for it to be added to this `include`. It does not work:
+           the server is built on NestJS decorators, which require `experimentalDecorators`,
+           and this program must not turn that on — it would switch every other package in the
+           repo from TC39 standard decorators to the legacy proposal, silently, to accommodate
+           one workspace. Compiled by this config the server produces ~60 TS1241/TS1270 errors
+           on its own valid source.
+
+           §7's actual requirement is that one command checks the whole graph, and it still
+           does: the root `typecheck` script runs a third `tsc --noEmit` against
+           `Visualizer/server/tsconfig.json`, which is where those flags belong — they are
+           *runtime* configuration there, since `@swc-node/register` reads them from that file
+           to decide whether to emit the `design:paramtypes` Nest resolves through (§5.2). */
     ],
     "exclude": [
         "node_modules",

@@ -1,8 +1,6 @@
 import { TChapterId, TChapterPassageType, TLocationId } from '@story/types';
-import { TMapData } from '../MapEditor/types';
 import {
     ChapterUpdateRequest,
-    MapData,
     PassageUpdateRequest,
     SetTimeRequest,
     TChapterData,
@@ -81,59 +79,6 @@ export class TypeConverters {
         return {
             type: updateRequest.type as TChapterPassageType,
             title: updateRequest.title,
-        };
-    }
-
-    // Map converters
-    static mapDataToServerType(clientMapData: TMapData): MapData {
-        return {
-            mapId: clientMapData.mapId,
-            title: clientMapData.title,
-            width: clientMapData.width,
-            height: clientMapData.height,
-            data: clientMapData.data.map((row) =>
-                row.map((cell) => ({
-                    tile: cell.tile,
-                    title: cell.label, // Convert label to title
-                }))
-            ),
-            locations: clientMapData.locations.map((loc) => ({
-                i: loc.i,
-                j: loc.j,
-                locationId: loc.locationId,
-            })),
-            maps: clientMapData.maps.map((map) => ({
-                i: map.i,
-                j: map.j,
-                mapId: map.mapId,
-            })),
-            palette: clientMapData.palette,
-        };
-    }
-
-    static serverTypeToMapData(serverMapData: MapData): TMapData {
-        return {
-            mapId: serverMapData.mapId,
-            title: serverMapData.title,
-            width: serverMapData.width,
-            height: serverMapData.height,
-            data: serverMapData.data.map((row) =>
-                row.map((cell) => ({
-                    tile: cell.tile,
-                    label: cell.title, // Convert title to label
-                }))
-            ),
-            locations: serverMapData.locations.map((loc) => ({
-                i: loc.i,
-                j: loc.j,
-                locationId: loc.locationId,
-            })),
-            maps: serverMapData.maps.map((map) => ({
-                i: map.i,
-                j: map.j,
-                mapId: map.mapId,
-            })),
-            palette: serverMapData.palette,
         };
     }
 

@@ -9,7 +9,7 @@ const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const repoRoot = at('../..');
 
 /** The internal packages this app pulls source out of — all of them outside `root`. */
-const siblingPackages = ['../../types', '../../data', '../../shared', '../../ui', '../../core'].map(at);
+const siblingPackages = ['../../types', '../../data', '../../shared', '../../ui', '../../core', '../../canvas'].map(at);
 
 /**
  * Vite seeds its watcher with `root` only; anything outside is added lazily, the first time a
@@ -61,6 +61,12 @@ export default defineConfig({
             { find: /^@story\/data\/(.+)$/, replacement: at('../../data/') + '$1' },
             { find: '@story/data', replacement: at('../../data/index.ts') },
 
+            // `@story/canvas` publishes a `./react` subpath, so — like `@story/ui` above — the
+            // subpath is listed first: a bare prefix match would rewrite it to
+            // `canvas/src/index.ts/react`.
+            { find: '@story/canvas/react', replacement: at('../../canvas/src/react/index.ts') },
+            { find: '@story/canvas', replacement: at('../../canvas/src/index.ts') },
+
             { find: '@story/core', replacement: at('../../core/src/index.ts') },
             { find: '@story/types', replacement: at('../../types/index.ts') },
             { find: '@story/shared', replacement: at('../../shared/src/index.ts') },
@@ -79,6 +85,23 @@ export default defineConfig({
         // `ignored` keeps that from dragging in the workspace symlink farm or build output.
         watch: {
             ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+        },
+        /**
+         * The Visualizer server (VISUALIZER_PLAN §5.4). Proxying rather than pointing the
+         * client at `http://localhost:8123` directly makes every request same-origin, which
+         * means no CORS preflight on each write and no second host to configure per
+         * environment — `stores/Store.ts` uses a bare `''` base and the path does the routing.
+         *
+         * `ws: false` and `changeOrigin: true` are both deliberate: there is no WebSocket here
+         * (`/api/events` is SSE, which is a plain GET that never ends), and the `Host` header
+         * has to be rewritten or Express's router sees the client's origin.
+         */
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8123',
+                changeOrigin: true,
+                ws: false,
+            },
         },
     },
     esbuild: {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from '@story/ui';
-import { ChapterResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
+import { ChapterResolver } from '../../../story/ChapterResolcer';
 import { TChapterFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange, validateChildren } from '../types';
 import { Agent } from '../../../stores/Agent';
 import { TChapterData } from '../../../stores/nodeServerTypes';

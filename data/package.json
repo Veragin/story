@@ -14,8 +14,9 @@
         "@story/shared": "workspace:^",
         "@story/types": "workspace:^"
     },
-    "comment:devDependencies": "`assets/index.ts` is built on `import.meta.glob` and carries its own `/// <reference types=\"vite/client\" />`. That reference used to resolve only because the root app hoisted vite; now that the apps own their own configs, the package that needs the types declares them.",
+    "comment:devDependencies": "`assets/index.ts` is built on `import.meta.glob` and carries its own `/// <reference types=\"vite/client\" />`. That reference used to resolve only because the root app hoisted vite; now that the apps own their own configs, the package that needs the types declares them. `@story/canvas` is test-only: `test/maps.test.ts` asserts the polygon invariants using the same geometry the Visualizer normalises with (VISUALIZER_PLAN §4.2). The authored story must never import it — eslint enforces that split.",
     "devDependencies": {
+        "@story/canvas": "workspace:^",
         "vite": "^5.4.9"
     }
 }

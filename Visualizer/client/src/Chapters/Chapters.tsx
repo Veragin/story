@@ -8,9 +8,9 @@ import {
 } from '@mui/material';
 import { Column, Row, spacingCss, WholeContainer } from '@story/ui';
 import { useVisualizerStore } from '../context';
-import { Nav } from '../components/Nav';
+import { Nav, NavPicker } from '../components/Nav';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
-import { ChapterTimeline } from './ChapterTimeline';
+import { TimelineView } from './Timeline/TimelineView';
 import { ChapterCreationForm } from './ChapterCreationForm/ChapterCreationForm';
 import { Add, Event } from '@mui/icons-material';
 
@@ -204,6 +204,10 @@ export const Chapters = () => {
     return (
         <WholeContainer>
             <Nav>
+                {/* The picker used to be rendered by `ChapterTimeline`, which Phase 8 replaced
+                    with an embedded toolbar — taking every route out of the default view with
+                    it. It belongs on the page chrome, not inside one of the views. */}
+                <NavPicker />
                 <SRow>
                     <SNavTitle>
                         <Event fontSize="small" sx={{ mr: 1 }} />
@@ -231,7 +235,7 @@ export const Chapters = () => {
                 <ResizableSplitter
                     leftContent={
                         <STimelineContainer>
-                            <ChapterTimeline />
+                            <TimelineView />
                         </STimelineContainer>
                     }
                     rightContent={

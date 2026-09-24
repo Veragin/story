@@ -1,0 +1,7 @@
+{
+    /* Per-package config for editors and `eslint --projectService`, matching every other
+       package in the repo: type checking of record is the single root `tsc --noEmit`
+       (REFACTOR_PLAN §7). */
+    "extends": "../tsconfig.base.json",
+    "include": ["src", "test"]
+}

@@ -70,46 +70,6 @@ export interface ErrorResponse {
     error: string;
 }
 
-export interface MapTileData {
-    tile: string;
-    title?: string;
-}
-
-export interface MapLocationReference {
-    i: number;
-    j: number;
-    locationId: string;
-}
-
-export interface MapMapReference {
-    i: number;
-    j: number;
-    mapId: string;
-}
-
-export interface MapData {
-    mapId: string; // Added missing field
-    title: string;
-    width: number;
-    height: number;
-    data: MapTileData[][];
-    locations: MapLocationReference[];
-    maps: MapMapReference[];
-    palette: Record<string, { name: string; color: string }>;
-}
-
-export interface MapUpdateRequest extends MapData {}
-
-export interface MapResponse {
-    success: boolean;
-    data: MapData;
-}
-
-export interface MapListResponse {
-    success: boolean;
-    data: string[];
-}
-
 export type TChapterData = {
     title: string;
     description: string;

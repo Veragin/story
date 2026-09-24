@@ -10,8 +10,11 @@ services:
       - 8100:8100 # SingleEngine          (vite)
       - 8101:8101 # Visualizer client     (vite)
       - 8102:8102 # MultiEngine client    (vite)
+      # VISUALIZER_PLAN §5.4. Published now that the server exists; it runs its TypeScript
+      # from source under @swc-node/register rather than tsx, because Nest needs the
+      # decorator metadata esbuild does not emit (§5.2).
+      - 8123:8123 # Visualizer server     (node/swc)
       - 8124:8124 # MultiEngine server    (node/tsx)
-      # 8123 — Visualizer server — is deliberately absent: it does not exist yet (§8).
     build:
       context: .
       dockerfile: docker/Dockerfile.dev

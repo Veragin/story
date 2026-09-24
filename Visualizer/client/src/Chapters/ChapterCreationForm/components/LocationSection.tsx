@@ -2,7 +2,7 @@ import React from 'react';
 import { Typography, Box, MenuItem, Select, Tooltip } from '@mui/material';
 import { LocationOn, HelpOutline } from '@mui/icons-material';
 import { SFormRow, SFormControl } from '../styles';
-import { LocationResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/LocationResolver';
+import { LocationResolver } from '../../../story/LocationResolver';
 
 type Props = {
     value: string;

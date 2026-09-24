@@ -1,21 +1,26 @@
 import { TimeManager } from '@story/shared';
 import { TChapterId } from '@story/types';
-import { ChapterStore } from '../Chapters/ChapterStore/ChapterStore';
 import { action, makeObservable, observable } from 'mobx';
-import { CanvasHandler } from './CanvasHandler';
 import { Agent } from './Agent';
 import { ReactNode } from 'react';
 
+/**
+ * The Visualizer's root store.
+ *
+ * Two members went in VISUALIZER_PLAN Phase 8 with the engine they served: `chapterStore`, which
+ * owned the old timeline's canvases, and `canvasHandler`, which sized every legacy canvas from a
+ * single `ResizeObserver` on `document.body`. Each view now owns its own `Scene`, and a `Scene`
+ * observes its own container — so there is nothing global left to co-ordinate.
+ */
 export class Store {
-    chapterStore: ChapterStore;
-    canvasHandler: CanvasHandler;
     agent: Agent;
 
     constructor(public timeManager: TimeManager) {
-        this.agent = new Agent('http://localhost:3123');
-        this.chapterStore = new ChapterStore(timeManager, this);
-        this.canvasHandler = new CanvasHandler(document.body, this);
-
+        // Same-origin (VISUALIZER_PLAN §5.4): requests go to `/api/…` and Vite's dev proxy
+        // forwards them to the server on :8123. The hard-coded `http://localhost:3123` this
+        // replaces named a port no config in the repo has ever mentioned, for a server that did
+        // not exist — every call failed and toasted.
+        this.agent = new Agent();
         makeObservable(this, {
             activeTab: observable,
             modalContent: observable.ref,
@@ -30,21 +35,13 @@ export class Store {
         this.modalContent = null;
     };
 
-    updateSize = (width: number, height: number) => {
-        this.chapterStore.durationHelper.size.width = width;
-        this.chapterStore.durationHelper.size.height = height;
-
-        this.chapterStore.render();
-    };
-
     modalContent: ReactNode | null = null;
     setModalContent = (content: ReactNode | null) => {
         this.modalContent = content;
     };
 
     destroy = () => {
-        this.canvasHandler.destroy();
-        this.chapterStore.deinit();
+        /* Each view tears its own scene down through `CanvasHost`; nothing is owned here. */
     };
 }
 
@@ -61,6 +58,22 @@ type TActiveTab =
           tab: 'map';
           mapId: string;
       }
+    /* Opened by double-clicking a location on the map (README § Visualizer; §6's table). */
     | {
-          tab: 'worldEvents';
+          tab: 'location';
+          locationId: string;
+      }
+    /* The structure tab: the author's type aliases (README; §6's table). */
+    | {
+          tab: 'structure';
+      }
+    /* The entities tab: every kind of thing in the story (README; §6's table). */
+    | {
+          tab: 'entities';
+      }
+    /* Opened by double-clicking a time trigger on the timeline (README; §6's table). */
+    | {
+          tab: 'trigger';
+          chapterId: string;
+          triggerId: string;
       };

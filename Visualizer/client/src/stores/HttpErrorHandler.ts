@@ -58,12 +58,41 @@ export class HttpErrorHandler {
     }
 
     /**
-     * Enhanced fetch wrapper that automatically handles errors
+     * A `fetch` that tolerates the dev server restarting underneath it.
+     *
+     * The Visualizer server imports `@story/data`, so every file it writes is in its own module
+     * graph and `node --watch` restarts it after each save. That restart is *wanted* — it is how
+     * the read model picks the new value up — but it means a request in flight during a save can
+     * fail at the socket, which the author sees as an error toast for a save that worked.
+     *
+     * So a request whose `fetch` rejects outright is retried once, after a short pause. Two
+     * deliberate limits: only a **network-level** failure is retried (an HTTP error status is a
+     * real answer and is passed straight through), and only a **GET** (every other method is a
+     * write, and replaying a write that may have landed is worse than reporting it).
      */
-    static async fetchWithErrorHandling(url: string, options: RequestInit, context: string): Promise<any> {
+    private static async fetchSurvivingRestart(url: string, options: RequestInit): Promise<Response> {
         try {
-            const response = await fetch(url, options);
-            return await HttpErrorHandler.handleResponse(response, context);
+            return await fetch(url, options);
+        } catch (error) {
+            const method = (options.method ?? 'GET').toUpperCase();
+            if (method !== 'GET') throw error;
+
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            return await fetch(url, options);
+        }
+    }
+
+    /**
+     * Enhanced fetch wrapper that automatically handles errors.
+     *
+     * Generic in the response type so callers can say what they expect rather than casting an
+     * `any` at every call site — the `Agent` reads are all typed against the server's own wire
+     * types, and that only works if the response type survives this call.
+     */
+    static async fetchWithErrorHandling<T = unknown>(url: string, options: RequestInit, context: string): Promise<T> {
+        try {
+            const response = await HttpErrorHandler.fetchSurvivingRestart(url, options);
+            return await HttpErrorHandler.handleResponse<T>(response, context);
         } catch (error) {
             if (error instanceof Error) {
                 throw error; // Re-throw our formatted error

@@ -1,0 +1,33 @@
+{
+    "name": "@story/visualizer-server",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "comment:scripts": "No build step and no `dist/` (REFACTOR_PLAN §7, VISUALIZER_PLAN §5.2): the internal packages are consumed as TypeScript source, so the server runs them from source too. The runner is `@swc-node/register` rather than the `tsx` the MultiEngine server uses, and the reason is NestJS: Nest resolves constructor dependencies through `design:paramtypes`, a *type-directed* emit that esbuild (and therefore tsx) documents as unsupported because it never builds a type table. swc does emit it. Verified as Phase 0's first spike before anything was built on it. The decorator flags live in `tsconfig.json`, not `.swcrc` — see the note there.",
+    "scripts": {
+        "dev": "node --import @swc-node/register/esm-register --watch src/main.ts",
+        "start": "node --import @swc-node/register/esm-register src/main.ts"
+    },
+    "comment:dependencies": "`@story/data` and `@story/types` are imported for read-only metadata — §5.1 explicitly allows it, and importing the register is both simpler and more accurate than re-deriving chapter titles from source. `ts-morph` is the static reader *and* the property-level writer; `prettier` is loaded at runtime from the repo's own `.prettierrc` so a file the server touched is byte-identical to what `yarn pretty` would produce (§4.5 rule 1). `chokidar` backs the SSE watcher.",
+    "dependencies": {
+        "@nestjs/common": "^11.0.0",
+        "@nestjs/core": "^11.0.0",
+        "@nestjs/platform-express": "^11.0.0",
+        "@story/data": "workspace:^",
+        "@story/shared": "workspace:^",
+        "@story/types": "workspace:^",
+        "chokidar": "^4.0.3",
+        "class-transformer": "^0.5.1",
+        "class-validator": "^0.14.1",
+        "prettier": "^3.3.3",
+        "reflect-metadata": "^0.2.2",
+        "rxjs": "^7.8.1",
+        "ts-morph": "^24.0.0"
+    },
+    "devDependencies": {
+        "@swc-node/register": "^1.10.9",
+        "@swc/core": "^1.10.1",
+        "@types/express": "^5.0.0",
+        "@types/node": "^24.3.0"
+    }
+}

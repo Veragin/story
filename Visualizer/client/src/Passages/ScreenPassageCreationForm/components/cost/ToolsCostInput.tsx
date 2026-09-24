@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { Add, Remove, Build, HelpOutline } from '@mui/icons-material';
 import { TItemId } from '@story/types';
-import { ItemResolver } from '../../../../GUIComponents/Graphs/ChapterPassagesGraph/store/ItemResolver';
+import { ItemResolver } from '../../../../story/ItemResolver';
 import { SCompactColumn, SCompactRow } from '../../styles';
 
 type Props = {

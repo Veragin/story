@@ -1,0 +1,37 @@
+{
+    /* Per-package config for editors, `eslint --projectService` — and, unusually for this repo,
+       for the *runtime*: `@swc-node/register` reads its transform settings from the nearest
+       `tsconfig.json`, not from `.swcrc`. That is why the decorator flags below are load-bearing
+       rather than editorial, and why changing them changes how the server boots.
+
+       Type checking of record is still the single root `tsc --noEmit` over the whole graph
+       (REFACTOR_PLAN §7), which lists this package in its `include`. */
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        /* NestJS resolves constructor dependencies by reading `design:paramtypes`, which only
+           exists if the compiler emits it. Both flags are required; neither is the default.
+           (VISUALIZER_PLAN §5.2 — Phase 0's spike confirmed swc honours them.) */
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+
+        /* Node-land, like `MultiEngine/server`: no document, no window. `types: ["node"]` is what
+           makes `node:fs`, `node:path` and `process` resolve rather than leaning on whatever
+           @types happen to be hoisted at the root. */
+        "lib": ["ES2022"],
+        "target": "ES2022",
+        "types": ["node"],
+        "jsx": "preserve",
+
+        /* `useDefineForClassFields` and decorator metadata disagree: with it on, a `@Injectable`
+           class's fields are defined (not assigned) before the constructor body runs, which
+           strips the parameter properties Nest injects into. Nest's own template sets it off for
+           the same reason. */
+        "useDefineForClassFields": false,
+
+        /* `isolatedModules` from the base config would reject the `export type` re-exports the
+           DTO files use under `verbatimModuleSyntax`-style transpilation; swc compiles file by
+           file, so keeping it on is what guarantees every file is independently transpilable. */
+        "isolatedModules": true
+    },
+    "include": ["src", "test"]
+}

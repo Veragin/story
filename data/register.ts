@@ -7,6 +7,7 @@ import { villageChapter } from './chapters/village/village.chapter';
 import { villageLocation } from './locations/village.location';
 import { Franta } from './sideCharacters/Franta';
 import { NobleMan } from './sideCharacters/NobleMan';
+import { globalMap } from './maps/global.map';
 
 export const register = {
     characters: {
@@ -25,6 +26,10 @@ export const register = {
     locations: {
         village: villageLocation,
         kingdom: kingdomLocation,
+    },
+    /* The maps locations are drawn on (VISUALIZER_PLAN §4.3). `TMapId` is `keyof` this. */
+    maps: {
+        global: globalMap,
     },
     passages: {
         village: () => import('./chapters/village/village.passages'),

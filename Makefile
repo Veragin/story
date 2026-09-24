@@ -64,7 +64,7 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build dev dev-engine dev-visualizer dev-multi-engine logs
+.PHONY: start up stop bash destroy ai build dev dev-engine dev-visualizer dev-visualizer-server dev-multi-engine logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
 # 8102 MultiEngine client, 8124 MultiEngine server). The container itself stays idle at
@@ -113,6 +113,11 @@ dev-engine:
 
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
+
+# The Visualizer client proxies /api to this (VISUALIZER_PLAN §5.4), so running the client
+# alone leaves every read and write failing — start both, or use `make dev`.
+dev-visualizer-server:
+	$(DEV_EXEC) yarn dev:visualizer-server
 
 dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine

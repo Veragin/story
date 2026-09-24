@@ -1,0 +1,27 @@
+{
+    "$schema": "https://swc.rs/schema.json",
+    "comment": [
+        "Kept for the swc CLI and for anything that reads .swcrc directly. It is NOT what the",
+        "dev server uses: `@swc-node/register` takes its transform settings from the nearest",
+        "`tsconfig.json`, so `experimentalDecorators` / `emitDecoratorMetadata` *there* are the",
+        "ones that decide whether Nest can resolve a constructor. This file mirrors them so the",
+        "two cannot drift into disagreeing, and VISUALIZER_PLAN §5.1 names it.",
+        "The Phase 0 spike established the tsconfig path empirically: with only a .swcrc and no",
+        "decorator flags in tsconfig, the loader fails to parse the first `@Injectable()`."
+    ],
+    "jsc": {
+        "target": "es2022",
+        "parser": {
+            "syntax": "typescript",
+            "decorators": true
+        },
+        "transform": {
+            "legacyDecorator": true,
+            "decoratorMetadata": true
+        },
+        "keepClassNames": true
+    },
+    "module": {
+        "type": "es6"
+    }
+}

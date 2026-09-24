@@ -14,7 +14,7 @@ import { register } from '@story/data';
 import { Nav } from '../components/Nav';
 import { TChapterId } from '@story/types';
 import { ResizableSplitter } from '../Passages/ResizableSplitter';
-import { ChapterPassagesGraph } from '../Passages/ChapterPassagesGraph';
+import { PassageGraphView } from '../Passages/PassageGraphView';
 import { ScreenPassageCreationForm } from '../Passages/ScreenPassageCreationForm/ScreenPassageCreationForm';
 
 // Create a dark theme for the form
@@ -260,7 +260,7 @@ export const ChapterPassages = ({ chapterId }: Props) => {
 
             <SContentArea>
                 <ResizableSplitter
-                    leftContent={<ChapterPassagesGraph chapterId={chapterId} />}
+                    leftContent={<PassageGraphView chapterId={chapterId} />}
                     rightContent={
                         <SFormContainer>
                             <ThemeProvider theme={darkTheme}>

@@ -91,11 +91,21 @@ const SContainer = styled('div')`
     position: relative;
 `;
 
+/**
+ * The left pane is a real flex sibling, not a full-width underlay.
+ *
+ * It used to be `position: absolute; width: 100%`, with the right pane floating over it. For a
+ * form that is 95% opaque that bought nothing, and it cost the left pane its real width: a
+ * canvas sized from `clientWidth` came out as wide as the whole window, so "fit the graph on
+ * screen" framed the content across an area a third of which was behind the form.
+ *
+ * `min-width: 0` is load-bearing — without it a flex item refuses to shrink below its content's
+ * intrinsic width, and a canvas reports that as its attribute width, which is exactly the
+ * feedback loop that would keep the pane too wide.
+ */
 const SBackgroundPanel = styled('div')`
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -103,12 +113,9 @@ const SBackgroundPanel = styled('div')`
 `;
 
 const SOverlayPanel = styled('div')`
-    position: absolute;
-    top: 0;
-    right: 0;
     height: 100%;
     display: flex;
-    z-index: 10;
+    flex: 0 0 auto;
 `;
 
 const SRightContent = styled('div')`

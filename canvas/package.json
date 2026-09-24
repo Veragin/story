@@ -1,0 +1,31 @@
+{
+    "name": "@story/canvas",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "comment:exports": "Two entries, and the split is load-bearing (VISUALIZER_PLAN §3.1). `.` is the whole library and is React-free; `./react` is the single host component. A consumer that only wants the scene never pulls React in, and the package stays usable from a non-React host.",
+    "exports": {
+        ".": "./src/index.ts",
+        "./react": "./src/react/index.ts"
+    },
+    "comment:dependencies": "`@story/shared` and nothing else internal (§3.1): this is a rendering library that happens to live in this repo. Konva is the one runtime dependency.",
+    "dependencies": {
+        "@story/shared": "workspace:^",
+        "konva": "^10.6.0"
+    },
+    "comment:peerDependencies": "React is a peer, used only by the `./react` subpath. Marked optional so a non-React consumer installing this package is not told it is missing something it will never import.",
+    "peerDependencies": {
+        "react": "18.3.1"
+    },
+    "peerDependenciesMeta": {
+        "react": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.3",
+        "react": "18.3.1"
+    }
+}
