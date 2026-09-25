@@ -2,7 +2,7 @@ import type { TWorldState } from '@story/data';
 import type { TPassageIdFor } from '@story/shared';
 
 export type TCharacterId = keyof TWorldState['characters'];
-export type TSideCharacterId = keyof TWorldState['sideCharacters'];
+export type TNpcId = keyof TWorldState['npcs'];
 
 export type TChapterId = keyof TWorldState['chapters'];
 

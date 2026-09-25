@@ -2,7 +2,7 @@ import { TWorldState } from '@story/data';
 import { Engine } from '@story/core';
 import { register } from '@story/data';
 
-type TCharacterType = 'main' | 'side';
+type TCharacterType = 'main' | 'npc';
 
 interface TCharacterInfo {
     id: string;
@@ -27,9 +27,9 @@ export class CharacterResolver {
             return character;
         }
 
-        // Check side characters
-        if (register.sideCharacters[characterId as keyof typeof register.sideCharacters]) {
-            const character = register.sideCharacters[characterId as keyof typeof register.sideCharacters];
+        // Check NPCs
+        if (register.npcs[characterId as keyof typeof register.npcs]) {
+            const character = register.npcs[characterId as keyof typeof register.npcs];
             this.characterCache.set(characterId, character);
             return character;
         }
@@ -64,13 +64,13 @@ export class CharacterResolver {
             });
         });
 
-        // Add side characters
-        Object.keys(register.sideCharacters).forEach((key) => {
-            const character = register.sideCharacters[key as keyof typeof register.sideCharacters];
+        // Add NPCs
+        Object.keys(register.npcs).forEach((key) => {
+            const character = register.npcs[key as keyof typeof register.npcs];
             characters.push({
                 id: key,
                 name: character.name || key,
-                type: 'side',
+                type: 'npc',
                 character: character,
                 description: character.description || '',
             });
@@ -85,8 +85,8 @@ export class CharacterResolver {
      */
     static getAvailableCharacterIds(): string[] {
         const mainCharacterIds = Object.keys(register.characters);
-        const sideCharacterIds = Object.keys(register.sideCharacters);
-        return [...mainCharacterIds, ...sideCharacterIds];
+        const npcIds = Object.keys(register.npcs);
+        return [...mainCharacterIds, ...npcIds];
     }
 
     /**
@@ -97,10 +97,10 @@ export class CharacterResolver {
     }
 
     /**
-     * Gets only side characters
+     * Gets only NPCs
      */
-    static getSideCharacters(): TCharacterInfo[] {
-        return this.getAllCharacters().filter((char) => char.type === 'side');
+    static getNpcs(): TCharacterInfo[] {
+        return this.getAllCharacters().filter((char) => char.type === 'npc');
     }
 
     /**
@@ -111,10 +111,10 @@ export class CharacterResolver {
     }
 
     /**
-     * Gets side character IDs only
+     * Gets NPC IDs only
      */
-    static getSideCharacterIds(): string[] {
-        return Object.keys(register.sideCharacters);
+    static getNpcIds(): string[] {
+        return Object.keys(register.npcs);
     }
 
     /**
@@ -123,7 +123,7 @@ export class CharacterResolver {
     static characterExists(characterId: string): boolean {
         return (
             register.characters[characterId as keyof typeof register.characters] !== undefined ||
-            register.sideCharacters[characterId as keyof typeof register.sideCharacters] !== undefined
+            register.npcs[characterId as keyof typeof register.npcs] !== undefined
         );
     }
 
@@ -134,8 +134,8 @@ export class CharacterResolver {
         if (register.characters[characterId as keyof typeof register.characters]) {
             return 'main';
         }
-        if (register.sideCharacters[characterId as keyof typeof register.sideCharacters]) {
-            return 'side';
+        if (register.npcs[characterId as keyof typeof register.npcs]) {
+            return 'npc';
         }
         return null;
     }
@@ -196,13 +196,13 @@ export class CharacterResolver {
     static getCharacterStats(): {
         totalCharacters: number;
         mainCharacters: number;
-        sideCharacters: number;
+        npcs: number;
     } {
         const allCharacters = this.getAllCharacters();
         return {
             totalCharacters: allCharacters.length,
             mainCharacters: allCharacters.filter((char) => char.type === 'main').length,
-            sideCharacters: allCharacters.filter((char) => char.type === 'side').length,
+            npcs: allCharacters.filter((char) => char.type === 'npc').length,
         };
     }
 }

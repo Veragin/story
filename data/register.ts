@@ -5,15 +5,15 @@ import { Thomas } from './characters/thomas';
 import { kingdomChapter } from './chapters/kingdom/kingdom.chapter';
 import { villageChapter } from './chapters/village/village.chapter';
 import { villageLocation } from './locations/village.location';
-import { Franta } from './sideCharacters/Franta';
-import { NobleMan } from './sideCharacters/NobleMan';
+import { Franta } from './npcs/Franta';
+import { NobleMan } from './npcs/NobleMan';
 
 export const register = {
     characters: {
         thomas: Thomas,
         annie: Annie,
     },
-    sideCharacters: {
+    npcs: {
         franta: Franta,
         nobleMan: NobleMan,
     },

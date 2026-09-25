@@ -152,8 +152,8 @@ describe('register', () => {
     });
 
     it('keys every slice by the id the entry declares', () => {
-        for (const [id, sideCharacter] of Object.entries(register.sideCharacters)) {
-            expect(sideCharacter.id).toBe(id);
+        for (const [id, npc] of Object.entries(register.npcs)) {
+            expect(npc.id).toBe(id);
         }
         for (const [id, chapter] of Object.entries(register.chapters)) {
             expect(chapter.chapterId).toBe(id);
@@ -273,7 +273,7 @@ describe('reference integrity', () => {
             }
         }
 
-        for (const [id, character] of Object.entries({ ...register.characters, ...register.sideCharacters })) {
+        for (const [id, character] of Object.entries({ ...register.characters, ...register.npcs })) {
             for (const item of character.init.inventory) {
                 expect(itemIds, `${id} starting inventory`).toContain(item.id);
             }
@@ -286,7 +286,7 @@ describe('reference integrity', () => {
         for (const [id, chapter] of Object.entries(register.chapters)) {
             expect(locationIds, `chapters.${id}.location`).toContain(chapter.location);
         }
-        for (const [id, character] of Object.entries({ ...register.characters, ...register.sideCharacters })) {
+        for (const [id, character] of Object.entries({ ...register.characters, ...register.npcs })) {
             if (character.init.location === undefined) continue;
             expect(locationIds, `${id}.init.location`).toContain(character.init.location);
         }

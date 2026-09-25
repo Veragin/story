@@ -7,13 +7,13 @@
  * `TPoint` / `TSize` / `TVec` (geometry) and `TPassageId` / `TPassageIdFor` (the id format).
  */
 
-/* TCharacterId, TSideCharacterId, TChapterId,
+/* TCharacterId, TNpcId, TChapterId,
    TChapterPassageId, TCharacterPassageId, TChapterCharacterPassageId */
 export * from './ids';
 
 /* TChapter */
 export * from './TChapter';
-/* TCharacter, TCharacterData, TSideCharacter, TSideCharacterData */
+/* TCharacter, TCharacterData, TNpc, TNpcData */
 export * from './TCharacter';
 /* TItemId, TItem, TItemPartial */
 export * from './TItem';

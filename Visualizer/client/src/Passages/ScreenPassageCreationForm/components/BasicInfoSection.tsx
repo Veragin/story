@@ -238,7 +238,7 @@ export const BasicInfoSection = ({
                                         (
                                         {character.type === 'main'
                                             ? _('Main Character')
-                                            : _('Side Character')}
+                                            : _('NPC')}
                                         )
                                     </Typography>
                                     {character.description && (

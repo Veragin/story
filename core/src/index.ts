@@ -9,7 +9,7 @@
  * Deviations from §3's `core/` table, all deliberate and all decided by the author:
  *  - `TWorldState` does **not** move here. It is `data/TWorldState.ts` and it stays in the
  *    author's tree; it pulls eight modules out of `data/` (locations, chapters, characters,
- *    sideCharacters), so hosting it here would create a value-shaped core → data edge.
+ *    npcs), so hosting it here would create a value-shaped core → data edge.
  *    Core imports it **type-only**; `types ⇄ data` is an accepted, documented type-only cycle
  *    confined to the author's two folders (§2.1). As of Phase 6 the specifier is `@story/data`.
  *    Note the remaining honest wart: `History`/`Processor`/`Inventory`/`Story` import

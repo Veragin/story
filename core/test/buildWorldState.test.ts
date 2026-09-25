@@ -12,7 +12,7 @@ import { Time } from '@story/shared';
  */
 describe('buildWorldState', () => {
     /** Every register slice that the world state is expected to mirror one-for-one. */
-    const MIRRORED_SLICES = ['characters', 'sideCharacters', 'chapters', 'locations'] as const;
+    const MIRRORED_SLICES = ['characters', 'npcs', 'chapters', 'locations'] as const;
 
     it('populates every register slice, key for key', () => {
         const s = buildWorldState(register, itemInfo);
@@ -39,7 +39,7 @@ describe('buildWorldState', () => {
 
         expect(s.characters.thomas.health).toBe(register.characters.thomas.init.health);
         expect(s.characters.thomas.location).toBe('village');
-        expect(s.sideCharacters.franta.isDead).toBe(false);
+        expect(s.npcs.franta.isDead).toBe(false);
         expect(s.chapters.village.mojePromena).toEqual(register.chapters.village.init.mojePromena);
         expect(s.locations.kingdom.ref.id).toBe('kingdom');
     });

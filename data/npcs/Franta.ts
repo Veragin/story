@@ -1,6 +1,6 @@
-import { TSideCharacter } from '@story/types';
+import { TNpc } from '@story/types';
 
-export const Franta: TSideCharacter<'franta'> = {
+export const Franta: TNpc<'franta'> = {
     id: 'franta',
     name: 'Franta',
     description: 'Franta is a very old',
@@ -12,7 +12,7 @@ export const Franta: TSideCharacter<'franta'> = {
     },
 };
 
-export type TFrantaSideCharacterData = {
+export type TFrantaNpcData = {
     asdasd: {
         time: number;
         asd: string;

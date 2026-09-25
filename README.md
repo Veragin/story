@@ -99,7 +99,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
     - is a playable person in the world
     - there can be multiple of them, played as multiplayer or singleplayer (user choose and others are played by engine)
 
-- sidecharacter
+- npc
     - is non-playable but important person
 
 - location
@@ -192,28 +192,34 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 
 ### UI
 
-- top menu tabs => user can switch between pages:
-  map. timeline, entities, structure
+- top menu bar
+    - tabs => user can switch between pages:
+      map. timeline, entities, structure
+    - on the right display control bar for the page
 
-### Map UI
+#### Map
 
 - consists of 2 layers Map tiles and Locations (Canvas library)
 - Locations over the Map tiles
-- in top bar is mode switch
+- in control bar:
+    - mode switch
+    - help button that opens modal
+        - information how to move in the map page
+        - zoom with scroll, move with WSAD, doubleclick to open
 - autosave with debounce
 
 - Modes:
     - view
         - block any edit
         - user is able to zoom and move via WSAD or arrows
-        - double click on location will open location form
+        - double click on location will open location modal
         - no tooling row
     - Locations edit
         - allow edit locations (Canvas library editaion: select, drag, edit)
         - display tooling row
             - add new location
             - change location color (color picker)
-            - open location form (as well as doubleclick on location)
+            - open location modal (as well as doubleclick on location)
             - delete selected location
     - Map tiles
         - hide Locations layer
@@ -222,10 +228,19 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
         - allow to add description to map tile
         - save map tiles data to file in data/locations/map.json
 
-- location form
-    - open modal with location form
+- Location modal
+    - open modal with location formular
+    - display fileds:
+        - id, readonly
+        - name
+        - description
+        - local characters table
+            - for each name and description
+            - be able to add/remove characters
 
-- timeline
+#### Timeline
+
+    - at the bottom display timeline
     - display chapters on timeline per character, character selector
     - user can move the timeline by dragging
     - user can add/delete new chapter
@@ -253,7 +268,10 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
     - items
     - other entites added by user
 
-- structure
+#### Structure
+
+    - there is  left horizontal menu listing all types editable by user (structure)
+    - eg. TCharacter
     - user can define entites (eg add new entity race)
     - user can edit entites (eg. person can have race, or add new field to locations)
     - he is editing @types folder

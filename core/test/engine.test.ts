@@ -187,7 +187,7 @@ describe('Engine turn loop', () => {
             //     void this.continue();
             //
             // but `autoProcess` → `Story.goToPassage` already ends with `void continue()` of
-            // its own. Every side character's turn therefore spawns a second, parallel turn
+            // its own. Every NPC's turn therefore spawns a second, parallel turn
             // loop: the next passage is resolved twice and any `onStart`/`onFinish` callback
             // the author attached to it runs twice. It fans out with the number of
             // auto-played characters, which is why it is worth catching now, while the story

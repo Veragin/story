@@ -1,6 +1,6 @@
-import { TSideCharacter } from '@story/types';
+import { TNpc } from '@story/types';
 
-export const NobleMan: TSideCharacter<'nobleMan'> = {
+export const NobleMan: TNpc<'nobleMan'> = {
     id: 'nobleMan',
     name: 'Noble Man',
     description: 'Noble Man is a very rich and powerful',
@@ -12,7 +12,7 @@ export const NobleMan: TSideCharacter<'nobleMan'> = {
     },
 };
 
-export type TNobleManSideCharacterData = {
+export type TNobleManNpcData = {
     asdasd: {
         time: number;
         asd: string;
