@@ -1,5 +1,3 @@
-// @ts-ignore
-import { DeltaTime } from '@story/shared';
 import { TPassage } from '@story/types';
 import { TVillageThomasPassageId } from '../village.passages';
 

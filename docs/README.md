@@ -24,14 +24,6 @@ yarn dev           # all four services at once, output labelled per workspace
 yarn test          # Vitest
 ```
 
-Or in docker, which is the supported path:
-
-```bash
-make start         # builds the container and brings up every service
-make logs          # follow them
-make stop
-```
-
 Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:multi-engine`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-multi-engine`. (`make start` already holds all four ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.)
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
@@ -87,20 +79,28 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
         Both arguments are optional to declare — most passages need neither and take none. The rule is that a passage reads live state **through its arguments only**: it must never import the running app or a world-state singleton. A passage that reaches for the app ties the story to one service, so it could not be replayed by the Visualizer, simulated by the MultiEngine server, or tested. `s` is the world state; `e` is the engine, for the few passages that need to ask it something rather than just read state.
 
 - chapter
-    - story is splitted into the chapters
-    - chapter consists of set of passages
-    - chapter has one starting passage
-    - chapter can have multiple end passages (every end pasage points to another chapter)
-    - we can display a tree of from passage can user get where
+    - describes compact part of the story
+    - characters can do decisions (change state of the world) that will influence which chapters will be played (active)
+    - there can be multiple active chapters at the same moment (with multiple players playing)
+    - each chapter consists of set of passages for a characters
+    - per each present character
+        - there is only one starting passage
+        - can be multiple ending passages (called transitions) that reference the swicth of character between chapters
     - each chapter can have time triggers
     - each chapter has defined time period
+    - each chapter has children (means all chapters to which the characters can move to)
+
+- story
+    - is splitted into the chapters
+    - story is nonlinear described by chapters
 
 - character
-    - is a playable person in the world
-    - there can be multiple of them, played as multiplayer or singleplayer (user choose and others are played by engine)
+    - is a playable character in the world
+    - there can be multiple of them, played as multiplayer or singleplayer
+    - if single player and there is multiple characters => others are played by engine
 
 - npc
-    - is non-playable but important person
+    - is non-playable but important character
 
 - location
     - locations are describing the map of the world
@@ -168,170 +168,9 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
     - currently `Visualizer/client/` only; it will gain a `Visualizer/server/` the same way MultiEngine has one (see "Not implemented/decied yet" below)
     - partially implemented
 
-## Visualizer
-
-- this service is for creating the story data
-- user interface to edit files in data and types folder
-
-### Canvas library
-
-- create library that will power this service
-- you can reuse whats already implemented, but dont be afraid to rewrite it
-- scene that holds canvas and all objects
-- user can select object by clicking, move the selected object by dragging
-- edit selected objects by addding more vertexes or dragging the vertexes, remove them by rightclick
-- set color and border of object
-- by double click call an action
-- should be able to draw a line between two points
-
-### Map tiles library
-
-- implement https://github.com/Veragin/mapMaker
-- user can fill tiles with color they want
-- user can set description to a tile ... rendered on canvas
-
-### UI
-
-- top menu bar
-    - tabs => user can switch between pages:
-      map. timeline, entities, structure
-    - on the right display control bar for the page
-
-#### Map
-
-- consists of 2 layers Map tiles and Locations (Canvas library)
-- Locations over the Map tiles
-- in control bar:
-    - mode switch
-    - help button that opens modal
-        - information how to move in the map page
-        - zoom with scroll, move with WSAD, doubleclick to open
-- autosave with debounce
-
-- Modes:
-    - view
-        - block any edit
-        - user is able to zoom and move via WSAD or arrows
-        - double click on location will open location modal
-        - no tooling row
-    - Locations edit
-        - allow edit locations (Canvas library editaion: select, drag, edit)
-        - display tooling row
-            - add new location
-            - change location color (color picker)
-            - open location modal (as well as doubleclick on location)
-            - delete selected location
-    - Map tiles
-        - hide Locations layer
-        - same funcionality as in mapMaker (drawing tiles)
-        - display tooling row similar as is for mapMaker
-        - allow to add description to map tile
-        - save map tiles data to file in data/locations/map.json
-
-- Location modal
-    - open modal with location formular
-    - display fileds:
-        - id, readonly
-        - name
-        - description
-        - local characters table
-            - for each name and description
-            - be able to add/remove characters
-
-#### Timeline
-
-    - at the bottom display timeline
-    - display chapters on timeline per character, character selector
-    - user can move the timeline by dragging
-    - user can add/delete new chapter
-    - user can select chapter or time trigger by click
-    - user can move selected chapter by dragging
-    - user can open chapter by double clicking
-    - display (toggle on/off) connections between the chapters (end passages are pointing to some)
-    - display chapter description on hover
-    - display (toggle) time triggers of the chapter
-    - by double click on time trigegr open it in time trigger view
-
-- chapter view
-    - see twinery.org (similar implementation)
-    - user can add/edit/delete passages in the chapter
-    - display passages as boxes on canvas, move them by dragging
-    - display arrows between connected passages
-    - save position of passages to solo file (we have to save somewhere the position of the passage on the canvas)
-    - user can edit chapter informations in modal form
-
-- time trigger view
-    - form to set up time trigegr
-
-- entities
-    - persons
-    - items
-    - other entites added by user
-
-#### Structure
-
-    - there is  left horizontal menu listing all types editable by user (structure)
-    - eg. TCharacter
-    - user can define entites (eg add new entity race)
-    - user can edit entites (eg. person can have race, or add new field to locations)
-    - he is editing @types folder
-
 ## MultiEngine
 
 - every player picks his character
 - they are going throuh passages - waiting for each other on time
 - moving between passages costs some time, player has to wait till everyone played prevoius pasages
 - server that handles world state
-
-## Not implemented/decied yet
-
-- how Visualizer will work, multiple options:
-    - running nodejs server
-    - vscode extension maybe
-    - electron
-- api communication
-- MuiltiEngine
-
-**Still open.** The client already speaks a protocol (see API below) and `Visualizer/client/src/stores/Store.ts` hardcodes `http://localhost:3123` for a server that does not exist. If the nodejs option wins, it lands at `Visualizer/server/` on :8123 and the client proxies `/api` to it; the hard part is that it has to read and write the `.ts` files in `data/` and `types/`, emitting valid TypeScript while preserving hand-written passage logic. That is why it is a separate piece of work and not just another service. The other two options (vscode extension, electron) are still on the table and would not need the port at all.
-
-## API
-
-- **not implemented, and the two descriptions of it disagree.** The routes below are as originally specified. `Visualizer/client/src/stores/Agent.ts` calls a different set:
-    - everything is under an `/api` prefix — `/api/chapter/<chapterId>`, not `/chapter/<chapterId>`
-    - the passage routes carry the passage type in the path — `/api/passage/screen/<passageId>`, not `/passage/<passageId>`
-    - the client has an `/api/passage/screen/<passageId>/setTime` that is not documented here at all
-
-    Neither description has been made authoritative, because nothing serves these routes yet. It gets settled when the Visualizer server is built.
-
-- data sent as JSON body
-
-- PUT `/chapter/<chapterId>`
-    - title: String
-    - description: String
-    - location: String
-    - startTime: TimeString
-    - endTime: TimeString
-- POST `/chapter/<chapterId>/open`
-- DELETE `/chapter/<chapterId>`
-
-- POST `/chapter/<chapterId>/setTime`
-    - startTime: TimeString
-    - endTime: TimeString
-
-- PUT `/passage/<passageId>`
-    - title: String
-    - type: 'screen' | 'linear' | 'transition'
-- POST `/passage/<passageId>/open`
-- DELETE `/passage/<passageId>`
-
-- PUT `/map/<mapId>`
-    - title: String
-    - width: Int
-    - height: Int
-    - data: { tile: String; title?: String }[][]
-    - locations: { i: Int; j: Int; locationId: String }[]
-    - maps: { i: Int; j: Int; mapId: String }[]
-- GET `/map/<mapId>`
-- GET `/map`
-    - mapId: String
-    - title: String
