@@ -18,6 +18,7 @@ import type { EntitiesStore } from './EntitiesStore';
 import {
     buildCreateBody,
     createFields,
+    ITEM_TYPE_PROPS,
     ITEM_TYPES,
     itemSourceForType,
     validateEntityId,
@@ -36,8 +37,7 @@ const ID_ERRORS: Record<string, () => string> = {
     dash: () =>
         _('Ids must not contain "-" (it separates the parts of passage ids).'),
     identifier: () =>
-        _('Letters, digits and "_" only, not starting with a digit.'),
-    reserved: () => _('That is a reserved word.'),
+        _('Start with a lower-case letter; then letters, digits and "_" only.'),
     exists: () => _('This id is taken.'),
 };
 
@@ -180,6 +180,35 @@ export const CreateEntityDialog = ({
                                     ))}
                                 </TextField>
                             )}
+                            {fields.type &&
+                                (ITEM_TYPE_PROPS[form.type] ?? []).map((p) => (
+                                    <TextField
+                                        key={`${form.type}.${p.key}`}
+                                        label={p.key}
+                                        type={
+                                            p.kind === 'number'
+                                                ? 'number'
+                                                : 'text'
+                                        }
+                                        value={String(
+                                            form.props?.[p.key] ??
+                                                (p.kind === 'number' ? 0 : '')
+                                        )}
+                                        onChange={(e) =>
+                                            set({
+                                                props: {
+                                                    ...form.props,
+                                                    [p.key]:
+                                                        p.kind === 'number'
+                                                            ? Number(
+                                                                  e.target.value
+                                                              ) || 0
+                                                            : e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                ))}
                             {error && (
                                 <Alert
                                     severity="error"

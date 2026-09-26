@@ -24,24 +24,17 @@ const isServerField = (key: string) => (SERVER_FIELDS as readonly string[]).incl
  * Entity ids become object keys (`register.characters.thomas`, `itemInfo.bow`), type arguments
  * (`TCharacter<'thomas'>`), file names and the middle part of passage ids
  * (`<chapter>-<character>-<local>`), so they must be plain identifiers without `-` (plan §2).
+ * Same rule as the server's `ID_RE` (`Visualizer/server/src/project/story.ts`): a lower-case
+ * letter first, then letters, digits and `_`. On top of that the client refuses an id that
+ * differs from an existing one only in case (npc files are `<Id>.ts`).
  */
-export const ENTITY_ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
-
-const RESERVED = new Set(
-    (
-        'break case catch class const continue debugger default delete do else enum export extends false ' +
-        'finally for function if import in instanceof new null return super switch this throw true try ' +
-        'typeof var void while with yield let static implements interface package private protected ' +
-        'public await undefined NaN Infinity'
-    ).split(' ')
-);
+export const ENTITY_ID_RE = /^[a-z][A-Za-z0-9_]*$/;
 
 /** `null` when `id` is a valid new id of `kind`, else the reason (for the create dialog). */
 export const validateEntityId = (id: string, existing: readonly string[] = []): string | null => {
     if (id === '') return 'required';
     if (id.includes('-')) return 'dash';
     if (!ENTITY_ID_RE.test(id)) return 'identifier';
-    if (RESERVED.has(id)) return 'reserved';
     if (existing.some((e) => e.toLowerCase() === id.toLowerCase())) return 'exists';
     return null;
 };
@@ -74,6 +67,8 @@ export type TCreateForm = {
     description: string;
     /** items only */
     type: string;
+    /** items only: values of `ITEM_TYPE_PROPS[type]` (e.g. `hungerValue`, which `foodInfo` requires) */
+    props?: Record<string, number | string | boolean>;
 };
 
 /** The `POST /api/entities/:kind` body for the create dialog's fields. */
@@ -89,9 +84,24 @@ export const buildCreateBody = (kind: TEntityKind, form: TCreateForm): TCreateEn
         case 'locations':
             return { id, name, description: form.description } as TCreateEntityBody<'npcs'>;
         case 'items':
-            return { id, name, type: form.type, source: itemSourceForType(form.type) } as TCreateEntityBody;
+            return {
+                id,
+                name,
+                type: form.type,
+                source: itemSourceForType(form.type),
+                props: itemCreateProps(form.type, form.props),
+            } as TCreateEntityBody;
     }
 };
+
+/** The type's expected props (`ITEM_TYPE_PROPS`) with the dialog's values, defaulting to 0 / '' / false. */
+export const itemCreateProps = (type: string, values: TCreateForm['props'] = {}) =>
+    Object.fromEntries(
+        (ITEM_TYPE_PROPS[type] ?? []).map((p) => [
+            p.key,
+            values[p.key] ?? (p.kind === 'number' ? 0 : p.kind === 'boolean' ? false : ''),
+        ])
+    );
 
 /** Whether the create dialog asks for a description, and whether it must be filled. */
 export const createFields = (kind: TEntityKind) => ({

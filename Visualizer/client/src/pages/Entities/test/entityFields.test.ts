@@ -19,8 +19,10 @@ describe('entityFields', () => {
         expect(validateEntityId('old-man')).toBe('dash');
         expect(validateEntityId('2cool')).toBe('identifier');
         expect(validateEntityId('a b')).toBe('identifier');
-        expect(validateEntityId('class')).toBe('reserved');
-        expect(validateEntityId('Thomas', ['thomas'])).toBe('exists');
+        expect(validateEntityId('Thomas')).toBe('identifier');
+        expect(validateEntityId('_x')).toBe('identifier');
+        expect(validateEntityId('x_1Y')).toBeNull();
+        expect(validateEntityId('thomaS', ['thomas'])).toBe('exists');
     });
 
     it('places items by type', () => {
@@ -33,6 +35,7 @@ describe('entityFields', () => {
             name: 'apple',
             type: 'food',
             source: 'foodInfo',
+            props: { hungerValue: 0 },
         });
     });
 

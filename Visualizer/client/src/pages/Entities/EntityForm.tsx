@@ -33,7 +33,9 @@ import type { EntitiesStore } from './EntitiesStore';
 import {
     displayName,
     ITEM_TYPE_PROPS,
-    itemTypesForSource,
+    itemCreateProps,
+    itemSourceForType,
+    ITEM_TYPES,
 } from './entityFields';
 import {
     IdField,
@@ -384,8 +386,18 @@ const ItemFields = observer(
         item: TItemDto;
         errorsOf: (f: string) => string[];
     }) => {
-        const types = itemTypesForSource(item.source);
+        const types: string[] = [...ITEM_TYPES];
         if (!types.includes(item.type)) types.push(item.type);
+        const target = itemSourceForType(item.type);
+        const base = store.base as TItemDto | null;
+        // Changing the type to / from food or tool moves the item to another file (server side).
+        const setType = (type: string) => {
+            store.setField('type', type);
+            store.setField('props', {
+                ...itemCreateProps(type),
+                ...item.props,
+            });
+        };
         const known: TKnownField[] = (ITEM_TYPE_PROPS[item.type] ?? []).map(
             (p) => ({
                 key: p.key,
@@ -415,15 +427,16 @@ const ItemFields = observer(
                         select
                         size="small"
                         value={item.type}
-                        onChange={(e) => store.setField('type', e.target.value)}
+                        onChange={(e) => setType(e.target.value)}
                         helperText={
-                            types.length === 1
+                            base && target !== base.source
                                 ? _(
-                                      'Items in %s are always of this type.',
-                                      item.source
+                                      'Saving moves the item from %s to %s.',
+                                      base.source,
+                                      target
                                   )
                                 : _(
-                                      'Moving an item to another file (food, tool) is not supported here.'
+                                      'food goes to foodInfo, tool to toolInfo, the rest to itemInfo.'
                                   )
                         }
                         sx={{ maxWidth: 260 }}
