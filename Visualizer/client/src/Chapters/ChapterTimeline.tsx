@@ -1,5 +1,5 @@
 import { IconButton, styled, Tooltip } from '@mui/material';
-import { spacingCss, WholeContainer } from '@story/ui';
+import { spacingCss } from '@story/ui';
 import { useVisualizerStore } from '../context';
 import {
     MARKER_LINE_CLASS,
@@ -11,7 +11,7 @@ import { ZoomSlider } from '../components/ZoomSlider';
 import EditIcon from '@mui/icons-material/Edit';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
 import { observer } from 'mobx-react-lite';
-import { Nav, NavPicker } from '../components/Nav';
+import { ControlBar, PageContainer } from '../shell';
 
 export const ChapterTimeline = observer(() => {
     const store = useVisualizerStore().chapterStore;
@@ -34,13 +34,11 @@ export const ChapterTimeline = observer(() => {
         return () => {
             store.deinit();
         };
-    }, []);
+    }, [store]);
 
     return (
-        <WholeContainer>
-            <Nav>
-                <NavPicker />
-
+        <PageContainer>
+            <ControlBar>
                 <Tooltip
                     title={
                         store.dragMode
@@ -75,18 +73,18 @@ export const ChapterTimeline = observer(() => {
                     zoomLevel={store.zoomLevel}
                     setZoomLevel={store.setZoomLevel}
                 />
-            </Nav>
+            </ControlBar>
             <SMainCanvas ref={mainCanvasRef} />
             <STimelineCanvas ref={timelineCanvasRef} />
             <STimelineTimeMarker ref={markerRef} />
-        </WholeContainer>
+        </PageContainer>
     );
 });
 
 const SMainCanvas = styled('canvas')`
     flex: 1;
+    min-height: 0;
     overflow: hidden;
-    border-top: 1px solid grey;
     border-bottom: 1px solid grey;
 `;
 

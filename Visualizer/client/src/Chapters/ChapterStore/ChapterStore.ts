@@ -7,6 +7,7 @@ import { TimelineChapters } from './TimelineChapters/TimelineChapters';
 import { DurationHelper } from './DurationHelper';
 import { Store } from '../../stores/Store';
 import { createChapterModalContent } from '../createChapterModalContent';
+import { router } from '../../shell/router';
 
 export class ChapterStore {
     canvasManager: CanvasManager | null = null;
@@ -36,7 +37,7 @@ export class ChapterStore {
         this.timelineChapters = new TimelineChapters(
             this,
             this.canvasManager,
-            (id) => this.store.setActiveTab({ tab: 'chapter', chapterId: id }),
+            (id) => router.navigate({ page: 'chapter', chapterId: id }),
             (chapter) => this.store.setModalContent(createChapterModalContent(chapter))
         );
         this.timelineRender = new TimelineRender(timelineRef, markerRef, this.timeManager, this);

@@ -1,4 +1,4 @@
-import { Column, Header, spacingCss, WholeContainer } from '@story/ui';
+import { Column, Header, spacingCss } from '@story/ui';
 import { useEffect, useState } from 'react';
 import { MapStore } from './MapStore';
 import { useVisualizerStore } from '../context';
@@ -8,6 +8,7 @@ import { createDefaultMapData } from './createDefaultMapData';
 import { TopBar } from './components/TopBar';
 import { CircularProgress } from '@mui/material';
 import styled from '@emotion/styled';
+import { PageContainer } from '../shell';
 
 type Props = {
     mapId: string;
@@ -20,7 +21,7 @@ export const MapWrapper = ({ mapId }: Props) => {
     );
 
     useEffect(() => {
-        (async () => {
+        void (async () => {
             // for dev
             const data = createDefaultMapData(mapId, 'Untitled', 100, 100);
             setMapStore(new MapStore(store.canvasHandler, data));
@@ -33,7 +34,7 @@ export const MapWrapper = ({ mapId }: Props) => {
                 setMapStore(null);
             }
         })();
-    }, [mapId]);
+    }, [mapId, store.agent, store.canvasHandler]);
 
     const createNewMap = async (
         id: string,
@@ -48,7 +49,7 @@ export const MapWrapper = ({ mapId }: Props) => {
     };
 
     return (
-        <WholeContainer>
+        <PageContainer>
             <TopBar mapStore={mapStore} />
 
             {mapStore === undefined && <CircularProgress />}
@@ -62,7 +63,7 @@ export const MapWrapper = ({ mapId }: Props) => {
                     <ModalContent initId={mapId} onSubmit={createNewMap} />
                 </SColumn>
             )}
-        </WholeContainer>
+        </PageContainer>
     );
 };
 

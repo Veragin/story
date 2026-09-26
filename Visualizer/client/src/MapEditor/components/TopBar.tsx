@@ -1,6 +1,6 @@
 import { IconButton, Tooltip } from '@mui/material';
 import { useVisualizerStore } from '../../context';
-import { Nav, NavPicker } from '../../components/Nav';
+import { ControlBar } from '../../shell';
 import { ZoomSlider } from '../../components/ZoomSlider';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,13 +11,12 @@ type Props = {
     mapStore?: MapStore | null;
 };
 
+/** The map's controls, shown in the shell's control bar. */
 export const TopBar = observer(({ mapStore }: Props) => {
     const store = useVisualizerStore();
 
     return (
-        <Nav>
-            <NavPicker />
-
+        <ControlBar>
             <Tooltip
                 title={
                     mapStore?.editMode
@@ -46,6 +45,6 @@ export const TopBar = observer(({ mapStore }: Props) => {
                 zoomLevel={mapStore?.zoomLevel ?? 0}
                 setZoomLevel={mapStore?.setZoomLevel}
             />
-        </Nav>
+        </ControlBar>
     );
 });

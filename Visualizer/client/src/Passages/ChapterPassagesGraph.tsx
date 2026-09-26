@@ -3,7 +3,6 @@ import { useVisualizerStore } from '../context';
 import { useEffect, useRef } from 'react';
 import { assertNotNullish } from '@story/shared';
 import { TChapterId } from '@story/types';
-import { register } from '@story/data';
 import { GraphAnimationHandler } from '../GUIComponents/Graphs/animation/GraphAnimationHandler';
 import { CanvasManager } from '../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { GraphProvider } from '../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterPassageGraphProvider';
@@ -27,7 +26,6 @@ export const ChapterPassagesGraph = ({ chapterId }: Props) => {
 
         const initGraph = async () => {
             if (!isActive) return;
-            assertNotNullish(store.activeTab);
 
             // Clear previous graph and animation
             if (graphAnimationHandlerRef.current) {
@@ -35,27 +33,25 @@ export const ChapterPassagesGraph = ({ chapterId }: Props) => {
                 graphAnimationHandlerRef.current = null;
             }
 
-            if (register.passages[chapterId]) {
-                try {
-                    const graph = await GraphProvider.getGraph(
-                        chapterId,
-                        canvasManager,
-                        store
-                    );
+            try {
+                const graph = await GraphProvider.getGraph(
+                    chapterId,
+                    canvasManager,
+                    store
+                );
 
-                    if (!isActive) return;
+                if (!isActive) return;
 
-                    graphAnimationHandlerRef.current =
-                        new GraphAnimationHandler(graph, canvasManager);
-                    graphAnimationHandlerRef.current.isAnimating();
-                    graphAnimationHandlerRef.current.startAnimation();
-                } catch (error) {
-                    console.error('Failed to initialize graph:', error);
-                }
+                graphAnimationHandlerRef.current =
+                    new GraphAnimationHandler(graph, canvasManager);
+                graphAnimationHandlerRef.current.isAnimating();
+                graphAnimationHandlerRef.current.startAnimation();
+            } catch (error) {
+                console.error('Failed to initialize graph:', error);
             }
         };
 
-        initGraph();
+        void initGraph();
 
         return () => {
             isActive = false;
@@ -67,7 +63,7 @@ export const ChapterPassagesGraph = ({ chapterId }: Props) => {
                 graphAnimationHandlerRef.current = null;
             }
         };
-    }, [chapterId, store.activeTab, store]);
+    }, [chapterId, store]);
 
     return <SMainCanvas ref={mainCanvasRef} />;
 };

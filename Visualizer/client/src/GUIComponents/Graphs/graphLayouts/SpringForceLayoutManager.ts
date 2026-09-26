@@ -3,9 +3,8 @@ import { GraphLayoutManager } from './GraphLayoutManager';
 import { NodeVisualObject } from '../NodeVisualObject';
 import { Graph } from '../Graph';
 import { EdgeVisualObject } from '../EdgeVisualObject';
-import { LeftToRightInitializePositionStrategy } from './LeftToRightInitializePositionStrategy';
 import { DraggableVisualObject } from '../../Canvas/Node/DraggableVisualObject';
-import { CircularInitializePositionStrategy, InitializePositionStrategy } from './KamadaKawaiLayoutManager';
+import { CircularInitializePositionStrategy, InitializePositionStrategy } from './InitializePositionStrategy';
 import { PassageNodeVisualObject } from '../ChapterPassagesGraph/PassageNodeVisualObject';
 
 interface Force {
