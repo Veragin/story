@@ -1,34 +1,18 @@
 import { CanvasManager } from '../../../Canvas/CanvasManager/CanvasManager';
 import { Graph } from '../../Graph';
 import { GraphDeserializer } from './GraphDeserializer';
-import { GraphSerializer, SerializedGraph } from './GraphSerializer';
+import type { SerializedGraph } from './GraphSerializer';
 import { GraphActualizer } from '../actualizer/GraphActualizer';
 import { SpringForceLayoutManager } from '../../graphLayouts/SpringForceLayoutManager';
 import { Store } from '../../../../stores/Store';
 import { createPassageModalContent } from '../../../../Chapters/createPassageModalContent';
 import { ChapterPassagesGraphStorageManager } from './ChapterPassagesGraphStorageManager';
 import { PassageNodeVisualObject } from '../PassageNodeVisualObject';
-import { itemInfo, register, TRegisterPassageId } from '@story/data';
 import { PassageResolver } from './PassageResolver';
-import { createWorldState } from '@story/core';
-import type { TWorldState } from '@story/data';
-import type { Engine } from '@story/core';
 
 export class GraphProvider {
     private static readonly STORAGE_PREFIX = 'passage-graph-';
     private static graphActualizer: GraphActualizer = new GraphActualizer();
-    private static worldState: { s: TWorldState; e: Engine } | null = null;
-
-    /**
-     * The Visualizer owns its own world state / engine pair — it must never reach for
-     * SingleEngine's singleton. Built lazily so merely importing this module stays side-effect free.
-     */
-    private static getWorldState(): { s: TWorldState; e: Engine } {
-        if (this.worldState === null) {
-            this.worldState = createWorldState(register, itemInfo);
-        }
-        return this.worldState;
-    }
 
     static async getGraph(chapterId: string, canvasManager: CanvasManager, store: Store): Promise<Graph> {
         // First check if graph exists in memory
@@ -81,29 +65,18 @@ export class GraphProvider {
 
     private static setupGraph(chapterId: string, graph: Graph, store: Store): void {
         this.setupGraphAutoSave(chapterId, graph);
-        this.setupToolsWindow(chapterId, graph, store);
+        this.setupToolsWindow(graph, store);
     }
 
-    private static async setupToolsWindow(chapterId: string, graph: Graph, store: Store): Promise<void> {
-        // Validate chapterId is a valid passage key
-        if (!(chapterId in register.passages)) {
-            console.error(`Chapter '${chapterId}' not found in register.passages`);
-            return;
-        }
-
-        const typedChapterId = chapterId as TRegisterPassageId;
-
-        // Preload all passages for this chapter
-        await PassageResolver.preloadChapterPassages(typedChapterId);
-
+    /** Clicking a passage box opens its modal. Passages come from the api, never from `@story/data`. */
+    private static setupToolsWindow(graph: Graph, store: Store): void {
         for (const node of graph.getAllNodes()) {
             if (node instanceof PassageNodeVisualObject) {
-                const passageNodeRef = node as PassageNodeVisualObject;
-
-                passageNodeRef.onClick.subscribe(async () => {
-                    const { s, e } = this.getWorldState();
-                    const passage = await PassageResolver.getPassage(typedChapterId, passageNodeRef.passageId, s, e);
-                    store.setModalContent(createPassageModalContent(passage));
+                node.onClick.subscribe(() => {
+                    PassageResolver.getPassage(node.passageId).then(
+                        (passage) => store.setModalContent(createPassageModalContent(passage)),
+                        (error: unknown) => console.error(`Failed to load passage ${node.passageId}:`, error)
+                    );
                 });
             }
         }

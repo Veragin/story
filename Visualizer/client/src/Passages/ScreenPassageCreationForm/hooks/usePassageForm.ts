@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showToast } from '@story/ui';
-import { TChapterId, TChapterPassageType } from '@story/types';
+import { TChapterId } from '@story/types';
 import { PassageResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/PassageResolver';
 import { ChapterResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TLinkCost, TPassageFormData } from '../types';
 import { Agent } from '../../../stores/Agent';
-import { TScreenPassageData } from '../../../stores/nodeServerTypes';
+import type { TScreenPassageData } from '../../../stores/Agent';
 
 export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
     const [formData, setFormData] = useState<TPassageFormData>({
@@ -44,7 +44,7 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
                                 allPassageIds.push(`${evId}-${pId}`);
                             }
                         });
-                    } catch (error) {
+                    } catch {
                         // Chapter might not have passages, skip
                     }
                 }
@@ -57,17 +57,17 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
             }
         };
 
-        fetchPassageIds();
+        void fetchPassageIds();
     }, [chapterId]);
 
-    const handleInputChange = useCallback((field: string, value: any) => {
+    const handleInputChange = useCallback((field: string, value: unknown) => {
         setFormData((prev) => ({
             ...prev,
             [field]: value,
         }));
     }, []);
 
-    const handleBodyItemChange = useCallback((index: number, field: string, value: any) => {
+    const handleBodyItemChange = useCallback((index: number, field: string, value: unknown) => {
         setFormData((prev) => ({
             ...prev,
             body: prev.body.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
@@ -88,7 +88,7 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
         }));
     }, []);
 
-    const handleLinkChange = useCallback((bodyIndex: number, linkIndex: number, field: string, value: any) => {
+    const handleLinkChange = useCallback((bodyIndex: number, linkIndex: number, field: string, value: unknown) => {
         setFormData((prev) => ({
             ...prev,
             body: prev.body.map((item, i) =>
@@ -181,7 +181,6 @@ export const usePassageForm = (chapterId: TChapterId, agent: Agent) => {
         try {
             // Create properly typed TScreenPassageData object
             const passageData: TScreenPassageData = {
-                type: 'screen' as TChapterPassageType,
                 chapterId: chapterId,
                 characterId: formData.character,
                 id: passageId.trim(),

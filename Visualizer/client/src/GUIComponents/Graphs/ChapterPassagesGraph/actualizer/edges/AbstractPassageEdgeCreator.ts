@@ -1,9 +1,10 @@
 import { TLineType } from '../../../EdgeVisualObject';
 import { NodeVisualObject } from '../../../NodeVisualObject';
 import { PassageEdgeVisualObject } from '../../PassageEdgeVisualObject';
+import type { TGraphPassage } from '../graphPassage';
 
 export type EdgeCreationParams = {
-    passage: any;
+    passage: TGraphPassage;
     passageId: string;
     sourceNode: NodeVisualObject;
     getTargetNode: (targetId: string) => NodeVisualObject | undefined;

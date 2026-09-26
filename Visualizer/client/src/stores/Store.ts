@@ -1,34 +1,29 @@
 import { TimeManager } from '@story/shared';
-import { TChapterId } from '@story/types';
 import { ChapterStore } from '../Chapters/ChapterStore/ChapterStore';
 import { action, makeObservable, observable } from 'mobx';
 import { CanvasHandler } from './CanvasHandler';
 import { Agent } from './Agent';
+import { api, type TVisualizerApi } from '../api';
 import { ReactNode } from 'react';
 
 export class Store {
     chapterStore: ChapterStore;
     canvasHandler: CanvasHandler;
+    /** The typed Visualizer API (`client/src/api`) — real server via the `/api` proxy, or the mock. */
+    api: TVisualizerApi = api;
+    /** Legacy adapter over `api` for the pre-WP1 forms and map page. */
     agent: Agent;
 
     constructor(public timeManager: TimeManager) {
-        this.agent = new Agent('http://localhost:3123');
+        this.agent = new Agent(this.api);
         this.chapterStore = new ChapterStore(timeManager, this);
         this.canvasHandler = new CanvasHandler(document.body, this);
 
         makeObservable(this, {
-            activeTab: observable,
             modalContent: observable.ref,
-            setActiveTab: action,
             setModalContent: action,
         });
     }
-
-    activeTab: TActiveTab = null;
-    setActiveTab = (tab: TActiveTab | null) => {
-        this.activeTab = tab;
-        this.modalContent = null;
-    };
 
     updateSize = (width: number, height: number) => {
         this.chapterStore.durationHelper.size.width = width;
@@ -47,20 +42,3 @@ export class Store {
         this.chapterStore.deinit();
     };
 }
-
-type TActiveTab =
-    | null
-    | {
-          tab: 'chapters';
-      }
-    | {
-          tab: 'chapter';
-          chapterId: TChapterId;
-      }
-    | {
-          tab: 'map';
-          mapId: string;
-      }
-    | {
-          tab: 'worldEvents';
-      };

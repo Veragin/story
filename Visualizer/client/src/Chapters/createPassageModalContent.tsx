@@ -2,29 +2,27 @@ import { Button, styled, Tooltip } from '@mui/material';
 import { Column, Modal, Row, spacingCss, Text } from '@story/ui';
 import { useVisualizerStore } from '../context';
 import { ReactNode, useState } from 'react';
-import { getWholePassageId, TChapterId, TChapterPassage } from '@story/types';
+import type { TPassageDto } from '@story/visualizer-protocol';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-export const createPassageModalContent = (
-    passage: TChapterPassage<TChapterId>
-): ReactNode => <PassageModalContent passage={passage} />;
+export const createPassageModalContent = (passage: TPassageDto): ReactNode => (
+    <PassageModalContent passage={passage} />
+);
 
-const PassageModalContent = ({
-    passage,
-}: {
-    passage: TChapterPassage<TChapterId>;
-}) => {
+const PassageModalContent = ({ passage }: { passage: TPassageDto }) => {
     const [open, setOpen] = useState(false);
     const store = useVisualizerStore();
-    const passageId = getWholePassageId(passage);
+    const { passageId } = passage;
     return (
         <SColumn>
             <Tooltip title={_('Copy to clipboard')} placement="top">
                 <SText
-                    onClick={() => navigator.clipboard.writeText(passage.id)}
+                    onClick={() =>
+                        void navigator.clipboard.writeText(passageId)
+                    }
                 >
-                    {passage.id}
+                    {passageId}
                 </SText>
             </Tooltip>
             <SRow>
@@ -32,7 +30,7 @@ const PassageModalContent = ({
                     <Button
                         variant="outlined"
                         color="inherit"
-                        onClick={() => store.agent.openPassage(passageId)}
+                        onClick={() => void store.agent.openPassage(passageId)}
                     >
                         <OpenInBrowserIcon />
                     </Button>
@@ -48,7 +46,7 @@ const PassageModalContent = ({
                 </Tooltip>
             </SRow>
             <Modal
-                title={_('Delete passage %s', passage.id)}
+                title={_('Delete passage %s', passageId)}
                 open={open}
                 onClose={() => setOpen(false)}
             >
@@ -56,7 +54,7 @@ const PassageModalContent = ({
                     <Text>
                         {_(
                             'Are you sure that you want to delete %s passage?',
-                            passage.id
+                            passageId
                         )}
                     </Text>
                     <SRow>

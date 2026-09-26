@@ -6,8 +6,8 @@ export class LinearPassageEdgeCreator extends AbstractPassageEdgeCreator {
         const { passage, sourceNode, getTargetNode } = params;
         const edges: PassageEdgeVisualObject[] = [];
 
-        if (passage.nextPassageId) {
-            const targetNode = getTargetNode(passage.nextPassageId);
+        if (passage.next) {
+            const targetNode = getTargetNode(passage.next);
             if (targetNode) {
                 edges.push(
                     this.createEdge({

@@ -3,7 +3,7 @@ import { showToast } from '@story/ui';
 import { ChapterResolver } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/ChapterResolcer';
 import { TChapterFormData, TTimeRange, DEFAULT_FORM_DATA, validateTimeRange, validateChildren } from '../types';
 import { Agent } from '../../../stores/Agent';
-import { TChapterData } from '../../../stores/nodeServerTypes';
+import type { TChapterData } from '../../../stores/Agent';
 
 export const useChapterForm = (agent: Agent) => {
     const [formData, setFormData] = useState<TChapterFormData>(DEFAULT_FORM_DATA);
@@ -13,7 +13,7 @@ export const useChapterForm = (agent: Agent) => {
 
     // Fetch existing chapter IDs on mount
     useEffect(() => {
-        const fetchChapterIds = async () => {
+        const fetchChapterIds = () => {
             try {
                 const ids = ChapterResolver.getAvailableChapterIds();
                 setExistingChapterIds(ids);
@@ -26,7 +26,7 @@ export const useChapterForm = (agent: Agent) => {
         fetchChapterIds();
     }, []);
 
-    const handleInputChange = useCallback((field: keyof TChapterFormData, value: any) => {
+    const handleInputChange = useCallback((field: keyof TChapterFormData, value: unknown) => {
         setFormData((prev) => ({
             ...prev,
             [field]: value,

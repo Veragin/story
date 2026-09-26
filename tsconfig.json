@@ -10,7 +10,8 @@
             "@story/ui": ["ui/src/index.ts"],
             "@story/core": ["core/src/index.ts"],
             "@story/data": ["data/index.ts"],
-            "@story/data/*": ["data/*"]
+            "@story/data/*": ["data/*"],
+            "@story/visualizer-protocol": ["Visualizer/protocol/src/index.ts"]
 
             /* No legacy `baseUrl: src` aliases are left: `src/` is gone as of Phase 8 and
                every app resolves its own files relatively, inside its own workspace.
@@ -41,7 +42,15 @@
            `tsc --noEmit` over the whole graph and an unchecked workspace is worse than an
            over-permissive one. `MultiEngine/server/tsconfig.json` is the stricter, DOM-less
            view of the same files for editors and eslint. */
-        "MultiEngine/server/src"
+        "MultiEngine/server/src",
+
+        /* The Visualizer's wire contract and its node server (plan WP1). Same trade-off as the
+           MultiEngine server above: node-land checked under the browser libs here, and strictly
+           (no DOM, node types) by `Visualizer/server/tsconfig.json`. The server's tests are
+           package source like `core/test`, so they are listed too. */
+        "Visualizer/protocol/src",
+        "Visualizer/server/src",
+        "Visualizer/server/test"
     ],
     "exclude": [
         "node_modules",

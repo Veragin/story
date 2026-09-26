@@ -3,7 +3,6 @@ import { BorderConfig } from '../../Canvas/Node/BorderConfig';
 import { HorizontallyScalableNodeVisualObject } from '../../Canvas/Node/HorizontallyScalableNodeVisualObject';
 import { nodeVisualObjectProperties } from '../NodeVisualObject';
 import { VisualObject } from '../../Canvas/Node/VisualObject';
-import { TRegisterPassageId } from '@story/data';
 
 export const selectableVisualProperties = {
     isSelected: 'isSelected',
@@ -13,7 +12,7 @@ export const selectableVisualProperties = {
 
 export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObject {
     private _isSelected: boolean = false;
-    readonly passageId: TRegisterPassageId;
+    readonly passageId: string;
 
     get isSelected(): boolean {
         return this._isSelected;
@@ -36,7 +35,7 @@ export class PassageNodeVisualObject extends HorizontallyScalableNodeVisualObjec
     }
 
     constructor(
-        passageId: TRegisterPassageId,
+        passageId: string,
         realPosition: TPoint,
         size: TSize,
         border: BorderConfig,

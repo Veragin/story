@@ -1,4 +1,5 @@
-import { TCharacterId } from '@story/types';
+import type { TCharacterId } from '@story/types';
+import type { TGraphPassages } from './graphPassage';
 
 export class ColorManager {
     private static readonly colorPalette = [
@@ -14,14 +15,11 @@ export class ColorManager {
 
     private characterColors: Map<TCharacterId, string> = new Map();
 
-    initializeCharacterColors(passages: Record<TCharacterId, any>): void {
+    initializeCharacterColors(passages: TGraphPassages): void {
         const characterIds = new Set<TCharacterId>();
 
-        for (const passageId of Object.keys(passages)) {
-            const parts = passageId.split('-');
-            if (parts.length >= 2) {
-                characterIds.add(parts[1] as TCharacterId);
-            }
+        for (const passage of Object.values(passages)) {
+            characterIds.add(passage.characterId as TCharacterId);
         }
 
         Array.from(characterIds).forEach((characterId, index) => {

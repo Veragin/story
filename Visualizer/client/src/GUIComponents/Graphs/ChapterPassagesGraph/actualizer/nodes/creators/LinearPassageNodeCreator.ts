@@ -1,13 +1,12 @@
-import { TRegisterPassageId } from '@story/data';
 import { PassageNodeVisualObject } from '../../../PassageNodeVisualObject';
 import { AbstractPassageNodeCreator } from '../AbstractPassageNodeCreator';
-import { TCharacterId } from '@story/types';
+import type { TCharacterId } from '@story/types';
+import type { TGraphPassage } from '../../graphPassage';
 
 export class LinearPassageNodeCreator extends AbstractPassageNodeCreator {
-    async create(passageId: TRegisterPassageId, passage: any): Promise<PassageNodeVisualObject> {
-        const characterId = passageId.split('-')[1] as TCharacterId;
-        const backgroundColor = this.colorManager.getCharacterColor(characterId);
-        const title = passage.title || passageId;
+    create(passage: TGraphPassage): PassageNodeVisualObject {
+        const backgroundColor = this.colorManager.getCharacterColor(passage.characterId as TCharacterId);
+        const title = passage.title || passage.passageId;
 
         const position = { x: 0, y: 0 };
         const size = this.calculateDimensions(title, AbstractPassageNodeCreator.DEFAULT_FONT);
@@ -19,7 +18,7 @@ export class LinearPassageNodeCreator extends AbstractPassageNodeCreator {
         });
 
         const node = new PassageNodeVisualObject(
-            passageId,
+            passage.passageId,
             position,
             size,
             {

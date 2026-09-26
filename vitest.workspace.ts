@@ -51,4 +51,24 @@ export default defineWorkspace([
             include: ['test/**/*.test.ts'],
         },
     },
+    {
+        // The Visualizer's node server. Every test runs against a temp project dir passed as a
+        // `ProjectRoot` (the programmatic `STORY_ROOT`), never the real data/ and types/ (plan §5).
+        test: {
+            name: 'visualizer-server',
+            root: './Visualizer/server',
+            environment: 'node',
+            include: ['test/**/*.test.ts'],
+        },
+    },
+    {
+        // The React client. jsdom has no 2D canvas, so the setup file stubs `getContext`.
+        test: {
+            name: 'visualizer-client',
+            root: './Visualizer/client',
+            environment: 'jsdom',
+            include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+            setupFiles: ['./src/canvas/test/setup.ts'],
+        },
+    },
 ]);

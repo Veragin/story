@@ -1,7 +1,6 @@
-import { TRegisterPassageId } from '@story/data';
 import { NodeVisualObject } from '../../../NodeVisualObject';
-import { worldStateCopy } from '../../WorldStateCopy';
 import { ColorManager } from '../ColorManager';
+import type { TGraphPassage } from '../graphPassage';
 import { LinearPassageNodeCreator } from './creators/LinearPassageNodeCreator';
 import { ScreenPassageNodeCreator } from './creators/ScreenPassageNodeCreator';
 import { TransitionPassageNodeCreator } from './creators/TransitionPassageNodeCreator';
@@ -17,18 +16,16 @@ export class NodeFactory {
         this.linearNodeCreator = new LinearPassageNodeCreator(colorManager);
     }
 
-    async createNode(passageId: TRegisterPassageId, passageData: any): Promise<NodeVisualObject | undefined> {
-        const passage = typeof passageData === 'function' ? passageData(worldStateCopy) : passageData;
-
+    createNode(passage: TGraphPassage): NodeVisualObject | undefined {
         switch (passage.type) {
             case 'screen':
-                return this.screenNodeCreator.create(passageId, passage);
+                return this.screenNodeCreator.create(passage);
             case 'transition':
-                return this.transitionNodeCreator.create(passageId, passage);
+                return this.transitionNodeCreator.create(passage);
             case 'linear':
-                return this.linearNodeCreator.create(passageId, passage);
+                return this.linearNodeCreator.create(passage);
             default:
-                console.warn(`Unknown passage type: ${passage.type}`);
+                console.warn(`Unknown passage type: ${(passage as TGraphPassage).type}`);
                 return undefined;
         }
     }

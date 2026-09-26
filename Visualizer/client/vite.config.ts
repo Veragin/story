@@ -8,8 +8,17 @@ const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 /** The monorepo root. Everything this app imports lives under it, none of it under `root`. */
 const repoRoot = at('../..');
 
-/** The internal packages this app pulls source out of — all of them outside `root`. */
-const siblingPackages = ['../../types', '../../data', '../../shared', '../../ui', '../../core'].map(at);
+/**
+ * The internal packages this app pulls source out of — all of them outside `root`.
+ *
+ * `data/` (and `core/`) are deliberately NOT here (Visualizer plan §3 "Live refresh", point 1):
+ * the Visualizer never runs the story, it gets it from `Visualizer/server` over `/api`. If
+ * `data/` were watched, or in the module graph, every edit of a story file — by hand or by the
+ * server — would fully reload the page and lose the camera, selection and unsaved input. The
+ * lint rule in `eslint.config.js` keeps runtime `@story/data` / `@story/core` imports out of the
+ * client; `types/` stays, because type-only imports resolve through it.
+ */
+const siblingPackages = ['../../types', '../../shared', '../../ui', '../protocol'].map(at);
 
 /**
  * Vite seeds its watcher with `root` only; anything outside is added lazily, the first time a
@@ -54,14 +63,10 @@ export default defineConfig({
             { find: '@story/ui/index.css', replacement: at('../../ui/src/index.css') },
             { find: '@story/ui', replacement: at('../../ui/src/index.ts') },
 
-            // `@story/data` publishes `"./*"`: the author's tree is the public surface (§5),
-            // so deep paths resolve by pattern instead of an enumerated list that would go
-            // stale every time the story grows a folder.
-            { find: /^@story\/data\/assets$/, replacement: at('../../data/assets/index.ts') },
-            { find: /^@story\/data\/(.+)$/, replacement: at('../../data/') + '$1' },
-            { find: '@story/data', replacement: at('../../data/index.ts') },
+            // No `@story/data` / `@story/core` aliases on purpose: the client imports them
+            // type-only (Visualizer plan §3 "Live refresh"), so they must never be resolved.
 
-            { find: '@story/core', replacement: at('../../core/src/index.ts') },
+            { find: '@story/visualizer-protocol', replacement: at('../protocol/src/index.ts') },
             { find: '@story/types', replacement: at('../../types/index.ts') },
             { find: '@story/shared', replacement: at('../../shared/src/index.ts') },
         ],
@@ -79,6 +84,17 @@ export default defineConfig({
         // `ignored` keeps that from dragging in the workspace symlink farm or build output.
         watch: {
             ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+        },
+        /**
+         * `Visualizer/server` (plan §1): every API call is same-origin `/api/...`, so the
+         * client has no hard-coded server URL and no CORS. Includes the `/api/events` SSE stream
+         * (http-proxy streams it through unbuffered). `VISUALIZER_SERVER` overrides the target.
+         */
+        proxy: {
+            '/api': {
+                target: process.env.VISUALIZER_SERVER ?? 'http://localhost:8123',
+                changeOrigin: true,
+            },
         },
     },
     esbuild: {

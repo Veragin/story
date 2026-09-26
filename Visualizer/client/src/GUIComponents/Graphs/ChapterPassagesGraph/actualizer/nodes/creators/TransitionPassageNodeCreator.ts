@@ -1,15 +1,16 @@
-import { register, TRegisterPassageId } from '@story/data';
 import { PassageNodeVisualObject } from '../../../PassageNodeVisualObject';
 import { AbstractPassageNodeCreator } from '../AbstractPassageNodeCreator';
-import { TWorldState } from '@story/data';
+import type { TCharacterId } from '@story/types';
+import type { TGraphPassage } from '../../graphPassage';
 
 export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {
-    async create(passageId: TRegisterPassageId, passage: any): Promise<PassageNodeVisualObject> {
-        const title = await this.getTransitionTitle(passageId, passage);
-        const parts = passage.nextPassageId.split('-');
-        const characterId = parts[1];
+    create(passage: TGraphPassage): PassageNodeVisualObject {
+        // `PassageLoader` titles a transition by where it leads, and leaves it empty when the
+        // target does not exist — that is what the red border flags.
+        const title = passage.nextResolved ? passage.title : '';
         const borderColor = title ? '#666666' : '#ff0000';
-        const displayTitle = title || passage.id;
+        const displayTitle = title || passage.localId;
+        const characterId = (passage.next?.split('-')[1] ?? passage.characterId) as TCharacterId;
 
         const backgroundColor = this.colorManager.getCharacterColor(characterId);
         const position = { x: 0, y: 0 };
@@ -22,7 +23,7 @@ export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {
         });
 
         const node = new PassageNodeVisualObject(
-            passageId,
+            passage.passageId,
             position,
             size,
             {
@@ -38,29 +39,5 @@ export class TransitionPassageNodeCreator extends AbstractPassageNodeCreator {
         this.setupNodeInteractions(node);
 
         return node;
-    }
-
-    private async getTransitionTitle(passageId: string, passage: any): Promise<string> {
-        const parts = passage.nextPassageId.split('-');
-        if (parts.length < 2) return passageId;
-
-        const chapterId = parts[0];
-        const linkPassageModule = await register.passages[chapterId as keyof typeof register.passages]();
-        const linkPassages = linkPassageModule.default;
-        const linkPassageData = linkPassages[passageId as keyof typeof linkPassages];
-
-        if (typeof linkPassageData === 'function') {
-            const [linkPassageId, linkEventDataFunction] = Object.entries(linkPassages)[0];
-            const linkPassage = (linkEventDataFunction as (worldState: TWorldState) => any)({} as TWorldState);
-            const linkChapterId = linkPassageId.split('-')[0];
-            const linkChapter = register.chapters[linkChapterId as keyof typeof register.chapters];
-
-            if (linkChapter) {
-                return `${linkChapter.title} - ${linkPassage.title || linkPassageId}`;
-            }
-            return linkPassage.title || linkPassageId;
-        }
-
-        return '';
     }
 }

@@ -1,8 +1,7 @@
-import { TRegisterPassageId } from '@story/data';
 import { Graph } from '../../../Graph';
 import { NodeVisualObject } from '../../../NodeVisualObject';
 import { PassageNodeVisualObject } from '../../PassageNodeVisualObject';
-import { worldStateCopy } from '../../WorldStateCopy';
+import type { TGraphPassages } from '../graphPassage';
 import { NodeFactory } from './NodeFactory';
 
 interface NodeActualizationResult {
@@ -13,10 +12,10 @@ interface NodeActualizationResult {
 export class NodeActualizer {
     constructor(private readonly nodeFactory: NodeFactory) {}
 
-    async actualizeNodes(graph: Graph, passages: Record<string, any>): Promise<NodeActualizationResult> {
+    actualizeNodes(graph: Graph, passages: TGraphPassages): NodeActualizationResult {
         const analysisResult = this.analyzeExistingNodes(graph, passages);
-        await this.removeObsoleteNodes(graph, analysisResult.nodesToRemove);
-        await this.addMissingNodes(graph, passages, analysisResult);
+        this.removeObsoleteNodes(graph, analysisResult.nodesToRemove);
+        this.addMissingNodes(graph, passages, analysisResult);
 
         return {
             existingNodes: analysisResult.existingNodes,
@@ -26,7 +25,7 @@ export class NodeActualizer {
 
     private analyzeExistingNodes(
         graph: Graph,
-        passages: Record<string, any>
+        passages: TGraphPassages
     ): {
         existingNodes: Record<string, NodeVisualObject>;
         nodesToRemove: Set<string>;
@@ -39,7 +38,7 @@ export class NodeActualizer {
         const currentPassageIds = new Set(Object.keys(passages));
 
         // Analyze existing nodes
-        for (const [nodeId, node] of Object.entries(graph.getAllNodes())) {
+        for (const node of Object.values(graph.getAllNodes())) {
             const passageNode = node as PassageNodeVisualObject;
 
             if (passageIdsPresented.has(passageNode.passageId) || !currentPassageIds.has(passageNode.passageId)) {
@@ -60,36 +59,30 @@ export class NodeActualizer {
         };
     }
 
-    private async removeObsoleteNodes(graph: Graph, nodesToRemove: Set<string>): Promise<void> {
+    private removeObsoleteNodes(graph: Graph, nodesToRemove: Set<string>): void {
         for (const nodeId of nodesToRemove) {
             graph.removeNode(nodeId);
         }
     }
 
-    private async addMissingNodes(
+    private addMissingNodes(
         graph: Graph,
-        passages: Record<string, any>,
+        passages: TGraphPassages,
         analysisResult: {
             existingNodes: Record<string, NodeVisualObject>;
             passageIdsPresented: Set<string>;
         }
-    ): Promise<void> {
+    ): void {
         const { existingNodes, passageIdsPresented } = analysisResult;
 
-        for (const [passageId, passageData] of Object.entries(passages)) {
+        for (const [passageId, passage] of Object.entries(passages)) {
             if (passageIdsPresented.has(passageId)) continue;
 
-            const node = await this.createNode(passageId, passageData);
+            const node = this.nodeFactory.createNode(passage);
             if (node) {
                 graph.addNode(node, passageId);
                 existingNodes[passageId] = node;
             }
         }
-    }
-
-    private async createNode(passageId: string, passageData: any): Promise<NodeVisualObject | undefined> {
-        const passage = typeof passageData === 'function' ? passageData(worldStateCopy) : passageData;
-
-        return this.nodeFactory.createNode(passageId as TRegisterPassageId, passage);
     }
 }

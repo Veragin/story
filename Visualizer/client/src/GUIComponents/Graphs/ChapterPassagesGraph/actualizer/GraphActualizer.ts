@@ -22,9 +22,9 @@ export class GraphActualizer {
         // Initialize colors for new passage nodes
         this.colorManager.initializeCharacterColors(currentPassages);
 
-        const nodeResult = await this.nodeActualizer.actualizeNodes(graph, currentPassages);
+        this.nodeActualizer.actualizeNodes(graph, currentPassages);
 
-        await this.edgeActualizer.actualizeEdges(graph, currentPassages, nodeResult.existingNodes);
+        this.edgeActualizer.actualizeEdges(graph, currentPassages);
 
         return graph;
     }

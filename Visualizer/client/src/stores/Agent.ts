@@ -1,279 +1,198 @@
 import { showToast } from '@story/ui';
-import { TChapterPassageType, TLocationId } from '@story/types';
-import { TMapData } from '../MapEditor/types';
-import { TypeConverters } from './TypeConverters';
-import { HttpErrorHandler } from './HttpErrorHandler';
-import { MapResponse, TChapterData, TScreenPassageData } from './nodeServerTypes';
+import type { DeltaTime } from '@story/shared';
+import {
+    GLOBAL_MAP_ID,
+    type TBodyItemDto,
+    type TLinkCostDto,
+    type TLinkDto,
+    type TMapDto,
+    type TMapFile,
+} from '@story/visualizer-protocol';
+import { ApiError, type TVisualizerApi } from '../api';
+import type { TMapData } from '../MapEditor/types';
 
 /**
- * Agent class for handling API communication with the WorldsFactory backend
+ * **Legacy adapter** kept so the pre-WP1 forms and the map page keep working unchanged: it maps
+ * their old call shapes onto the typed `api` (`client/src/api`). It replaces the old `Agent`,
+ * `TypeConverters`, `HttpErrorHandler` and `nodeServerTypes`, which spoke a route list the server
+ * never had and a hard-coded `http://localhost:3123`.
+ *
+ * New code should call `store.api` directly; this class goes away with the pages that use it
+ * (WP4 map, WP5 timeline, WP6 chapter view).
  */
-export class Agent {
-    constructor(public url: string) {}
 
-    /**
-     * Add or update an chapter
-     */
+/** What the chapter creation form produces. */
+export type TChapterData = {
+    title: string;
+    description: string;
+    location: string;
+    timeRange: { start: string; end: string };
+    children?: Array<{ condition: string; chapterId: string }>;
+};
+
+/** What the screen passage creation form produces. */
+export type TScreenPassageData = {
+    chapterId: string;
+    characterId: string;
+    /** Local id (`intro`), not the full passage id. */
+    id: string;
+    title: string;
+    image: string;
+    body: Array<{
+        text?: string;
+        redirect?: string;
+        links?: Array<{
+            text: string;
+            passageId: string;
+            autoPriority: number;
+            cost?: { time?: DeltaTime; items?: { id: string; amount: number }[]; tools?: string[] };
+        }>;
+    }>;
+};
+
+const DEFAULT_TIME_RANGE = { start: '2.2. 12:00', end: '2.2. 14:00' };
+
+const errorText = (error: unknown, fallback: string) => {
+    if (error instanceof ApiError && error.isNotImplemented) {
+        return _('%s: the Visualizer server does not implement this yet', fallback);
+    }
+    return error instanceof Error ? `${fallback}: ${error.message}` : fallback;
+};
+
+const toCostDto = (cost: NonNullable<TScreenPassageData['body'][number]['links']>[number]['cost']) => {
+    if (!cost) return undefined;
+    const dto: TLinkCostDto = {};
+    if (cost.time) dto.time = { seconds: cost.time.s };
+    if (cost.items?.length) dto.items = cost.items;
+    if (cost.tools?.length) dto.tools = cost.tools;
+    return Object.keys(dto).length > 0 ? dto : undefined;
+};
+
+/** The map editor's `TMapData` ↔ the protocol's `TMapDto` (`label` is the same field; `locations` changed shape). */
+export const mapDtoToMapData = (dto: TMapDto): TMapData => ({
+    mapId: dto.mapId,
+    title: dto.title,
+    width: dto.width,
+    height: dto.height,
+    data: dto.data.map((row) => row.map((tile) => ({ tile: tile.tile, label: tile.label }))),
+    locations: [],
+    maps: dto.maps,
+    palette: dto.palette,
+});
+
+export const mapDataToMapFile = (data: TMapData, previous?: TMapDto): TMapFile => ({
+    mapId: data.mapId,
+    title: data.title,
+    width: data.width,
+    height: data.height,
+    data: data.data.map((row, i) =>
+        row.map((tile, j) => ({
+            ...previous?.data[i]?.[j],
+            tile: tile.tile,
+            label: tile.label,
+        }))
+    ),
+    palette: data.palette,
+    locations: previous?.locations ?? {},
+    maps: data.maps,
+});
+
+export class Agent {
+    /** The last map DTO seen per map id — its version is what the next save is based on. */
+    private maps = new Map<string, TMapDto>();
+
+    constructor(public api: TVisualizerApi) {}
+
+    /** Create a chapter (the old "add or update" endpoint only ever created). */
     updateChapter = async (chapterId: string, data: TChapterData) => {
         try {
-            const serverData = TypeConverters.chapterDataToUpdateRequest(data);
-
-            console.log(`Adding chapter ${chapterId} with data:`, serverData);
-
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/chapter/${chapterId}`,
-                {
-                    method: 'PUT',
-                    body: JSON.stringify(serverData),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+            await this.api.createChapter({
+                chapterId,
+                title: data.title,
+                description: data.description,
+                location: data.location,
+                timeRange: {
+                    start: data.timeRange.start || DEFAULT_TIME_RANGE.start,
+                    end: data.timeRange.end || DEFAULT_TIME_RANGE.end,
                 },
-                `add chapter ${chapterId}`
-            );
-
+            });
             showToast(_('Chapter %s added', chapterId), { variant: 'success' });
         } catch (error) {
             console.error('Add chapter error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to add chapter ${chapterId}`;
-            showToast(errorMessage, { variant: 'error' });
+            showToast(errorText(error, _('Failed to add chapter %s', chapterId)), { variant: 'error' });
+            throw error;
         }
     };
 
-    /**
-     * Open an chapter in VS Code
-     */
     openChapter = async (chapterId: string) => {
         try {
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/chapter/${chapterId}/open`,
-                {
-                    method: 'POST',
-                },
-                `open chapter ${chapterId}`
-            );
-
-            showToast(_('Chapter %s opened', chapterId), { variant: 'success' });
+            await this.api.openChapter(chapterId);
         } catch (error) {
-            console.error('Open chapter error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to open chapter ${chapterId}`;
-            showToast(errorMessage, { variant: 'error' });
+            showToast(errorText(error, _('Failed to open chapter %s', chapterId)), { variant: 'error' });
         }
     };
 
-    /**
-     * Delete an chapter
-     */
-    deleteChapter = async (chapterId: string) => {
+    openPassage = async (passageId: string) => {
         try {
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/chapter/${chapterId}`,
-                {
-                    method: 'DELETE',
-                },
-                `delete chapter ${chapterId}`
-            );
-
-            showToast(_('Chapter %s deleted', chapterId), { variant: 'success' });
+            await this.api.openPassage(passageId);
         } catch (error) {
-            console.error('Delete chapter error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to delete chapter ${chapterId}`;
-            showToast(errorMessage, { variant: 'error' });
+            showToast(errorText(error, _('Failed to open passage %s', passageId)), { variant: 'error' });
         }
     };
 
-    /**
-     * Set time range for an chapter
-     */
-    setChapterTime = async (chapterId: string, data: { timeRange: { start: string; end: string } }) => {
-        try {
-            const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
-
-            console.log(`Setting time for chapter ${chapterId} with data:`, serverData);
-
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/chapter/${chapterId}/setTime`,
-                {
-                    method: 'POST',
-                    body: JSON.stringify(serverData),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                },
-                `set time for chapter ${chapterId}`
-            );
-        } catch (error) {
-            console.error('Set chapter time error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to set time for chapter ${chapterId}`;
-            showToast(errorMessage, { variant: 'error' });
-        }
-    };
-
-    /**
-     * Add or update a screen passage
-     */
+    /** Create a screen passage, then fill in the fields the create call does not take. */
     addScreenPassage = async (passageId: string, data: TScreenPassageData) => {
         try {
-            const serverData = TypeConverters.screenPassageDataToUpdateRequest(data);
-
-            console.log(`Adding screen passage ${passageId} with data:`, serverData);
-
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/passage/screen/${passageId}`,
-                {
-                    method: 'PUT',
-                    body: JSON.stringify(serverData),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                },
-                `add screen passage ${passageId}`
-            );
-
+            const created = await this.api.createPassage(data.chapterId, {
+                characterId: data.characterId,
+                localId: data.id,
+                type: 'screen',
+                title: data.title,
+            });
+            const body: TBodyItemDto[] = data.body.map((item) => ({
+                ...(item.text !== undefined && { text: item.text }),
+                ...(item.redirect && { redirect: item.redirect }),
+                links: (item.links ?? []).map(
+                    (link): TLinkDto => ({
+                        text: link.text,
+                        passageId: link.passageId,
+                        ...(link.autoPriority && { autoPriortiy: link.autoPriority }),
+                        ...(toCostDto(link.cost) && { cost: toCostDto(link.cost) }),
+                    })
+                ),
+            }));
+            await this.api.updatePassage(created.passageId, {
+                version: created.version,
+                title: data.title,
+                image: data.image,
+                body,
+            });
             showToast(_('Passage %s added', passageId), { variant: 'success' });
         } catch (error) {
             console.error('Add screen passage error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to add passage ${passageId}`;
-            showToast(errorMessage, { variant: 'error' });
+            showToast(errorText(error, _('Failed to add passage %s', passageId)), { variant: 'error' });
+            throw error;
         }
     };
 
-    /**
-     * Open a passage in VS Code
-     */
-    openPassage = async (passageId: string) => {
-        try {
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/passage/screen/${passageId}/open`,
-                {
-                    method: 'POST',
-                },
-                `open passage ${passageId}`
-            );
-
-            showToast(_('Passage %s opened', passageId), { variant: 'success' });
-        } catch (error) {
-            console.error('Open passage error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to open passage ${passageId}`;
-            showToast(errorMessage, { variant: 'error' });
-        }
+    getMap = async (mapId: string = GLOBAL_MAP_ID): Promise<TMapData> => {
+        const dto = await this.api.getMap(mapId);
+        this.maps.set(mapId, dto);
+        return mapDtoToMapData(dto);
     };
 
-    /**
-     * Delete a passage
-     */
-    deletePassage = async (passageId: string) => {
-        try {
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/passage/screen/${passageId}`,
-                {
-                    method: 'DELETE',
-                },
-                `delete passage ${passageId}`
-            );
-
-            showToast(_('Passage %s deleted', passageId), { variant: 'success' });
-        } catch (error) {
-            console.error('Delete passage error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to delete passage ${passageId}`;
-            showToast(errorMessage, { variant: 'error' });
-        }
-    };
-
-    /**
-     * Set time range for a passage
-     */
-    setPassageTime = async (passageId: string, data: { timeRange: { start: string; end: string } }) => {
-        try {
-            const serverData = TypeConverters.createSetTimeRequest(data.timeRange);
-
-            console.log(`Setting time for passage ${passageId} with data:`, serverData);
-
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/passage/screen/${passageId}/setTime`,
-                {
-                    method: 'POST',
-                    body: JSON.stringify(serverData),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                },
-                `set time for passage ${passageId}`
-            );
-        } catch (error) {
-            console.error('Set passage time error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to set time for passage ${passageId}`;
-            showToast(errorMessage, { variant: 'error' });
-        }
-    };
-
-    getMap = async (mapId: string): Promise<TMapData> => {
-        try {
-            const mapResponse: MapResponse = await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/map/${mapId}`,
-                {
-                    method: 'GET',
-                },
-                `get map ${mapId}`
-            );
-
-            return TypeConverters.serverTypeToMapData(mapResponse.data);
-        } catch (error) {
-            console.error('Get map error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to get map ${mapId}`;
-            showToast(errorMessage, { variant: 'error' });
-            throw error; // Re-throw for caller to handle
-        }
-    };
-
-    /**
-     * Get list of all available map IDs
-     */
-    getMapList = async (): Promise<string[]> => {
-        try {
-            const mapListResponse = await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/map`,
-                {
-                    method: 'GET',
-                },
-                'get map list'
-            );
-
-            return mapListResponse.data;
-        } catch (error) {
-            console.error('Get map list error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to get map list';
-            showToast(errorMessage, { variant: 'error' });
-            throw error; // Re-throw for caller to handle
-        }
-    };
-
-    /**
-     * Save or update map data
-     */
     saveMap = async (mapData: TMapData) => {
         try {
-            const serverData = TypeConverters.mapDataToServerType(mapData);
-
-            console.log(`Saving map ${mapData.mapId} with data:`, serverData);
-
-            await HttpErrorHandler.fetchWithErrorHandling(
-                `${this.url}/api/map/${mapData.mapId}`,
-                {
-                    method: 'PUT',
-                    body: JSON.stringify(serverData),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                },
-                `save map ${mapData.title}`
-            );
-
+            const previous = this.maps.get(mapData.mapId);
+            const saved = await this.api.updateMap(mapData.mapId, {
+                ...mapDataToMapFile(mapData, previous),
+                version: previous?.version ?? '',
+            });
+            this.maps.set(mapData.mapId, saved);
             showToast(_('Map %s saved', mapData.title), { variant: 'success' });
         } catch (error) {
             console.error('Save map error:', error);
-            const errorMessage = error instanceof Error ? error.message : `Failed to save map ${mapData.title}`;
-            showToast(errorMessage, { variant: 'error' });
+            showToast(errorText(error, _('Failed to save map %s', mapData.title)), { variant: 'error' });
         }
     };
 }

@@ -1,62 +1,19 @@
-import { TWorldState } from '@story/data';
-import { Engine } from '@story/core';
-import { TChapterPassage } from '@story/types';
-import { register, TRegisterPassageId } from '@story/data';
+import type { TPassageDto } from '@story/visualizer-protocol';
+import { mockApi } from '../../../../api';
 
+/**
+ * Legacy passage lookup for the passage graph and the old passage form. It used to import and
+ * *run* the story's passage functions from `@story/data`; it now reads `mockApi` (plan WP1:
+ * "move the graph's passage loading onto mockApi"). WP6 replaces it with the real `api`.
+ */
 export class PassageResolver {
-    private static passageCache = new Map<TRegisterPassageId, any>();
-
-    /**
-     * Resolves and returns a specific passage by chapter and passage ID
-     */
-    static async getPassage<T extends TRegisterPassageId>(
-        chapterId: T,
-        passageId: string,
-        worldState: TWorldState,
-        engine: Engine
-    ): Promise<TChapterPassage<T>> {
-        // Check cache first
-        if (!this.passageCache.has(chapterId)) {
-            const passages = await register.passages[chapterId]();
-            this.passageCache.set(chapterId, passages.default || passages);
-        }
-
-        const chapterPassages = this.passageCache.get(chapterId);
-        const passageFunction = chapterPassages[passageId];
-
-        if (!passageFunction) {
-            throw new Error(`Passage '${passageId}' not found in chapter '${chapterId}'`);
-        }
-
-        return passageFunction(worldState, engine);
+    static getPassage(passageId: string): Promise<TPassageDto> {
+        return mockApi.getPassage(passageId);
     }
 
-    /**
-     * Preloads all passages for an chapter (useful for performance)
-     */
-    static async preloadChapterPassages<T extends TRegisterPassageId>(chapterId: T): Promise<void> {
-        if (!this.passageCache.has(chapterId)) {
-            const passages = await register.passages[chapterId]();
-            this.passageCache.set(chapterId, passages.default || passages);
-        }
-    }
-
-    /**
-     * Gets all available passage IDs for a specific chapter
-     */
-    static async getAvailablePassageIds<T extends TRegisterPassageId>(chapterId: T): Promise<string[]> {
-        if (!this.passageCache.has(chapterId)) {
-            await this.preloadChapterPassages(chapterId);
-        }
-
-        const chapterPassages = this.passageCache.get(chapterId);
-        return Object.keys(chapterPassages);
-    }
-
-    /**
-     * Clears the passage cache (useful for hot reloading in development)
-     */
-    static clearCache(): void {
-        this.passageCache.clear();
+    /** Full passage ids (`village-thomas-intro`) of a chapter. */
+    static async getAvailablePassageIds(chapterId: string): Promise<string[]> {
+        const { passages } = await mockApi.listChapterPassages(chapterId);
+        return passages.map((p) => p.passageId);
     }
 }

@@ -1,5 +1,4 @@
 import { TPoint, TSize } from '@story/shared';
-import { TRegisterPassageId } from '@story/data';
 import { TLineType } from '../../EdgeVisualObject';
 import { Graph } from '../../Graph';
 import { BorderConfig } from '../../../Canvas/Node/BorderConfig';
@@ -10,7 +9,7 @@ import { PassageEdgeVisualObject } from '../PassageEdgeVisualObject';
 
 export type SerializedNode = {
     id: string;
-    passageId: TRegisterPassageId;
+    passageId: string;
     position: TPoint;
     size: TSize;
     backgroundColor: string;

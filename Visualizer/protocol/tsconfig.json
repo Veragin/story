@@ -1,0 +1,8 @@
+{
+    /* Per-package config for editors and `eslint --projectService`. Type checking of record is
+       the single root `tsc --noEmit` (tsconfig.json), which also lists this package. The protocol
+       runs in the browser (client) and in node (server); it keeps the base libs because the
+       `@story/shared` source it resolves types from is browser-flavoured. */
+    "extends": "../../tsconfig.base.json",
+    "include": ["src"]
+}

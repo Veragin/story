@@ -1,6 +1,6 @@
 import { CanvasManager } from '../../../GUIComponents/Canvas/CanvasManager/CanvasManager';
 import { ChapterStore } from '../ChapterStore';
-import { register } from '@story/data';
+import { sampleChapters } from '../../../GUIComponents/Graphs/ChapterPassagesGraph/store/sampleStory';
 import { TChapter, TChapterId, TLocationId } from '@story/types';
 import { ChapterNode } from './ChapterNode';
 import { Graph } from '../../../GUIComponents/Graphs/Graph';
@@ -18,6 +18,13 @@ export class TimelineChapters {
 
     graph: Graph;
 
+    /**
+     * The chapters on the strip. Read once and then mutated in place by dragging, as the old
+     * `register.chapters` objects were. From the sample story (not `@story/data`, plan §3 "Live
+     * refresh") until WP5 loads them through `api`.
+     */
+    private chapterList: TChapter<TChapterId>[] = sampleChapters();
+
     constructor(
         public store: ChapterStore,
         private canvasManager: CanvasManager,
@@ -25,8 +32,7 @@ export class TimelineChapters {
         private openModal: (chapter: TChapter<TChapterId>) => void
     ) {
         this.graph = new Graph(canvasManager);
-        const chapterList = Object.values(register.chapters) as TChapter<TChapterId>[];
-        chapterList.forEach((chapter) => this.addChapter(chapter));
+        this.chapterList.forEach((chapter) => this.addChapter(chapter));
         this.mapping.forEach((chapter) => {
             chapter.box.setUpEdges(this.graph);
         });
@@ -36,9 +42,8 @@ export class TimelineChapters {
     private recompueLocationLayout = () => {
         const old = this.locationLayout;
         this.locationLayout = {};
-        const chapterList = Object.values(register.chapters) as TChapter<TChapterId>[];
 
-        chapterList.forEach((chapter) => {
+        this.chapterList.forEach((chapter) => {
             const data = this.locationLayout[chapter.location];
             let node = this.mapping.get(chapter.chapterId);
             if (node === undefined) {
