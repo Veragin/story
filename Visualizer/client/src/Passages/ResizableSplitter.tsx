@@ -68,10 +68,7 @@ export const ResizableSplitter = ({
     return (
         <SContainer ref={containerRef}>
             <SBackgroundPanel>{leftContent}</SBackgroundPanel>
-            <SOverlayPanel
-                style={{ width: `${100 - leftWidth}%` }}
-                ref={containerRef}
-            >
+            <SOverlayPanel style={{ width: `${100 - leftWidth}%` }}>
                 <SSplitter
                     style={{ width: `${splitterWidth}px` }}
                     onMouseDown={handleMouseDown}

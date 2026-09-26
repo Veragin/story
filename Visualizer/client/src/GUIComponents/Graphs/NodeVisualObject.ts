@@ -89,7 +89,7 @@ export class NodeVisualObject extends DraggableVisualObject {
     }
 
     setBorder(border: BorderConfig): void {
-        let change = this.border !== border;
+        const change = this.border !== border;
         this.border = border;
         this.redraw(change, nodeVisualObjectProperties.border);
     }
@@ -98,7 +98,7 @@ export class NodeVisualObject extends DraggableVisualObject {
         return this.backgroundColor;
     }
     setBackgroundColor(backgroundColor: string): void {
-        let change = this.backgroundColor !== backgroundColor;
+        const change = this.backgroundColor !== backgroundColor;
         this.backgroundColor = backgroundColor;
         this.redraw(change, nodeVisualObjectProperties.backgroundColor);
     }
