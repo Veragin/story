@@ -16,7 +16,7 @@ export const DeleteAlert = ({ mapStore, onBack }: Props) => {
         <>
             <SList>
                 {_('Are you sure you want to delete color')}
-                <b>{mapStore.data.palette[mapStore.selectedColorId]?.name}</b>
+                <b>{mapStore.data?.palette[mapStore.selectedColorId]?.name}</b>
                 {_('All tiles with that color will be set to None.')}
             </SList>
             <Row>

@@ -21,7 +21,7 @@ export const Palette = observer(({ mapStore }: Props) => {
     );
     const [addDeleteColor, setDeleteColor] = useState(false);
 
-    if (mapStore.mode !== 'palette') return null;
+    if (mapStore.tool !== 'paint' || !mapStore.data) return null;
 
     return (
         <SContainer>
@@ -51,10 +51,12 @@ export const Palette = observer(({ mapStore }: Props) => {
 
 const SContainer = styled(Column)`
     position: absolute;
-    top: 50px;
-    left: 0;
-    width: 150px;
-    max-height: 300px;
+    top: 8px;
+    left: 8px;
+    width: 160px;
+    max-height: 320px;
+    z-index: 2;
+    color: #fff;
 
     border: ${WIDGET_BORDER_WIDTH}px solid ${WIDGET_BORDER_COLOR};
     background-color: #000;

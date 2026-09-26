@@ -1,81 +1,70 @@
 import { observer } from 'mobx-react-lite';
-import { MapStore } from '../MapStore';
 import styled from '@emotion/styled';
 import { Column, Row, SmallText, spacingCss } from '@story/ui';
+import { MapStore } from '../MapStore';
 import {
     WIDGET_BORDER_COLOR,
     WIDGET_BORDER_WIDTH,
 } from '../MapEngine/constants';
 import { TextField } from '../../components/TextField';
-import { runInAction } from 'mobx';
-import { Select } from '../../components/Select';
 
 type Props = {
     mapStore: MapStore;
 };
 
+/**
+ * Tile tooling of the select tool: the selected tile's label (drawn on the tile) and its free-text
+ * description of the environment (drawn under the label when zoomed in far enough).
+ */
 export const EditWidget = observer(({ mapStore }: Props) => {
     const selectedTile = mapStore.selectedTile;
-    if (mapStore.mode !== 'edit' || !selectedTile) return null;
+    // re-render on every edit and on live refresh: the document itself is not observable
+    void mapStore.revision;
+    if (mapStore.tool !== 'select') return null;
 
-    const tile = mapStore.data.data[selectedTile.i][selectedTile.j];
-
-    const findMap = () =>
-        mapStore.data.maps.find(
-            (m) => m.i === selectedTile.i && m.j === selectedTile.j
+    const tile = selectedTile ? mapStore.getTile(selectedTile) : undefined;
+    if (!selectedTile || !tile) {
+        return (
+            <SContainer>
+                <SmallText>
+                    {_('Click a tile to edit its label and description.')}
+                </SmallText>
+            </SContainer>
         );
-    const map = findMap();
-
-    const onMapChange = (mapId?: string) => {
-        if (!mapId) {
-            mapStore.data.maps = mapStore.data.maps.filter(
-                (m) => m.i !== selectedTile.i || m.j !== selectedTile.j
-            );
-            return;
-        }
-
-        const map = findMap();
-        if (map) {
-            map.mapId = mapId;
-        } else {
-            mapStore.data.maps.push({
-                i: selectedTile.i,
-                j: selectedTile.j,
-                mapId: mapId,
-            });
-        }
-    };
+    }
+    const color = mapStore.data?.palette[tile.tile];
 
     return (
-        <SContainer>
+        <SContainer data-testid="tile-edit-widget">
             <SRow>
                 <SmallText>i: {selectedTile.i}</SmallText>
                 <SmallText>j: {selectedTile.j}</SmallText>
+                <SmallText>{color?.name ?? tile.tile}</SmallText>
             </SRow>
             <TextField
-                value={tile.label}
+                value={tile.label ?? ''}
                 onChange={(e) =>
-                    runInAction(() => {
-                        tile.label = e.target.value;
+                    mapStore.setTileText(selectedTile, {
+                        label: e.target.value,
                     })
                 }
                 label={_('Label')}
                 variant="outlined"
+                size="small"
             />
-            <Select
-                value={map?.mapId ?? ''}
-                label={_('Map')}
-                onChange={(v) => onMapChange(v === '' ? undefined : v)}
-                options={[
-                    { label: '-', value: '' },
-                    { label: 'Village', value: 'village' },
-                    { label: 'Forest', value: 'forest' },
-                    { label: 'Castle', value: 'castle' },
-                    { label: 'Cave', value: 'cave' },
-                    { label: 'Desert', value: 'desert' },
-                    { label: 'Mountain', value: 'mountain' },
-                    { label: 'Swamp', value: 'swamp' },
-                ]}
+            <TextField
+                value={tile.description ?? ''}
+                onChange={(e) =>
+                    mapStore.setTileText(selectedTile, {
+                        description: e.target.value,
+                    })
+                }
+                label={_('Description')}
+                variant="outlined"
+                size="small"
+                multiline
+                minRows={3}
+                maxRows={10}
             />
         </SContainer>
     );
@@ -83,22 +72,24 @@ export const EditWidget = observer(({ mapStore }: Props) => {
 
 const SContainer = styled(Column)`
     position: absolute;
-    top: 50px;
-    left: 0;
-    width: 150px;
-    max-height: 300px;
+    top: ${spacingCss(1)};
+    left: ${spacingCss(1)};
+    width: 240px;
+    max-height: calc(100% - 16px);
+    overflow: auto;
+    z-index: 2;
 
     border: ${WIDGET_BORDER_WIDTH}px solid ${WIDGET_BORDER_COLOR};
     background-color: #000;
+    color: #fff;
     border-radius: 6px;
-    overflow: hidden;
 
     padding: ${spacingCss(2)} ${spacingCss(1)};
     gap: ${spacingCss(2)};
+    align-items: stretch;
 `;
 
 const SRow = styled(Row)`
-    gap: ${spacingCss(3)};
-    align-self: stretch;
+    gap: ${spacingCss(2)};
     justify-content: center;
 `;
