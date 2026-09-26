@@ -12,7 +12,7 @@
 export * from './routes';
 
 /* TCode, TMaybeCode, isCode, code, TValue, TValueRecord, TVersion, EMPTY_VERSION, TVersioned,
-   TVersionedBody, TSourceRef, TTimeString, TTimeRangeDto, TDeltaTimeDto, isDeltaTime, TOkDto */
+   TVersionedBody, TSourceRef, TTimeString, TTimeRangeDto, TDeltaTimeDto, isDeltaTime, TOkDto, TOpenDto */
 export * from './dto/common';
 /* THealthDto, TProjectDto, TProjectEntryDto, TProjectChapterDto */
 export * from './dto/project';

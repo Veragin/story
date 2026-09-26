@@ -1,19 +1,29 @@
 import type { TServerContext } from '../context';
-import { notImplemented } from './stub';
+import { readChapter } from '../project/readers/chapters';
+import { SourceProject } from '../project/SourceProject';
+import {
+    addChapterCharacter,
+    createChapter,
+    deleteChapter,
+    removeChapterCharacter,
+    updateChapter,
+} from '../project/writers/chapters';
 
 /**
- * Chapters and a chapter's characters: `/api/chapters`, `/api/chapters/:chapterId[/open|/characters[/:characterId]]`.
- *
- * WP1 skeleton: every route answers 501. WP2 replaces each `notImplemented(...)` with a handler
- * built on `project/readers`, `project/writers` and `bus.transaction`.
+ * Chapters and a chapter's characters: `/api/chapters`, `/api/chapters/:chapterId[/characters[/:characterId]]`
+ * (`project/readers/chapters.ts`, `project/writers/chapters.ts`). `openChapter` is registered by
+ * `routes/open.ts`.
  */
-export const registerChapterRoutes = ({ router }: TServerContext) => {
+export const registerChapterRoutes = ({ router, project, bus }: TServerContext) => {
+    const sp = SourceProject.for(project);
+    const w = { sp, bus };
     router
-        .handle('createChapter', notImplemented('createChapter'))
-        .handle('getChapter', notImplemented('getChapter'))
-        .handle('updateChapter', notImplemented('updateChapter'))
-        .handle('deleteChapter', notImplemented('deleteChapter'))
-        .handle('openChapter', notImplemented('openChapter'))
-        .handle('addChapterCharacter', notImplemented('addChapterCharacter'))
-        .handle('removeChapterCharacter', notImplemented('removeChapterCharacter'));
+        .handle('createChapter', ({ body }) => createChapter(w, body))
+        .handle('getChapter', ({ params }) => sp.run(() => readChapter(sp, params.chapterId)))
+        .handle('updateChapter', ({ params, body }) => updateChapter(w, params.chapterId, body))
+        .handle('deleteChapter', ({ params, body }) => deleteChapter(w, params.chapterId, body))
+        .handle('addChapterCharacter', ({ params, body }) => addChapterCharacter(w, params.chapterId, body))
+        .handle('removeChapterCharacter', ({ params, body }) =>
+            removeChapterCharacter(w, params.chapterId, params.characterId, body)
+        );
 };

@@ -1,16 +1,18 @@
 import type { TServerContext } from '../context';
-import { notImplemented } from './stub';
+import { readChapterLayout, readTimelineLayout, updateChapterLayout, updateTimelineLayout } from '../json/layoutStore';
 
 /**
- * Layouts: `/api/layout/timeline`, `/api/layout/chapters/:chapterId` (`*.layout.json`). Use `json/jsonStore.ts`.
- *
- * WP1 skeleton: every route answers 501. WP2 replaces each `notImplemented(...)` with a handler
- * built on `project/readers`, `project/writers` and `bus.transaction`.
+ * Layouts: `/api/layout/timeline` (`data/chapters/timeline.layout.json`) and
+ * `/api/layout/chapters/:chapterId` (`data/chapters/<ch>/<ch>.layout.json`, 404 when the chapter
+ * folder does not exist). A missing file reads as the empty layout with `version: ''`; `PUT` is a
+ * validated whole-document replace, like the map (see `json/layoutStore.ts`).
  */
-export const registerLayoutRoutes = ({ router }: TServerContext) => {
+export const registerLayoutRoutes = ({ router, project, bus }: TServerContext) => {
     router
-        .handle('getTimelineLayout', notImplemented('getTimelineLayout'))
-        .handle('updateTimelineLayout', notImplemented('updateTimelineLayout'))
-        .handle('getChapterLayout', notImplemented('getChapterLayout'))
-        .handle('updateChapterLayout', notImplemented('updateChapterLayout'));
+        .handle('getTimelineLayout', () => readTimelineLayout(project))
+        .handle('updateTimelineLayout', ({ body }) => updateTimelineLayout({ project, bus }, body))
+        .handle('getChapterLayout', ({ params }) => readChapterLayout(project, params.chapterId))
+        .handle('updateChapterLayout', ({ params, body }) =>
+            updateChapterLayout({ project, bus }, params.chapterId, body)
+        );
 };

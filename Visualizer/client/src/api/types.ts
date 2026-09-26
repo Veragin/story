@@ -13,6 +13,7 @@ import type {
     THealthDto,
     TMapDto,
     TOkDto,
+    TOpenDto,
     TPassageDto,
     TProjectDto,
     TTimelineLayoutDto,
@@ -46,7 +47,7 @@ export interface TVisualizerApi {
     getChapter(chapterId: string): Promise<TChapterDto>;
     updateChapter(chapterId: string, body: TUpdateChapterBody): Promise<TChapterDto>;
     deleteChapter(chapterId: string, body: TVersionedBody): Promise<TOkDto>;
-    openChapter(chapterId: string): Promise<TOkDto>;
+    openChapter(chapterId: string): Promise<TOpenDto>;
     addChapterCharacter(chapterId: string, body: TAddChapterCharacterBody): Promise<TChapterDto>;
     removeChapterCharacter(chapterId: string, characterId: string, body: TVersionedBody): Promise<TChapterDto>;
 
@@ -55,7 +56,7 @@ export interface TVisualizerApi {
     getPassage(passageId: string): Promise<TPassageDto>;
     updatePassage(passageId: string, body: TUpdatePassageBody): Promise<TPassageDto>;
     deletePassage(passageId: string, body: TVersionedBody): Promise<TOkDto>;
-    openPassage(passageId: string): Promise<TOkDto>;
+    openPassage(passageId: string): Promise<TOpenDto>;
 
     createTrigger(chapterId: string, body: TCreateTriggerBody): Promise<TTriggerDto>;
     getTrigger(triggerId: string): Promise<TTriggerDto>;

@@ -10,6 +10,8 @@ export type TChangeListener = (event: TChangeEvent) => void;
 
 /** What a `bus.transaction` callback gets: the only way server code should touch the disk. */
 export type TTransaction = {
+    /** The project the bus writes to (so helpers like `json/index.ts#removePassagePositions` need only `tx`). */
+    readonly project: ProjectRoot;
     /** Atomic write (tmp + rename) that the watcher will not echo back. */
     writeFile(file: string, contents: string): Promise<void>;
     /** Delete a file (missing is fine). */
@@ -118,6 +120,7 @@ export class EventBus {
                 this.suppressed.set(abs, { hash, until: Number.POSITIVE_INFINITY });
             };
             const tx: TTransaction = {
+                project: this.project,
                 writeFile: async (file, contents) => {
                     record(file, contents);
                     await atomicWrite(file, contents);

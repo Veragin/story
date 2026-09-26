@@ -13,6 +13,7 @@ import {
     type TLocationDto,
     type TMapDto,
     type TNpcDto,
+    type TOpenDto,
     type TPassageDto,
     type TPassageEdgeDto,
     type TProjectDto,
@@ -53,6 +54,14 @@ const fail = (status: number, body: TApiErrorBody): never => {
 };
 const notFound = (what: string) => fail(404, { error: 'not_found', message: `No ${what}` });
 const clone = <T>(value: T): T => structuredClone(value);
+/** The mock never starts an editor: it answers like a server without `code` on its PATH. */
+const openReply = ({ file, line }: { file: string; line?: number }): TOpenDto => ({
+    ok: true,
+    opened: false,
+    file,
+    line: line ?? 1,
+    message: 'The mock api does not open editors',
+});
 
 /** Display text of a maybe-code string field: the literal, or the argument of `_('…')`. */
 export const displayText = (value: TValue | undefined, fallback: string): string => {
@@ -281,7 +290,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 emit({ kind: 'chapter', id: chapterId, version: null, op: 'deleted', chapterId });
                 return { ok: true as const };
             }),
-        openChapter: (chapterId) => reply(() => (get(chapters, chapterId, 'chapter'), { ok: true as const })),
+        openChapter: (chapterId) => reply(() => openReply(get(chapters, chapterId, 'chapter'))),
         addChapterCharacter: (chapterId, { characterId, startPassageLocalId = 'intro' }) =>
             reply(() => {
                 const chapter = get(chapters, chapterId, 'chapter');
@@ -399,7 +408,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 emit({ kind: 'passage', id: passageId, version: null, op: 'deleted', chapterId: current.chapterId });
                 return { ok: true as const };
             }),
-        openPassage: (passageId) => reply(() => (get(passages, passageId, 'passage'), { ok: true as const })),
+        openPassage: (passageId) => reply(() => openReply(get(passages, passageId, 'passage'))),
 
         createTrigger: (chapterId, body) =>
             reply(() => {

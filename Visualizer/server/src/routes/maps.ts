@@ -1,12 +1,14 @@
 import type { TServerContext } from '../context';
-import { notImplemented } from './stub';
+import { readMap, updateMap } from '../json/mapStore';
 
 /**
- * The map: `/api/maps/:mapId` (`data/locations/map.json`, only `global`). Use `json/jsonStore.ts`.
- *
- * WP1 skeleton: every route answers 501. WP2 replaces each `notImplemented(...)` with a handler
- * built on `project/readers`, `project/writers` and `bus.transaction`.
+ * The map: `/api/maps/:mapId` (`data/locations/map.json`, only `global`; any other id is a 404).
+ * `GET` answers the default map with `version: ''` while the file is missing; `PUT` is a
+ * validated whole-document replace (400 on a bad shape, 409 `stale` on a version mismatch,
+ * `version: ''` creates the file). The on-disk format is documented in `json/mapStore.ts`.
  */
-export const registerMapRoutes = ({ router }: TServerContext) => {
-    router.handle('getMap', notImplemented('getMap')).handle('updateMap', notImplemented('updateMap'));
+export const registerMapRoutes = ({ router, project, bus }: TServerContext) => {
+    router
+        .handle('getMap', ({ params }) => readMap(project, params.mapId))
+        .handle('updateMap', ({ params, body }) => updateMap({ project, bus }, params.mapId, body));
 };

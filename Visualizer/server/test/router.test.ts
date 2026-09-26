@@ -62,10 +62,10 @@ describe('router', () => {
         expect(app.router.missing()).toEqual([]);
     });
 
-    it('answers 501 for the WP2 stubs', async () => {
+    it('has no 501 stubs left since WP2 (the source routes answer)', async () => {
         const { status, json } = await call('GET', '/api/chapters/village');
-        expect(status).toBe(501);
-        expect(json.error).toBe('not_implemented');
+        expect(status).toBe(200);
+        expect(json.chapterId).toBe('village');
     });
 
     it('answers 404 for unknown routes and wrong methods', async () => {

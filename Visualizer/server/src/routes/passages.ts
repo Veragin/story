@@ -1,18 +1,20 @@
 import type { TServerContext } from '../context';
-import { notImplemented } from './stub';
+import { readChapterPassages, readPassage } from '../project/readers/passages';
+import { SourceProject } from '../project/SourceProject';
+import { createPassage, deletePassage, updatePassage } from '../project/writers/passages';
 
 /**
- * Passages: `/api/chapters/:chapterId/passages`, `/api/passages/:passageId[/open]`.
- *
- * WP1 skeleton: every route answers 501. WP2 replaces each `notImplemented(...)` with a handler
- * built on `project/readers`, `project/writers` and `bus.transaction`.
+ * Passages: `/api/chapters/:chapterId/passages`, `/api/passages/:passageId`
+ * (`project/readers/passages.ts`, `project/writers/passages.ts`). `openPassage` is registered by
+ * `routes/open.ts`.
  */
-export const registerPassageRoutes = ({ router }: TServerContext) => {
+export const registerPassageRoutes = ({ router, project, bus }: TServerContext) => {
+    const sp = SourceProject.for(project);
+    const w = { sp, bus };
     router
-        .handle('listChapterPassages', notImplemented('listChapterPassages'))
-        .handle('createPassage', notImplemented('createPassage'))
-        .handle('getPassage', notImplemented('getPassage'))
-        .handle('updatePassage', notImplemented('updatePassage'))
-        .handle('deletePassage', notImplemented('deletePassage'))
-        .handle('openPassage', notImplemented('openPassage'));
+        .handle('listChapterPassages', ({ params }) => sp.run(() => readChapterPassages(sp, params.chapterId)))
+        .handle('createPassage', ({ params, body }) => createPassage(w, params.chapterId, body))
+        .handle('getPassage', ({ params }) => sp.run(() => readPassage(sp, params.passageId)))
+        .handle('updatePassage', ({ params, body }) => updatePassage(w, params.passageId, body))
+        .handle('deletePassage', ({ params, body }) => deletePassage(w, params.passageId, body));
 };

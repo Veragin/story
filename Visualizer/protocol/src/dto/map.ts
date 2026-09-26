@@ -51,7 +51,11 @@ export type TMapDto = TVersioned & {
     maps: TSubMapRefDto[];
 };
 
-/** The JSON file on disk is exactly the DTO without `version` (the version is its hash). */
+/**
+ * The map document without `version` (the version is the hash of the file text). On disk,
+ * `map.json` stores it in a compact encoding (run-length tile rows, sparse `tileText`); see
+ * `Visualizer/server/src/json/mapStore.ts`. The API always speaks this shape.
+ */
 export type TMapFile = Omit<TMapDto, 'version'>;
 
 /** `PUT /api/maps/:mapId` — a whole-document replace. `version: ''` creates the file. */

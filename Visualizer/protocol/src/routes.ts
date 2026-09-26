@@ -6,7 +6,7 @@ import type {
     TRemoveChapterCharacterBody,
     TUpdateChapterBody,
 } from './dto/chapter';
-import type { TOkDto } from './dto/common';
+import type { TOkDto, TOpenDto } from './dto/common';
 import type {
     TCreateEntityBody,
     TDeleteEntityBody,
@@ -109,7 +109,7 @@ export type TApiSpec = {
     getChapter: { body: undefined; response: TChapterDto };
     updateChapter: { body: TUpdateChapterBody; response: TChapterDto };
     deleteChapter: { body: TDeleteChapterBody; response: TOkDto };
-    openChapter: { body: undefined; response: TOkDto };
+    openChapter: { body: undefined; response: TOpenDto };
     addChapterCharacter: { body: TAddChapterCharacterBody; response: TChapterDto };
     removeChapterCharacter: { body: TRemoveChapterCharacterBody; response: TChapterDto };
 
@@ -118,7 +118,7 @@ export type TApiSpec = {
     getPassage: { body: undefined; response: TPassageDto };
     updatePassage: { body: TUpdatePassageBody; response: TPassageDto };
     deletePassage: { body: TDeletePassageBody; response: TOkDto };
-    openPassage: { body: undefined; response: TOkDto };
+    openPassage: { body: undefined; response: TOpenDto };
 
     createTrigger: { body: TCreateTriggerBody; response: TTriggerDto };
     getTrigger: { body: undefined; response: TTriggerDto };
