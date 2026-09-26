@@ -169,10 +169,19 @@ describe('TimelineStore', () => {
         expect(s.store.chapters.has('village')).toBe(true);
     });
 
-    it('deletes a trigger', async () => {
+    it('deletes a trigger, and its chapter can be deleted right after (new chapter version)', async () => {
         s.store.select({ kind: 'trigger', id: 'nobleHouseRobbery' });
         expect(await s.store.deleteSelected()).toBe(true);
         expect(s.store.triggers.has('nobleHouseRobbery')).toBe(false);
+        expect(s.store.chapters.get('village')?.version).toBe((await s.api.getChapter('village')).version);
+
+        await s.store.createChapter({ chapterId: 'harbor', location: 'village', start: 10 * DAY_S });
+        await s.store.createTrigger({ chapterId: 'harbor', triggerId: 'storm', time: 10 * DAY_S });
+        s.store.select({ kind: 'trigger', id: 'storm' });
+        expect(await s.store.deleteSelected()).toBe(true);
+        s.store.select({ kind: 'chapter', id: 'harbor' });
+        expect(await s.store.deleteSelected()).toBe(true);
+        expect(s.deps.notify).not.toHaveBeenCalled();
     });
 
     it('refetches only the changed resource on a live event', async () => {

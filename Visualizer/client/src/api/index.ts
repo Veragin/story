@@ -28,7 +28,7 @@ export type { TVisualizerApi } from './types';
 const useMock = import.meta.env.VITE_VISUALIZER_API === 'mock';
 
 /** The app-wide change feed. Stores subscribe here; in mock mode it never opens a stream. */
-export const apiEvents = new ApiEvents(useMock ? { createEventSource: undefined } : {});
+export const apiEvents = new ApiEvents(useMock ? { createEventSource: null } : {});
 
 /** The real server, through the Vite `/api` proxy. Own saves are marked so their echo is ignored. */
 export const httpApi: TVisualizerApi = createHttpApi({ onSaved: (version) => apiEvents.markSaved(version) });

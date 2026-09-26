@@ -20,8 +20,11 @@ type TEventSourceLike = Pick<EventSource, 'addEventListener' | 'close' | 'readyS
 
 export type TApiEventsOptions = {
     url?: string;
-    /** Injected for tests; defaults to the browser `EventSource` (absent → events are a no-op). */
-    createEventSource?: (url: string) => TEventSourceLike;
+    /**
+     * Injected for tests; defaults to the browser `EventSource` (absent → events are a no-op).
+     * `null` never opens a stream (mock mode). Note that `undefined` means "use the default".
+     */
+    createEventSource?: ((url: string) => TEventSourceLike) | null;
     /** How long a version passed to `markSaved` is remembered. */
     savedTtlMs?: number;
     /** Backoff for re-creating a stream the browser gave up on. */
@@ -77,7 +80,7 @@ export class ApiEvents {
         reconnectMaxMs = 15_000,
     }: TApiEventsOptions = {}) {
         this.url = url;
-        this.createEventSource = createEventSource;
+        this.createEventSource = createEventSource ?? undefined;
         this.savedTtlMs = savedTtlMs;
         this.reconnectMinMs = reconnectMinMs;
         this.reconnectMaxMs = reconnectMaxMs;

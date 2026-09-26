@@ -21,6 +21,19 @@ describe('matchesFilter', () => {
 });
 
 describe('ApiEvents', () => {
+    it('never opens a stream with createEventSource: null (mock mode), even when EventSource exists', () => {
+        const EventSourceStub = vi.fn();
+        vi.stubGlobal('EventSource', EventSourceStub);
+        try {
+            const events = new ApiEvents({ createEventSource: null });
+            events.subscribe('chapter', () => {});
+            expect(EventSourceStub).not.toHaveBeenCalled();
+            expect(events.status).toBe('idle');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('delivers events and drops the echo of an own save once', () => {
         const events = new ApiEvents({ createEventSource: undefined });
         const seen: TChangeEvent[] = [];

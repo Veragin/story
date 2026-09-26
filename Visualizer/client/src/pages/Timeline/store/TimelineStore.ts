@@ -333,13 +333,17 @@ export class TimelineStore {
             await Promise.all(ids.map((id) => this.refetchTrigger(id)));
             return;
         }
+        // Adding / removing a trigger also edits the chapter's `triggers: [...]` (a new chapter version).
+        const chapterId = e.chapterId ?? this.triggers.get(e.id)?.chapterId;
         if (e.op === 'deleted' || e.version === null) {
             runInAction(() => this.removeTrigger(e.id));
-            await this.reconcileProject();
+            await Promise.all([this.reconcileProject(), chapterId && this.refetchChapter(chapterId)]);
             return;
         }
         await this.refetchTrigger(e.id);
-        if (e.op === 'created') await this.reconcileProject();
+        if (e.op === 'created') {
+            await Promise.all([this.reconcileProject(), chapterId && this.refetchChapter(chapterId)]);
+        }
     };
 
     refetchChapter = async (chapterId: string) => {
@@ -571,6 +575,8 @@ export class TimelineStore {
                 else this.removeTrigger(selection.id);
             });
             void this.reconcileProject();
+            // Deleting a trigger also edits its chapter's `triggers: [...]`: take the new version.
+            if (!isChapter) await this.refetchChapter((dto as TTriggerDto).chapterId);
             return true;
         } catch (e) {
             if (e instanceof ApiError && e.isReferenced) {
@@ -622,7 +628,7 @@ export class TimelineStore {
             this.select({ kind: 'trigger', id: dto.triggerId });
         });
         void this.reconcileProject();
-        void this.refetchChapter(body.chapterId); // its triggerIds and version changed
+        await this.refetchChapter(body.chapterId); // its triggerIds and version changed
         return dto;
     };
 
