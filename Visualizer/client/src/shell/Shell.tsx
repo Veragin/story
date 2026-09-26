@@ -2,11 +2,9 @@ import { lazy, Suspense, useEffect } from 'react';
 import { CircularProgress, styled } from '@mui/material';
 import { Column } from '@story/ui';
 import { observer } from 'mobx-react-lite';
-import { reaction } from 'mobx';
 import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
 import { ModalHost } from './ModalHost';
-import { useVisualizerStore } from '../context';
 import MapPage from '../pages/Map';
 import TimelinePage from '../pages/Timeline';
 import ChapterPage from '../pages/Chapter';
@@ -39,20 +37,10 @@ const renderPage = (route: TRoute) => {
 };
 
 export const Shell = observer(() => {
-    const store = useVisualizerStore();
-
     useEffect(() => {
         router.start();
-        // the floating info panel belongs to the page that opened it
-        const dispose = reaction(
-            () => router.route,
-            () => store.setModalContent(null)
-        );
-        return () => {
-            dispose();
-            router.stop();
-        };
-    }, [store]);
+        return () => router.stop();
+    }, []);
 
     return (
         <SRoot>

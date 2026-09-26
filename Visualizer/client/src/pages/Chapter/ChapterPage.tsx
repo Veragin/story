@@ -22,7 +22,7 @@ import {
     type ApiEvents,
     type TVisualizerApi,
 } from '../../api';
-import { ResizableSplitter } from '../../Passages/ResizableSplitter';
+import { ResizableSplitter } from '../../components/ResizableSplitter';
 import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { darkTheme } from '../../theme';
 import { ChapterGraphStore } from './ChapterGraphStore';

@@ -97,11 +97,4 @@ export default defineConfig({
             },
         },
     },
-    esbuild: {
-        supported: {
-            // `data/register.ts` code-splits the story with dynamic passage imports that the
-            // engine awaits at module scope (§7).
-            'top-level-await': true,
-        },
-    },
 });

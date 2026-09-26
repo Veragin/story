@@ -1,9 +1,14 @@
 import { createSafeContext } from '@story/ui';
-import type { TWorldState } from '@story/data';
-import { Store } from './stores/Store';
+import type { TimeManager } from '@story/shared';
 
-export const [visualizerStoreContext, useVisualizerStore] = createSafeContext<Store>('VisualizerStoreContext');
+/**
+ * App-wide services shared by every page. Page state lives in each page's own MobX store, and
+ * the story data comes from the server through `api` (`client/src/api`), not from here.
+ */
+export type TVisualizerStore = {
+    /** Formats and parses story times (`d.m. h:mm`) for the timeline. */
+    timeManager: TimeManager;
+};
 
-// Deliberately duplicated from the engine's context rather than shared: sharing it would
-// force the UI layer to depend on the story runtime. See REFACTOR_PLAN.md §4(c).
-export const [worldStateContext, useWorldState] = createSafeContext<TWorldState>('WorldStateContext');
+export const [visualizerStoreContext, useVisualizerStore] =
+    createSafeContext<TVisualizerStore>('VisualizerStoreContext');

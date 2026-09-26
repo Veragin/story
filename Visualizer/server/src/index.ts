@@ -5,11 +5,12 @@
  * it never imports the story — and pushes change notices over `GET /api/events`. The client
  * reaches it through Vite's `/api` proxy (`Visualizer/client/vite.config.ts`).
  *
- * WP1 state: routing, JSON bodies, error mapping, `/api/health`, the watcher + SSE feed, atomic
- * writes and the transaction bus are real; every other protocol route answers 501 until WP2.
+ * Every protocol route is implemented (WP1 skeleton, WP2 source reader/writer and JSON stores);
+ * see `Visualizer/README.md` for how the writer works.
  *
  * Env: `STORY_ROOT` — the project root holding `data/` and `types/` (default: the repo root).
  *      `PORT` — default 8123.
+ *      `VISUALIZER_EDITOR` — "open in editor" command (default `code`, see `open.ts`).
  */
 import { createApp } from './app';
 

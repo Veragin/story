@@ -64,7 +64,7 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-multi-engine logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-multi-engine dev-multi-engine-server logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
 # 8102 MultiEngine client, 8123 Visualizer server, 8124 MultiEngine server). The container stays idle at
@@ -76,7 +76,7 @@ start: stop
 	@echo ""
 	@echo "  SingleEngine        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
-	@echo "  Visualizer server   http://localhost:8123  (/api/health; other routes 501 until WP2)"
+	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/project, /api/events …)"
 	@echo "  MultiEngine client  http://localhost:8102"
 	@echo "  MultiEngine server  http://localhost:8124  (scaffold — every route answers 501)"
 	@echo ""
@@ -131,3 +131,6 @@ dev-visualizer-server:
 
 dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
+
+dev-multi-engine-server:
+	$(DEV_EXEC) yarn dev:multi-engine-server

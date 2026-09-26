@@ -20,11 +20,11 @@ The split is also what keeps the fork maintainable. Pulling a newer engine into 
 
 ```bash
 yarn install       # Yarn 4 workspaces; no build step, packages are consumed as TS source
-yarn dev           # all four services at once, output labelled per workspace
+yarn dev           # all five services at once, output labelled per workspace
 yarn test          # Vitest
 ```
 
-Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:multi-engine`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-multi-engine`. (`make start` already holds all four ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.)
+Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:visualizer-server` / `yarn dev:multi-engine` / `yarn dev:multi-engine-server`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-visualizer-server` / `make dev-multi-engine` / `make dev-multi-engine-server`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The Visualizer needs both its client and its server; see [`Visualizer/README.md`](../Visualizer/README.md).
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
@@ -33,12 +33,12 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 | Service                       | Port | Status                               |
 | ----------------------------- | ---- | ------------------------------------ |
 | SingleEngine (vite)           | 8100 | implemented                          |
-| Visualizer client (vite)      | 8101 | partially implemented                |
+| Visualizer client (vite)      | 8101 | implemented; proxies `/api` to 8123  |
 | MultiEngine client (vite)     | 8102 | scaffold                             |
-| Visualizer server             | 8123 | **not built yet**                    |
+| Visualizer server (node/tsx)  | 8123 | implemented                          |
 | MultiEngine server (node/tsx) | 8124 | scaffold — every route answers `501` |
 
-`docker-compose.yml` publishes 8100, 8101, 8102 and 8124. 8123 is reserved, not published, because nothing listens on it yet.
+`docker-compose.yml` publishes all five. The Visualizer client calls its server same-origin through the Vite proxy (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8101.
 
 ## Data structure
 
@@ -165,8 +165,9 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 - Visualizer
     - a service for creating and viewing the story and the world
     - used by the author of the game
-    - currently `Visualizer/client/` only; it will gain a `Visualizer/server/` the same way MultiEngine has one (see "Not implemented/decied yet" below)
-    - partially implemented
+    - splits into `Visualizer/client/` (React app), `Visualizer/server/` (node server that reads and writes the `.ts` files in `data/` and `types/`) and `Visualizer/protocol/` (the typed API contract both import)
+    - implemented: map, timeline, chapter view and entities pages; the structure tab is future work
+    - see [`Visualizer/README.md`](../Visualizer/README.md) and [`docs/Visualizer.md`](Visualizer.md)
 
 ## MultiEngine
 

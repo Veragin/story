@@ -125,54 +125,81 @@
     - there is left horizontal menu listing all types editable by user (structure)
     - eg. TCharacter
 
-## Not implemented/decied yet
+## Runtime (settled)
 
-- how Visualizer will work, multiple options:
-    - running nodejs server
-    - vscode extension maybe
-    - electron
-- api communication
+- **Node server** at `Visualizer/server/` (`@story/visualizer-server`) on **:8123**, run with `tsx watch`. It reads and writes the `.ts` files in `data/` and `types/` as source (ts-morph), plus the JSON files `data/locations/map.json` and `data/chapters/**/*.layout.json`. It never imports the story.
+- The client (`Visualizer/client/`, Vite on **:8101**) calls it same-origin: Vite proxies `/api` to `http://localhost:8123` (`VISUALIZER_SERVER` overrides the target). With `VITE_VISUALIZER_API=mock` the client runs on an in-memory mock and needs no server.
+- The contract is the workspace [`Visualizer/protocol`](../Visualizer/protocol/src/) (`@story/visualizer-protocol`): route constants in [`routes.ts`](../Visualizer/protocol/src/routes.ts) and every request/response type in [`dto/`](../Visualizer/protocol/src/dto/). Client and server both import it, so they cannot drift apart.
+- Live refresh: file changes (the server's own writes and hand edits) arrive over `GET /api/events` and update the data on screen without reloading the page.
+- Electron or a VS Code extension could wrap this later; neither is planned.
 
-**Still open.** The client already speaks a protocol (see API below) and `Visualizer/client/src/stores/Store.ts` hardcodes `http://localhost:3123` for a server that does not exist. If the nodejs option wins, it lands at `Visualizer/server/` on :8123 and the client proxies `/api` to it; the hard part is that it has to read and write the `.ts` files in `data/` and `types/`, emitting valid TypeScript while preserving hand-written passage logic. That is why it is a separate piece of work and not just another service. The other two options (vscode extension, electron) are still on the table and would not need the port at all.
+How to run it, how the source writer works and the known limitations: [`Visualizer/README.md`](../Visualizer/README.md).
 
-## API
+## API (settled)
 
-- **not implemented, and the two descriptions of it disagree.** The routes below are as originally specified. `Visualizer/client/src/stores/Agent.ts` calls a different set:
-    - everything is under an `/api` prefix — `/api/chapter/<chapterId>`, not `/chapter/<chapterId>`
-    - the passage routes carry the passage type in the path — `/api/passage/screen/<passageId>`, not `/passage/<passageId>`
-    - the client has an `/api/passage/screen/<passageId>/setTime` that is not documented here at all
+The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/protocol/src/routes.ts) (`ROUTES` for the paths, `TApiSpec` for the body and response of each route). This section follows it.
 
-    Neither description has been made authoritative, because nothing serves these routes yet. It gets settled when the Visualizer server is built.
+- Every route is under `/api`. Bodies and responses are JSON.
+- Every resource DTO carries `version` (a hash of the files behind it). Every `PUT` and `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
+- `PUT` bodies are **partial** (`{ version, ...changedFields }`, omitted = untouched), except the map and the two layouts, which replace the whole document. `version: ''` on a map/layout `PUT` creates the missing file.
+- Fields that can hold an expression are `TCode = { code: string }` (source text, written back verbatim) or a literal.
+- Answers are `200`, and `201` for the `create*` routes and `addChapterCharacter`.
 
-- data sent as JSON body
+| Name                     | Method   | Path                                               | Body                          | Response              |
+| ------------------------ | -------- | -------------------------------------------------- | ----------------------------- | --------------------- |
+| `health`                 | `GET`    | `/api/health`                                      | —                             | `THealthDto`          |
+| `events`                 | `GET`    | `/api/events`                                      | —                             | SSE stream            |
+| `getProject`             | `GET`    | `/api/project`                                     | —                             | `TProjectDto`         |
+| `createChapter`          | `POST`   | `/api/chapters`                                    | `TCreateChapterBody`          | `TChapterDto`         |
+| `getChapter`             | `GET`    | `/api/chapters/:chapterId`                         | —                             | `TChapterDto`         |
+| `updateChapter`          | `PUT`    | `/api/chapters/:chapterId`                         | `TUpdateChapterBody`          | `TChapterDto`         |
+| `deleteChapter`          | `DELETE` | `/api/chapters/:chapterId`                         | `TDeleteChapterBody`          | `TOkDto`              |
+| `openChapter`            | `POST`   | `/api/chapters/:chapterId/open`                    | —                             | `TOpenDto`            |
+| `addChapterCharacter`    | `POST`   | `/api/chapters/:chapterId/characters`              | `TAddChapterCharacterBody`    | `TChapterDto`         |
+| `removeChapterCharacter` | `DELETE` | `/api/chapters/:chapterId/characters/:characterId` | `TRemoveChapterCharacterBody` | `TChapterDto`         |
+| `listChapterPassages`    | `GET`    | `/api/chapters/:chapterId/passages`                | —                             | `TChapterPassagesDto` |
+| `createPassage`          | `POST`   | `/api/chapters/:chapterId/passages`                | `TCreatePassageBody`          | `TPassageDto`         |
+| `getPassage`             | `GET`    | `/api/passages/:passageId`                         | —                             | `TPassageDto`         |
+| `updatePassage`          | `PUT`    | `/api/passages/:passageId`                         | `TUpdatePassageBody`          | `TPassageDto`         |
+| `deletePassage`          | `DELETE` | `/api/passages/:passageId`                         | `TDeletePassageBody`          | `TOkDto`              |
+| `openPassage`            | `POST`   | `/api/passages/:passageId/open`                    | —                             | `TOpenDto`            |
+| `createTrigger`          | `POST`   | `/api/chapters/:chapterId/triggers`                | `TCreateTriggerBody`          | `TTriggerDto`         |
+| `getTrigger`             | `GET`    | `/api/triggers/:triggerId`                         | —                             | `TTriggerDto`         |
+| `updateTrigger`          | `PUT`    | `/api/triggers/:triggerId`                         | `TUpdateTriggerBody`          | `TTriggerDto`         |
+| `deleteTrigger`          | `DELETE` | `/api/triggers/:triggerId`                         | `TDeleteTriggerBody`          | `TOkDto`              |
+| `listEntities`           | `GET`    | `/api/entities/:kind`                              | —                             | `TEntityListDto`      |
+| `createEntity`           | `POST`   | `/api/entities/:kind`                              | `TCreateEntityBody`           | `TEntityDto`          |
+| `getEntity`              | `GET`    | `/api/entities/:kind/:id`                          | —                             | `TEntityDto`          |
+| `updateEntity`           | `PUT`    | `/api/entities/:kind/:id`                          | `TUpdateEntityBody`           | `TEntityDto`          |
+| `deleteEntity`           | `DELETE` | `/api/entities/:kind/:id`                          | `TDeleteEntityBody`           | `TOkDto`              |
+| `getMap`                 | `GET`    | `/api/maps/:mapId`                                 | —                             | `TMapDto`             |
+| `updateMap`              | `PUT`    | `/api/maps/:mapId`                                 | `TUpdateMapBody`              | `TMapDto`             |
+| `getTimelineLayout`      | `GET`    | `/api/layout/timeline`                             | —                             | `TTimelineLayoutDto`  |
+| `updateTimelineLayout`   | `PUT`    | `/api/layout/timeline`                             | `TUpdateTimelineLayoutBody`   | `TTimelineLayoutDto`  |
+| `getChapterLayout`       | `GET`    | `/api/layout/chapters/:chapterId`                  | —                             | `TChapterLayoutDto`   |
+| `updateChapterLayout`    | `PUT`    | `/api/layout/chapters/:chapterId`                  | `TUpdateChapterLayoutBody`    | `TChapterLayoutDto`   |
 
-- PUT `/chapter/<chapterId>`
-    - title: String
-    - description: String
-    - location: String
-    - startTime: TimeString
-    - endTime: TimeString
-- POST `/chapter/<chapterId>/open`
-- DELETE `/chapter/<chapterId>`
+- `:kind` is `characters | npcs | locations | items`. `:mapId` is `global` (the only map, `data/locations/map.json`).
+- Create bodies:
+    - `TCreateChapterBody`: `{ chapterId, title, description?, location, timeRange: { start, end } }`
+    - `TCreatePassageBody`: `{ characterId, localId, type: 'screen' | 'linear' | 'transition', title? }`
+    - `TCreateTriggerBody`: `{ triggerId, name, description?, time }`
+    - `TAddChapterCharacterBody`: `{ characterId, startPassageLocalId? }` (default `intro`)
+    - `TCreateEntityBody`: `{ id, ...editable fields }`, plus `type` for items
+- Every `DELETE` body (and `removeChapterCharacter`'s) is `{ version }`.
+- Ids (chapter, character, npc, location, item, trigger, passage local id) match `/^[a-z][A-Za-z0-9_]*$/`. Ids are read-only (no rename).
 
-- POST `/chapter/<chapterId>/setTime`
-    - startTime: TimeString
-    - endTime: TimeString
+**Errors** (`dto/errors.ts`): every non-2xx answer is `{ error, message?, diagnostics?, references?, current? }`.
 
-- PUT `/passage/<passageId>`
-    - title: String
-    - type: 'screen' | 'linear' | 'transition'
-- POST `/passage/<passageId>/open`
-- DELETE `/passage/<passageId>`
+| Status | `error`           | Meaning                                                                  |
+| ------ | ----------------- | ------------------------------------------------------------------------ |
+| 400    | `bad_request`     | malformed JSON, missing or invalid fields                                |
+| 404    | `not_found`       | no such route or resource                                                |
+| 409    | `stale`           | `version` is not the one on disk; `current` is the fresh DTO (or `null`) |
+| 409    | `referenced`      | delete refused, other files still point here (`references`)              |
+| 409    | `exists`          | create refused, the id is taken                                          |
+| 422    | `invalid`         | the edit does not type-check (`diagnostics`); nothing was written        |
+| 501    | `not_implemented` | reserved; every route is implemented                                     |
+| 500    | `internal`        | bug                                                                      |
 
-- PUT `/map/<mapId>`
-    - title: String
-    - width: Int
-    - height: Int
-    - data: { tile: String; title?: String }[][]
-    - locations: { i: Int; j: Int; locationId: String }[]
-    - maps: { i: Int; j: Int; mapId: String }[]
-- GET `/map/<mapId>`
-- GET `/map`
-    - mapId: String
-    - title: String
+**Events** (`dto/events.ts`): `GET /api/events` is a Server-Sent Events stream. It sends `hello` once on connect, then an `event: change` with `{ kind, id, version, op?, chapterId? }` per change. `kind` is `chapter | passage | trigger | entity | map | layout | project`. One server operation (even a multi-file write) is one event; hand edits are batched over about 150 ms. An id ending in `*` is a wildcard (`trigger` `*` for a hand edit of `triggers.ts`, `entity` `items/*` for an items file).

@@ -1427,6 +1427,7 @@ __metadata:
   dependencies:
     "@story/core": "workspace:^"
     "@story/data": "workspace:^"
+    tsx: "npm:^4.20.5"
   languageName: unknown
   linkType: soft
 
@@ -1490,8 +1491,6 @@ __metadata:
     "@emotion/styled": "npm:^11.13.0"
     "@mui/icons-material": "npm:^6.1.0"
     "@mui/material": "npm:^6.1.0"
-    "@story/core": "workspace:^"
-    "@story/data": "workspace:^"
     "@story/shared": "workspace:^"
     "@story/types": "workspace:^"
     "@story/ui": "workspace:^"
