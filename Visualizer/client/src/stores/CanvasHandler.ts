@@ -1,15 +1,11 @@
 import { throttle } from '@story/shared';
 import { RESOLUTION_FACTOR } from '../Chapters/ChapterStore/TimelineRender/constants';
-import { Store } from './Store';
 
 export class CanvasHandler {
     resizeObserver: ResizeObserver;
     register: Map<string, HTMLCanvasElement> = new Map();
 
-    constructor(
-        public containerRef: HTMLElement,
-        private store: Store
-    ) {
+    constructor(public containerRef: HTMLElement) {
         this.resizeObserver = new ResizeObserver(throttle<unknown>(() => this.onCanvasResize(), 10));
         this.resizeObserver.observe(containerRef);
         this.onCanvasResize();
@@ -17,9 +13,6 @@ export class CanvasHandler {
 
     onCanvasResize = () => {
         this.register.forEach(this.updateCanvasSize);
-
-        const rect = this.containerRef.getBoundingClientRect();
-        this.store.updateSize(rect.width, rect.height);
     };
 
     private updateCanvasSize = (canvas: HTMLCanvasElement) => {
