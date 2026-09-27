@@ -32,7 +32,6 @@ export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
                 mode && store.setMode(mode)
             }
             aria-label={_('Map mode')}
-            sx={TOGGLE_SX}
         >
             <ToggleButton value="view" aria-label={_('View')}>
                 <VisibilityIcon fontSize="small" />
@@ -126,11 +125,3 @@ const SLabel = styled.span`
     margin-left: ${spacingCss(0.5)};
     text-transform: none;
 `;
-
-const TOGGLE_SX = {
-    '& .MuiToggleButton-root': { color: '#bbb', borderColor: '#555' },
-    '& .MuiToggleButton-root.Mui-selected': {
-        color: '#fff',
-        backgroundColor: '#ffffff26',
-    },
-};

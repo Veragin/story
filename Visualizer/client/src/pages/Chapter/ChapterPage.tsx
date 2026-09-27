@@ -5,7 +5,6 @@ import {
     Button,
     IconButton,
     styled,
-    ThemeProvider,
     Tooltip,
     Typography,
 } from '@mui/material';
@@ -24,7 +23,6 @@ import {
 } from '../../api';
 import { ResizableSplitter } from '../../components/ResizableSplitter';
 import { ControlBar, PageContainer, router, useKey } from '../../shell';
-import { darkTheme } from '../../theme';
 import { ChapterGraphStore } from './ChapterGraphStore';
 import { openChapterInfoDialog } from './ChapterInfoForm';
 import {
@@ -148,46 +146,41 @@ export const ChapterPage = observer(
                         <ResizableSplitter
                             leftContent={<ChapterGraphCanvas store={store} />}
                             rightContent={
-                                <ThemeProvider theme={darkTheme}>
-                                    <SSide>
-                                        {store.editor ? (
-                                            <PassageEditor
-                                                key={store.editor.passageId}
-                                                store={store.editor}
-                                                passageOptions={store.passages.map(
-                                                    (p) => ({ id: p.passageId })
-                                                )}
-                                                itemOptions={(
-                                                    store.project?.items ?? []
-                                                ).map((i) => ({
-                                                    id: i.id,
-                                                    label: i.name,
-                                                }))}
-                                                onClose={() =>
-                                                    store.closeEditor()
-                                                }
-                                                onDelete={() =>
-                                                    void confirmDeletePassage(
-                                                        store,
+                                <SSide>
+                                    {store.editor ? (
+                                        <PassageEditor
+                                            key={store.editor.passageId}
+                                            store={store.editor}
+                                            passageOptions={store.passages.map(
+                                                (p) => ({ id: p.passageId })
+                                            )}
+                                            itemOptions={(
+                                                store.project?.items ?? []
+                                            ).map((i) => ({
+                                                id: i.id,
+                                                label: i.name,
+                                            }))}
+                                            onClose={() => store.closeEditor()}
+                                            onDelete={() =>
+                                                void confirmDeletePassage(
+                                                    store,
+                                                    store.editor?.passageId
+                                                )
+                                            }
+                                            onOpenInEditor={() =>
+                                                void store
+                                                    .openInCodeEditor(
                                                         store.editor?.passageId
                                                     )
-                                                }
-                                                onOpenInEditor={() =>
-                                                    void store
-                                                        .openInCodeEditor(
-                                                            store.editor
-                                                                ?.passageId
-                                                        )
-                                                        .catch((e: unknown) =>
-                                                            console.error(e)
-                                                        )
-                                                }
-                                            />
-                                        ) : (
-                                            <ChapterOverview store={store} />
-                                        )}
-                                    </SSide>
-                                </ThemeProvider>
+                                                    .catch((e: unknown) =>
+                                                        console.error(e)
+                                                    )
+                                            }
+                                        />
+                                    ) : (
+                                        <ChapterOverview store={store} />
+                                    )}
+                                </SSide>
                             }
                             initialLeftWidth={65}
                             minLeftWidth={30}

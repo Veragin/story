@@ -1,5 +1,5 @@
 import { styled, Tab, Tabs } from '@mui/material';
-import { Row, spacingCss } from '@story/ui';
+import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
@@ -63,14 +63,15 @@ export const TopBar = observer(() => {
     );
 });
 
+/** Keeps the navy bar of `appTheme`; the rest of the app runs on the Visualizer's `darkTheme`. */
 const SBar = styled(Row)`
     flex: 0 0 ${TOP_BAR_HEIGHT}px;
     height: ${TOP_BAR_HEIGHT}px;
     align-items: center;
     gap: ${spacingCss(2)};
     padding: 0 ${spacingCss(2)};
-    background-color: ${({ theme }) => theme.palette.primary.dark};
-    border-bottom: 1px solid ${({ theme }) => theme.palette.primary.main};
+    background-color: ${appTheme.palette.primary.dark};
+    border-bottom: 1px solid ${appTheme.palette.primary.main};
     color: white;
 `;
 

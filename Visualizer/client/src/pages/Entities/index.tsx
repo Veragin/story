@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
-import { styled, Tab, Tabs, ThemeProvider } from '@mui/material';
+import { styled, Tab, Tabs } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { TEntityKind } from '@story/visualizer-protocol';
 import { api, apiEvents } from '../../api';
 import { PageContainer, router } from '../../shell';
-import { darkTheme } from '../../theme';
 import { EntitiesStore } from './EntitiesStore';
 import { EntityForm } from './EntityForm';
 import { EntityList } from './EntityList';
@@ -58,34 +57,32 @@ const EntitiesPage = observer(({ kind, id }: Props) => {
 
     return (
         <PageContainer>
-            <ThemeProvider theme={darkTheme}>
-                <SPage>
-                    <SKinds
-                        value={current}
-                        textColor="inherit"
-                        indicatorColor="primary"
-                    >
-                        {KINDS.map((k) => (
-                            <Tab
-                                key={k.kind}
-                                value={k.kind}
-                                label={k.label()}
-                                href={router.href({
-                                    page: 'entities',
-                                    kind: k.kind,
-                                    id: s.lastIdOf(k.kind),
-                                })}
-                            />
-                        ))}
-                    </SKinds>
-                    <SBody>
-                        <EntityList store={s} />
-                        <SFormArea>
-                            <EntityForm store={s} />
-                        </SFormArea>
-                    </SBody>
-                </SPage>
-            </ThemeProvider>
+            <SPage>
+                <SKinds
+                    value={current}
+                    textColor="inherit"
+                    indicatorColor="primary"
+                >
+                    {KINDS.map((k) => (
+                        <Tab
+                            key={k.kind}
+                            value={k.kind}
+                            label={k.label()}
+                            href={router.href({
+                                page: 'entities',
+                                kind: k.kind,
+                                id: s.lastIdOf(k.kind),
+                            })}
+                        />
+                    ))}
+                </SKinds>
+                <SBody>
+                    <EntityList store={s} />
+                    <SFormArea>
+                        <EntityForm store={s} />
+                    </SFormArea>
+                </SBody>
+            </SPage>
         </PageContainer>
     );
 });

@@ -9,11 +9,9 @@ import {
     MenuItem,
     Stack,
     TextField,
-    ThemeProvider,
 } from '@mui/material';
 import type { TEntityDto, TEntityKind } from '@story/visualizer-protocol';
 import { ApiError } from '../../api';
-import { darkTheme } from '../../theme';
 import type { EntitiesStore } from './EntitiesStore';
 import {
     buildCreateBody,
@@ -110,129 +108,123 @@ export const CreateEntityDialog = ({
     const showIdError = (touched || form.id !== '') && idProblem;
 
     return (
-        <ThemeProvider theme={darkTheme}>
-            <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        void submit();
-                    }}
-                >
-                    <DialogTitle>{TITLE[kind]()}</DialogTitle>
-                    <DialogContent>
-                        <Stack gap={2} sx={{ pt: 1 }}>
+        <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void submit();
+                }}
+            >
+                <DialogTitle>{TITLE[kind]()}</DialogTitle>
+                <DialogContent>
+                    <Stack gap={2} sx={{ pt: 1 }}>
+                        <TextField
+                            autoFocus
+                            required
+                            label={_('id')}
+                            value={form.id}
+                            onChange={(e) => set({ id: e.target.value })}
+                            error={!!showIdError}
+                            helperText={
+                                showIdError
+                                    ? ID_ERRORS[idProblem]()
+                                    : _(
+                                          'Used in code and file names; cannot be changed later.'
+                                      )
+                            }
+                            inputProps={{
+                                'spellCheck': false,
+                                'aria-label': 'id',
+                            }}
+                        />
+                        <TextField
+                            label={_('name')}
+                            value={form.name}
+                            placeholder={form.id}
+                            onChange={(e) => set({ name: e.target.value })}
+                            helperText={_('Defaults to the id.')}
+                        />
+                        {fields.description !== 'none' && (
                             <TextField
-                                autoFocus
-                                required
-                                label={_('id')}
-                                value={form.id}
-                                onChange={(e) => set({ id: e.target.value })}
-                                error={!!showIdError}
-                                helperText={
-                                    showIdError
-                                        ? ID_ERRORS[idProblem]()
-                                        : _(
-                                              'Used in code and file names; cannot be changed later.'
-                                          )
+                                label={_('description')}
+                                required={fields.description === 'required'}
+                                multiline
+                                minRows={2}
+                                value={form.description}
+                                onChange={(e) =>
+                                    set({ description: e.target.value })
                                 }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'id',
-                                }}
+                                error={touched && descriptionMissing}
                             />
+                        )}
+                        {fields.type && (
                             <TextField
-                                label={_('name')}
-                                value={form.name}
-                                placeholder={form.id}
-                                onChange={(e) => set({ name: e.target.value })}
-                                helperText={_('Defaults to the id.')}
-                            />
-                            {fields.description !== 'none' && (
-                                <TextField
-                                    label={_('description')}
-                                    required={fields.description === 'required'}
-                                    multiline
-                                    minRows={2}
-                                    value={form.description}
-                                    onChange={(e) =>
-                                        set({ description: e.target.value })
-                                    }
-                                    error={touched && descriptionMissing}
-                                />
-                            )}
-                            {fields.type && (
-                                <TextField
-                                    select
-                                    label={_('type')}
-                                    value={form.type}
-                                    onChange={(e) =>
-                                        set({ type: e.target.value })
-                                    }
-                                    helperText={_(
-                                        'Goes into data/items/%s.ts',
-                                        itemSourceForType(form.type)
-                                    )}
-                                >
-                                    {ITEM_TYPES.map((t) => (
-                                        <MenuItem key={t} value={t}>
-                                            {t}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            )}
-                            {fields.type &&
-                                (ITEM_TYPE_PROPS[form.type] ?? []).map((p) => (
-                                    <TextField
-                                        key={`${form.type}.${p.key}`}
-                                        label={p.key}
-                                        type={
-                                            p.kind === 'number'
-                                                ? 'number'
-                                                : 'text'
-                                        }
-                                        value={String(
-                                            form.props?.[p.key] ??
-                                                (p.kind === 'number' ? 0 : '')
-                                        )}
-                                        onChange={(e) =>
-                                            set({
-                                                props: {
-                                                    ...form.props,
-                                                    [p.key]:
-                                                        p.kind === 'number'
-                                                            ? Number(
-                                                                  e.target.value
-                                                              ) || 0
-                                                            : e.target.value,
-                                                },
-                                            })
-                                        }
-                                    />
+                                select
+                                label={_('type')}
+                                value={form.type}
+                                onChange={(e) => set({ type: e.target.value })}
+                                helperText={_(
+                                    'Goes into data/items/%s.ts',
+                                    itemSourceForType(form.type)
+                                )}
+                            >
+                                {ITEM_TYPES.map((t) => (
+                                    <MenuItem key={t} value={t}>
+                                        {t}
+                                    </MenuItem>
                                 ))}
-                            {error && (
-                                <Alert
-                                    severity="error"
-                                    sx={{ whiteSpace: 'pre-wrap' }}
-                                >
-                                    {error}
-                                </Alert>
-                            )}
-                        </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button color="inherit" onClick={onCancel}>
-                            {_('Cancel')}
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={busy || (touched && !canSubmit)}
-                        >
-                            {_('Create')}
-                        </Button>
-                    </DialogActions>
-                </form>
-            </Dialog>
-        </ThemeProvider>
+                            </TextField>
+                        )}
+                        {fields.type &&
+                            (ITEM_TYPE_PROPS[form.type] ?? []).map((p) => (
+                                <TextField
+                                    key={`${form.type}.${p.key}`}
+                                    label={p.key}
+                                    type={
+                                        p.kind === 'number' ? 'number' : 'text'
+                                    }
+                                    value={String(
+                                        form.props?.[p.key] ??
+                                            (p.kind === 'number' ? 0 : '')
+                                    )}
+                                    onChange={(e) =>
+                                        set({
+                                            props: {
+                                                ...form.props,
+                                                [p.key]:
+                                                    p.kind === 'number'
+                                                        ? Number(
+                                                              e.target.value
+                                                          ) || 0
+                                                        : e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            ))}
+                        {error && (
+                            <Alert
+                                severity="error"
+                                sx={{ whiteSpace: 'pre-wrap' }}
+                            >
+                                {error}
+                            </Alert>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button color="inherit" onClick={onCancel}>
+                        {_('Cancel')}
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={busy || (touched && !canSubmit)}
+                    >
+                        {_('Create')}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
     );
 };

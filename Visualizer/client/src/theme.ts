@@ -1,9 +1,80 @@
-import { createTheme } from '@mui/material';
+import { alpha, createTheme, type ThemeOptions } from '@mui/material';
+
+/** Form control colours shared by every Visualizer page (toggle buttons, outlined inputs). */
+const FORM = {
+    text: '#ffffff',
+    label: 'rgba(255, 255, 255, 0.75)',
+    border: 'rgba(255, 255, 255, 0.5)',
+    borderHover: '#ffffff',
+    borderDisabled: 'rgba(255, 255, 255, 0.2)',
+    /** Selected toggle / focused input: a brighter shade of the timeline's trigger green. */
+    accent: '#66bb6a',
+};
+
+const formComponents: ThemeOptions['components'] = {
+    MuiToggleButton: {
+        styleOverrides: {
+            root: {
+                'color': FORM.text,
+                'borderColor': FORM.border,
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+                '&.Mui-selected, &.Mui-selected:hover': {
+                    color: FORM.accent,
+                    borderColor: FORM.accent,
+                    backgroundColor: alpha(FORM.accent, 0.16),
+                },
+                '&.Mui-disabled': {
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    borderColor: FORM.borderDisabled,
+                },
+            },
+        },
+    },
+    MuiToggleButtonGroup: {
+        styleOverrides: {
+            // Grouped buttons after the first get a transparent left border; the selected one
+            // shows its full green outline.
+            grouped: { '&.Mui-selected': { borderLeftColor: FORM.accent } },
+        },
+    },
+    MuiOutlinedInput: {
+        styleOverrides: {
+            root: {
+                'color': FORM.text,
+                '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: FORM.border,
+                },
+                '&:hover:not(.Mui-disabled, .Mui-error, .Mui-focused) .MuiOutlinedInput-notchedOutline': {
+                    borderColor: FORM.borderHover,
+                },
+                '&.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: FORM.accent },
+                '&.Mui-error .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#f44336',
+                },
+                '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                    borderColor: FORM.borderDisabled,
+                },
+            },
+        },
+    },
+    MuiInputLabel: {
+        styleOverrides: {
+            root: {
+                'color': FORM.label,
+                '&.Mui-focused:not(.Mui-error)': { color: FORM.accent },
+            },
+        },
+    },
+    MuiSelect: {
+        styleOverrides: {
+            icon: { color: FORM.label },
+        },
+    },
+};
 
 /**
- * Dark MUI theme for the Visualizer's forms and side panels (was duplicated in
- * `Chapters.tsx` and `ChapterPassages.tsx`). The app-wide theme is `appTheme` from `@story/ui`;
- * wrap form areas in `<ThemeProvider theme={darkTheme}>`.
+ * The Visualizer's MUI theme, applied to the whole app in `main.tsx` (inside `@story/ui`'s
+ * `GlobalThemeWrapper`, whose `appTheme` is shared with the engines).
  */
 export const darkTheme = createTheme({
     palette: {
@@ -41,26 +112,12 @@ export const darkTheme = createTheme({
                 },
             },
         },
+        ...formComponents,
         MuiTextField: {
             styleOverrides: {
                 root: {
                     '& .MuiOutlinedInput-root': {
-                        'backgroundColor': 'rgba(50, 50, 50, 0.8)',
-                        '& fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        '&:hover fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                        '&.Mui-focused fieldset': {
-                            borderColor: '#64b5f6',
-                        },
-                    },
-                    '& .MuiInputLabel-root': {
-                        'color': 'rgba(255, 255, 255, 0.7)',
-                        '&.Mui-focused': {
-                            color: '#64b5f6',
-                        },
+                        backgroundColor: 'rgba(50, 50, 50, 0.8)',
                     },
                     '& .MuiFormHelperText-root': {
                         color: 'rgba(255, 255, 255, 0.6)',
@@ -70,6 +127,7 @@ export const darkTheme = createTheme({
         },
         MuiSelect: {
             styleOverrides: {
+                ...formComponents.MuiSelect?.styleOverrides,
                 root: {
                     color: '#ffffff',
                 },

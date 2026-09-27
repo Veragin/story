@@ -27,7 +27,6 @@ export const TileToolbar = observer(({ mapStore }: { mapStore: MapStore }) => {
             <ToggleButtonGroup
                 size="small"
                 exclusive
-                sx={TOGGLE_SX}
                 value={mapStore.tool}
                 onChange={(_e, tool: TTileTool | null) =>
                     tool && mapStore.setTool(tool)
@@ -101,11 +100,3 @@ const SInfo = styled(Row)`
     font-size: 13px;
     opacity: 0.8;
 `;
-
-const TOGGLE_SX = {
-    '& .MuiToggleButton-root': { color: '#bbb', borderColor: '#555' },
-    '& .MuiToggleButton-root.Mui-selected': {
-        color: '#fff',
-        backgroundColor: '#ffffff26',
-    },
-};
