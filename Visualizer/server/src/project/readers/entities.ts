@@ -48,6 +48,7 @@ export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
             return {
                 name: { schema: S.string },
                 description: { schema: S.string },
+                image: { schema: S.string, after: ['description', 'name'] },
                 startPassageId: { schema: S.string },
                 init: { schema: S.record() },
             };
@@ -55,6 +56,7 @@ export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
             return {
                 name: { schema: S.string },
                 description: { schema: S.string },
+                image: { schema: S.string, after: ['description', 'name'] },
                 init: { schema: S.record() },
             };
         case 'locations':
@@ -70,8 +72,8 @@ export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
 };
 
 export const ENTITY_OPTIONAL: Record<TSourceKind, string[]> = {
-    characters: ['description', 'startPassageId'],
-    npcs: [],
+    characters: ['description', 'image', 'startPassageId'],
+    npcs: ['image'],
     locations: ['sublocations', 'mapId'],
 };
 
@@ -130,9 +132,20 @@ export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharac
         (fields[key] !== undefined ? { [key]: fields[key] } : {}) as Partial<Record<K, never>>;
     switch (src.kind) {
         case 'characters':
-            return { ...base, kind: 'characters', ...opt('description'), ...opt('startPassageId') };
+            return {
+                ...base,
+                kind: 'characters',
+                ...opt('description'),
+                ...opt('image'),
+                ...opt('startPassageId'),
+            };
         case 'npcs':
-            return { ...base, kind: 'npcs', description: (fields.description ?? '') as TMaybeCode<string> };
+            return {
+                ...base,
+                kind: 'npcs',
+                description: (fields.description ?? '') as TMaybeCode<string>,
+                ...opt('image'),
+            };
         case 'locations':
             return {
                 ...base,

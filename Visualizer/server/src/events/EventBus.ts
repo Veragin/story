@@ -12,8 +12,8 @@ export type TChangeListener = (event: TChangeEvent) => void;
 export type TTransaction = {
     /** The project the bus writes to (so helpers like `json/index.ts#removePassagePositions` need only `tx`). */
     readonly project: ProjectRoot;
-    /** Atomic write (tmp + rename) that the watcher will not echo back. */
-    writeFile(file: string, contents: string): Promise<void>;
+    /** Atomic write (tmp + rename) that the watcher will not echo back. Bytes for images. */
+    writeFile(file: string, contents: string | Uint8Array): Promise<void>;
     /** Delete a file (missing is fine). */
     deleteFile(file: string): Promise<void>;
     /** Delete a directory and everything in it (a `<character>.passages/` folder). */
@@ -113,7 +113,7 @@ export class EventBus {
             this.activeTransactions++;
             const recorded = new Map<string, string | null>();
             let event: TChangeEvent | null = null;
-            const record = (file: string, contents: string | null) => {
+            const record = (file: string, contents: string | Uint8Array | null) => {
                 const abs = path.resolve(file);
                 const hash = contents === null ? null : version(contents);
                 recorded.set(abs, hash);

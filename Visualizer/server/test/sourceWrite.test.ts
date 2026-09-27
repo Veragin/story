@@ -139,7 +139,7 @@ describe('passages', () => {
         // a hand edit makes the version stale as well
         const file = path.join(t.project.root, 'data/chapters/village/thomas.passages/intro.ts');
         const current = (await t.get('/api/passages/village-thomas-intro')).body;
-        await writeFile(file, (await readFile(file, 'utf8')).replace("image: 'hunter'", "image: 'story'"));
+        await writeFile(file, (await readFile(file, 'utf8')).replace(/image: '[^']*'/, "image: 'story'"));
         res = await t.put('/api/passages/village-thomas-intro', { version: current.version, title: 'Again' });
         expect(res.status).toBe(409);
         expect(res.body.current.image).toBe('story');
@@ -160,7 +160,7 @@ describe('passages', () => {
                 type === 'screen'
                     ? {
                           title: 'A new screen',
-                          image: 'hunter',
+                          image: 'A hunter at the edge of the forest',
                           body: [
                               {
                                   condition: { code: 's.time.s > 0' },

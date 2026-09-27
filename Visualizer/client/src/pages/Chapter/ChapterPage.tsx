@@ -151,6 +151,7 @@ export const ChapterPage = observer(
                                         <PassageEditor
                                             key={store.editor.passageId}
                                             store={store.editor}
+                                            api={store.api}
                                             passageOptions={store.passages.map(
                                                 (p) => ({ id: p.passageId })
                                             )}

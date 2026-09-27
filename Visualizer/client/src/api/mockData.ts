@@ -113,7 +113,7 @@ export const createMockSeed = (): TMockSeed => ({
             params: [],
             type: 'screen',
             title: 'Intro',
-            image: 'hunter',
+            image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
             body: [
                 {
                     condition: true,
@@ -139,7 +139,7 @@ export const createMockSeed = (): TMockSeed => ({
             params: ['s'],
             type: 'screen',
             title: 'Forest',
-            image: 'hunter',
+            image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
             body: [
                 {
                     condition: true,
@@ -176,7 +176,7 @@ export const createMockSeed = (): TMockSeed => ({
             params: ['s'],
             type: 'screen',
             title: 'Intro',
-            image: 'image',
+            image: '',
             body: [
                 {
                     condition: { code: 's.characters.annie.health > 0' },
@@ -202,7 +202,7 @@ export const createMockSeed = (): TMockSeed => ({
             params: [],
             type: 'screen',
             title: 'Palace',
-            image: 'image',
+            image: '',
             body: [
                 {
                     condition: true,

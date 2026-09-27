@@ -44,8 +44,10 @@ describe('pathToResource', () => {
 
     it.each([
         'data/test/story.test.ts',
-        'data/assets/hunter.png',
-        'data/assets/index.ts',
+        'data/assets/story.png',
+        'data/chapters/village/thomas.passages/intro.png',
+        'data/characters/thomas.png',
+        'data/npcs/Franta.png',
         'data/package.json',
         'data/chapters/village/.village.chapter.ts.abc123.vistmp',
         'data/chapters/village/thomas.passages/notes.md',

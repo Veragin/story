@@ -21,6 +21,7 @@ import {
     type TNpcDto,
     type TValueRecord,
 } from '@story/visualizer-protocol';
+import { ImageField } from '../../components/ImageField';
 import { modals, router, useKey } from '../../shell';
 import {
     CodeOnlyField,
@@ -279,12 +280,35 @@ const KindFields = observer(({ store, draft, errorsOf }: TFieldsProps) => {
         </>
     );
 
+    /** Characters and npcs have a portrait: the `.png` next to their file. */
+    const portrait = (owner: 'characters' | 'npcs') => {
+        const image = (draft as TCharacterDto | TNpcDto).image;
+        return (
+            <>
+                <StringField
+                    label={_('image description (optional)')}
+                    value={image}
+                    onChange={(v) => set('image', v)}
+                    multiline
+                    errors={errorsOf('image')}
+                />
+                <ImageField
+                    api={store.api}
+                    owner={owner}
+                    id={draft.id}
+                    description={typeof image === 'string' ? image : undefined}
+                />
+            </>
+        );
+    };
+
     switch (draft.kind) {
         case 'characters': {
             const c = draft as TCharacterDto;
             return (
                 <>
                     {common(true)}
+                    {portrait('characters')}
                     <StartPassageField
                         store={store}
                         character={c}
@@ -304,6 +328,7 @@ const KindFields = observer(({ store, draft, errorsOf }: TFieldsProps) => {
             return (
                 <>
                     {common(false)}
+                    {portrait('npcs')}
                     {initField(NPC_INIT)}
                     <DataTypeField
                         store={store}

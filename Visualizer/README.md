@@ -62,6 +62,7 @@ Dependencies go one way: client → protocol ← server. The client never import
     - create passage: `<ch>/<character>.passages/<local>.ts` (`export const <local>Passage`), plus the `T<Ch><Char>PassageId` union and the `Record` in `<ch>.passages.ts`
     - add character to chapter: the `<character>.passages/` folder with a start passage (default `intro`) and its id union; remove character is the reverse, including its positions in `<ch>.layout.json`
     - create entity: the entity file, `register.ts` and `TWorldState.ts`
+    - delete a passage or an entity: its image (the sibling `.png`) goes too
     - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors
 - **JSON stores** (`json/`): `data/locations/map.json` and the layouts `data/chapters/timeline.layout.json` and `data/chapters/<ch>/<ch>.layout.json`. They are validated whole-document replaces (400 on a bad shape). A missing file reads as the default with `version: ''`, and a `PUT` with `version: ''` creates it.
 
@@ -89,6 +90,18 @@ Dependencies go one way: client → protocol ← server. The client never import
 ```
 
 Painting a tile is a one-line diff. Colour ids may not contain whitespace or `*`. Polygons are in tile-renderer world coordinates (hex renderer at zoom 1). Location keys are sorted. Empty `label`/`description` are dropped.
+
+## Images
+
+The image of a passage, character or npc is the `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`). The `image` field of a screen passage (and the optional one of a character or npc) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
+
+- `GET /api/images/:owner/:id` (`owner`: `passages | characters | npcs`) answers `TImageDto`: the `.png` path, its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/images/:owner/:id/png?v=<version>`) or `null`.
+- `GET /api/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
+- `PUT /api/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
+
+In the client, `components/ImageField.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+
+The game (`SingleEngine/src/images.ts`) finds the same files with `import.meta.glob`, so there too a missing `.png` just means no picture.
 
 ## Live refresh
 

@@ -9,6 +9,8 @@ import {
     type TEntityDto,
     type TEntityDtoByKind,
     type TEntityKind,
+    type TImageDto,
+    type TImageOwner,
     type TItemDto,
     type TLocationDto,
     type TMapDto,
@@ -130,6 +132,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
     let maps = new Map<string, TMapDto>();
     let timelineLayout: TTimelineLayoutDto;
     let chapterLayouts = new Map<string, TChapterLayoutDto>();
+    /** Uploaded images by `<owner>/<id>`; the seed has none (the mock never reads `data/`). */
+    let images = new Map<string, TImageDto>();
 
     const load = (s: TMockSeed) => {
         const withVersion = <T>(x: T) => ({ ...clone(x), version: nextVersion() });
@@ -147,6 +151,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         chapterLayouts = new Map(
             Object.entries(s.chapterLayouts).map(([id, l]) => [id, { ...withVersion(l), chapterId: id }])
         );
+        images = new Map();
         refreshDerived();
     };
 
@@ -191,6 +196,17 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
             .filter((e) => passageIds.has(e.to) && !passageIds.has(e.from))
             .filter((e) => !exceptFolder || !exceptFolder(passages.get(e.from) as TPassageDto))
             .map((e) => ({ file: passages.get(e.from)?.file ?? '', line: 1, passageId: e.from }));
+
+    /** An owner's image, or an empty one at its sibling `.png` (404 when the owner does not exist). */
+    const imageOf = (owner: TImageOwner, id: string): TImageDto => {
+        const found =
+            images.get(`${owner}/${id}`) ??
+            (owner === 'passages'
+                ? get(passages, id, 'passage')
+                : get(entities[owner] as Map<string, TEntityDto>, id, `${owner}/${id}`));
+        if ('url' in found) return found;
+        return { owner, id, file: found.file.replace(/\.ts$/, '.png'), version: '', url: null };
+    };
 
     load(seed ?? createMockSeed());
 
@@ -505,6 +521,17 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 map.delete(id);
                 emit({ kind: 'entity', id: `${kind}/${id}`, version: null, op: 'deleted' });
                 return { ok: true as const };
+            }),
+
+        getImage: (owner, id) => reply(() => imageOf(owner, id)),
+        uploadImage: (owner, id, { version, data }) =>
+            reply(() => {
+                const current = imageOf(owner, id);
+                checkVersion(current, version);
+                // no change event, like the server: an image is not a resource of `dto/events.ts`
+                const next: TImageDto = { ...current, version: nextVersion(), url: `data:image/png;base64,${data}` };
+                images.set(`${owner}/${id}`, next);
+                return next;
             }),
 
         getMap: (mapId) => reply(() => get(maps, mapId, `map "${mapId}"`)),

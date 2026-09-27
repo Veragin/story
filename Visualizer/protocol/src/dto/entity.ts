@@ -24,6 +24,8 @@ export type TInventoryEntryDto = { id: string; amount?: number } & { [key: strin
 export type TCharacterDto = TEntityBase<'characters'> & {
     name: TMaybeCode<string>;
     description?: TMaybeCode<string>;
+    /** A text description of the portrait; the picture is the file's sibling `.png` (`dto/image.ts`). */
+    image?: TMaybeCode<string>;
     /** Full passage id. */
     startPassageId?: TMaybeCode<string>;
     /**
@@ -39,6 +41,8 @@ export type TCharacterDto = TEntityBase<'characters'> & {
 export type TNpcDto = TEntityBase<'npcs'> & {
     name: TMaybeCode<string>;
     description: TMaybeCode<string>;
+    /** A text description of the portrait; the picture is the file's sibling `.png` (`dto/image.ts`). */
+    image?: TMaybeCode<string>;
     /** `init`: `location`, `isDead`, `inventory` and the npc's own data. */
     init: TMaybeCode<TValueRecord>;
     /** `export type T<Name>NpcData = { … }` */

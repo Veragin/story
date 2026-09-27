@@ -9,7 +9,7 @@ export const introPassage = (): TPassage<'village', 'thomas', TVillageThomasPass
 
     type: 'screen',
     title: 'Intro',
-    image: 'hunter',
+    image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
 
     body: [
         {

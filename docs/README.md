@@ -45,6 +45,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 - passage
     - means one screen that is displayed to player
     - contains image, text and options for player to decide how to continue
+    - the image is the `.png` next to the passage file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.png`); the passage's `image` field is only a text description of it. Characters and npcs get a portrait the same way (`data/characters/thomas.png`, `data/npcs/Franta.png`)
     - passage is written as a file with given structure (see `data/chapters/village/village.chapter.ts`)
     - filename is in format `<chapter>.<passage>.ts`
     - **a passage file exports a function, not an object**: it receives `(s, e)` — the world state and the engine — and returns the passage:
@@ -59,7 +60,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
             id: 'forest',
             type: 'screen',
             title: 'Forest',
-            image: 'hunter',
+            image: 'Thomas, a young hunter, on a misty forest path.', // a description; the art is forest.png
             body: [
                 {
                     condition: true,
@@ -130,7 +131,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 - data
     - folder where the story files are located
     - edited by the author (directly, or through the Visualizer's other tabs)
-    - also holds the story's art, in `data/assets/`
+    - also holds the story's art: each image is the `.png` next to the `.ts` file of the passage, character or npc it belongs to (`data/assets/story.png` is only the apps' favicon)
 
 ### Engine packages
 

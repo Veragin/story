@@ -1,4 +1,4 @@
-import { Button, styled, Tooltip } from '@mui/material';
+import { Avatar, Button, styled, Tooltip } from '@mui/material';
 import { Modal, Row, spacingCss, Text } from '@story/ui';
 import { register } from '@story/data';
 import { useState } from 'react';
@@ -9,17 +9,29 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import { observer } from 'mobx-react-lite';
 import { useEngine, useWorldState } from '../../context';
+import { characterImage } from '../../images';
 
 export const StatusBar = observer(() => {
     const e = useEngine();
     const s = useWorldState();
     const char = s.characters[s.mainCharacterId];
     const [openInventory, setOpenInventory] = useState(false);
+    const character = register.characters[s.mainCharacterId];
+    const portrait = characterImage(s.mainCharacterId);
 
     return (
         <SRow>
             <Text>{e.timeManager.renderTime(s.time, 'dateTime')}</Text>
-            <Text>{register.characters[s.mainCharacterId].name}</Text>
+            <SCharacter>
+                {portrait && (
+                    <Avatar
+                        src={portrait}
+                        alt={character.image ?? character.name}
+                        sx={{ width: 28, height: 28 }}
+                    />
+                )}
+                <Text>{character.name}</Text>
+            </SCharacter>
             <Tooltip title="Health">
                 <SStat>
                     <FavoriteIcon />
@@ -79,6 +91,11 @@ export const SRow = styled(Row)`
     padding: ${spacingCss(0.5)} ${spacingCss(1)};
     border-bottom: solid 1px grey;
     align-items: center;
+`;
+
+export const SCharacter = styled(Row)`
+    align-items: center;
+    gap: ${spacingCss(1)};
 `;
 
 export const SStat = styled(Row)`

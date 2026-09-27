@@ -212,6 +212,22 @@ describe('mockApi', () => {
     });
 });
 
+describe('mockApi images', () => {
+    it('has no images until one is uploaded, and keeps it in memory', async () => {
+        const api = createMockApi();
+        const none = await api.getImage('passages', 'village-thomas-intro');
+        expect(none).toMatchObject({ file: 'data/chapters/village/thomas.passages/intro.png', version: '', url: null });
+        const up = await api.uploadImage('npcs', 'franta', { version: '', data: 'iVBORw0KGgo=' });
+        expect(up.file).toBe('data/npcs/Franta.png');
+        expect(up.url).toBe('data:image/png;base64,iVBORw0KGgo=');
+        expect(await api.getImage('npcs', 'franta')).toEqual(up);
+        await expect(api.uploadImage('npcs', 'franta', { version: '', data: 'x' })).rejects.toMatchObject({
+            isStale: true,
+        });
+        await expect(api.getImage('characters', 'nobody')).rejects.toBeInstanceOf(ApiError);
+    });
+});
+
 describe('extractEdges', () => {
     it('finds passage ids inside code fields as conditional edges', () => {
         const edges = extractEdges([

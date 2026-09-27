@@ -43,9 +43,9 @@ const watchSiblingPackages = () => ({
 // https://vitejs.dev/config/
 export default defineConfig({
     assetsInclude: ['**/*.png', '**/*.jpg'],
-    // No static-serve root: story art moved out of `public/` into `data/assets/` (§3) and is
-    // pulled in through the bundler by `data/assets/index.ts`, so it gets hashed and validated
-    // at build time instead of being copied verbatim.
+    // No static-serve root. Story art (the `.png` next to a passage / character / npc file) is
+    // not bundled here: the Visualizer never imports `data/`, it shows the art through the
+    // server's `/api/images/…` routes. Only the favicon (`data/assets/story.png`) is bundled.
     publicDir: false,
     plugins: [react(), watchSiblingPackages()],
     resolve: {

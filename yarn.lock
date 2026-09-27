@@ -1403,7 +1403,6 @@ __metadata:
     "@story/core": "workspace:^"
     "@story/shared": "workspace:^"
     "@story/types": "workspace:^"
-    vite: "npm:^5.4.9"
   languageName: unknown
   linkType: soft
 

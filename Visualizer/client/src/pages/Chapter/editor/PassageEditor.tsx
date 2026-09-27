@@ -30,6 +30,8 @@ import {
     StringCodeField,
     type TOption,
 } from '../../../components/CodeField';
+import { ImageField } from '../../../components/ImageField';
+import type { TVisualizerApi } from '../../../api';
 import { useKey } from '../../../shell';
 import { formatDiagnostic } from './diagnostics';
 import { CodeBlock, CostField } from './CostField';
@@ -43,6 +45,8 @@ type TProps = {
     onClose: () => void;
     onDelete: () => void;
     onOpenInEditor: () => void;
+    /** The api the passage's image is loaded / uploaded through (the page's). */
+    api?: TVisualizerApi;
 };
 
 type TDiag = (path: string) => TDiagnosticDto[];
@@ -62,6 +66,7 @@ export const PassageEditor = observer(
         onClose,
         onDelete,
         onOpenInEditor,
+        api,
     }: TProps) => {
         const { draft, base, dirty, saving, conflict, error, diagnosticIndex } =
             store;
@@ -207,6 +212,17 @@ export const PassageEditor = observer(
                 )}
 
                 <SFields>
+                    <ImageField
+                        api={api}
+                        owner="passages"
+                        id={base.passageId}
+                        description={
+                            draft.type === 'screen' &&
+                            typeof draft.image === 'string'
+                                ? draft.image
+                                : undefined
+                        }
+                    />
                     <PassageFields
                         draft={draft}
                         edit={(fn) => store.edit(fn)}
@@ -301,7 +317,7 @@ const PassageFields = observer(
                     diagnostics={diag('title')}
                 />
                 <StringCodeField
-                    label={_('Image')}
+                    label={_('Image description')}
                     value={draft.image}
                     onChange={(v) =>
                         edit(
@@ -311,7 +327,9 @@ const PassageFields = observer(
                                 (d.image = v)
                         )
                     }
-                    placeholder={_('asset key, e.g. hunter')}
+                    placeholder={_(
+                        'what the picture shows; the picture is the .png next to the passage file'
+                    )}
                     diagnostics={diag('image')}
                 />
                 <Divider />

@@ -7,6 +7,7 @@ export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
     name: string;
     description?: string;
+    image?: string;
 
     startPassageId?: TCharacterPassageId<Ch>;
     init: Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory;
@@ -24,6 +25,7 @@ export type TNpc<Ch extends TNpcId> = {
     id: Ch;
     name: string;
     description: string;
+    image?: string;
 
     init: Omit<TWorldState['npcs'][Ch], 'inventory' | 'ref'> & TInitInventory;
 };

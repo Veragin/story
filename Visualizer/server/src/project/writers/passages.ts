@@ -10,6 +10,7 @@ import type {
 import { assertVersion, version as hash } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removePassagePositions } from '../../json';
+import { siblingPng } from '../images';
 import { cap, quote } from '../ast';
 import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
@@ -159,6 +160,8 @@ export const deletePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
             passagesRemovePassage(s, current.chapterId, current.characterId, passageId, abs);
         });
         s.after((tx) => removePassagePositions(tx, current.chapterId, [passageId]));
+        // the passage's art goes with it (`project/images.ts`)
+        s.after((tx) => tx.deleteFile(siblingPng(abs)));
         await s.commit(
             bus,
             () => ({ kind: 'passage', id: passageId, chapterId: current.chapterId, version: null, op: 'deleted' }),

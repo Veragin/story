@@ -26,7 +26,10 @@ type TPassageBaseDto = TVersioned &
 export type TScreenPassageDto = TPassageBaseDto & {
     type: 'screen';
     title: TMaybeCode<string>;
-    /** An asset key (`'hunter'`), see `data/assets`. */
+    /**
+     * A text description of the passage's art (`''` for none). The picture is found by
+     * convention, as the passage file's sibling `.png` (`dto/image.ts`, `getImage`).
+     */
     image: TMaybeCode<string>;
     body: TMaybeCode<TBodyItemDto[]>;
 };

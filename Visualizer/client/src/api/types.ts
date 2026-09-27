@@ -11,6 +11,8 @@ import type {
     TEntityKind,
     TEntityListDto,
     THealthDto,
+    TImageDto,
+    TImageOwner,
     TMapDto,
     TOkDto,
     TOpenDto,
@@ -25,6 +27,7 @@ import type {
     TUpdatePassageBody,
     TUpdateTimelineLayoutBody,
     TUpdateTriggerBody,
+    TUploadImageBody,
     TVersionedBody,
 } from '@story/visualizer-protocol';
 
@@ -68,6 +71,10 @@ export interface TVisualizerApi {
     getEntity<K extends TEntityKind>(kind: K, id: string): Promise<TEntityDtoByKind[K]>;
     updateEntity<K extends TEntityKind>(kind: K, id: string, body: TUpdateEntityBody<K>): Promise<TEntityDtoByKind[K]>;
     deleteEntity(kind: TEntityKind, id: string, body: TVersionedBody): Promise<TOkDto>;
+
+    /** Story art: the `.png` next to a passage / character / npc file (protocol `dto/image.ts`). */
+    getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
+    uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;
 
     getMap(mapId: string): Promise<TMapDto>;
     updateMap(mapId: string, body: TUpdateMapBody): Promise<TMapDto>;

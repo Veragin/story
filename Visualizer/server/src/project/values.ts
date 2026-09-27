@@ -47,7 +47,12 @@ export type TSchema =
     | { t: 'ref'; ref: TRefResolver };
 
 /** A field of a typed object. `src` is the property name in the source when it differs from the DTO key. */
-export type TField = { schema: TSchema; src?: string };
+export type TField = {
+    schema: TSchema;
+    src?: string;
+    /** Where `applyPartial` adds the property when it is missing: after the first of these that exists, else last. */
+    after?: string[];
+};
 
 /** Resolves an identifier (`villageChapter`) to an id (`village`) and back. */
 export type TRefResolver = {
@@ -566,7 +571,12 @@ export const applyPartial = (
         }
         const ctx: TWriteCtx = { sf, path: key };
         if (prop) updateValue(prop.getInitializerOrThrow(), field.schema, v, ctx);
-        else obj.addPropertyAssignment({ name: keyText(src), initializer: genValue(v, field.schema, ctx) });
+        else {
+            const added = { name: keyText(src), initializer: genValue(v, field.schema, ctx) };
+            const anchor = field.after?.map((k) => getProp(obj, fields[k]?.src ?? k)).find((p) => p !== undefined);
+            if (anchor) obj.insertPropertyAssignment(obj.getProperties().indexOf(anchor) + 1, added);
+            else obj.addPropertyAssignment(added);
+        }
     }
 };
 

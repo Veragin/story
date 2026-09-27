@@ -3,6 +3,7 @@ import { registerChapterRoutes } from './chapters';
 import { registerEntityRoutes } from './entities';
 import { registerEventRoutes } from './events';
 import { registerHealthRoutes } from './health';
+import { registerImageRoutes } from './images';
 import { registerLayoutRoutes } from './layouts';
 import { registerMapRoutes } from './maps';
 import { registerOpenRoutes } from './open';
@@ -19,6 +20,7 @@ export const registerRoutes = (ctx: TServerContext) => {
     registerPassageRoutes(ctx);
     registerTriggerRoutes(ctx);
     registerEntityRoutes(ctx);
+    registerImageRoutes(ctx);
     registerMapRoutes(ctx);
     registerLayoutRoutes(ctx);
     // after chapters/passages: replaces their `open*` stubs

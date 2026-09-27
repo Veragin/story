@@ -110,6 +110,9 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
             (await request('updateEntity', { kind, id }, body)) as TEntityDtoByKind[K],
         deleteEntity: (kind, id, body) => request('deleteEntity', { kind, id }, body),
 
+        getImage: (owner, id) => request('getImage', { owner, id }),
+        uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),
+
         getMap: (mapId) => request('getMap', { mapId }),
         updateMap: (mapId, body) => request('updateMap', { mapId }, body),
 

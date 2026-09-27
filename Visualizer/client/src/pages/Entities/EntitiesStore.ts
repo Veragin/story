@@ -88,7 +88,7 @@ export class EntitiesStore {
     drafts: Record<string, TSavedDraft> = {};
     lastIds: Partial<Record<TEntityKind, string>> = {};
 
-    private readonly api: TVisualizerApi;
+    readonly api: TVisualizerApi;
     private readonly events?: ApiEvents;
     private readonly persist: boolean;
     private offs: (() => void)[] = [];

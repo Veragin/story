@@ -12,6 +12,7 @@ import { Node } from 'ts-morph';
 import { assertVersion, version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removeLocationPolygon } from '../../json';
+import { siblingPng } from '../images';
 import { asObject, cap, getProp, keyText, propertyKey, quote } from '../ast';
 import {
     containerForType,
@@ -353,6 +354,8 @@ export const deleteEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
             worldStateRemove(s, kind, id);
         });
         if (kind === 'locations') s.after((tx) => removeLocationPolygon(tx, id));
+        // a character's / npc's portrait goes with it (`project/images.ts`)
+        else s.after((tx) => tx.deleteFile(siblingPng(abs)));
         // ids are `keyof TWorldState[...]` / `keyof register.locations`: a literal that still names
         // the entity stops compiling, and is reported as a reference
         await s.commit(bus, () => entityEvent(kind, id, null, 'deleted'), {

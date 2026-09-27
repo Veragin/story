@@ -73,7 +73,7 @@ export const changedFiles = (a: Map<string, string>, b: Map<string, string>): st
 /**
  * `tsc --noEmit` over the temp copy — the same check as the root `yarn typecheck`, with
  * `@story/shared` / `@story/core` resolved from the repo and `@story/types` / `@story/data` from
- * the copy. `data/test` (vitest) and `data/assets` (vite/client) are left out: neither is touched.
+ * the copy. `data/test` (vitest) and `data/assets` (the favicon) are left out: neither is touched.
  */
 export const tscTemp = async (root: string): Promise<{ ok: boolean; output: string }> => {
     const tsconfig = {

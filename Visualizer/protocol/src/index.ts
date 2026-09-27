@@ -30,6 +30,9 @@ export * from './dto/trigger';
    TLocalCharacterDto, TInventoryEntryDto, TItemSource, TEntityDtoByKind, TEntityDto,
    TEntityEditable, TCreateEntityBody, TUpdateEntityBody, TDeleteEntityBody, TEntityListDto */
 export * from './dto/entity';
+/* IMAGE_OWNERS, TImageOwner, isImageOwner, TImageDto, TUploadImageBody, MAX_IMAGE_BYTES,
+   PNG_SIGNATURE */
+export * from './dto/image';
 /* GLOBAL_MAP_ID, TMapDto, TMapFile, TMapTileDto, TPaletteEntryDto, TLocationShapeDto,
    TSubMapRefDto, TColorId, TUpdateMapBody */
 export * from './dto/map';

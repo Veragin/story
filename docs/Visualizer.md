@@ -85,6 +85,7 @@ Invariants to keep:
 - **A chapter's characters are the `<character>.passages/` folders in the chapter's folder**; `TChapter` has no list of them.
 - Trigger ids are global (unique across chapters).
 - Location geometry lives in `data/locations/map.json`, not in `*.location.ts`.
+- **Story art is found by convention**: the image of a passage, character or npc is the `.png` next to its `.ts` file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.png`, `npcs/Franta.ts` → `npcs/Franta.png`). The owner's `image` field is only a text description. `project/images.ts` resolves the owner's file the way every other route does; deleting a passage or entity deletes its `.png`. `data/assets/story.png` is only the apps' favicon.
 - `data/test/story.test.ts` flags unreachable passages and characters without a start passage. Passages and characters created from the UI trip it until the author wires them up. That is intended; the server does not refuse those writes.
 
 ## Client (`Visualizer/client/src/`)
@@ -143,7 +144,8 @@ Behaviour that is settled (keep it unless the user asks otherwise):
     - Links that leave the chapter are dashed ghost boxes: green if the target exists elsewhere, red if it is missing.
     - Toolbar: add or remove a character (the confirmation shows how many passages will be deleted), add passage, chapter info form, delete, open in editor.
     - The passage editor edits every field, with code fields; 422 diagnostics are shown next to their `field` path (e.g. `body.0.links.1.cost`).
-- **Entities** (`pages/Entities/`): kind menu (characters, locations, npcs, items), a list and a form. Unknown fields and custom data types are edited as code. Save with Ctrl+S. Drafts and the selection live in `ui-state`.
+    - It shows the passage's image, if any, with an upload button (`components/ImageField.tsx`). The upload is written right away, not with Save.
+- **Entities** (`pages/Entities/`): kind menu (characters, locations, npcs, items), a list and a form. Unknown fields and custom data types are edited as code. Save with Ctrl+S. Drafts and the selection live in `ui-state`. Characters and npcs also have an `image` description and their portrait with an upload button (`ImageField`).
 - **Structure** tab: disabled, future work. User-defined entity kinds are out of scope.
 
 ## Files the Visualizer owns
@@ -158,11 +160,11 @@ Besides the `.ts` source it edits, the Visualizer owns these JSON files. They ar
 
 The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/protocol/src/routes.ts): `ROUTES` holds the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath`.
 
-- Every route is under `/api` and speaks JSON.
+- Every route is under `/api` and speaks JSON, except `events` (SSE) and `getImageFile` (the PNG bytes).
 - A `PUT` or `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
 - `PUT` bodies are **partial** (`{ version, ...changedFields }`; an omitted field is left untouched). The map and the two layouts are the exception: their `PUT` replaces the whole document.
 - `create*` routes and `addChapterCharacter` answer `201`; everything else answers `200`.
-- `:kind` is one of `characters | npcs | locations | items`. `:mapId` is always `global`.
+- `:kind` is one of `characters | npcs | locations | items`. `:mapId` is always `global`. `:owner` is one of `passages | characters | npcs`, and its `:id` is a full passage id or an entity id.
 
 | Name                            | Method           | Path                                               |
 | ------------------------------- | ---------------- | -------------------------------------------------- |
@@ -182,6 +184,8 @@ The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/proto
 | `get/update/deleteTrigger`      | `GET/PUT/DELETE` | `/api/triggers/:triggerId`                         |
 | `listEntities` / `createEntity` | `GET/POST`       | `/api/entities/:kind`                              |
 | `get/update/deleteEntity`       | `GET/PUT/DELETE` | `/api/entities/:kind/:id`                          |
+| `getImage` / `uploadImage`      | `GET/PUT`        | `/api/images/:owner/:id` (`TImageDto`; PNG base64) |
+| `getImageFile`                  | `GET`            | `/api/images/:owner/:id/png` (bytes, `ETag`)       |
 | `getMap` / `updateMap`          | `GET/PUT`        | `/api/maps/:mapId`                                 |
 | `get/updateTimelineLayout`      | `GET/PUT`        | `/api/layout/timeline`                             |
 | `get/updateChapterLayout`       | `GET/PUT`        | `/api/layout/chapters/:chapterId`                  |
@@ -216,6 +220,8 @@ The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/proto
 - `shell/router.ts` defines its own `ENTITY_KINDS`. Its order is the menu order, which differs from the protocol's.
 - `server/src/routes/stub.ts` (`notImplemented`) has no callers left.
 - `client/index.html` links its favicon from `data/assets`.
+- Images are not resources of the event feed: an upload emits no event, and a `.png` added or changed by hand shows up the next time the form or panel is opened.
+- Uploads are PNG only (the file picker offers `image/png`, the server checks the signature). There is no conversion, since the server has no image library, and no "remove image".
 - There are two `CodeField` components (`components/` and `pages/Entities/`) that could be merged.
 - Deleting a chapter's last trigger leaves an empty `triggers.ts`.
 - There is no undo, multi-select, map resize or rename, or UI for sub-map links (`maps[]`).

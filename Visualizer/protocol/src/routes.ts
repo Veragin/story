@@ -29,6 +29,7 @@ import type {
     TPassageDto,
     TUpdatePassageBody,
 } from './dto/passage';
+import type { TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TCreateTriggerBody, TDeleteTriggerBody, TTriggerDto, TUpdateTriggerBody } from './dto/trigger';
 
@@ -72,6 +73,10 @@ export const ROUTES = {
     updateEntity: { method: 'PUT', path: '/api/entities/:kind/:id' },
     deleteEntity: { method: 'DELETE', path: '/api/entities/:kind/:id' },
 
+    getImage: { method: 'GET', path: '/api/images/:owner/:id' },
+    getImageFile: { method: 'GET', path: '/api/images/:owner/:id/png' },
+    uploadImage: { method: 'PUT', path: '/api/images/:owner/:id' },
+
     getMap: { method: 'GET', path: '/api/maps/:mapId' },
     updateMap: { method: 'PUT', path: '/api/maps/:mapId' },
 
@@ -90,9 +95,16 @@ type TParamNames<P extends string> = P extends `${string}:${infer Name}/${infer 
       ? Name
       : never;
 
-/** Path parameters of a route, derived from its template. `kind` is narrowed to `TEntityKind`. */
+/**
+ * Path parameters of a route, derived from its template. `kind` is narrowed to `TEntityKind`,
+ * `owner` to `TImageOwner`.
+ */
 export type TRouteParams<R extends TRouteName> = {
-    [K in TParamNames<(typeof ROUTES)[R]['path']>]: K extends 'kind' ? TEntityKind : string;
+    [K in TParamNames<(typeof ROUTES)[R]['path']>]: K extends 'kind'
+        ? TEntityKind
+        : K extends 'owner'
+          ? TImageOwner
+          : string;
 };
 
 /**
@@ -131,6 +143,11 @@ export type TApiSpec = {
     getEntity: { body: undefined; response: TEntityDto };
     updateEntity: { body: TUpdateEntityBody; response: TEntityDto };
     deleteEntity: { body: TDeleteEntityBody; response: TOkDto };
+
+    getImage: { body: undefined; response: TImageDto };
+    /** The PNG itself (`image/png`), not JSON — 404 when there is none. Use `TImageDto.url`. */
+    getImageFile: { body: undefined; response: never };
+    uploadImage: { body: TUploadImageBody; response: TImageDto };
 
     getMap: { body: undefined; response: TMapDto };
     updateMap: { body: TUpdateMapBody; response: TMapDto };

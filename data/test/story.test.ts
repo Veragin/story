@@ -6,7 +6,9 @@ import { getWholePassageId } from '@story/types';
 import type { TChapterId, TLinkCost } from '@story/types';
 import { itemInfo, register } from '../index';
 import type { TWorldState } from '../TWorldState';
-import { assets, resolveAsset } from '../assets';
+import { existsSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Schema / reference-integrity checks over the authored story (REFACTOR_PLAN §7: "the thing
@@ -19,7 +21,7 @@ import { assets, resolveAsset } from '../assets';
  *
  * ## Known-broken entries
  *
- * Three checks below compare against an explicit `KNOWN_*` list rather than against the empty
+ * Two checks below compare against an explicit `KNOWN_*` list rather than against the empty
  * set, because the story as committed already violates them. The list is *not* a way of
  * weakening the check: the assertion is `toEqual(KNOWN_…)`, so a **new** violation fails, and
  * so does **fixing** an old one. Either way somebody has to come back here. Each entry says
@@ -37,17 +39,6 @@ const KNOWN_DANGLING_REFERENCES = [
     // makes the transition unreachable dead content — see the reachability test below.
     // Fix: point it at a real passage (or delete the file).
     'village-thomas-cool -> village-thomas-',
-];
-
-/** Passages whose `image` names art that `data/assets/` does not contain. */
-const KNOWN_UNRESOLVED_IMAGES = [
-    // Both Annie passages ask for `image: 'image'` — a placeholder that was never replaced.
-    // `resolveAsset` returns `undefined`, so the template renders an `<img>` with no `src`.
-    // This is the same failure Phase 6 found with `hunter` (then a 404 out of `public/`),
-    // which is why it is worth a test at all. Fix: add `data/assets/image.png` (or, better,
-    // `data/assets/kingdom/<something>.png`) and name it from the passage.
-    'kingdom-annie-intro -> "image"',
-    'kingdom-annie-palace -> "image"',
 ];
 
 /** Passages that no link, redirect or transition leads to, and that no character starts on. */
@@ -323,35 +314,28 @@ describe('reference integrity', () => {
 });
 
 describe('story art', () => {
-    it('picks the assets up through import.meta.glob', () => {
-        // `data/assets/index.ts` is built on `import.meta.glob`, which only exists inside a
-        // bundler. Vitest runs through Vite, so it works here — this test is what says so.
-        expect(Object.keys(assets).sort()).toEqual(['hunter', 'story']);
-        for (const url of Object.values(assets)) {
-            expect(url, 'asset url').toBeTypeOf('string');
-            expect(url.length).toBeGreaterThan(0);
-        }
-    });
+    /** `data/`, from this file. */
+    const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-    it('prefers chapter-scoped art over shared art', () => {
-        expect(resolveAsset('hunter')).toBe(assets.hunter);
-        expect(resolveAsset('hunter', 'village')).toBe(assets.hunter);
-        expect(resolveAsset(undefined)).toBeUndefined();
-        expect(resolveAsset('')).toBeUndefined();
-    });
+    /** Every `.png` under `data/`, project-relative to it (`chapters/village/thomas.passages/intro.png`). */
+    const pngs = (dir: string): string[] =>
+        readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+            const full = path.join(dir, e.name);
+            if (e.isDirectory()) return e.name === 'node_modules' ? [] : pngs(full);
+            return e.name.endsWith('.png') ? [path.relative(dataDir, full).split(path.sep).join('/')] : [];
+        });
 
-    it('resolves every image a passage names', () => {
-        const unresolved = passages
-            .filter(({ passage }) => passage.type === 'screen')
-            // An empty `image` is the author saying "no art here", and `resolveAsset` returns
-            // `undefined` for it by design — that is not a broken reference.
-            .filter(({ passage }) => passage.image !== '')
-            .filter(({ passage }) => resolveAsset(passage.image as string, passage.chapterId) === undefined)
-            .map(({ key, passage }) => `${key} -> ${JSON.stringify(passage.image)}`)
+    it('finds art only next to the file it belongs to', () => {
+        // An image is the `.png` sibling of a passage, character or npc file, with the same
+        // basename (`palace.ts` → `palace.png`). One whose `.ts` was renamed or deleted is art
+        // that nothing shows any more. `assets/` holds only the apps' favicon.
+        const owned = /^(chapters\/[^/]+\/[^/]+\.passages|characters|npcs)\/[^/]+\.png$/;
+        const orphans = pngs(dataDir)
+            .filter((file) => !file.startsWith('assets/'))
+            .filter((file) => !owned.test(file) || !existsSync(path.join(dataDir, file.replace(/\.png$/, '.ts'))))
             .sort();
 
-        // See KNOWN_UNRESOLVED_IMAGES at the top of the file.
-        expect(unresolved).toEqual(KNOWN_UNRESOLVED_IMAGES);
+        expect(orphans).toEqual([]);
     });
 });
 
