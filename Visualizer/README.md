@@ -1,6 +1,6 @@
 # Visualizer
 
-The author's editor for the story: a map, a timeline of chapters and time triggers, a Twine-like view of each chapter's passages, and forms for the entities. It reads and writes the author's own files in `data/` and `types/`, so what you edit here is the story's source code. Spec: [`docs/Visualizer.md`](../docs/Visualizer.md). Implementation plan and decision log: [`plans/Virutalizer-plan.md`](../plans/Virutalizer-plan.md).
+The author's editor for the story: a map, a timeline of chapters and time triggers, a Twine-like view of each chapter's passages, and forms for the entities. It reads and writes the author's own files in `data/` and `types/`, so what you edit here is the story's source code. Spec: [`docs/Visualizer.md`](../docs/Visualizer.md).
 
 ## Running it
 
