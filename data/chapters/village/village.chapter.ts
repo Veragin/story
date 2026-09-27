@@ -7,8 +7,8 @@ export const villageChapter: TChapter<'village'> = {
     title: 'Village Chapter',
     description: 'A village chapter is happening',
     timeRange: {
-        start: Time.fromString('2.1. 8:00'),
-        end: Time.fromString('5.1. 8:00'),
+        start: Time.fromString('2.1. 7:00'),
+        end: Time.fromString('5.1. 7:00'),
     },
     location: 'village',
 

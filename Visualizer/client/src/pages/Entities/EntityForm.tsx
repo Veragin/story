@@ -57,8 +57,6 @@ const KIND_LABEL = {
 
 const CHARACTER_INIT: TKnownField[] = [
     { key: 'health', label: 'health', kind: 'number', always: true },
-    { key: 'stamina', label: 'stamina', kind: 'number', always: true },
-    { key: 'hunger', label: 'hunger', kind: 'number', always: true },
     { key: 'location', label: 'location', kind: 'location' },
     { key: 'inventory', label: 'inventory', kind: 'inventory', always: true },
 ];

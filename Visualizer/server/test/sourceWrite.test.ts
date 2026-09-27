@@ -563,7 +563,7 @@ describe('entities', () => {
         let res = await t.post('/api/entities/characters', {
             id: 'bob',
             name: 'Bob',
-            init: { health: 50, hunger: 100, stamina: 100, inventory: [{ id: 'gold', amount: 3 }] },
+            init: { health: 50, inventory: [{ id: 'gold', amount: 3 }] },
         });
         expect(res.status, JSON.stringify(res.body)).toBe(201);
         expect(res.body).toMatchObject({

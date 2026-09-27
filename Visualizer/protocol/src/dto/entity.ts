@@ -29,7 +29,7 @@ export type TCharacterDto = TEntityBase<'characters'> & {
     /** Full passage id. */
     startPassageId?: TMaybeCode<string>;
     /**
-     * `init`: `TCharacterData` fields (`health`, `stamina`, `hunger`, `location`) plus the
+     * `init`: `TCharacterData` fields (`health`, `location`) plus the
      * character's own data, and `inventory` as `TInventoryEntryDto[]`.
      */
     init: TMaybeCode<TValueRecord>;

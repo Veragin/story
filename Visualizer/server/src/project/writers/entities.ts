@@ -71,8 +71,6 @@ export const ${exportName}: TCharacter<'${id}'> = {
 
     init: {
         health: 100,
-        hunger: 100,
-        stamina: 100,
         inventory: [],
     },
 };

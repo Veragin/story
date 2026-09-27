@@ -76,7 +76,7 @@ describe('Engine save/load', () => {
 
         expect(second.s.time.s).toBe(first.s.time.s);
         expect(second.s.currentHistory.thomas).toMatchObject({ passageId: 'village-thomas-forest' });
-        expect(second.s.characters.thomas.stamina).toBe(first.s.characters.thomas.stamina);
+        expect(second.s.characters.thomas.health).toBe(first.s.characters.thomas.health);
         expect(second.s.characters.annie.inventory[0].amount).toBe(first.s.characters.annie.inventory[0].amount);
     });
 

@@ -487,7 +487,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 if (map.has(body.id)) fail(409, { error: 'exists', message: `${kind}/${body.id} exists` });
                 const base = { kind, id: body.id, version: nextVersion(), file: `data/${kind}/${body.id}.ts` };
                 const defaults: Record<TEntityKind, object> = {
-                    characters: { name: body.id, init: { health: 100, hunger: 100, stamina: 100, inventory: [] } },
+                    characters: { name: body.id, init: { health: 100, inventory: [] } },
                     npcs: {
                         name: body.id,
                         description: '',

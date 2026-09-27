@@ -16,8 +16,6 @@ export type TCharacter<Ch extends TCharacterId> = {
 export type TCharacterData = {
     location?: TLocationId;
     health: number;
-    stamina: number;
-    hunger: number;
     inventory: TItem<TItemId>[];
 };
 

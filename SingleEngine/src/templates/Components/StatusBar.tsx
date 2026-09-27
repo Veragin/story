@@ -4,9 +4,7 @@ import { register } from '@story/data';
 import { useState } from 'react';
 import { Inventory } from './Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import BoltIcon from '@mui/icons-material/Bolt';
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
 import { observer } from 'mobx-react-lite';
 import { useEngine, useWorldState } from '../../context';
 import { characterImage } from '../../images';
@@ -36,18 +34,6 @@ export const StatusBar = observer(() => {
                 <SStat>
                     <FavoriteIcon />
                     <Text>{Math.floor(char.health)}%</Text>
-                </SStat>
-            </Tooltip>
-            <Tooltip title="Stamina">
-                <SStat>
-                    <BoltIcon />
-                    <Text>{Math.floor(char.stamina)}%</Text>
-                </SStat>
-            </Tooltip>
-            <Tooltip title="Hunger">
-                <SStat>
-                    <RestaurantIcon />
-                    <Text>{Math.floor(char.hunger)}%</Text>
                 </SStat>
             </Tooltip>
 
