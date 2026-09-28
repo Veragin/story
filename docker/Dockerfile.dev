@@ -12,6 +12,10 @@ RUN playwright-cli install-browser --with-deps chrome
 RUN su -s /bin/bash "$UNAME" -c "playwright install ffmpeg"
 
 # claude
+# `make rebuild` passes a fresh CLAUDE_REBUILD, which invalidates the cache from this line
+# down and so reinstalls the CLI. The apt and playwright layers above stay cached, so the
+# browsers are not downloaded again.
+ARG CLAUDE_REBUILD=0
 RUN npm install -g @anthropic-ai/claude-code
 RUN mkdir -p /home/$UNAME/.claude
 RUN chown -R $UNAME:$UGROUP /home/$UNAME/.claude/

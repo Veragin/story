@@ -187,7 +187,7 @@ describe('Engine turn loop', () => {
             //     void this.continue();
             //
             // but `autoProcess` → `Story.goToPassage` already ends with `void continue()` of
-            // its own. Every side character's turn therefore spawns a second, parallel turn
+            // its own. Every NPC's turn therefore spawns a second, parallel turn
             // loop: the next passage is resolved twice and any `onStart`/`onFinish` callback
             // the author attached to it runs twice. It fans out with the number of
             // auto-played characters, which is why it is worth catching now, while the story
@@ -209,42 +209,12 @@ describe('Engine turn loop', () => {
 });
 
 describe('Story.spendTime', () => {
-    it('advances the clock and drains the main character once the story has started', async () => {
-        const { s, e } = newSession();
-        await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
-        await waitForPassage(e, 'village-thomas-forest');
-
-        const before = { time: s.time.s, stamina: s.characters.thomas.stamina, hunger: s.characters.thomas.hunger };
-        e.story.spendTime(DeltaTime.fromHour(1));
-
-        expect(s.time.s).toBe(before.time + DeltaTime.fromHour(1).s);
-        // 50 stamina per 16 hours, hunger at 2.5× that.
-        expect(s.characters.thomas.stamina).toBeCloseTo(before.stamina - 50 / 16, 6);
-        expect(s.characters.thomas.hunger).toBeCloseTo(before.hunger - (50 / 16) * 2.5, 6);
-    });
-
-    it('never drops stamina or hunger below zero', async () => {
-        const { s, e } = newSession();
-        await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
-        await waitForPassage(e, 'village-thomas-forest');
-
-        e.story.spendTime(DeltaTime.fromHour(1000));
-
-        expect(s.characters.thomas.stamina).toBe(0);
-        expect(s.characters.thomas.hunger).toBe(0);
-    });
-
-    it('moves the clock but spares the character before their first turn is booked', () => {
+    it('advances the clock', () => {
         const { s, e } = newSession();
 
-        // History holds exactly the seeded start entry: the character "hasn't started yet".
         e.story.spendTime(DeltaTime.fromHour(1));
 
         expect(s.time.s).toBe(register.chapters.village.timeRange.start.s + DeltaTime.fromHour(1).s);
-        expect(s.characters.thomas.stamina).toBe(100);
-        expect(s.characters.thomas.hunger).toBe(100);
     });
 });
 

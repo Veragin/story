@@ -110,6 +110,42 @@ const boundaryZones = [
             )
         )
     ),
+
+    /* The Visualizer is one service in three workspaces (plan §1.1, WP1). `protocol` is the wire
+       contract both halves import, so it must stay importable from a browser *and* from node: it
+       may import only @story/shared (and @story/types), never a service — its own siblings
+       included — nor the runtime, the story or the UI. */
+    zone(
+        './Visualizer/protocol',
+        [
+            ...SERVICES.filter((s) => s !== 'Visualizer').map((s) => `./${s}`),
+            './Visualizer/client',
+            './Visualizer/server',
+        ],
+        'Visualizer/protocol is the client/server contract and may not import any service code (plan WP1).'
+    ),
+    zone(
+        './Visualizer/protocol',
+        packagesExcept('shared', 'types'),
+        'Visualizer/protocol may import only @story/shared (and @story/types, type-only) — plan §1.1.'
+    ),
+    /* The two halves talk over HTTP only; what they share lives in `protocol`. */
+    zone(
+        './Visualizer/client',
+        './Visualizer/server',
+        'Visualizer/client must not import Visualizer/server — share it through @story/visualizer-protocol.'
+    ),
+    zone(
+        './Visualizer/server',
+        './Visualizer/client',
+        'Visualizer/server must not import Visualizer/client — share it through @story/visualizer-protocol.'
+    ),
+    /* The server reads the story as *source text* (ts-morph); importing it would run it. */
+    zone(
+        './Visualizer/server',
+        ['./data', './core', './ui'],
+        'Visualizer/server reads data/ as source and must not import @story/data, @story/core or @story/ui (plan §1.1).'
+    ),
 ];
 
 export default tseslint.config(
@@ -169,6 +205,36 @@ export default tseslint.config(
             'no-return-await': 'off',
             'no-throw-literal': 'error',
             '@typescript-eslint/no-floating-promises': ['error'],
+        },
+    },
+    {
+        /**
+         * Live refresh, point 1 (Visualizer plan §3): the Visualizer client never *runs* the story.
+         * The server is its only source of story data; a runtime import of `@story/data` or
+         * `@story/core` would also put `data/` back into Vite's module graph, and then every edit
+         * of a story file would fully reload the page. Type-only imports (`import type`, or
+         * `import { type X }`) vanish at build time and stay legal.
+         */
+        files: ['Visualizer/client/**/*.{ts,tsx}'],
+        rules: {
+            '@typescript-eslint/no-restricted-imports': [
+                'error',
+                {
+                    paths: ['@story/data', '@story/core'].map((name) => ({
+                        name,
+                        allowTypeImports: true,
+                        message: `Visualizer/client must not import ${name} at runtime — load story data through src/api (plan §3 "Live refresh"). \`import type\` is fine.`,
+                    })),
+                    patterns: [
+                        {
+                            group: ['@story/data/*', '@story/core/*'],
+                            allowTypeImports: true,
+                            message:
+                                'Visualizer/client must not import the story at runtime — load it through src/api (plan §3 "Live refresh"). `import type` is fine.',
+                        },
+                    ],
+                },
+            ],
         },
     }
 );

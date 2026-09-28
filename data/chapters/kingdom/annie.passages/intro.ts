@@ -11,7 +11,7 @@ export const introPassage = (s: TWorldState): TPassage<'kingdom', 'annie', TKing
 
         type: 'screen',
         title: 'Intro',
-        image: 'image',
+        image: '',
 
         body: [
             {

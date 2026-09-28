@@ -5,7 +5,7 @@ export const DUMMY_PASSAGE: TChapterPassage<'village'> = {
     body: [],
     characterId: 'thomas',
     chapterId: 'village',
-    image: 'forest',
+    image: '',
     title: 'Forest',
     type: 'screen',
 };

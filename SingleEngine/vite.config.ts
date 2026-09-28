@@ -28,9 +28,10 @@ const watchSiblingPackages = () => ({
 // https://vitejs.dev/config/
 export default defineConfig({
     assetsInclude: ['**/*.png', '**/*.jpg'],
-    // No static-serve root: story art moved out of `public/` into `data/assets/` (§3) and is
-    // pulled in through the bundler by `data/assets/index.ts`, so it gets hashed and validated
-    // at build time instead of being copied verbatim.
+    // No static-serve root: story art lives next to the story (§3) — each image is the `.png`
+    // sibling of the passage / character / npc file it belongs to — and is pulled in through
+    // the bundler by `src/images.ts` (`import.meta.glob`), so it gets hashed and validated at
+    // build time instead of being copied verbatim.
     publicDir: false,
     plugins: [react(), watchSiblingPackages()],
     resolve: {
@@ -56,7 +57,6 @@ export default defineConfig({
             // `@story/data` publishes `"./*"`: the author's tree is the public surface (§5),
             // so deep paths resolve by pattern instead of an enumerated list that would go
             // stale every time the story grows a folder.
-            { find: /^@story\/data\/assets$/, replacement: at('../data/assets/index.ts') },
             { find: /^@story\/data\/(.+)$/, replacement: at('../data/') + '$1' },
             { find: '@story/data', replacement: at('../data/index.ts') },
 

@@ -10,7 +10,7 @@ export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomAnniePassa
 
         type: 'screen',
         title: 'Palace',
-        image: 'image',
+        image: '',
 
         body: [
             {

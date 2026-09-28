@@ -7,8 +7,6 @@ export const Annie: TCharacter<'annie'> = {
 
     init: {
         health: 100,
-        hunger: 100,
-        stamina: 100,
         inventory: [{ id: 'berries', amount: 10 }],
         location: 'village',
     },

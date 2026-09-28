@@ -10,7 +10,7 @@ export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVi
 
     type: 'screen',
     title: 'Forest',
-    image: 'hunter',
+    image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
 
     body: [
         {

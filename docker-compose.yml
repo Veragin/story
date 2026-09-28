@@ -3,15 +3,15 @@ services:
     platform: linux/amd64
     image: pipeline/dev
     # REFACTOR_PLAN §2 "Ports". Replaces 8180 and 5178, which no service has ever used.
-    # `make start` runs the root `yarn dev` inside this container, which binds all four —
+    # `make start` runs the root `yarn dev` inside this container, which binds all five —
     # every vite config already sets `host: 0.0.0.0` + `strictPort`, which is what makes
     # them reachable from the host rather than only from inside the container.
     ports:
       - 8100:8100 # SingleEngine          (vite)
       - 8101:8101 # Visualizer client     (vite)
       - 8102:8102 # MultiEngine client    (vite)
+      - 8123:8123 # Visualizer server     (node/tsx) — the client reaches it via its /api proxy
       - 8124:8124 # MultiEngine server    (node/tsx)
-      # 8123 — Visualizer server — is deliberately absent: it does not exist yet (§8).
     build:
       context: .
       dockerfile: docker/Dockerfile.dev
@@ -23,7 +23,7 @@ services:
     #
     #   `make ai` and `make bash` are `docker compose exec` into this container, so the
     #   whole agent workflow is only alive while the container is. Making `yarn dev` PID 1
-    #   would wire the container's lifetime to four dev servers — one `EADDRINUSE`, one
+    #   would wire the container's lifetime to five dev servers — one `EADDRINUSE`, one
     #   missing `yarn install`, one syntax error in a vite config, and the container exits
     #   and `make ai` answers "container is not running" instead of starting Claude. An
     #   idle PID 1 cannot fail, and `make start` still brings every service up (the Phase 11

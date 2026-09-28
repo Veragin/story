@@ -64,10 +64,10 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build dev dev-engine dev-visualizer dev-multi-engine logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-multi-engine dev-multi-engine-server logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
-# 8102 MultiEngine client, 8124 MultiEngine server). The container itself stays idle at
+# 8102 MultiEngine client, 8123 Visualizer server, 8124 MultiEngine server). The container stays idle at
 # PID 1 and `yarn dev` runs as a detached exec inside it, so a dev server that dies cannot
 # take `make ai` / `make bash` down with it.
 start: stop
@@ -76,19 +76,30 @@ start: stop
 	@echo ""
 	@echo "  SingleEngine        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
+	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/project, /api/events …)"
 	@echo "  MultiEngine client  http://localhost:8102"
 	@echo "  MultiEngine server  http://localhost:8124  (scaffold — every route answers 501)"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-engine"
 
 # The container without the services. Use this when you want a single service — `make start`
-# already holds all four ports, and vite is `strictPort`, so it would refuse rather than
+# already holds all five ports, and vite is `strictPort`, so it would refuse rather than
 # silently pick another one.
 up:
 	$(COMPOSE) up -d --build --remove-orphans
 
 stop:
 	$(COMPOSE) down
+
+# Rebuild the image to pick up a newer claude CLI. `make up`/`make start` already pass
+# --build, but the `npm install -g @anthropic-ai/claude-code` layer is cached and would
+# keep whatever version was current when the image was first built, so this passes a fresh
+# CLAUDE_REBUILD value to invalidate it. Everything above that line in docker/Dockerfile.dev
+# (apt, playwright browsers) stays cached. Leaves the container up, without the dev servers.
+rebuild: stop
+	$(COMPOSE) build --pull --build-arg CLAUDE_REBUILD=$(shell date +%s) story-template
+	$(COMPOSE) up -d --remove-orphans
+	@$(DEV_EXEC) claude --version
 
 bash:
 	$(COMPOSE) exec -w /app story-template bash
@@ -114,5 +125,12 @@ dev-engine:
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
 
+# The Visualizer's node server on :8123. The client (dev-visualizer) proxies /api to it.
+dev-visualizer-server:
+	$(DEV_EXEC) yarn dev:visualizer-server
+
 dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
+
+dev-multi-engine-server:
+	$(DEV_EXEC) yarn dev:multi-engine-server

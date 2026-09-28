@@ -1,19 +1,18 @@
 import { ReactNode, useState } from 'react';
-import { visualizerStoreContext } from './context';
 import { TimeManager } from '@story/shared';
-import { Store } from './stores/Store';
-import { InfoModal } from './components/InfoModal';
+import { visualizerStoreContext, type TVisualizerStore } from './context';
 
 type Props = {
     children: ReactNode;
 };
 
 export const Wrapper = ({ children }: Props) => {
-    const [store] = useState(new Store(new TimeManager()));
+    const [store] = useState<TVisualizerStore>(() => ({
+        timeManager: new TimeManager(),
+    }));
     return (
         <visualizerStoreContext.Provider value={store}>
             {children}
-            <InfoModal />
         </visualizerStoreContext.Provider>
     );
 };

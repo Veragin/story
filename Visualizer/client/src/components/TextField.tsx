@@ -1,20 +1,8 @@
-import styled from '@emotion/styled';
 import { TextField as MuiTextField, TextFieldProps } from '@mui/material';
 
-export const TextField = (props: TextFieldProps) => {
-    return <SField {...props} onKeyDown={(e) => e.stopPropagation()} />;
-};
-
-const SField = styled(MuiTextField)`
-    color: white;
-    border-color: white;
-    & *,
-    & *:hover,
-    & *:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline,
-    & .MuiOutlinedInput-notchedOutline,
-    & .MuiInputLabel-root,
-    & .MuiInputBase-root {
-        color: white;
-        border-color: white;
-    }
-`;
+/**
+ * Key events are left to bubble: the window-level shortcuts (`shell/keyboard.ts`) and the canvas
+ * (`Scene`) ignore typing targets themselves unless a handler opts in (the save shortcuts), and
+ * MUI `Modal` needs Escape to reach it.
+ */
+export const TextField = (props: TextFieldProps) => <MuiTextField {...props} />;

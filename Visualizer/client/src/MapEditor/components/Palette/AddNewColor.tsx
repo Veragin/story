@@ -16,9 +16,9 @@ type Props = {
 
 export const AddNewColor = ({ mapStore, onBack, initId }: Props) => {
     const [id, setId] = useState(initId ?? '');
-    const [name, setName] = useState(mapStore.data.palette[id]?.name ?? '');
+    const [name, setName] = useState(mapStore.data?.palette[id]?.name ?? '');
     const [color, setColor] = useState(
-        mapStore.data.palette[id]?.color ?? '#ff0000'
+        mapStore.data?.palette[id]?.color ?? '#ff0000'
     );
 
     const onAdd = () => {
@@ -28,11 +28,13 @@ export const AddNewColor = ({ mapStore, onBack, initId }: Props) => {
             });
             return;
         }
-        mapStore.data.palette[id] = {
-            color,
-            name,
-        };
-        mapStore.setSelectedColorId(id);
+        if (!/^[A-Za-z0-9_]+$/.test(id)) {
+            showToast(_('The id may only contain letters, digits and _'), {
+                variant: 'error',
+            });
+            return;
+        }
+        mapStore.setPaletteColor(id, { color, name });
         onBack();
     };
 

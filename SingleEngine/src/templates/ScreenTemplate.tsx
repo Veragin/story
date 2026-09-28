@@ -3,7 +3,7 @@ import { Header, Row, spacingCss, Text, WholeContainer } from '@story/ui';
 import { StatusBar } from './Components/StatusBar';
 import { PassageLink } from './Components/PassageLink';
 import { TUnkownPassageScreen } from '@story/core';
-import { resolveAsset } from '@story/data/assets';
+import { passageImage } from '../images';
 
 type Props = {
     passage: TUnkownPassageScreen;
@@ -13,12 +13,19 @@ export const ScreenTemplate = ({ passage }: Props) => {
     const body = passage.body.filter((b) => b.condition !== false);
     const texts = body.flatMap((b) => b.text?.split('\n') ?? []);
     const links = body.flatMap((b) => b.links ?? []);
+    const image = passageImage(passage);
 
     return (
         <WholeContainer>
             <StatusBar />
             <SContainer>
-                <SImg src={resolveAsset(passage.image, passage.chapterId)} />
+                {image && (
+                    <SImg
+                        src={image}
+                        alt={passage.image}
+                        title={passage.image || undefined}
+                    />
+                )}
                 <SContent>
                     <Header>{passage.title}</Header>
                     <SText>

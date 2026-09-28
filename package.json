@@ -19,6 +19,7 @@
         "dev": "yarn workspaces foreach -Apvi --jobs unlimited --exclude story-root run dev",
         "dev:engine": "yarn workspace @story/single-engine dev",
         "dev:visualizer": "yarn workspace @story/visualizer-client dev",
+        "dev:visualizer-server": "yarn workspace @story/visualizer-server dev",
         "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",
         "dev:multi-engine-server": "yarn workspace @story/multi-engine-server dev",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",

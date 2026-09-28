@@ -15,7 +15,8 @@ type Props = {
 };
 export const ColorPicker = observer(
     ({ mapStore, onAddNewColor, onDeleteColor }: Props) => {
-        const palette = mapStore.data.palette;
+        void mapStore.revision;
+        const palette = mapStore.data?.palette ?? {};
         const colors = Object.keys(palette);
 
         return (

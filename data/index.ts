@@ -33,7 +33,8 @@ export type * from './TWorldState';
 /* itemInfo, TItemType — the static per-item data the inventory merges in */
 export * from './items/itemInfo';
 
-/* Deliberately *not* re-exported here: `./assets`. It is reached as `@story/data/assets`
-   (`assets`, `resolveAsset`) because it is built on `import.meta.glob`, which only exists
-   inside a bundler — and `@story/core`, which imports this barrel, has to stay runnable
-   under plain node for the future MultiEngine server (§2). */
+/* No art here: an image is the `.png` next to the passage / character / npc file it belongs
+   to, found by convention (SingleEngine's `src/images.ts` globs them). Nothing under `data/`
+   uses `import.meta.glob`, so `@story/core`, which imports this barrel, stays runnable under
+   plain node for the future MultiEngine server (§2). `data/assets/story.png` is only the
+   apps' favicon. */

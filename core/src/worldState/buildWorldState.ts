@@ -7,8 +7,8 @@ import type {
     TItemId,
     TLocation,
     TLocationId,
-    TSideCharacter,
-    TSideCharacterId,
+    TNpc,
+    TNpcId,
 } from '@story/types';
 
 /**
@@ -17,7 +17,7 @@ import type {
  */
 export type TWorldStateRegister = {
     characters: { readonly [Id in TCharacterId]: TCharacter<Id> };
-    sideCharacters: { readonly [Id in TSideCharacterId]: TSideCharacter<Id> };
+    npcs: { readonly [Id in TNpcId]: TNpc<Id> };
     chapters: { readonly [Id in TChapterId]: TChapter<Id> };
     locations: { readonly [Id in TLocationId]: TLocation<Id> };
 };
@@ -26,7 +26,7 @@ export type TWorldStateRegister = {
 export type TItemInfoRegister = { readonly [Id in TItemId]: object };
 
 /**
- * Builds a pristine world state from the story register: every character, side character,
+ * Builds a pristine world state from the story register: every character, NPC,
  * chapter and location at its `init` values, with a `ref` back to its definition.
  *
  * Deliberately *does not* construct an `Engine`. An `Engine` loads any saved game out of
@@ -42,7 +42,7 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
         currentHistory: {},
 
         characters: {} as Record<TCharacterId, unknown>,
-        sideCharacters: {} as Record<TSideCharacterId, unknown>,
+        npcs: {} as Record<TNpcId, unknown>,
         chapters: {} as Record<TChapterId, unknown>,
         locations: {} as Record<TLocationId, unknown>,
     };
@@ -55,12 +55,12 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
             ref: register.characters[id],
         };
     });
-    (Object.keys(register.sideCharacters) as TSideCharacterId[]).forEach((id) => {
-        const { inventory, ...rest } = register.sideCharacters[id].init;
-        ss.sideCharacters[id] = {
+    (Object.keys(register.npcs) as TNpcId[]).forEach((id) => {
+        const { inventory, ...rest } = register.npcs[id].init;
+        ss.npcs[id] = {
             ...rest,
             inventory: inventory.map((i) => ({ ...itemInfo[i.id], ...i })),
-            ref: register.sideCharacters[id],
+            ref: register.npcs[id],
         };
     });
     (Object.keys(register.chapters) as TChapterId[]).forEach((id) => {

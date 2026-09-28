@@ -12,10 +12,7 @@ import { defineWorkspace } from 'vitest/config';
  * map pointing straight at its `.ts` entry, and Vite resolves through both. Bare `@story/core`,
  * `@story/types`, `@story/shared` and `@story/data` therefore work here with zero configuration,
  * and deep imports (`@story/data/chapters/village/village.chapter.ts`) resolve through
- * `@story/data`'s `"./*"` export. The one gap is the *extension-less directory* subpath
- * `@story/data/assets`, which `"./*"` maps to a folder rather than a file — the apps paper over
- * it with a dedicated alias, and the `data` tests simply import `../assets` because they live
- * inside that package anyway. Nothing else needed an alias, so nothing else has one.
+ * `@story/data`'s `"./*"` export. Nothing needed an alias, so nothing has one.
  *
  * ## Why both projects are `node`
  *
@@ -49,6 +46,26 @@ export default defineWorkspace([
             root: './data',
             environment: 'node',
             include: ['test/**/*.test.ts'],
+        },
+    },
+    {
+        // The Visualizer's node server. Every test runs against a temp project dir passed as a
+        // `ProjectRoot` (the programmatic `STORY_ROOT`), never the real data/ and types/ (plan §5).
+        test: {
+            name: 'visualizer-server',
+            root: './Visualizer/server',
+            environment: 'node',
+            include: ['test/**/*.test.ts'],
+        },
+    },
+    {
+        // The React client. jsdom has no 2D canvas, so the setup file stubs `getContext`.
+        test: {
+            name: 'visualizer-client',
+            root: './Visualizer/client',
+            environment: 'jsdom',
+            include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+            setupFiles: ['./src/canvas/test/setup.ts'],
         },
     },
 ]);
