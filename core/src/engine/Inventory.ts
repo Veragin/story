@@ -1,7 +1,6 @@
 import type { TWorldState } from '@story/data';
-import { TCharacterId, TItemId, TItemPartial } from '@story/types';
+import { TCharacterId, TItem, TItemId, TItemPartial } from '@story/types';
 import { Engine } from './Engine';
-import { itemInfo } from '@story/data';
 
 export class Inventory {
     constructor(
@@ -20,7 +19,8 @@ export class Inventory {
     addItem = (item: TItemPartial<TItemId>, charId: TCharacterId = this.e.activePassage.characterId) => {
         const itemInInv = this.getItem(item.id, charId);
         if (!itemInInv) {
-            this.getInventory().push({ ...itemInfo[item.id], amount: 1, ...item });
+            const info = this.e.storyModule.itemInfo[item.id];
+            this.getInventory().push({ ...info, amount: 1, ...item } as TItem<TItemId>);
         } else {
             itemInInv.amount += item.amount ?? 1;
         }

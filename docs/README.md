@@ -3,28 +3,39 @@
 This project is software for creating and managing a story. User can create a world (characters, map, objects etc.) and describe a nonlinear story. While playing player can make story changing decisions. There should be possibility to play it as a multiplayer.
 Will be used for writing a book, gamebooks or online single or multiplayer text games.
 
-## One project per story
+## Stories
 
-**The whole project is duplicated per story.** A story is not data loaded into a shared installation — it is a fork of this repository, and the story lives inside it.
+**One installation holds many stories.** Each story is a folder under `stories/`, and the engine (everything else in the repository) is shared by all of them:
 
-That makes exactly two folders the author's working surface:
+```
+stories/
+  example/          the reference story, committed; the engine's tests play it
+    story.json      name, author, password hash, map size, description, public
+    tsconfig.json   binds @story/types / @story/data to this story's own folders
+    types/          the shape of the world (what a character _is_, what a location _has_)
+    data/           the story itself (chapters, passages, characters, locations, items, art)
+  <id>/             same shape; created, imported or exported from the landing page
+```
 
-- **`types/`** — the shape of the world (what a character _is_, what a location _has_)
-- **`data/`** — the story itself (chapters, passages, characters, locations, items, art)
+That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). `story.json` belongs to the server: the landing page edits it, and it is never sent to a browser as-is nor opened in the source editor.
 
-Everything else — `shared/`, `ui/`, `core/`, `SingleEngine/`, `Visualizer/`, `MultiEngine/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts` and saving it hot-reloads the running app.
+Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `Visualizer/server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
-The split is also what keeps the fork maintainable. Pulling a newer engine into an existing story is a merge, and it only stays clean while author edits land in `types/`/`data/` and engine changes land everywhere else. **Nothing in `types/` or `data/` may import from a service**; `yarn lint` enforces it (`import/no-restricted-paths` in `eslint.config.js`).
+Every story is behind its password: the Visualizer asks for it, and so does SingleEngine unless the story is `public`. A login lasts 24 h per story (see [`Visualizer/README.md`](../Visualizer/README.md)).
+
+Everything outside `stories/` — `shared/`, `ui/`, `core/`, `SingleEngine/`, `Visualizer/`, `MultiEngine/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
+
+The split is also what keeps an engine upgrade safe for every story at once: author edits land in `types/`/`data/`, and engine changes land everywhere else. **Nothing in `types/` or `data/` may import from a service**; `yarn lint` enforces it for every story (`import/no-restricted-paths` in `eslint.config.js`).
 
 ## Getting started
 
 ```bash
 yarn install       # Yarn 4 workspaces; no build step, packages are consumed as TS source
-yarn dev           # all five services at once, output labelled per workspace
+yarn dev           # all six services at once, output labelled per workspace
 yarn test          # Vitest
 ```
 
-Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:visualizer-server` / `yarn dev:multi-engine` / `yarn dev:multi-engine-server`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-visualizer-server` / `make dev-multi-engine` / `make dev-multi-engine-server`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The Visualizer needs both its client and its server; see [`Visualizer/README.md`](../Visualizer/README.md).
+Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:visualizer-server` / `yarn dev:landing-page` / `yarn dev:multi-engine` / `yarn dev:multi-engine-server`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-visualizer-server` / `make dev-landing-page` / `make dev-multi-engine` / `make dev-multi-engine-server`. (`make start` already holds all six ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SingleEngine all need the Visualizer server (it holds the stories and the logins); see [`Visualizer/README.md`](../Visualizer/README.md).
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
@@ -32,13 +43,14 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
 | Service                       | Port | Status                               |
 | ----------------------------- | ---- | ------------------------------------ |
-| SingleEngine (vite)           | 8100 | implemented                          |
+| SingleEngine (vite)           | 8100 | implemented; proxies `/api` to 8123  |
 | Visualizer client (vite)      | 8101 | implemented; proxies `/api` to 8123  |
 | MultiEngine client (vite)     | 8102 | scaffold                             |
+| Landing page (vite)           | 8103 | implemented; proxies `/api` to 8123  |
 | Visualizer server (node/tsx)  | 8123 | implemented                          |
 | MultiEngine server (node/tsx) | 8124 | scaffold — every route answers `501` |
 
-`docker-compose.yml` publishes all five. The Visualizer client calls its server same-origin through the Vite proxy (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8101.
+`docker-compose.yml` publishes all six. The Visualizer client and the landing page call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8100, 8101 and 8103 (SingleEngine proxies `/api` the same way, for the access check and the login). The landing page (the story list: create, edit, open, play, export, import) is the place to start.
 
 ## Data structure
 
@@ -119,9 +131,9 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
 ## Folder structure
 
-Each folder is its own workspace (Yarn 4). Dependencies only ever point downwards in this list: `shared` imports nothing, the services may import any package, and no service may import another service. `eslint.config.js` encodes the whole thing.
+Each folder is its own workspace (Yarn 4; of the stories, only the example's `data` and `types` are). Dependencies only ever point downwards in this list: `shared` imports nothing, the services may import any package, and no service may import another service. `eslint.config.js` encodes the whole thing.
 
-### Author-edited
+### Author-edited (per story, under `stories/<id>/`)
 
 - types
     - defines the structure of the data
@@ -130,6 +142,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 
 - data
     - folder where the story files are located
+    - next to it: `story.json` (the story's info and password hash, owned by the server) and `tsconfig.json`
     - edited by the author (directly, or through the Visualizer's other tabs)
     - also holds the story's art: each image is the `.png` next to the `.ts` file of the passage, character or npc it belongs to (`data/assets/story.png` is only the apps' favicon)
 
@@ -142,7 +155,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
     - the bottom of the stack: depends on nothing
 
 - ui
-    - the React pieces both front-ends need: theme, layout primitives, toasts, the global stylesheet
+    - the React pieces the front-ends need: theme, layout primitives, toasts, the global stylesheet, and `PasswordDialog` (the story password prompt of the landing page, the Visualizer and SingleEngine)
     - exists so SingleEngine, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
 
 - core
@@ -155,6 +168,9 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
     - a service that can play the story for single player
     - only client implementation
     - fully implemented
+    - plays the story named by `?story=<id>` (the landing page's **Play as single**; without it, it goes to the landing page, `VITE_LANDING_URL`, default this host on 8103). `src/main.tsx` asks the Visualizer server `GET /api/stories/<id>/access`, shows the password dialog for a private story it may not play yet, then imports the story's virtual module `virtual:story/<id>` (its `data/index.ts` plus the URL of every `.png`) and starts the engine on it
+    - `vite/storiesPlugin.ts` (`story:stories`) serves the stories from `STORIES_ROOT` (the server's, default `stories/`): `@story/types` / `@story/data` imported from inside `stories/<id>/` mean that story's folders, and every request for a story file (or its virtual module) is checked against `GET /api/stories/<id>/access` with the browser's cookie (cached 30 s) and answered `403` unless the story may be played. So the Visualizer server has to run too
+    - the stories are served by the Vite dev server (plan D7); a per-story production build is future work
 
 - MultiEngine
     - a service that can play the story for multiple players
@@ -166,7 +182,7 @@ Each folder is its own workspace (Yarn 4). Dependencies only ever point downward
 - Visualizer
     - a service for creating and viewing the story and the world
     - used by the author of the game
-    - splits into `Visualizer/client/` (React app), `Visualizer/server/` (node server that reads and writes the `.ts` files in `data/` and `types/`) and `Visualizer/protocol/` (the typed API contract both import)
+    - splits into `Visualizer/client/` (React app), `Visualizer/server/` (node server that holds every story under `stories/`, guards each with its password, and reads and writes the `.ts` files in its `data/` and `types/`), `Visualizer/protocol/` (the typed API contract both import) and `Visualizer/landing-page/` (the story list: create, edit, open, play, export, import)
     - implemented: map, timeline, chapter view and entities pages; the structure tab is future work
     - see [`Visualizer/README.md`](../Visualizer/README.md) and [`docs/Visualizer.md`](Visualizer.md)
 

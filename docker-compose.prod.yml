@@ -1,0 +1,90 @@
+# Production (multiple stories, phase 11): `make prod-up`, or
+#   SITE_ADDRESS=stories.example.com docker compose -f docker-compose.prod.yml up -d --build
+#
+# One public origin, served by Caddy (`docker/Caddyfile`) on 80/443:
+#   /  landing page · /visualizer/  Visualizer client · /play/  SingleEngine · /api/  Visualizer server
+#
+# Only Caddy publishes ports. The server and the engine are reachable only through it, which is what
+# makes `TRUST_PROXY=1` (the login limiter trusts X-Forwarded-For) and `ENGINE_ALLOWED_HOSTS=*` safe.
+#
+# SITE_ADDRESS: the public host name (default `localhost`, with a certificate from Caddy's local
+# CA). The public origin, `https://<SITE_ADDRESS>`, is the server's `ALLOWED_ORIGINS`.
+#
+# Stories live in the `stories` volume (seeded with the example story when empty). Logins live in
+# the server's memory: a restart logs everyone out.
+name: story-prod
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.prod
+    target: app
+  image: story-prod-app
+  restart: unless-stopped
+  init: true
+  user: node
+  volumes:
+    - stories:/app/stories
+
+services:
+  server:
+    <<: *app
+    working_dir: /app/Visualizer/server
+    command: ['/app/node_modules/.bin/tsx', 'src/index.ts']
+    environment:
+      STORIES_ROOT: /app/stories
+      PORT: '8123'
+      COOKIE_SECURE: '1'
+      ALLOWED_ORIGINS: https://${SITE_ADDRESS:-localhost}
+      TRUST_PROXY: '1'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8123/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # SingleEngine as a Vite dev server under /play/ until the per-story build lands (plan D7). It
+  # serves the story files out of the same volume, each behind the server's access check.
+  engine:
+    <<: *app
+    working_dir: /app/SingleEngine
+    command: ['/app/node_modules/.bin/vite']
+    environment:
+      STORIES_ROOT: /app/stories
+      ENGINE_BASE: /play/
+      ENGINE_ALLOWED_HOSTS: '*'
+      VISUALIZER_SERVER: http://server:8123
+      VITE_LANDING_URL: /
+    depends_on:
+      server:
+        condition: service_healthy
+
+  caddy:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+      target: proxy
+    image: story-prod-proxy
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+      - engine
+
+volumes:
+  stories:
+  caddy_data:
+  caddy_config:

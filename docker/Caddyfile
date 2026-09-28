@@ -1,0 +1,45 @@
+# The one public origin of the production setup (docker-compose.prod.yml, multiple stories phase 11).
+#
+#   /             landing page     static build (/srv/landing)
+#   /visualizer/  Visualizer       static build (/srv/visualizer), Vite base /visualizer/
+#   /play/        SingleEngine     Vite dev server (engine:8100), base /play/, path passed unstripped
+#   /api/         Visualizer API   node server (server:8123)
+#
+# SITE_ADDRESS is a host name (`stories.example.com`): Caddy then gets and renews a certificate for
+# it and redirects http to https. `localhost` gets a certificate from Caddy's local CA.
+#
+# X-Forwarded-For: Caddy trusts no upstream proxy here (no `trusted_proxies`), so it drops any
+# X-Forwarded-For the client sent and sets it to the peer's address. The server's `TRUST_PROXY=1`
+# keys the login limiter on the last hop of that header (`auth/LoginLimiter.ts#clientAddress`).
+{$SITE_ADDRESS} {
+	# The API, SSE event streams included (Caddy flushes text/event-stream as it arrives).
+	handle /api/* {
+		reverse_proxy server:8123
+	}
+
+	# SingleEngine: its dev server answers under /play/ itself, HMR websocket included, so the path
+	# goes through as it is. Every story file it serves passes its story guard.
+	redir /play /play/ 308
+	handle /play/* {
+		reverse_proxy engine:8100
+	}
+
+	# The Visualizer client: hash routing (`#/map`), so every page is index.html.
+	redir /visualizer /visualizer/ 308
+	handle_path /visualizer/* {
+		root * /srv/visualizer
+		encode zstd gzip
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	# The landing page.
+	handle {
+		root * /srv/landing
+		encode zstd gzip
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}

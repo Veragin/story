@@ -1,15 +1,19 @@
 import { parsePassageId } from '../parsePassageId';
 import { Time, TPassageId } from '@story/shared';
 import { TChapterCharacterPassageId, TChapterId, TCharacterId } from '@story/types';
-import { register } from '@story/data';
 import type { TWorldState } from '@story/data';
+import type { Engine } from './Engine';
 
 export class History {
     data: Partial<Record<TCharacterId, THistoryItem[]>> = {};
 
-    private characterList = Object.keys(register.characters) as TCharacterId[];
+    private characterList: TCharacterId[];
 
-    constructor(private s: TWorldState) {
+    constructor(
+        private s: TWorldState,
+        private e: Engine
+    ) {
+        this.characterList = Object.keys(this.e.storyModule.register.characters) as TCharacterId[];
         this.characterList.forEach((char) => {
             this.data[char] = [this.prepareHistory(char)];
         });
@@ -20,6 +24,7 @@ export class History {
             return this.s.currentHistory[char];
         }
 
+        const { register } = this.e.storyModule;
         const passageId = register.characters[char].startPassageId;
         if (passageId === undefined) {
             return {

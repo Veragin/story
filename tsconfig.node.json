@@ -23,10 +23,14 @@
        workspace file added in Phase 10. They are checked here rather than in `tsconfig.json`
        because they run in node, not in the browser — `lib` above has no DOM. The test files
        themselves are *not* here: they are ordinary package source and are covered by
-       `tsconfig.json`'s `core` / `data` entries. */
+       `tsconfig.json`'s `core` / `stories/example/data` entries. */
     "include": [
         "SingleEngine/vite.config.ts",
+        /* SingleEngine's Vite plugin (`storiesPlugin`, multiple stories phase 9) and its tests:
+           node-land too, imported by the config above. */
+        "SingleEngine/vite",
         "Visualizer/client/vite.config.ts",
+        "Visualizer/landing-page/vite.config.ts",
         "MultiEngine/client/vite.config.ts",
         "vitest.workspace.ts"
     ]

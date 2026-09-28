@@ -7,9 +7,9 @@ import { newSession, waitForPassage } from './support/engine';
  * Inventory is the only place item *amounts* are written, and every write is silent: nothing
  * validates that an item exists, that an amount is positive, or that the character being
  * charged is the one the caller meant. The character defaults to
- * `engine.activePassage.characterId`, which before the first turn is `DUMMY_PASSAGE`'s —
- * Thomas. These tests state that default explicitly so a change to `DUMMY_PASSAGE` shows up
- * here rather than as items appearing in the wrong bag.
+ * `engine.activePassage.characterId`, which before the first turn is the dummy passage's —
+ * the main character, Thomas. These tests state that default explicitly so a change to
+ * `createDummyPassage` shows up here rather than as items appearing in the wrong bag.
  */
 describe('Inventory', () => {
     it('reads the active character"s bag by default', () => {

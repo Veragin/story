@@ -4,13 +4,17 @@
         "baseUrl": ".",
         "paths": {
             /* Workspace packages — source-only, mapped straight at the .ts entry (§7).
-               All five are real packages as of Phase 6. */
-            "@story/types": ["types/index.ts"],
+               All five are real packages as of Phase 6. `@story/types` / `@story/data` are the
+               example story (`stories/example/`, multiple stories phase 2): this one program
+               can bind each name only once, so it checks the engine against the example. Every
+               story, the example included, is also checked on its own through its
+               `stories/<id>/tsconfig.json` (`scripts/typecheck-stories.mjs`). */
+            "@story/types": ["stories/example/types/index.ts"],
             "@story/shared": ["shared/src/index.ts"],
             "@story/ui": ["ui/src/index.ts"],
             "@story/core": ["core/src/index.ts"],
-            "@story/data": ["data/index.ts"],
-            "@story/data/*": ["data/*"],
+            "@story/data": ["stories/example/data/index.ts"],
+            "@story/data/*": ["stories/example/data/*"],
             "@story/visualizer-protocol": ["Visualizer/protocol/src/index.ts"]
 
             /* No legacy `baseUrl: src` aliases are left: `src/` is gone as of Phase 8 and
@@ -28,13 +32,14 @@
        `paths` above is what makes the `@story/*` edges resolve to source rather than to a
        build output, so this must keep listing every package as it is extracted. */
     "include": [
-        "types",
+        "stories/example/types",
         "shared",
         "ui",
         "core",
-        "data",
+        "stories/example/data",
         "SingleEngine/src",
         "Visualizer/client/src",
+        "Visualizer/landing-page/src",
         "MultiEngine/client/src",
 
         /* The MultiEngine server is node-land, and this program carries the browser libs from
@@ -59,6 +64,7 @@
         /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
         "SingleEngine/vite.config.ts",
         "Visualizer/client/vite.config.ts",
+        "Visualizer/landing-page/vite.config.ts",
         "MultiEngine/client/vite.config.ts",
         "vitest.workspace.ts"
     ]

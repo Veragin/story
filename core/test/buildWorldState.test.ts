@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildWorldState } from '@story/core';
 import { itemInfo, register } from '@story/data';
 import { Time } from '@story/shared';
+import { TEST_STORY_ID } from './support/engine';
 
 /**
  * `buildWorldState` turns the authored register into the pristine world state. It is a loop
@@ -72,10 +73,13 @@ describe('buildWorldState', () => {
         expect(b.characters.thomas.inventory[0].amount).toBe(1);
     });
 
-    it('starts the clock at the first chapter"s start and the story at its main character', () => {
+    it('starts the clock at the earliest chapter start and the story at its first character', () => {
         const s = buildWorldState(register, itemInfo);
 
         expect(s.time).toBeInstanceOf(Time);
+        // Village opens first in this story; no chapter is named by `buildWorldState` itself.
+        const starts = Object.values(register.chapters).map((chapter) => chapter.timeRange.start.s);
+        expect(s.time.s).toBe(Math.min(...starts));
         expect(s.time.isEqual(register.chapters.village.timeRange.start)).toBe(true);
         expect(s.mainCharacterId).toBe('thomas');
         expect(s.currentHistory).toEqual({});
@@ -84,7 +88,7 @@ describe('buildWorldState', () => {
     it('builds a state with no Engine attached — no save is read, nothing is observable', () => {
         // The Visualizer renders passage bodies against this state and must see the story as
         // authored, not as the last player left it. Seed a save and prove it is ignored.
-        localStorage.setItem('worldState', JSON.stringify({ mainCharacterId: 'annie' }));
+        localStorage.setItem(`worldState:${TEST_STORY_ID}`, JSON.stringify({ mainCharacterId: 'annie' }));
 
         const s = buildWorldState(register, itemInfo);
 

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DUMMY_PASSAGE } from '@story/core';
 import { DeltaTime, Time } from '@story/shared';
 import { register } from '@story/data';
 import { newSession, waitForPassage } from './support/engine';
@@ -29,10 +28,10 @@ describe('Engine turn loop', () => {
         expect(annie[0].time.isEqual(register.chapters.kingdom.timeRange.start)).toBe(true);
     });
 
-    it('starts the session on DUMMY_PASSAGE until the first turn is processed', () => {
-        const { e } = newSession();
+    it('starts the session on a dummy passage of the main character until the first turn is processed', () => {
+        const { s, e } = newSession();
 
-        expect(e.activePassage).toBe(DUMMY_PASSAGE);
+        expect(e.activePassage).toMatchObject({ type: 'screen', body: [], characterId: s.mainCharacterId });
         expect(e.store.passage).toBeNull();
     });
 

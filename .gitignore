@@ -34,3 +34,8 @@ dist-ssr
 tsconfig.*.tsbuildinfo
 *.tsbuildinfo
 
+
+# Stories (multiple stories, D4): only the reference story is committed. Every other folder
+# under stories/ is created at runtime by the Visualizer and lives on a volume on the server.
+stories/*
+!stories/example

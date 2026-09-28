@@ -12,18 +12,23 @@
  *    npcs), so hosting it here would create a value-shaped core → data edge.
  *    Core imports it **type-only**; `types ⇄ data` is an accepted, documented type-only cycle
  *    confined to the author's two folders (§2.1). As of Phase 6 the specifier is `@story/data`.
- *    Note the remaining honest wart: `History`/`Processor`/`Inventory`/`Story` import
- *    `register` / `itemInfo` from `@story/data` at **value** level, so `core → data` is a real
- *    runtime edge today (declared in `core/package.json`). Injecting the register the way
- *    `createWorldState` already does is the fix; it belongs with the SingleEngine work.
+ *  - **No value import of `@story/data` in `src/`** (`yarn lint` enforces it). The story is
+ *    injected: `createWorldState(register, itemInfo, storyId)` hands the `Engine` a
+ *    `TStoryModule`, exposed as `engine.storyModule`, and `History`/`Processor`/`Inventory`/
+ *    `Story` read `register` / `itemInfo` from there. Nothing in `src/` names a chapter or a
+ *    character either, so the same runtime plays any story whose register has that shape.
+ *    `@story/data` stays in `core/package.json` for the type-only imports and for the tests,
+ *    which play the example story.
  *  - `parsePassageId` lands here rather than in `shared/` (§3). It imports `@story/types`, and
  *    `shared` may not — it would be `shared`'s only edge back to `types` under the confirmed
  *    layering. Its only consumers are the engine modules in this package.
- *  - `createWorldState` keeps the register shape it was given in Phase 1 and gains a sibling,
- *    `buildWorldState`, so the Visualizer can get a pristine state without an `Engine`.
+ *  - `createWorldState` takes the story (`register`, `itemInfo`) plus the story id that
+ *    namespaces the save, and has a sibling, `buildWorldState`, so the Visualizer can get a
+ *    pristine state without an `Engine`.
  */
 
-/* Engine — the runtime root; owns inventory/history/processor/story/store and localStorage save-load */
+/* Engine — the runtime root; owns inventory/history/processor/story/store, the injected
+   storyModule, and localStorage save-load (one save per story id) */
 export * from './engine/Engine';
 /* Story — goToPassage, spendTime */
 export * from './engine/Story';
@@ -35,10 +40,11 @@ export * from './engine/History';
 export * from './engine/Inventory';
 /* Store — the observable "currently displayed passage" holder */
 export * from './engine/Store';
-/* DUMMY_PASSAGE, TUnkownPassageScreen */
+/* createDummyPassage, TUnkownPassageScreen */
 export * from './engine/const';
 
-/* buildWorldState, TWorldStateRegister, TItemInfoRegister */
+/* buildWorldState, TWorldStateRegister, TItemInfoRegister, TStoryRegister, TPassagesModule,
+   TStoryModule */
 export * from './worldState/buildWorldState';
 /* createWorldState */
 export * from './worldState/createWorldState';

@@ -2,7 +2,6 @@ import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from '@story/shared';
 import { TChapter, TChapterId, TLinkCost } from '@story/types';
-import { register } from '@story/data';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from '../parsePassageId';
 
@@ -33,8 +32,8 @@ export class Processor {
         turn.onStart?.();
 
         const { chapterId } = parsePassageId(turn.passageId);
-        const passageFun = await (register.passages[chapterId] as any)(); // TODO create new type
-        this.e.activePassage = (passageFun.default as any)[turn.passageId](this.s, this.e);
+        const passages = await this.e.storyModule.register.passages[chapterId]();
+        this.e.activePassage = passages.default[turn.passageId](this.s, this.e);
 
         if (this.e.activePassage.type === 'transition') {
             this.e.history.addTurn({

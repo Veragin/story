@@ -2,7 +2,7 @@ import type { TWorldState } from '@story/data';
 import { Inventory } from './Inventory';
 import { TimeManager } from '@story/shared';
 import { TChapterId, TChapterPassage } from '@story/types';
-import { DUMMY_PASSAGE } from './const';
+import { createDummyPassage } from './const';
 import { History } from './History';
 import { Processor } from './Processor';
 import { Story } from './Story';
@@ -10,6 +10,7 @@ import { Store } from './Store';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from '../worldState/loadWorldState';
 import { showToast } from '@story/shared';
+import type { TStoryModule } from '../worldState/buildWorldState';
 
 export class Engine {
     inventory: Inventory;
@@ -18,18 +19,27 @@ export class Engine {
     story: Story;
     timeManager: TimeManager;
 
-    activePassage: TChapterPassage<TChapterId> = DUMMY_PASSAGE;
+    activePassage: TChapterPassage<TChapterId>;
     store: Store;
 
-    constructor(private s: TWorldState) {
+    constructor(
+        private s: TWorldState,
+        readonly storyModule: TStoryModule,
+        readonly storyId: string
+    ) {
         makeAutoObservable(s);
 
         this.loadStateFromLocalStorage();
 
+        this.activePassage = createDummyPassage(
+            Object.keys(storyModule.register.chapters)[0] as TChapterId,
+            s.mainCharacterId
+        );
+
         this.timeManager = new TimeManager();
         this.store = new Store(s);
         this.inventory = new Inventory(s, this);
-        this.history = new History(s);
+        this.history = new History(s, this);
         this.story = new Story(s, this);
         this.processor = new Processor(s, this);
     }
@@ -44,19 +54,24 @@ export class Engine {
 
     saveStateToLocalStorage = () => {
         showToast(_('Game was saved'), { variant: 'success' });
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.s));
+        localStorage.setItem(this.localStorageKey, JSON.stringify(this.s));
     };
 
     clearStateFromLocalStorage = () => {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem(this.localStorageKey);
     };
 
     private loadStateFromLocalStorage = () => {
-        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const data = localStorage.getItem(this.localStorageKey);
         if (data !== null) {
             this.setWorldState(data);
         }
     };
+
+    /** One save per story: `worldState:<storyId>`. */
+    private get localStorageKey() {
+        return `${LOCAL_STORAGE_KEY_PREFIX}:${this.storyId}`;
+    }
 
     private setWorldState = (state: string) => {
         const worldState = loadWorldState(state);
@@ -70,4 +85,4 @@ export class Engine {
     };
 }
 
-const LOCAL_STORAGE_KEY = 'worldState';
+const LOCAL_STORAGE_KEY_PREFIX = 'worldState';

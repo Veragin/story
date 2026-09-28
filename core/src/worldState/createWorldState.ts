@@ -1,5 +1,5 @@
 import type { TWorldState } from '@story/data';
-import { buildWorldState, type TItemInfoRegister, type TWorldStateRegister } from './buildWorldState';
+import { buildWorldState, type TItemInfoRegister, type TStoryRegister } from './buildWorldState';
 import { Engine } from '../engine/Engine';
 
 /**
@@ -10,15 +10,19 @@ import { Engine } from '../engine/Engine';
  * over it. Callers that want the authored starting state and no play session — the
  * Visualizer's passage graph — call `buildWorldState` directly.
  *
+ * The story is passed in, not imported: `register` / `itemInfo` become the engine's
+ * `storyModule`, and `storyId` namespaces its localStorage save, so `core` can run any story.
+ *
  * Pure factory: no module-level side effects, no `window` writes, no auto start —
  * the calling app owns those.
  */
 export const createWorldState = (
-    register: TWorldStateRegister,
-    itemInfo: TItemInfoRegister
+    register: TStoryRegister,
+    itemInfo: TItemInfoRegister,
+    storyId: string
 ): { s: TWorldState; e: Engine } => {
     const s = buildWorldState(register, itemInfo);
-    const e = new Engine(s);
+    const e = new Engine(s, { register, itemInfo }, storyId);
 
     return { s, e };
 };

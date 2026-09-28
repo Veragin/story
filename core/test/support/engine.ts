@@ -4,8 +4,11 @@ import { itemInfo, register } from '@story/data';
 import type { TWorldState } from '@story/data';
 import type { TUnkownPassageScreen } from '@story/core';
 
+/** The story id the test sessions save under; `Engine` namespaces its localStorage key by it. */
+export const TEST_STORY_ID = 'example';
+
 /** A fresh, unsaved play session over the real story. */
-export const newSession = (): { s: TWorldState; e: Engine } => createWorldState(register, itemInfo);
+export const newSession = (): { s: TWorldState; e: Engine } => createWorldState(register, itemInfo, TEST_STORY_ID);
 
 /** A pristine, engine-less world state over the real story. */
 export const newState = (): TWorldState => buildWorldState(register, itemInfo);

@@ -8,8 +8,14 @@ const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 /** The monorepo root. Everything this app imports lives under it, none of it under `root`. */
 const repoRoot = at('../..');
 
+/**
+ * The story this app plays: `@story/types` / `@story/data` are the example story's folders
+ * (multiple stories, phase 2 moved them from the repo root to `stories/example/`).
+ */
+const storyDir = '../../stories/example';
+
 /** The internal packages this app pulls source out of — all of them outside `root`. */
-const siblingPackages = ['../../types', '../../data', '../../shared', '../../ui', '../../core'].map(at);
+const siblingPackages = [`${storyDir}/types`, `${storyDir}/data`, '../../shared', '../../ui', '../../core'].map(at);
 
 /**
  * Vite seeds its watcher with `root` only; anything outside is added lazily, the first time a
@@ -59,11 +65,11 @@ export default defineConfig({
             // `@story/data` publishes `"./*"`: the author's tree is the public surface (§5),
             // so deep paths resolve by pattern instead of an enumerated list that would go
             // stale every time the story grows a folder.
-            { find: /^@story\/data\/(.+)$/, replacement: at('../../data/') + '$1' },
-            { find: '@story/data', replacement: at('../../data/index.ts') },
+            { find: /^@story\/data\/(.+)$/, replacement: at(`${storyDir}/data/`) + '$1' },
+            { find: '@story/data', replacement: at(`${storyDir}/data/index.ts`) },
 
             { find: '@story/core', replacement: at('../../core/src/index.ts') },
-            { find: '@story/types', replacement: at('../../types/index.ts') },
+            { find: '@story/types', replacement: at(`${storyDir}/types/index.ts`) },
             { find: '@story/shared', replacement: at('../../shared/src/index.ts') },
         ],
     },

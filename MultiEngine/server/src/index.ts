@@ -34,11 +34,13 @@
  *
  *  - Importing `@story/core` works. The ambient global `_` is installed transitively: core
  *    imports `@story/shared`, and evaluating its `translations.ts` assigns `globalThis._`.
- *  - `buildWorldState(register, itemInfo)` works, which is why this file can call it.
- *  - `new Engine(s)` **throws** under node:
+ *  - `buildWorldState(register, itemInfo)` works, which is why this file can call it. The story
+ *    is passed in: `@story/core` never imports `@story/data` at value level, so this server is
+ *    the one that picks the story (today the `@story/data` workspace, the example).
+ *  - `new Engine(s, { register, itemInfo }, storyId)` **throws** under node:
  *      `ReferenceError: localStorage is not defined`
- *      at `Engine.loadStateFromLocalStorage` (core/src/engine/Engine.ts:55), reached from the
- *      `Engine` constructor (core/src/engine/Engine.ts:27).
+ *      at `Engine.loadStateFromLocalStorage` (core/src/engine/Engine.ts:72), reached from the
+ *      `Engine` constructor (core/src/engine/Engine.ts:39).
  *    `Engine` treats localStorage as its save-game store, and node has no localStorage. With a
  *    three-method shim (`getItem`/`setItem`/`removeItem`) the constructor completes and
  *    resolves an active passage, so the coupling is shallow — but it is a real one and the fix
@@ -53,7 +55,7 @@ import { buildWorldState } from '@story/core';
 import { itemInfo, register, type TWorldState } from '@story/data';
 
 const HOST = '0.0.0.0'; // not `localhost`: the port has to be reachable from outside the container (§7)
-const PORT = 8124; // REFACTOR_PLAN §2 Ports: 8100 SingleEngine, 8101 Visualizer client, 8102 MultiEngine client
+const PORT = 8124; // REFACTOR_PLAN §2 Ports: 8100 SingleEngine, 8101 Visualizer client, 8102 MultiEngine client, 8103 landing page, 8123 Visualizer server
 
 /**
  * The world state this server will own once it is built. Pristine and never mutated today —

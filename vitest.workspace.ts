@@ -12,7 +12,8 @@ import { defineWorkspace } from 'vitest/config';
  * map pointing straight at its `.ts` entry, and Vite resolves through both. Bare `@story/core`,
  * `@story/types`, `@story/shared` and `@story/data` therefore work here with zero configuration,
  * and deep imports (`@story/data/chapters/village/village.chapter.ts`) resolve through
- * `@story/data`'s `"./*"` export. Nothing needed an alias, so nothing has one.
+ * `@story/data`'s `"./*"` export (the workspace lives at `stories/example/data/`). Nothing
+ * needed an alias, so nothing has one.
  *
  * ## Why both projects are `node`
  *
@@ -42,20 +43,34 @@ export default defineWorkspace([
     },
     {
         test: {
+            // The example story's own suite (`stories/example/data/test`). Still named `data`:
+            // it is the `@story/data` workspace, only moved (multiple stories, phase 2). Other
+            // stories are not workspaces and have no tests of their own.
             name: 'data',
-            root: './data',
+            root: './stories/example/data',
             environment: 'node',
             include: ['test/**/*.test.ts'],
         },
     },
     {
-        // The Visualizer's node server. Every test runs against a temp project dir passed as a
-        // `ProjectRoot` (the programmatic `STORY_ROOT`), never the real data/ and types/ (plan §5).
+        // The Visualizer's node server. Every test runs against a temp copy of the example story
+        // (a temp `STORIES_ROOT`, or a `ProjectRoot` in it), never the real `stories/example/`
+        // (plan §5).
         test: {
             name: 'visualizer-server',
             root: './Visualizer/server',
             environment: 'node',
             include: ['test/**/*.test.ts'],
+        },
+    },
+    {
+        // SingleEngine's dev-server story guard (multiple stories, phase 9): the pure request →
+        // story classification and the access cache, node-side like the Vite config they serve.
+        test: {
+            name: 'single-engine',
+            root: './SingleEngine',
+            environment: 'node',
+            include: ['vite/test/**/*.test.ts'],
         },
     },
     {
@@ -66,6 +81,17 @@ export default defineWorkspace([
             environment: 'jsdom',
             include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
             setupFiles: ['./src/canvas/test/setup.ts'],
+        },
+    },
+    {
+        // The landing page (multiple stories, phase 6): the store against a mocked `fetch`, and
+        // the create dialog rendered into jsdom.
+        test: {
+            name: 'visualizer-landing-page',
+            root: './Visualizer/landing-page',
+            environment: 'jsdom',
+            include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+            setupFiles: ['./src/test/setup.ts'],
         },
     },
 ]);
