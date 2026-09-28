@@ -44,11 +44,15 @@ export const ImageField = ({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const input = useRef<HTMLInputElement>(null);
+    /** The owner shown now: a late upload response for another one is dropped. */
+    const current = useRef({ owner, id });
+    current.current = { owner, id };
 
     useEffect(() => {
         let alive = true;
         setImage(null);
         setError(null);
+        setBusy(false);
         api.getImage(owner, id).then(
             (dto) => alive && setImage(dto),
             (e) => alive && setError((e as Error).message)
@@ -73,16 +77,18 @@ export const ImageField = ({
             );
             return;
         }
+        const alive = () =>
+            current.current.owner === owner && current.current.id === id;
         setBusy(true);
         try {
             const data = await readBase64(file);
-            setImage(
-                await api.uploadImage(owner, id, {
-                    version: image?.version ?? '',
-                    data,
-                })
-            );
+            const saved = await api.uploadImage(owner, id, {
+                version: image?.version ?? '',
+                data,
+            });
+            if (alive()) setImage(saved);
         } catch (e) {
+            if (!alive()) return;
             if (e instanceof ApiError && e.isStale && e.current) {
                 // someone replaced it meanwhile: show theirs, let the author decide again
                 setImage(e.current as TImageDto);
@@ -93,7 +99,7 @@ export const ImageField = ({
                 setError((e as Error).message);
             }
         } finally {
-            setBusy(false);
+            if (alive()) setBusy(false);
         }
     };
 

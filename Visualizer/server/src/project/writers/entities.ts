@@ -211,11 +211,17 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
             c.obj.addPropertyAssignment({ name: keyText(id), initializer: itemText(sp, c, merged) });
             return;
         }
-        if (body.name !== undefined)
-            updateValue(getProp(n.item, 'name')!.getInitializerOrThrow(), S.string, body.name, {
-                ...ctx,
-                path: 'name',
-            });
+        if (body.name !== undefined) {
+            const nameCtx = { ...ctx, path: 'name' };
+            const prop = getProp(n.item, 'name');
+            // `name` is optional on disk (the reader falls back to the id): add it when missing.
+            if (prop) updateValue(prop.getInitializerOrThrow(), S.string, body.name, nameCtx);
+            else
+                n.item.insertPropertyAssignment(0, {
+                    name: 'name',
+                    initializer: genValue(body.name, S.string, nameCtx),
+                });
+        }
         if (body.type !== undefined && body.type !== current.type) {
             getProp(n.item, 'type')?.getInitializerOrThrow().replaceWithText(quote(type));
         }

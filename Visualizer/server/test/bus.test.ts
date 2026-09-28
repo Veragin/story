@@ -53,6 +53,18 @@ describe('event bus: hand edits', () => {
         ]);
     });
 
+    it("names a passage event after the file's id literal, not its file name", async () => {
+        const file = app.project.abs('data/chapters/village/thomas.passages/intro.ts');
+        const source = (await readTextOrNull(file))!;
+        await writeFile(file, source.replace("id: 'intro'", "id: 'introRenamed'"));
+        await waitFor(() => events.length > 0);
+        await sleep(QUIET_MS);
+        expect(events.map((e) => e.id)).toEqual(['village-thomas-introRenamed']);
+        await rm(file);
+        await waitFor(() => events.length > 1);
+        expect(events[1]).toMatchObject({ id: 'village-thomas-introRenamed', op: 'deleted' });
+    });
+
     it('batches several edits of one resource into one event', async () => {
         const file = app.project.abs('data/characters/thomas.ts');
         for (let i = 0; i < 3; i++) await appendFile(file, `// ${i}\n`);

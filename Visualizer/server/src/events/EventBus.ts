@@ -3,7 +3,8 @@ import path from 'node:path';
 import type { TChangeEvent } from '@story/visualizer-protocol';
 import { atomicWrite } from '../json/atomicWrite';
 import type { ProjectRoot } from '../project/ProjectRoot';
-import { pathToResource, resourceKey, type TResourceRef } from './pathToEvent';
+import { passageLocalIdOf } from './passageLocalId';
+import { localIdFromPassageFile, pathToResource, resourceKey, type TResourceRef } from './pathToEvent';
 import { version } from './version';
 
 export type TChangeListener = (event: TChangeEvent) => void;
@@ -67,6 +68,8 @@ export class EventBus {
     private pending = new Map<string, 'add' | 'change' | 'unlink'>();
     private batchTimer: NodeJS.Timeout | null = null;
     private flushing: Promise<void> | null = null;
+    /** Last known local id of each passage file (by absolute path), for unlink events. */
+    private passageIds = new Map<string, string>();
     private activeTransactions = 0;
     private txQueue: Promise<unknown> = Promise.resolve();
     private closed = false;
@@ -173,8 +176,10 @@ export class EventBus {
         this.batchTimer = setTimeout(() => {
             this.batchTimer = null;
             if (this.activeTransactions > 0) return; // re-scheduled when the last one ends
+            if (this.flushing) return; // re-scheduled when the running flush ends
             this.flushing = this.flushBatch().finally(() => {
                 this.flushing = null;
+                if (this.pending.size > 0) this.scheduleFlush();
             });
         }, this.batchMs);
     }
@@ -205,13 +210,37 @@ export class EventBus {
             const suppression = this.suppressed.get(abs);
             if (suppression && suppression.hash === hash) continue;
 
-            const ref = pathToResource(this.project.rel(abs));
+            let ref = pathToResource(this.project.rel(abs));
             if (!ref) continue;
+            if (ref.kind === 'passage') ref = this.passageRef(abs, ref, contents);
             const key = resourceKey(ref);
             if (events.has(key)) continue;
             events.set(key, toEvent(ref, hash, change));
         }
         for (const event of events.values()) this.emit(event);
+    }
+
+    /**
+     * `pathToResource` names a passage after its file; the id the server serves it under comes
+     * from its `id` literal (`passageLocalId`). Parse the file for it, and remember it so an
+     * unlink still reports the id the file had.
+     */
+    private passageRef(abs: string, ref: TResourceRef, contents: Buffer | null): TResourceRef {
+        const fileLocalId = localIdFromPassageFile(path.basename(abs));
+        const prefix = ref.id.slice(0, ref.id.length - fileLocalId.length);
+        let localId: string | undefined;
+        if (contents === null) {
+            localId = this.passageIds.get(abs);
+            this.passageIds.delete(abs);
+        } else {
+            try {
+                localId = passageLocalIdOf(abs, contents.toString('utf8'));
+                this.passageIds.set(abs, localId);
+            } catch {
+                localId = undefined;
+            }
+        }
+        return localId === undefined ? ref : { ...ref, id: prefix + localId };
     }
 
     async close() {

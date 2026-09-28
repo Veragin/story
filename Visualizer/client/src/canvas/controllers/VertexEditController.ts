@@ -30,7 +30,13 @@ export class VertexEditController implements ISceneInteraction {
     readonly priority: number;
     private readonly options: Required<Omit<TVertexEditOptions, 'priority' | 'constrainVertex'>> &
         Pick<TVertexEditOptions, 'constrainVertex'>;
-    private drag: { shape: PolygonShape; index: number; changed: boolean } | null = null;
+    private drag: {
+        shape: PolygonShape;
+        index: number;
+        startWorld: TPoint;
+        startVertex: TPoint;
+        changed: boolean;
+    } | null = null;
     private readonly dispose: () => void;
 
     constructor(
@@ -90,14 +96,21 @@ export class VertexEditController implements ISceneInteraction {
         const t = this.target;
         const index = this.vertexAt(e.world);
         if (!t || index < 0) return false;
-        this.drag = { shape: t, index, changed: false };
+        this.drag = { shape: t, index, startWorld: e.world, startVertex: { ...t.points[index] }, changed: false };
         return true;
     }
 
     onPointerMove(e: TScenePointerEvent): void {
         const d = this.drag;
         if (!d) return;
-        const p = this.options.constrainVertex ? this.options.constrainVertex(e.world, d.index, d.shape) : e.world;
+        // Move by the pointer's delta, not to the pointer: grabbing a handle off-centre must not snap it.
+        const moved = {
+            x: d.startVertex.x + e.world.x - d.startWorld.x,
+            y: d.startVertex.y + e.world.y - d.startWorld.y,
+        };
+        const p = this.options.constrainVertex ? this.options.constrainVertex(moved, d.index, d.shape) : moved;
+        const before = d.shape.points[d.index];
+        if (before && before.x === p.x && before.y === p.y) return;
         d.shape.moveVertex(d.index, p);
         d.changed = true;
         this.scene.events.emit('change', { shape: d.shape, kind: 'vertex-move', final: false, vertexIndex: d.index });

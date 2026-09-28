@@ -160,6 +160,8 @@ export class ApiEvents {
             }
         });
         source.onerror = () => {
+            // A late error from a stream that was closed (or replaced) meanwhile.
+            if (this.source !== source) return;
             // CONNECTING: the browser retries by itself (the server sent `retry:`).
             // CLOSED: it gave up (non-200 answer) — re-create it ourselves, with backoff.
             if (source.readyState === 2 /* CLOSED */) {

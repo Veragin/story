@@ -134,11 +134,22 @@ export class ChapterInfoEditorStore {
         removeUiState(draftKey(this.chapterId));
     }
 
+    /**
+     * "Keep mine": rebase the draft on the version on disk and save it over. Fields the author
+     * did not touch take the disk's value, so only their own edits overwrite the other change.
+     */
     keepMine(): Promise<boolean> {
         const current = this.conflict?.current;
-        if (!current) return Promise.resolve(false);
+        if (!current || !this.chapter || !this.draft) return Promise.resolve(false);
+        const base = chapterInfoOf(this.chapter);
+        const disk = chapterInfoOf(current);
+        const draft = { ...this.draft };
+        for (const f of CHAPTER_INFO_FIELDS) {
+            if (same(draft[f], base[f])) Object.assign(draft, { [f]: disk[f] });
+        }
         runInAction(() => {
             this.chapter = current;
+            this.draft = draft;
             this.conflict = null;
         });
         return this.save();

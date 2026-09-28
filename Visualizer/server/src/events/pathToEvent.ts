@@ -16,7 +16,7 @@ export type TResourceRef = Omit<TChangeEvent, 'version' | 'op'> & { primary: boo
 const idFromEntityFile = (base: string) => base.charAt(0).toLowerCase() + base.slice(1);
 
 /** `cool.transition.ts` → `cool`, `visit.screen.ts` → `visit`, `intro.ts` → `intro`. */
-const localIdFromPassageFile = (file: string) => file.split('.')[0];
+export const localIdFromPassageFile = (file: string) => file.split('.')[0];
 
 /**
  * Map a project-relative path (`/` separators) to the resource it backs, or `null` for files

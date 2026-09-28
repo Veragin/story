@@ -701,4 +701,15 @@ describe('entities', () => {
         expect((await t.get('/api/entities/items/apple')).status).toBe(404);
         await expectTsc();
     }, 60_000);
+
+    it('adds a missing name to an item on update', async () => {
+        const file = path.join(t.project.root, 'data/items/itemInfo.ts');
+        await writeFile(file, (await read('data/items/itemInfo.ts')).replace("name: 'Wood',", ''));
+        const wood = (await t.get('/api/entities/items/wood')).body;
+        expect(wood.name).toBe('wood');
+        const res = await t.put('/api/entities/items/wood', { version: wood.version, name: 'Timber' });
+        expect(res.status).toBe(200);
+        expect(res.body.name).toBe('Timber');
+        expect(await read('data/items/itemInfo.ts')).toMatch(/wood: \{\s*name: 'Timber',\s*type: 'resource'/);
+    });
 });

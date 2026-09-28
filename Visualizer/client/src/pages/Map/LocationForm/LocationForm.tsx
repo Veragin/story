@@ -63,8 +63,11 @@ export const LocationForm = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the DTO changes
     }, [location]);
 
-    const save = async (against: TLocationDto = base) => {
-        const body = locationPatch(against, draft);
+    const save = async (
+        against: TLocationDto = base,
+        input: TLocationDraft = draft
+    ) => {
+        const body = locationPatch(against, input);
         if (Object.keys(body).length === 0) {
             onSaved?.(against);
             return;
@@ -104,9 +107,23 @@ export const LocationForm = ({
     const keepMine = () => {
         if (!conflict) return;
         const against = conflict;
+        // Rebase: fields the author did not touch take the disk's value, so only their own
+        // edits overwrite the other change.
+        const mine = locationPatch(base, draft);
+        const disk = toLocationDraft(against);
+        const rebased: TLocationDraft = {
+            name: 'name' in mine ? draft.name : disk.name,
+            description:
+                'description' in mine ? draft.description : disk.description,
+            localCharacters:
+                'localCharacters' in mine
+                    ? draft.localCharacters
+                    : disk.localCharacters,
+        };
         setBase(against);
+        setDraft(rebased);
         setConflict(null);
-        void save(against);
+        void save(against, rebased);
     };
 
     const set = (p: Partial<TLocationDraft>) =>

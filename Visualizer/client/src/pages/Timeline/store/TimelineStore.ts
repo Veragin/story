@@ -273,15 +273,17 @@ export class TimelineStore {
         });
         try {
             const [project, layout] = await Promise.all([this.api.getProject(), this.api.getTimelineLayout()]);
+            // One chapter / trigger that fails to load (e.g. 422, its source does not type-check)
+            // is left out rather than failing the whole timeline.
             const [chapters, triggers] = await Promise.all([
-                Promise.all(project.chapters.map((c) => this.api.getChapter(c.id))),
-                Promise.all(project.triggers.map((t) => this.api.getTrigger(t.id))),
+                Promise.all(project.chapters.map((c) => this.api.getChapter(c.id).catch(() => null))),
+                Promise.all(project.triggers.map((t) => this.api.getTrigger(t.id).catch(() => null))),
             ]);
             runInAction(() => {
                 this.project = project;
                 this.layout = layout;
-                this.chapters.replace(chapters.map((c) => [c.chapterId, c]));
-                this.triggers.replace(triggers.map((t) => [t.triggerId, t]));
+                this.chapters.replace(chapters.filter((c) => c !== null).map((c) => [c.chapterId, c]));
+                this.triggers.replace(triggers.filter((t) => t !== null).map((t) => [t.triggerId, t]));
                 this.status = 'ready';
                 this.loadError = null;
                 this.dropStaleSelection();
@@ -462,7 +464,10 @@ export class TimelineStore {
                         if (current) this.chapters.set(chapterId, current);
                         else this.removeChapter(chapterId);
                     } else {
-                        this.chapters.set(chapterId, before);
+                        // Roll back the range only: an earlier queued save may have advanced
+                        // the version since `before` was captured.
+                        const latest = this.chapters.get(chapterId);
+                        if (latest) this.chapters.set(chapterId, { ...latest, timeRange: before.timeRange });
                     }
                 });
             }
@@ -518,9 +523,15 @@ export class TimelineStore {
                 runInAction(() => this.triggers.set(triggerId, saved));
             } catch (e) {
                 this.rejectEdit(e, _('Trigger %s', triggerId), () => {
-                    const current = e instanceof ApiError && e.isStale ? (e.current as TTriggerDto | null) : before;
-                    if (current) this.triggers.set(triggerId, current);
-                    else this.removeTrigger(triggerId);
+                    if (e instanceof ApiError && e.isStale) {
+                        const current = e.current as TTriggerDto | null;
+                        if (current) this.triggers.set(triggerId, current);
+                        else this.removeTrigger(triggerId);
+                    } else {
+                        // Roll back the time only, keeping the latest known version.
+                        const latest = this.triggers.get(triggerId);
+                        if (latest) this.triggers.set(triggerId, { ...latest, time: before.time });
+                    }
                 });
             }
         });

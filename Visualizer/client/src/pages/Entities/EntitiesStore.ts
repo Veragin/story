@@ -458,9 +458,9 @@ export class EntitiesStore {
         try {
             const saved = (await this.api.updateEntity(base.kind, base.id, body as never)) as TEntityDto;
             runInAction(() => {
-                this.stale = null;
                 this.replaceInList(saved);
                 if (this.base?.kind !== saved.kind || this.base.id !== saved.id) return;
+                this.stale = null;
                 // Input typed while the request was in flight stays in the draft.
                 const typedMeanwhile = this.draft !== draft;
                 this.base = saved;
@@ -471,6 +471,8 @@ export class EntitiesStore {
             return true;
         } catch (e) {
             runInAction(() => {
+                // The author moved on to another entity while the request was in flight.
+                if (this.base?.kind !== base.kind || this.base.id !== base.id) return;
                 if (e instanceof ApiError && e.isStale) this.stale = { current: e.current as TEntityDto | null };
                 else if (e instanceof ApiError && e.isInvalid) this.diagnostics = e.diagnostics;
                 else this.error = errorMessage(e);
