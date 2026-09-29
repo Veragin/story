@@ -33,6 +33,16 @@ export class HttpError extends Error {
         return HttpError.of('bad_request', message);
     }
 
+    /** 401 — the story is locked (phase 4: no grant for it in the session). */
+    static unauthorized(message = 'Log in to this story first') {
+        return HttpError.of('unauthorized', message);
+    }
+
+    /** 403 */
+    static forbidden(message: string) {
+        return HttpError.of('forbidden', message);
+    }
+
     /** 404 */
     static notFound(message: string) {
         return HttpError.of('not_found', message);
@@ -56,6 +66,11 @@ export class HttpError extends Error {
     /** 422 — the edit does not type-check; nothing was written. */
     static invalid(diagnostics: TDiagnosticDto[], message = 'The change does not type-check') {
         return new HttpError({ error: 'invalid', message, diagnostics });
+    }
+
+    /** 429 — too many failed logins. */
+    static tooManyRequests(message = 'Too many attempts, try again later') {
+        return HttpError.of('too_many_requests', message);
     }
 
     /** 501 */

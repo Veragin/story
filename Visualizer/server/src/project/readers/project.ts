@@ -7,7 +7,7 @@ import { readProjectChapter } from './chapters';
 import { entitySources, itemNodes } from './entities';
 
 /**
- * `GET /api/project`. Its version hashes every story source file (in path order): the summary
+ * `GET /project`. Its version hashes every story source file (in path order): the summary
  * depends on nearly all of them, and a hash of a few dozen small strings is cheap.
  */
 export const readProject = (sp: SourceProject): TProjectDto => {

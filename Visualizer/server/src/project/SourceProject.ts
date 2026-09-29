@@ -6,7 +6,7 @@ import { IndentationText, Project, QuoteKind, type SourceFile, ts } from 'ts-mor
 import type { EventBus, TTransaction } from '../events/EventBus';
 import { HttpError, isHttpError } from '../http/HttpError';
 import { importedNames, isIdentifierUsed, removeImportOf } from './ast';
-import { REPO_ROOT, type ProjectRoot } from './ProjectRoot';
+import { EXAMPLE_STORY_ROOT, REPO_ROOT, type ProjectRoot } from './ProjectRoot';
 import { diagnoseProject, newDiagnostics, syntaxDiagnostic, withFields } from './validate';
 
 /**
@@ -22,7 +22,7 @@ import { diagnoseProject, newDiagnostics, syntaxDiagnostic, withFields } from '.
  *    writes everything in ONE `bus.transaction` (so it emits one event). On any failure the
  *    in-memory files are rolled back and nothing is written.
  *
- * `@story/shared` and `@story/core` are resolved from the repo (a temp `STORY_ROOT` holds only
+ * `@story/shared` and `@story/core` are resolved from the repo (a story folder holds only its
  * `data/` and `types/`); `@story/types` and `@story/data` from the story root.
  */
 export class SourceProject {
@@ -222,9 +222,12 @@ const compilerOptionsFor = (root: ProjectRoot): ts.CompilerOptions => ({
 
 let prettierOptions: Promise<Options> | null = null;
 
-/** The repo's prettier config for `.ts` (resolved from the repo, so a temp root formats the same). */
+/**
+ * The repo's prettier config for `.ts`: resolved for a (hypothetical) file in the example story, so
+ * the root `.prettierrc` and its `*.ts` override apply and a temp root formats the same.
+ */
 const tsPrettierOptions = (): Promise<Options> => {
-    prettierOptions ??= resolveConfig(path.join(REPO_ROOT, 'data', 'source.ts'))
+    prettierOptions ??= resolveConfig(path.join(EXAMPLE_STORY_ROOT, 'data', 'source.ts'))
         .then((c) => c ?? {})
         .catch(() => ({}))
         .then((c) => ({ ...c, parser: 'typescript' }));

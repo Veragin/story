@@ -23,7 +23,7 @@ describe('readers', () => {
     }, 60_000);
 
     it('lists the project', async () => {
-        const { status, body } = await t.get('/api/project');
+        const { status, body } = await t.get('/api/stories/example/project');
         expect(status).toBe(200);
         expect(body.version).toMatch(/^[0-9a-f]{16}$/);
         expect(body.chapters.map((c: { id: string }) => c.id)).toEqual(['village', 'kingdom', 'wedding']);
@@ -39,7 +39,7 @@ describe('readers', () => {
     });
 
     it('reads a chapter, with code fields as text', async () => {
-        const village = (await t.get('/api/chapters/village')).body;
+        const village = (await t.get('/api/stories/example/chapters/village')).body;
         expect(village).toMatchObject({
             chapterId: 'village',
             file: 'data/chapters/village/village.chapter.ts',
@@ -58,16 +58,16 @@ describe('readers', () => {
                 },
             ],
         });
-        const wedding = (await t.get('/api/chapters/wedding')).body;
+        const wedding = (await t.get('/api/stories/example/chapters/wedding')).body;
         expect(wedding.title).toEqual({ code: "_('Wedding Chapter')" });
         expect(wedding.timeRange).toEqual({ start: '5.1. 9:00', end: '6.1. 8:00' });
-        const kingdom = (await t.get('/api/chapters/kingdom')).body;
+        const kingdom = (await t.get('/api/stories/example/chapters/kingdom')).body;
         expect(kingdom.children).toEqual([{ condition: 'asdasd', chapterId: 'village' }]);
-        expect((await t.get('/api/chapters/nope')).status).toBe(404);
+        expect((await t.get('/api/stories/example/chapters/nope')).status).toBe(404);
     });
 
     it('reads passages with statically extracted edges', async () => {
-        const { body } = await t.get('/api/chapters/village/passages');
+        const { body } = await t.get('/api/stories/example/chapters/village/passages');
         expect(body.passages.map((p: { passageId: string }) => p.passageId)).toEqual([
             'village-thomas-cool',
             'village-thomas-forest',
@@ -100,17 +100,17 @@ describe('readers', () => {
                 },
             ])
         );
-        const visit = (await t.get('/api/passages/kingdom-thomas-visit')).body;
+        const visit = (await t.get('/api/stories/example/passages/kingdom-thomas-visit')).body;
         expect(visit).toMatchObject({
             params: ['s', 'e'],
             preamble: 'void s;\nvoid e;',
             title: { code: "_('visit')" },
         });
         expect(visit.body[0].links[0].cost).toEqual({ seconds: 600 });
-        const annie = (await t.get('/api/passages/kingdom-annie-intro')).body;
+        const annie = (await t.get('/api/stories/example/passages/kingdom-annie-intro')).body;
         expect(annie.body[0].condition).toEqual({ code: 's.characters.annie.health > 0' });
         expect(annie.body[0].links[0].cost).toEqual({ time: { seconds: 600 }, items: [{ id: 'berries', amount: 1 }] });
-        expect((await t.get('/api/passages/village-thomas-nope')).status).toBe(404);
+        expect((await t.get('/api/stories/example/passages/village-thomas-nope')).status).toBe(404);
     });
 
     it('finds edges inside code fields, marked conditional', async () => {
@@ -125,7 +125,7 @@ describe('readers', () => {
                 "passageId: Math.random() > 0.5 ? 'village-thomas-forest' : 'village-thomas-cool'"
             )
         );
-        const { body } = await t.get('/api/chapters/village/passages');
+        const { body } = await t.get('/api/stories/example/chapters/village/passages');
         expect(body.edges.filter((e: { from: string }) => e.from === 'village-thomas-intro')).toEqual([
             {
                 from: 'village-thomas-intro',
@@ -146,44 +146,50 @@ describe('readers', () => {
     });
 
     it('reads triggers and entities', async () => {
-        const trigger = (await t.get('/api/triggers/nobleHouseRobbery')).body;
+        const trigger = (await t.get('/api/stories/example/triggers/nobleHouseRobbery')).body;
         expect(trigger).toMatchObject({ name: 'Noble house robbery', time: '1.12 0:0', action: { code: '() => {}' } });
         expect(trigger.condition.code).toContain('return true;');
-        const items = (await t.get('/api/entities/items')).body.entities;
+        const items = (await t.get('/api/stories/example/entities/items')).body.entities;
         expect(items.find((i: { id: string }) => i.id === 'berries')).toMatchObject({
             source: 'foodInfo',
             file: 'data/items/foodInfo.ts',
             type: 'food',
             props: { hungerValue: 5 },
         });
-        const village = (await t.get('/api/entities/locations/village')).body;
+        const village = (await t.get('/api/stories/example/entities/locations/village')).body;
         expect(village.localCharacters).toEqual([{ name: 'Pepa', description: 'Pepa is a very smart' }]);
-        const franta = (await t.get('/api/entities/npcs/franta')).body;
+        const franta = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(franta).toMatchObject({
             file: 'data/npcs/Franta.ts',
             exportName: 'Franta',
             init: { inventory: [], isDead: false },
         });
-        expect((await t.get('/api/entities/things/x')).status).toBe(404);
+        expect((await t.get('/api/stories/example/entities/things/x')).status).toBe(404);
     });
 });
 
 describe('round trip', () => {
     it('reading and writing back every resource unchanged leaves every file byte-identical', async () => {
         const before = await snapshot(t.project.root);
-        const project = (await t.get('/api/project')).body;
+        const project = (await t.get('/api/stories/example/project')).body;
         const puts: [string, unknown][] = [];
         for (const c of project.chapters) {
-            puts.push([`/api/chapters/${c.id}`, (await t.get(`/api/chapters/${c.id}`)).body]);
-            for (const p of (await t.get(`/api/chapters/${c.id}/passages`)).body.passages) {
-                puts.push([`/api/passages/${p.passageId}`, p]);
+            puts.push([
+                `/api/stories/example/chapters/${c.id}`,
+                (await t.get(`/api/stories/example/chapters/${c.id}`)).body,
+            ]);
+            for (const p of (await t.get(`/api/stories/example/chapters/${c.id}/passages`)).body.passages) {
+                puts.push([`/api/stories/example/passages/${p.passageId}`, p]);
             }
         }
         for (const tr of project.triggers)
-            puts.push([`/api/triggers/${tr.id}`, (await t.get(`/api/triggers/${tr.id}`)).body]);
+            puts.push([
+                `/api/stories/example/triggers/${tr.id}`,
+                (await t.get(`/api/stories/example/triggers/${tr.id}`)).body,
+            ]);
         for (const kind of ['characters', 'npcs', 'locations', 'items']) {
-            for (const e of (await t.get(`/api/entities/${kind}`)).body.entities)
-                puts.push([`/api/entities/${kind}/${e.id}`, e]);
+            for (const e of (await t.get(`/api/stories/example/entities/${kind}`)).body.entities)
+                puts.push([`/api/stories/example/entities/${kind}/${e.id}`, e]);
         }
         expect(puts.length).toBeGreaterThan(15);
         for (const [url, dto] of puts) {

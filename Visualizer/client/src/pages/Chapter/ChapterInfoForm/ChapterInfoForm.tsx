@@ -30,7 +30,7 @@ import type { TChapterInfoValue } from './chapterInfo';
 export type TChapterInfoFormProps = {
     value: TChapterInfoValue;
     onChange: (value: TChapterInfoValue) => void;
-    /** Pickers: `/api/project` locations and chapters. */
+    /** Pickers: `/project` locations and chapters. */
     locations: TOption[];
     chapters: TOption[];
     /** 422 diagnostics by field path (`title`, `timeRange.start`, `children.0.condition`). */

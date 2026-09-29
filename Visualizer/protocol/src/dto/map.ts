@@ -58,5 +58,5 @@ export type TMapDto = TVersioned & {
  */
 export type TMapFile = Omit<TMapDto, 'version'>;
 
-/** `PUT /api/maps/:mapId` — a whole-document replace. `version: ''` creates the file. */
+/** `PUT /maps/:mapId` — a whole-document replace. `version: ''` creates the file. */
 export type TUpdateMapBody = TVersionedBody & TMapFile;

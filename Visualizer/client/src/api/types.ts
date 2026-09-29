@@ -15,9 +15,11 @@ import type {
     TImageOwner,
     TMapDto,
     TOkDto,
-    TOpenDto,
     TPassageDto,
     TProjectDto,
+    TSourceDto,
+    TSourceOwner,
+    TStoryInfoDto,
     TTimelineLayoutDto,
     TTriggerDto,
     TUpdateChapterBody,
@@ -25,6 +27,7 @@ import type {
     TUpdateEntityBody,
     TUpdateMapBody,
     TUpdatePassageBody,
+    TUpdateSourceBody,
     TUpdateTimelineLayoutBody,
     TUpdateTriggerBody,
     TUploadImageBody,
@@ -32,8 +35,8 @@ import type {
 } from '@story/visualizer-protocol';
 
 /**
- * The Visualizer API as the pages see it — one method per protocol route (`ROUTES` in
- * `@story/visualizer-protocol`, same names). Two implementations:
+ * The Visualizer API as the pages see it — one method per protocol route (`STORY_ROUTES` and
+ * `GLOBAL_ROUTES` in `@story/visualizer-protocol`, same names). Two implementations:
  *
  *  - `httpApi` (`createHttpApi`) — talks to `Visualizer/server` through the Vite `/api` proxy;
  *  - `mockApi` (`createMockApi`) — in memory, seeded with a copy of the sample story, for pages
@@ -44,13 +47,16 @@ import type {
  */
 export interface TVisualizerApi {
     health(): Promise<THealthDto>;
+    /** Unlock the edited story (`401` wrong password, `429` too many); the cookie holds the grant. */
+    login(password: string): Promise<void>;
+    /** The edited story's `story.json` without the password: name, author, `mapSize`, … */
+    getStoryInfo(): Promise<TStoryInfoDto>;
     getProject(): Promise<TProjectDto>;
 
     createChapter(body: TCreateChapterBody): Promise<TChapterDto>;
     getChapter(chapterId: string): Promise<TChapterDto>;
     updateChapter(chapterId: string, body: TUpdateChapterBody): Promise<TChapterDto>;
     deleteChapter(chapterId: string, body: TVersionedBody): Promise<TOkDto>;
-    openChapter(chapterId: string): Promise<TOpenDto>;
     addChapterCharacter(chapterId: string, body: TAddChapterCharacterBody): Promise<TChapterDto>;
     removeChapterCharacter(chapterId: string, characterId: string, body: TVersionedBody): Promise<TChapterDto>;
 
@@ -59,7 +65,6 @@ export interface TVisualizerApi {
     getPassage(passageId: string): Promise<TPassageDto>;
     updatePassage(passageId: string, body: TUpdatePassageBody): Promise<TPassageDto>;
     deletePassage(passageId: string, body: TVersionedBody): Promise<TOkDto>;
-    openPassage(passageId: string): Promise<TOpenDto>;
 
     createTrigger(chapterId: string, body: TCreateTriggerBody): Promise<TTriggerDto>;
     getTrigger(triggerId: string): Promise<TTriggerDto>;
@@ -71,6 +76,10 @@ export interface TVisualizerApi {
     getEntity<K extends TEntityKind>(kind: K, id: string): Promise<TEntityDtoByKind[K]>;
     updateEntity<K extends TEntityKind>(kind: K, id: string, body: TUpdateEntityBody<K>): Promise<TEntityDtoByKind[K]>;
     deleteEntity(kind: TEntityKind, id: string, body: TVersionedBody): Promise<TOkDto>;
+
+    /** The whole `.ts` file of a chapter or passage (the source editor, protocol `dto/source.ts`). */
+    getSource(owner: TSourceOwner, id: string): Promise<TSourceDto>;
+    updateSource(owner: TSourceOwner, id: string, body: TUpdateSourceBody): Promise<TSourceDto>;
 
     /** Story art: the `.png` next to a passage / character / npc file (protocol `dto/image.ts`). */
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;

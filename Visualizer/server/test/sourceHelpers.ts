@@ -9,7 +9,7 @@ import { readChapterPassages } from '../src/project/readers/passages';
 import { entitySources } from '../src/project/readers/entities';
 import { SourceProject } from '../src/project/SourceProject';
 import { chapterIds, registeredPassageIds } from '../src/project/story';
-import { makeTempProject } from './helpers';
+import { login, makeTempProject } from './helpers';
 
 const run = promisify(execFile);
 
@@ -19,17 +19,18 @@ type TAny = any;
 
 export type TResponse<T = TAny> = { status: number; body: T };
 
-/** A server over a temp copy of the story, plus small HTTP helpers. */
+/** A server over a temp copy of the example story (`STORIES_ROOT` holding just `example`), plus small HTTP helpers. */
 export const startSourceApp = async () => {
-    const { project, cleanup } = await makeTempProject();
-    const app: TApp = await createApp({ project, watch: false });
+    const { storiesRoot, project, cleanup } = await makeTempProject();
+    const app: TApp = await createApp({ storiesRoot, watch: false });
     const port = await app.listen(0, '127.0.0.1');
+    const cookie = await login(`http://127.0.0.1:${port}`);
     const events: TChangeEvent[] = [];
-    app.bus.subscribe((e) => events.push(e));
+    (await app.story('example')).bus.subscribe((e) => events.push(e));
     const call = async <T = TAny>(method: string, url: string, body?: unknown): Promise<TResponse<T>> => {
         const res = await fetch(`http://127.0.0.1:${port}${url}`, {
             method,
-            headers: body === undefined ? {} : { 'content-type': 'application/json' },
+            headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
             body: body === undefined ? undefined : JSON.stringify(body),
         });
         return { status: res.status, body: (await res.json()) as T };
@@ -38,6 +39,8 @@ export const startSourceApp = async () => {
         project,
         app,
         events,
+        /** The `cookie` header value holding the example story's grant. */
+        cookie,
         get: <T = TAny>(url: string) => call<T>('GET', url),
         post: <T = TAny>(url: string, body: unknown) => call<T>('POST', url, body),
         put: <T = TAny>(url: string, body: unknown) => call<T>('PUT', url, body),

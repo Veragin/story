@@ -92,7 +92,7 @@ export type TPassageEdgeDto = {
     resolved: boolean;
 };
 
-/** `GET /api/chapters/:chapterId/passages` */
+/** `GET /chapters/:chapterId/passages` */
 export type TChapterPassagesDto = {
     chapterId: string;
     /** Every passage of every character folder in the chapter. */
@@ -106,7 +106,7 @@ export type TPassageEditable =
     | Partial<Pick<TLinearPassageDto, 'description' | 'nextPassageId'>>
     | Partial<Pick<TTransitionPassageDto, 'nextPassageId'>>;
 
-/** `POST /api/chapters/:chapterId/passages` */
+/** `POST /chapters/:chapterId/passages` */
 export type TCreatePassageBody = {
     characterId: string;
     localId: string;
@@ -114,8 +114,8 @@ export type TCreatePassageBody = {
     title?: string;
 };
 
-/** `PUT /api/passages/:passageId` — omitted fields are left untouched. */
+/** `PUT /passages/:passageId` — omitted fields are left untouched. */
 export type TUpdatePassageBody = TVersionedBody & TPassageEditable;
 
-/** `DELETE /api/passages/:passageId` */
+/** `DELETE /passages/:passageId` */
 export type TDeletePassageBody = TVersionedBody;

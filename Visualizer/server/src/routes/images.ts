@@ -11,7 +11,7 @@ const ownerOf = (owner: string): TImageOwner => {
 };
 
 /**
- * Story art: `/api/images/:owner/:id[/png]` (`project/images.ts`). The JSON route says whether
+ * Story art: `/images/:owner/:id[/png]` (`project/images.ts`). The JSON route says whether
  * there is an image and gives a cache-busted `url` for the `/png` route, which serves the bytes
  * with an `ETag`, so an `<img>` revalidates cheaply and a new upload gets a new URL.
  */

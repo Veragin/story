@@ -19,7 +19,7 @@ export type TImageOwner = (typeof IMAGE_OWNERS)[number];
 export const isImageOwner = (value: string): value is TImageOwner =>
     (IMAGE_OWNERS as readonly string[]).includes(value);
 
-/** `GET /api/images/:owner/:id` — `id` is a full passage id, or a character / npc id. */
+/** `GET /images/:owner/:id` — `id` is a full passage id, or a character / npc id. */
 export type TImageDto = {
     owner: TImageOwner;
     id: string;
@@ -29,13 +29,13 @@ export type TImageDto = {
     version: TVersion;
     /**
      * Where to load the picture from, cache-busted by `version`
-     * (`/api/images/passages/village-thomas-intro/png?v=…`), or `null` when there is none.
+     * (`/api/stories/example/images/passages/village-thomas-intro/png?v=…`), or `null` when there is none.
      */
     url: string | null;
 };
 
 /**
- * `PUT /api/images/:owner/:id` — create or replace the image. `version` is the one the upload is
+ * `PUT /images/:owner/:id` — create or replace the image. `version` is the one the upload is
  * based on (`''` = there is no image yet); a mismatch is 409 `stale` with the current `TImageDto`.
  */
 export type TUploadImageBody = TVersionedBody & {

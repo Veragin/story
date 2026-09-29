@@ -2,7 +2,6 @@ import '@story/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiEvents, createMockApi, createMockSeed, type TMockApi } from '../../../api';
 import { MapPageStore } from '../MapPageStore';
-import { DEFAULT_MAP_HEIGHT, DEFAULT_MAP_WIDTH } from '../../../MapEditor/createDefaultMapData';
 import { getUiState } from '../../../ui-state';
 
 type TSetup = { api: TMockApi; events: ApiEvents; store: MapPageStore; confirm: ReturnType<typeof vi.fn> };
@@ -47,14 +46,16 @@ describe('MapPageStore — loading', () => {
         expect(store.saveStatus).toBe('idle');
     });
 
-    it('starts from a default map (rows × columns, not transposed) when there is no map.json, and creates it on the first edit', async () => {
+    it("starts from an empty map of the story's mapSize (rows × columns, not transposed) when there is no map.json, and creates it on the first edit", async () => {
         const { api, store } = await setup({ emptyMap: true });
+        const { width, height } = (await api.getStoryInfo()).mapSize;
+        expect(width).not.toBe(height);
         expect(store.loadState).toBe('ready');
         expect(store.version).toBe('');
-        expect(store.map?.width).toBe(DEFAULT_MAP_WIDTH);
-        expect(store.map?.height).toBe(DEFAULT_MAP_HEIGHT);
-        expect(store.map?.data).toHaveLength(DEFAULT_MAP_HEIGHT);
-        expect(store.map?.data[0]).toHaveLength(DEFAULT_MAP_WIDTH);
+        expect(store.map?.width).toBe(width);
+        expect(store.map?.height).toBe(height);
+        expect(store.map?.data).toHaveLength(height);
+        expect(store.map?.data[0]).toHaveLength(width);
         await expect(api.getMap('global')).rejects.toBeInstanceOf(ApiError);
 
         store.tiles.setSelectedColorId('grass');

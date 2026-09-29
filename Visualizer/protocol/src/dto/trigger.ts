@@ -3,7 +3,7 @@ import type { TCode, TMaybeCode, TSourceRef, TTimeString, TVersioned, TVersioned
 /**
  * A time trigger — an exported `TTimeTrigger` (`types/TTimeTrigger.ts`) declared in
  * `data/chapters/<ch>/triggers.ts` and listed in the chapter's `triggers: [...]`.
- * Trigger ids are unique across the whole story (the route is `/api/triggers/:triggerId`).
+ * Trigger ids are unique across the whole story (the route is `/triggers/:triggerId`).
  * `version` is the hash of `triggers.ts` (the file holds every trigger of the chapter).
  */
 export type TTriggerDto = TVersioned &
@@ -25,7 +25,7 @@ export type TTriggerDto = TVersioned &
 
 export type TTriggerEditable = Pick<TTriggerDto, 'name' | 'description' | 'time' | 'condition' | 'action'>;
 
-/** `POST /api/chapters/:chapterId/triggers` */
+/** `POST /chapters/:chapterId/triggers` */
 export type TCreateTriggerBody = {
     triggerId: string;
     name: string;
@@ -33,8 +33,8 @@ export type TCreateTriggerBody = {
     time: TTimeString;
 };
 
-/** `PUT /api/triggers/:triggerId` — omitted fields are left untouched. */
+/** `PUT /triggers/:triggerId` — omitted fields are left untouched. */
 export type TUpdateTriggerBody = TVersionedBody & Partial<TTriggerEditable>;
 
-/** `DELETE /api/triggers/:triggerId` */
+/** `DELETE /triggers/:triggerId` */
 export type TDeleteTriggerBody = TVersionedBody;

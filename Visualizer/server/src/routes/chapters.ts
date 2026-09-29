@@ -10,9 +10,8 @@ import {
 } from '../project/writers/chapters';
 
 /**
- * Chapters and a chapter's characters: `/api/chapters`, `/api/chapters/:chapterId[/characters[/:characterId]]`
- * (`project/readers/chapters.ts`, `project/writers/chapters.ts`). `openChapter` is registered by
- * `routes/open.ts`.
+ * Chapters and a chapter's characters: `/chapters`, `/chapters/:chapterId[/characters[/:characterId]]`
+ * (`project/readers/chapters.ts`, `project/writers/chapters.ts`).
  */
 export const registerChapterRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);

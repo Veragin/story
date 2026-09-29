@@ -16,7 +16,7 @@ export type TChapterDto = TVersioned &
         children: TMaybeCode<TChapterChildDto[]>;
         /**
          * Ids of the triggers in `triggers: [...]`, in source order. The triggers themselves are
-         * separate resources (`/api/triggers/:triggerId`). Entries that are not a reference to a
+         * separate resources (`/triggers/:triggerId`). Entries that are not a reference to a
          * trigger declaration come back as `TCode`.
          */
         triggerIds: TMaybeCode<string>[];
@@ -60,7 +60,7 @@ export type TChapterEditable = Pick<
     'title' | 'description' | 'timeRange' | 'location' | 'children' | 'triggerIds' | 'init' | 'dataType'
 >;
 
-/** `POST /api/chapters` */
+/** `POST /chapters` */
 export type TCreateChapterBody = {
     chapterId: string;
     title: string;
@@ -69,13 +69,13 @@ export type TCreateChapterBody = {
     timeRange: { start: string; end: string };
 };
 
-/** `PUT /api/chapters/:chapterId` — omitted fields are left untouched. */
+/** `PUT /chapters/:chapterId` — omitted fields are left untouched. */
 export type TUpdateChapterBody = TVersionedBody & Partial<TChapterEditable>;
 
-/** `DELETE /api/chapters/:chapterId` */
+/** `DELETE /chapters/:chapterId` */
 export type TDeleteChapterBody = TVersionedBody;
 
-/** `POST /api/chapters/:chapterId/characters` — creates `<characterId>.passages/` with a start passage. */
+/** `POST /chapters/:chapterId/characters` — creates `<characterId>.passages/` with a start passage. */
 export type TAddChapterCharacterBody = {
     characterId: string;
     /** Local id of the start passage; defaults to `intro`. */
@@ -83,7 +83,7 @@ export type TAddChapterCharacterBody = {
 };
 
 /**
- * `DELETE /api/chapters/:chapterId/characters/:characterId` — deletes the folder and its id union
+ * `DELETE /chapters/:chapterId/characters/:characterId` — deletes the folder and its id union
  * and Record entries. `version` is the chapter's version.
  */
 export type TRemoveChapterCharacterBody = TVersionedBody;

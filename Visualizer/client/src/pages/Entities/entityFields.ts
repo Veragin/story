@@ -71,7 +71,7 @@ export type TCreateForm = {
     props?: Record<string, number | string | boolean>;
 };
 
-/** The `POST /api/entities/:kind` body for the create dialog's fields. */
+/** The `POST /entities/:kind` body for the create dialog's fields. */
 export const buildCreateBody = (kind: TEntityKind, form: TCreateForm): TCreateEntityBody => {
     const id = form.id.trim();
     const name = form.name.trim() || id;

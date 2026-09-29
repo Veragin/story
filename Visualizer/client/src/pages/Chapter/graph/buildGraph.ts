@@ -43,7 +43,7 @@ export const passageTitle = (p: TPassageDto): string =>
     p.type === 'screen' ? displayText(p.title, p.localId) : p.localId;
 
 /**
- * Nodes, ghost nodes and deduplicated arrows from `GET /api/chapters/:ch/passages` (the
+ * Nodes, ghost nodes and deduplicated arrows from `GET /chapters/:ch/passages` (the
  * server's static edge extraction, plan §1.1). Edges out of passages that are not in the list
  * are dropped.
  */

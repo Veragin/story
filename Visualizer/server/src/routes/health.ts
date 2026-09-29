@@ -1,14 +1,15 @@
 import type { THealthDto } from '@story/visualizer-protocol';
-import type { TServerContext } from '../context';
+import type { TGlobalContext } from '../context';
 
-export const registerHealthRoutes = ({ router, project, watching }: TServerContext) => {
+/** `GET /api/health` */
+export const registerHealthRoutes = ({ router, stories, watch }: TGlobalContext) => {
     router.handle(
         'health',
         (): THealthDto => ({
             ok: true,
             service: '@story/visualizer-server',
-            root: project.root,
-            watching: watching(),
+            storiesRoot: stories.root,
+            watching: watch,
         })
     );
 };

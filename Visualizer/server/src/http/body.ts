@@ -28,6 +28,29 @@ export const readJsonBody = async (req: IncomingMessage, limit = MAX_BODY_BYTES)
     }
 };
 
+/**
+ * Read a request body as bytes (the zip import). More than `limit` bytes is a 400: a
+ * `content-length` over it is refused before anything is read, a body that turns out longer
+ * while streaming as soon as it passes the limit.
+ */
+export const readRawBody = async (req: IncomingMessage, limit: number): Promise<Buffer> => {
+    const declared = Number(req.headers['content-length']);
+    if (Number.isFinite(declared) && declared > limit) {
+        throw HttpError.badRequest(`Request body larger than ${limit} bytes`);
+    }
+    const chunks: Buffer[] = [];
+    let size = 0;
+    for await (const chunk of req) {
+        const buf = typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer);
+        size += buf.length;
+        if (size > limit) {
+            throw HttpError.badRequest(`Request body larger than ${limit} bytes`);
+        }
+        chunks.push(buf);
+    }
+    return Buffer.concat(chunks);
+};
+
 export const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 

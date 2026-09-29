@@ -1,8 +1,8 @@
 /**
  * The JSON stores (plan §1.1, WP2): `data/locations/map.json` and the `*.layout.json` files.
  *
- *  - `mapStore.ts`    — `GET/PUT /api/maps/:mapId` (only `global`), the on-disk map format.
- *  - `layoutStore.ts` — `GET/PUT /api/layout/timeline` and `/api/layout/chapters/:chapterId`.
+ *  - `mapStore.ts`    — `GET/PUT /maps/:mapId` (only `global`), the on-disk map format.
+ *  - `layoutStore.ts` — `GET/PUT /layout/timeline` and `/layout/chapters/:chapterId`.
  *  - `format.ts`      — the stable, prettier-clean JSON text every store writes.
  *
  * ## Cleanup helpers for the source writers (WP2a)

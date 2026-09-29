@@ -265,10 +265,13 @@ export const localIdFromFileName = (sf: SourceFile) => sf.getBaseName().split('.
 export const passageLocalId = (src: TPassageSource | undefined, sf: SourceFile): string =>
     (src && stringProp(src.obj, 'id')) ?? localIdFromFileName(sf);
 
-/** `<ch>-<character>-<local>` → its parts; 404 for anything else. */
+/**
+ * `<ch>-<character>-<local>` → its parts; 404 for anything else. The chapter and character must
+ * be ids (they become path segments, so `..` or `/` never reach `ProjectRoot.abs`).
+ */
 export const parsePassageId = (passageId: string) => {
     const m = /^([^-]+)-([^-]+)-(.+)$/.exec(passageId);
-    if (!m) throw HttpError.notFound(`No passage "${passageId}"`);
+    if (!m || !ID_RE.test(m[1]) || !ID_RE.test(m[2])) throw HttpError.notFound(`No passage "${passageId}"`);
     return { chapterId: m[1], characterId: m[2], localId: m[3] };
 };
 

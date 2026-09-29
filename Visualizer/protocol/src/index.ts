@@ -7,15 +7,21 @@
  * service may be imported from here; both Visualizer halves import this.
  */
 
-/* ROUTES, TRouteName, TRouteParams, TApiSpec, TRouteBody, TRouteResponse, buildPath, matchPath,
-   API_PREFIX, CREATED_ROUTES, THttpMethod */
+/* STORY_ROUTES, GLOBAL_ROUTES, TStoryRouteName, TGlobalRouteName, TRouteName, TRouteTable,
+   TRouteParams, TApiSpec, TRouteBody, TRouteResponse, buildPath, buildGlobalPath, storyApiPrefix,
+   splitStoryPath, matchRoute, matchPath, API_PREFIX, STORIES_PREFIX, CREATED_ROUTES, BODYLESS_ROUTES,
+   RAW_BODY_ROUTES, NO_CONTENT_ROUTES, THttpMethod */
 export * from './routes';
 
 /* TCode, TMaybeCode, isCode, code, TValue, TValueRecord, TVersion, EMPTY_VERSION, TVersioned,
-   TVersionedBody, TSourceRef, TTimeString, TTimeRangeDto, TDeltaTimeDto, isDeltaTime, TOkDto, TOpenDto */
+   TVersionedBody, TSourceRef, TTimeString, TTimeRangeDto, TDeltaTimeDto, isDeltaTime, TOkDto */
 export * from './dto/common';
 /* THealthDto, TProjectDto, TProjectEntryDto, TProjectChapterDto */
 export * from './dto/project';
+/* STORY_ID_PATTERN, isStoryId, TMapSizeDto, STORY_LIMITS, TStoryDto, TStoryListItemDto,
+   TStoryInfoDto, TCreateStoryBody, TUpdateStoryBody, STORY_ZIP_CONTENT_TYPE, MAX_STORY_ZIP_BYTES,
+   TLoginBody, TSessionDto, TStoryAccessDto, SESSION_COOKIE */
+export * from './dto/story';
 /* TChapterDto, TChapterChildDto, TChapterCharacterDto, TDataTypeDto, TChapterEditable,
    TCreateChapterBody, TUpdateChapterBody, TDeleteChapterBody, TAddChapterCharacterBody,
    TRemoveChapterCharacterBody */
@@ -33,6 +39,8 @@ export * from './dto/entity';
 /* IMAGE_OWNERS, TImageOwner, isImageOwner, TImageDto, TUploadImageBody, MAX_IMAGE_BYTES,
    PNG_SIGNATURE */
 export * from './dto/image';
+/* SOURCE_OWNERS, TSourceOwner, isSourceOwner, TSourceDto, TUpdateSourceBody */
+export * from './dto/source';
 /* GLOBAL_MAP_ID, TMapDto, TMapFile, TMapTileDto, TPaletteEntryDto, TLocationShapeDto,
    TSubMapRefDto, TColorId, TUpdateMapBody */
 export * from './dto/map';

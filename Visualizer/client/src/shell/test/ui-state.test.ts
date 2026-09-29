@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getUiState, setUiState } from '../../ui-state';
+import { getUiState, setUiState, UI_STATE_PREFIX } from '../../ui-state';
 
 describe('ui-state', () => {
     afterEach(() => {
@@ -13,9 +13,15 @@ describe('ui-state', () => {
         expect(getUiState('camera', null)).toEqual({ x: 1, zoom: 2 });
     });
 
+    it('keys every value by the story id', () => {
+        expect(UI_STATE_PREFIX).toMatch(/^visualizer:[^:]*:$/);
+        setUiState('camera', 1);
+        expect(sessionStorage.getItem(`${UI_STATE_PREFIX}camera`)).toBe('1');
+    });
+
     it('falls back on missing or invalid values', () => {
         expect(getUiState('missing', 5)).toBe(5);
-        sessionStorage.setItem('visualizer:bad', '{nope');
+        sessionStorage.setItem(`${UI_STATE_PREFIX}bad`, '{nope');
         expect(getUiState('bad', 'fallback')).toBe('fallback');
     });
 

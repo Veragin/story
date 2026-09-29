@@ -13,7 +13,7 @@ export type TTimelineLayoutFile = {
 
 export type TTimelineLayoutDto = TVersioned & TTimelineLayoutFile;
 
-/** `PUT /api/layout/timeline` — whole-document replace; `version: ''` creates the file. */
+/** `PUT /layout/timeline` — whole-document replace; `version: ''` creates the file. */
 export type TUpdateTimelineLayoutBody = TVersionedBody & TTimelineLayoutFile;
 
 /** `data/chapters/<ch>/<ch>.layout.json`: passage box positions of the chapter view. */
@@ -24,5 +24,5 @@ export type TChapterLayoutFile = {
 
 export type TChapterLayoutDto = TVersioned & TChapterLayoutFile & { chapterId: string };
 
-/** `PUT /api/layout/chapters/:chapterId` — whole-document replace; `version: ''` creates the file. */
+/** `PUT /layout/chapters/:chapterId` — whole-document replace; `version: ''` creates the file. */
 export type TUpdateChapterLayoutBody = TVersionedBody & TChapterLayoutFile;

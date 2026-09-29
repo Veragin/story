@@ -26,7 +26,7 @@ type TProps = {
     onClose: () => void;
 };
 
-/** The "edit chapter info" modal: `ChapterInfoForm` over `GET/PUT /api/chapters/:id`. */
+/** The "edit chapter info" modal: `ChapterInfoForm` over `GET/PUT /chapters/:id`. */
 export const ChapterInfoDialog = observer(
     ({ chapterId, api, events = apiEvents, onClose }: TProps) => {
         const [store] = useState(

@@ -427,8 +427,8 @@ export class TimelineStore {
     }
 
     /**
-     * A chapter was dragged or resized: saves the new time range (`PUT /api/chapters/:id`) and / or
-     * the new y (`PUT /api/layout/timeline`). Times are seconds; unchanged parts are not sent.
+     * A chapter was dragged or resized: saves the new time range (`PUT /chapters/:id`) and / or
+     * the new y (`PUT /layout/timeline`). Times are seconds; unchanged parts are not sent.
      */
     commitChapter = async (chapterId: string, next: { start?: number; end?: number; y?: number }) => {
         const tasks: Promise<unknown>[] = [];
@@ -506,7 +506,7 @@ export class TimelineStore {
         });
     }
 
-    /** A trigger was dragged: saves its new time (`PUT /api/triggers/:id`). */
+    /** A trigger was dragged: saves its new time (`PUT /triggers/:id`). */
     commitTrigger = async (triggerId: string, seconds: number) => {
         const before = this.triggers.get(triggerId);
         const time = Math.round(seconds);

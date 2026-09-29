@@ -1,4 +1,5 @@
-import { ROUTES, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/visualizer-protocol';
+import { buildPath, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/visualizer-protocol';
+import { STORY_ID } from './story';
 
 /**
  * Which change events a subscriber wants. `kind: '*'` is everything. `id` narrows to one resource
@@ -19,6 +20,7 @@ type TEventSourceLike = Pick<EventSource, 'addEventListener' | 'close' | 'readyS
 };
 
 export type TApiEventsOptions = {
+    /** The stream's URL; defaults to the edited story's `/events`. */
     url?: string;
     /**
      * Injected for tests; defaults to the browser `EventSource` (absent → events are a no-op).
@@ -27,9 +29,17 @@ export type TApiEventsOptions = {
     createEventSource?: ((url: string) => TEventSourceLike) | null;
     /** How long a version passed to `markSaved` is remembered. */
     savedTtlMs?: number;
+    /** The longest a `hold` holds events back, should its release never come. */
+    holdMaxMs?: number;
     /** Backoff for re-creating a stream the browser gave up on. */
     reconnectMinMs?: number;
     reconnectMaxMs?: number;
+    /**
+     * Called each time the browser gives up on the stream (a non-200 answer). An `EventSource`
+     * cannot tell a `401` from a `502`, so the app probes with a plain request here, which opens
+     * the password prompt on a 401; after the login it calls `reconnectNow` (`api/index.ts`).
+     */
+    onGiveUp?: () => void;
 };
 
 export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolean => {
@@ -43,7 +53,7 @@ export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolea
 };
 
 /**
- * The client end of `GET /api/events` (plan §3 "Live refresh", points 2–3).
+ * The client end of a story's `GET /events` (plan §3 "Live refresh", points 2–3).
  *
  *     // a store keeps its resource fresh:
  *     const off = apiEvents.subscribe({ kind: 'passage', id: passageId }, () => this.refetch());
@@ -51,7 +61,10 @@ export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolea
  *     const offResync = apiEvents.onResync(() => this.refetch());
  *
  * Own saves are not echoed: the http api calls `markSaved(version)` for every resource a mutation
- * returns, and an event carrying one of those versions is dropped (once). The stream is opened
+ * returns, and an event carrying one of those versions is dropped (once). The server emits a
+ * save's event on commit, before it answers the request, so the echo usually arrives before the
+ * response: the http api therefore `hold`s events while a mutation is in flight, and they are
+ * delivered (or dropped) once its version is marked. The stream is opened
  * lazily by the first `subscribe` and re-created with backoff when the browser gives up on it
  * (e.g. the proxy answers 502 while the server restarts under `tsx watch`).
  */
@@ -61,27 +74,35 @@ export class ApiEvents {
     private readonly savedTtlMs: number;
     private readonly reconnectMinMs: number;
     private readonly reconnectMaxMs: number;
+    private readonly onGiveUp?: () => void;
 
     private source: TEventSourceLike | null = null;
     private listeners = new Set<{ filter: TEventFilter; listener: TEventListener }>();
     private resyncListeners = new Set<() => void>();
     private statusListeners = new Set<(status: TConnectionStatus) => void>();
     private saved = new Map<TVersion, number>();
+    private readonly holdMaxMs: number;
+    private holds = 0;
+    private held: TChangeEvent[] = [];
     private connectedOnce = false;
     private reconnectDelay: number;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private _status: TConnectionStatus = 'idle';
 
     constructor({
-        url = ROUTES.events.path,
+        url = buildPath(STORY_ID, 'events', {}),
         createEventSource = typeof EventSource === 'undefined' ? undefined : (u) => new EventSource(u),
         savedTtlMs = 30_000,
+        holdMaxMs = 30_000,
         reconnectMinMs = 1000,
         reconnectMaxMs = 15_000,
+        onGiveUp,
     }: TApiEventsOptions = {}) {
         this.url = url;
+        this.onGiveUp = onGiveUp;
         this.createEventSource = createEventSource ?? undefined;
         this.savedTtlMs = savedTtlMs;
+        this.holdMaxMs = holdMaxMs;
         this.reconnectMinMs = reconnectMinMs;
         this.reconnectMaxMs = reconnectMaxMs;
         this.reconnectDelay = reconnectMinMs;
@@ -121,8 +142,35 @@ export class ApiEvents {
         this.saved.set(version, Date.now() + this.savedTtlMs);
     }
 
+    /**
+     * Hold events back until the returned release is called (idempotent), then deliver them
+     * through the own-save filter. The http api holds while one of this tab's mutations is in
+     * flight, so its echo, which may arrive before the response, meets the version `markSaved`
+     * gets from that response. Holds nest; a hold never released lets go after `holdMaxMs`.
+     */
+    hold(): () => void {
+        this.holds++;
+        let released = false;
+        const release = () => {
+            if (released) return;
+            released = true;
+            clearTimeout(timer);
+            this.holds--;
+            if (this.holds > 0) return;
+            const held = this.held;
+            this.held = [];
+            held.forEach((e) => this.dispatch(e));
+        };
+        const timer = setTimeout(release, this.holdMaxMs);
+        return release;
+    }
+
     /** Deliver an event to the subscribers (the SSE stream and `mockApi` both come through here). */
     dispatch(event: TChangeEvent) {
+        if (this.holds > 0) {
+            this.held.push(event);
+            return;
+        }
         const now = Date.now();
         for (const [v, until] of this.saved) if (until < now) this.saved.delete(v);
         if (event.version && this.saved.has(event.version)) {
@@ -173,10 +221,23 @@ export class ApiEvents {
                     this.connect();
                 }, this.reconnectDelay);
                 this.reconnectDelay = Math.min(this.reconnectMaxMs, this.reconnectDelay * 2);
+                this.onGiveUp?.();
             } else {
                 this.setStatus('reconnecting');
             }
         };
+    }
+
+    /**
+     * Re-create a stream that is waiting out its backoff right away (after a login: the stream
+     * failed on the missing grant). No-op while a stream is open or when nobody subscribed.
+     */
+    reconnectNow() {
+        if (!this.reconnectTimer) return;
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+        this.reconnectDelay = this.reconnectMinMs;
+        this.connect();
     }
 
     close() {

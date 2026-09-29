@@ -90,7 +90,7 @@ export const readChapter = (sp: SourceProject, chapterId: string): TChapterDto =
     };
 };
 
-/** The `/api/project` entry of a chapter. */
+/** The `/project` entry of a chapter. */
 export const readProjectChapter = (sp: SourceProject, chapterId: string): TProjectChapterDto | undefined => {
     const sf = sp.file(sp.root.paths.chapterFile(chapterId));
     if (!sf) return undefined;

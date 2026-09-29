@@ -1,0 +1,20 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        /* The template's own view of the world, so it type-checks where it lies
+           (`scripts/typecheck-stories.mjs` checks it with the stories). It is not copied: a new
+           story gets a `tsconfig.json` of the same shape written for its own folder
+           (`src/stories/storyFolders.ts#storyTsconfig`), because the engine paths are relative. */
+        "paths": {
+            "@story/types": ["types/index.ts"],
+            "@story/data": ["data/index.ts"],
+            "@story/data/*": ["data/*"],
+            "@story/core": ["../../../core/src/index.ts"],
+            "@story/shared": ["../../../shared/src/index.ts"],
+            "@story/ui": ["../../../ui/src/index.ts"]
+        }
+    },
+    "include": ["data", "types"],
+    "exclude": ["node_modules"]
+}

@@ -52,9 +52,9 @@ export type TVersioned = { version: TVersion };
 export type TVersionedBody = { version: TVersion };
 
 /**
- * Where a resource lives on disk, relative to the project root (`STORY_ROOT`), with `/`
- * separators — e.g. `data/chapters/village/thomas.passages/intro.ts`. Used for "open in
- * editor" and to show diagnostics.
+ * Where a resource lives on disk, relative to its story's folder (`stories/<id>/`), with `/`
+ * separators — e.g. `data/chapters/village/thomas.passages/intro.ts`. Shown in the forms and
+ * with diagnostics.
  */
 export type TSourceRef = {
     file: string;
@@ -96,18 +96,5 @@ export const isDeltaTime = (value: unknown): value is TDeltaTimeDto =>
     typeof (value as { seconds?: unknown }).seconds === 'number' &&
     Object.keys(value).length === 1;
 
-/** `{ ok: true }` — the reply of actions that return no resource (`open`, delete). */
+/** `{ ok: true }` — the reply of actions that return no resource (delete). */
 export type TOkDto = { ok: true };
-
-/**
- * The reply of `POST /api/chapters/:id/open` and `POST /api/passages/:id/open` (a `TOkDto`
- * plus what was opened). `opened: false` when the editor command could not be started — e.g.
- * no `code` inside the container — with the reason in `message`; the client can then show
- * `file:line` instead. `file` is project-relative like `TSourceRef.file`, `line` 1-based.
- */
-export type TOpenDto = TOkDto & {
-    opened: boolean;
-    file: string;
-    line: number;
-    message?: string;
-};

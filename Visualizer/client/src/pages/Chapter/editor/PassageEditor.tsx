@@ -13,7 +13,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CodeIcon from '@mui/icons-material/Code';
 import {
     isCode,
     type TBodyItemDto,
@@ -44,7 +44,8 @@ type TProps = {
     itemOptions: TOption[];
     onClose: () => void;
     onDelete: () => void;
-    onOpenInEditor: () => void;
+    /** Open the passage's whole file in the source editor. */
+    onEditSource: () => void;
     /** The api the passage's image is loaded / uploaded through (the page's). */
     api?: TVisualizerApi;
 };
@@ -53,7 +54,7 @@ type TDiag = (path: string) => TDiagnosticDto[];
 
 /**
  * The passage editor side panel (plan WP6): every field of the passage, literal fields as
- * inputs and expression fields as code (`CodeField`). Saves through `PUT /api/passages/:id`
+ * inputs and expression fields as code (`CodeField`). Saves through `PUT /passages/:id`
  * with only the changed fields, shows 422 diagnostics next to their fields (the ones it cannot
  * place at the top) and the "changed on disk — reload / keep mine" banner on 409 or when a
  * live change arrives while the draft is dirty.
@@ -65,7 +66,7 @@ export const PassageEditor = observer(
         itemOptions,
         onClose,
         onDelete,
-        onOpenInEditor,
+        onEditSource,
         api,
     }: TProps) => {
         const { draft, base, dirty, saving, conflict, error, diagnosticIndex } =
@@ -130,13 +131,13 @@ export const PassageEditor = observer(
                             {_('Revert')}
                         </Button>
                         <SSpacer />
-                        <Tooltip title={_('Open in editor')}>
+                        <Tooltip title={_('Edit source')}>
                             <IconButton
                                 size="small"
-                                onClick={onOpenInEditor}
-                                aria-label={_('Open in editor')}
+                                onClick={onEditSource}
+                                aria-label={_('Edit source')}
                             >
-                                <OpenInNewIcon fontSize="small" />
+                                <CodeIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title={_('Delete passage')}>

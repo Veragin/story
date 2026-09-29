@@ -1,20 +1,36 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildPath, matchPath, ROUTES, type TRouteName } from '@story/visualizer-protocol';
+import {
+    buildGlobalPath,
+    buildPath,
+    GLOBAL_ROUTES,
+    matchPath,
+    splitStoryPath,
+    STORY_ROUTES,
+    storyApiPrefix,
+    type TStoryRouteName,
+} from '@story/visualizer-protocol';
 import { createApp, type TApp } from '../src/app';
+import type { TServerContext } from '../src/context';
 import { HttpError } from '../src/http/HttpError';
 import { ProjectRoot } from '../src/project/ProjectRoot';
-import { makeTempProject } from './helpers';
+import { StoryStore } from '../src/stories/StoryStore';
+import { login, makeTempProject } from './helpers';
 
 let app: TApp;
+let story: TServerContext;
 let base: string;
+let storiesRoot: string;
 let cleanup: () => Promise<void>;
+let cookie: string;
 
 beforeAll(async () => {
     const temp = await makeTempProject();
     cleanup = temp.cleanup;
-    app = await createApp({ project: temp.project, watch: false });
+    storiesRoot = temp.storiesRoot;
+    app = await createApp({ storiesRoot: temp.storiesRoot, watch: false });
+    story = await app.story('example');
     // Test-only handlers on real protocol routes, to exercise the error mapping.
-    app.router.handle('getTrigger', ({ params }) => {
+    story.router.handle('getTrigger', ({ params }) => {
         switch (params.triggerId) {
             case 'stale':
                 throw HttpError.stale({ triggerId: 'stale', version: 'v2' });
@@ -30,10 +46,11 @@ beforeAll(async () => {
                 throw HttpError.badRequest(`echo ${params.triggerId}`);
         }
     });
-    app.router.handle('createTrigger', ({ params, body }) => ({ echo: { params, body } }) as never);
-    app.router.handle('updateTrigger', ({ body }) => ({ echo: body }) as never);
+    story.router.handle('createTrigger', ({ params, body }) => ({ echo: { params, body } }) as never);
+    story.router.handle('updateTrigger', ({ body }) => ({ echo: body }) as never);
     const port = await app.listen(0, '127.0.0.1');
     base = `http://127.0.0.1:${port}`;
+    cookie = await login(base);
 });
 
 afterAll(async () => {
@@ -45,7 +62,7 @@ const call = async (method: string, path: string, body?: string) => {
     const res = await fetch(base + path, {
         method,
         body,
-        headers: body === undefined ? {} : { 'content-type': 'application/json' },
+        headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
     });
     return { status: res.status, json: (await res.json()) as Record<string, unknown> };
 };
@@ -55,44 +72,71 @@ describe('router', () => {
         const { status, json } = await call('GET', '/api/health');
         expect(status).toBe(200);
         expect(json).toMatchObject({ ok: true, service: '@story/visualizer-server', watching: false });
-        expect(json.root).toBe(app.project.root);
+        expect(json.storiesRoot).toBe(storiesRoot);
     });
 
     it('registers a handler for every protocol route', () => {
         expect(app.router.missing()).toEqual([]);
+        expect(story.router.missing()).toEqual([]);
+    });
+
+    it('lists the stories without their password', async () => {
+        const res = await fetch(base + '/api/stories');
+        expect(res.status).toBe(200);
+        const list = (await res.json()) as Record<string, unknown>[];
+        expect(list).toEqual([
+            expect.objectContaining({
+                id: 'example',
+                name: 'Example',
+                public: true,
+                mapSize: { width: 80, height: 60 },
+            }),
+        ]);
+        expect(list[0]).not.toHaveProperty('password');
+    });
+
+    it('answers 404 for an unknown or malformed story id, before loading anything', async () => {
+        const unknown = await call('GET', '/api/stories/nope/project');
+        expect(unknown.status).toBe(404);
+        expect(unknown.json).toMatchObject({ error: 'not_found', message: 'No story "nope"' });
+        expect((await call('GET', '/api/stories/..%2F..%2Fetc/project')).status).toBe(404);
+        expect((await call('GET', '/api/stories/Example/project')).status).toBe(404);
+        expect(app.contexts.loadedIds()).toEqual(['example']);
     });
 
     it('has no 501 stubs left since WP2 (the source routes answer)', async () => {
-        const { status, json } = await call('GET', '/api/chapters/village');
+        const { status, json } = await call('GET', '/api/stories/example/chapters/village');
         expect(status).toBe(200);
         expect(json.chapterId).toBe('village');
     });
 
     it('answers 404 for unknown routes and wrong methods', async () => {
         expect((await call('GET', '/api/nope')).status).toBe(404);
-        expect((await call('PATCH', '/api/chapters/village')).status).toBe(404);
+        expect((await call('GET', '/api/stories/example/nope')).status).toBe(404);
+        expect((await call('GET', '/api/stories/example')).status).toBe(404);
+        expect((await call('PATCH', '/api/stories/example/chapters/village')).status).toBe(404);
         expect((await call('GET', '/other')).json.error).toBe('not_found');
     });
 
     it('maps HttpError to status and body', async () => {
-        const stale = await call('GET', '/api/triggers/stale');
+        const stale = await call('GET', '/api/stories/example/triggers/stale');
         expect(stale.status).toBe(409);
         expect(stale.json).toMatchObject({ error: 'stale', current: { triggerId: 'stale', version: 'v2' } });
 
-        const invalid = await call('GET', '/api/triggers/invalid');
+        const invalid = await call('GET', '/api/stories/example/triggers/invalid');
         expect(invalid.status).toBe(422);
         expect(invalid.json.diagnostics).toEqual([{ file: 'data/x.ts', line: 1, column: 2, message: 'bad' }]);
 
-        const referenced = await call('GET', '/api/triggers/referenced');
+        const referenced = await call('GET', '/api/stories/example/triggers/referenced');
         expect(referenced.status).toBe(409);
         expect(referenced.json).toMatchObject({ error: 'referenced', references: [{ file: 'data/y.ts', line: 3 }] });
 
-        expect((await call('GET', '/api/triggers/missing')).status).toBe(404);
-        expect((await call('GET', '/api/triggers/x')).status).toBe(400);
+        expect((await call('GET', '/api/stories/example/triggers/missing')).status).toBe(404);
+        expect((await call('GET', '/api/stories/example/triggers/x')).status).toBe(400);
     });
 
     it('turns other exceptions into 500 internal', async () => {
-        const { status, json } = await call('GET', '/api/triggers/boom');
+        const { status, json } = await call('GET', '/api/stories/example/triggers/boom');
         expect(status).toBe(500);
         expect(json).toMatchObject({ error: 'internal', message: 'kaboom' });
     });
@@ -100,7 +144,7 @@ describe('router', () => {
     it('parses JSON bodies and decodes params; create routes answer 201', async () => {
         const { status, json } = await call(
             'POST',
-            '/api/chapters/my%20chapter/triggers',
+            '/api/stories/example/chapters/my%20chapter/triggers',
             JSON.stringify({ triggerId: 't', name: 'T', time: '1.1. 0:00' })
         );
         expect(status).toBe(201);
@@ -111,56 +155,86 @@ describe('router', () => {
     });
 
     it('rejects malformed and non-object bodies with 400', async () => {
-        expect((await call('POST', '/api/chapters/c/triggers', '{nope')).status).toBe(400);
-        expect((await call('POST', '/api/chapters/c/triggers', '[1]')).status).toBe(400);
-        expect((await call('POST', '/api/chapters/c/triggers')).status).toBe(400);
+        expect((await call('POST', '/api/stories/example/chapters/c/triggers', '{nope')).status).toBe(400);
+        expect((await call('POST', '/api/stories/example/chapters/c/triggers', '[1]')).status).toBe(400);
+        expect((await call('POST', '/api/stories/example/chapters/c/triggers')).status).toBe(400);
     });
 
     it('requires a string version on PUT and DELETE', async () => {
-        const missing = await call('PUT', '/api/triggers/t', JSON.stringify({ name: 'x' }));
+        const missing = await call('PUT', '/api/stories/example/triggers/t', JSON.stringify({ name: 'x' }));
         expect(missing.status).toBe(400);
         expect(String(missing.json.message)).toContain('version');
-        const ok = await call('PUT', '/api/triggers/t', JSON.stringify({ version: 'abc', name: 'x' }));
+        const ok = await call('PUT', '/api/stories/example/triggers/t', JSON.stringify({ version: 'abc', name: 'x' }));
         expect(ok.status).toBe(200);
         expect(ok.json.echo).toEqual({ version: 'abc', name: 'x' });
-        expect((await call('DELETE', '/api/passages/a-b-c', '{}')).status).toBe(400);
+        expect((await call('DELETE', '/api/stories/example/passages/a-b-c', '{}')).status).toBe(400);
     });
 });
 
 describe('protocol paths', () => {
-    it('buildPath fills and encodes templates', () => {
-        expect(buildPath('getChapter', { chapterId: 'village' })).toBe('/api/chapters/village');
-        expect(buildPath('removeChapterCharacter', { chapterId: 'a b', characterId: 'thomas' })).toBe(
-            '/api/chapters/a%20b/characters/thomas'
+    it('buildPath fills and encodes templates under the story prefix', () => {
+        expect(buildPath('example', 'getChapter', { chapterId: 'village' })).toBe(
+            '/api/stories/example/chapters/village'
         );
-        expect(buildPath('getEntity', { kind: 'npcs', id: 'franta' })).toBe('/api/entities/npcs/franta');
-        expect(buildPath('health', {})).toBe('/api/health');
+        expect(buildPath('example', 'removeChapterCharacter', { chapterId: 'a b', characterId: 'thomas' })).toBe(
+            '/api/stories/example/chapters/a%20b/characters/thomas'
+        );
+        expect(buildPath('other', 'getEntity', { kind: 'npcs', id: 'franta' })).toBe(
+            '/api/stories/other/entities/npcs/franta'
+        );
+        expect(buildGlobalPath('health', {})).toBe('/api/health');
+        expect(buildGlobalPath('listStories', {})).toBe('/api/stories');
     });
 
-    it('matchPath inverts buildPath for every route', () => {
-        for (const route of Object.keys(ROUTES) as TRouteName[]) {
-            const template = ROUTES[route].path;
+    it('splitStoryPath + matchPath invert buildPath for every story route', () => {
+        for (const route of Object.keys(STORY_ROUTES) as TStoryRouteName[]) {
+            const template = STORY_ROUTES[route].path;
             const params = Object.fromEntries(
                 [...template.matchAll(/:([A-Za-z]+)/g)].map(([, name]) => [name, `${name}-x y`])
             );
-            const built = buildPath(route, params as never);
-            expect(matchPath(template, built)).toEqual(params);
+            const split = splitStoryPath(buildPath('my-story', route, params as never));
+            expect(split?.storyId).toBe('my-story');
+            expect(matchPath(template, split!.rest)).toEqual(params);
         }
-        expect(matchPath('/api/chapters/:chapterId', '/api/chapters/')).toBeNull();
-        expect(matchPath('/api/chapters/:chapterId', '/api/chapters/a/b')).toBeNull();
+        expect(matchPath('/chapters/:chapterId', '/chapters/')).toBeNull();
+        expect(matchPath('/chapters/:chapterId', '/chapters/a/b')).toBeNull();
     });
 
-    it('every route is under /api', () => {
-        for (const def of Object.values(ROUTES)) expect(def.path.startsWith('/api/')).toBe(true);
+    it('splitStoryPath only splits paths below a story', () => {
+        expect(splitStoryPath('/api/stories')).toBeNull();
+        expect(splitStoryPath('/api/stories/example')).toBeNull();
+        expect(splitStoryPath('/api/health')).toBeNull();
+        expect(splitStoryPath('/api/stories/example/')).toEqual({ storyId: 'example', rest: '/' });
+        expect(splitStoryPath('/api/stories/%E0/project')).toBeNull();
+    });
+
+    it('story routes are relative, global routes are under /api', () => {
+        expect(storyApiPrefix('example')).toBe('/api/stories/example');
+        for (const def of Object.values(STORY_ROUTES)) {
+            expect(def.path.startsWith('/')).toBe(true);
+            expect(def.path.startsWith('/api')).toBe(false);
+        }
+        for (const def of Object.values(GLOBAL_ROUTES)) expect(def.path.startsWith('/api/')).toBe(true);
     });
 });
 
 describe('ProjectRoot', () => {
-    it('reads STORY_ROOT and refuses paths that escape it', () => {
-        const root = ProjectRoot.fromEnv({ STORY_ROOT: '/tmp/some-story' });
-        expect(root.root).toBe('/tmp/some-story');
-        expect(root.paths.map).toBe('/tmp/some-story/data/locations/map.json');
+    it('takes its story id from the folder and refuses paths that escape it', () => {
+        const root = new ProjectRoot('/tmp/stories/some-story');
+        expect(root.storyId).toBe('some-story');
+        expect(root.paths.map).toBe('/tmp/stories/some-story/data/locations/map.json');
         expect(root.rel(root.paths.chapterFile('village'))).toBe('data/chapters/village/village.chapter.ts');
         expect(() => root.abs('data/chapters', '../../../etc/passwd')).toThrow(/escapes/);
+    });
+});
+
+describe('StoryStore', () => {
+    it('reads STORIES_ROOT and refuses malformed ids', () => {
+        const store = StoryStore.fromEnv({ STORIES_ROOT: '/tmp/some-stories' });
+        expect(store.root).toBe('/tmp/some-stories');
+        expect(store.dir('my-story')).toBe('/tmp/some-stories/my-story');
+        for (const bad of ['', '..', '../x', 'A', '-x', 'a/b', 'x'.repeat(65)]) {
+            expect(() => store.dir(bad)).toThrow(/story id/);
+        }
     });
 });

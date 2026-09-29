@@ -11,7 +11,7 @@ const kindOf = (kind: string): TEntityKind => {
 };
 
 /**
- * Characters, npcs, locations, items: `/api/entities/:kind[/:id]`
+ * Characters, npcs, locations, items: `/entities/:kind[/:id]`
  * (`project/readers/entities.ts`, `project/writers/entities.ts`).
  */
 export const registerEntityRoutes = ({ router, project, bus }: TServerContext) => {

@@ -8,8 +8,12 @@
         "build": "vite build",
         "preview": "vite preview"
     },
-    "comment:dependencies": "Grepped from the tree, not guessed. `@emotion/react` is the one entry with no direct import: it is the required peer of `@emotion/styled` and of `@mui/material`, so it is declared here rather than relied on through hoisting. The client has no `@story/data` / `@story/core` dependency at all since Visualizer WP8: it never runs the story (the server is its only source of story data, plan §3 \"Live refresh\"), and `eslint.config.js` rejects a runtime import should one come back. `@story/types` is imported type-only. `@story/visualizer-protocol` is the typed contract with `Visualizer/server`.",
+    "comment:dependencies": "Grepped from the tree, not guessed. `@emotion/react` is the one entry with no direct import: it is the required peer of `@emotion/styled` and of `@mui/material`, so it is declared here rather than relied on through hoisting. The client has no `@story/data` / `@story/core` dependency at all since Visualizer WP8: it never runs the story (the server is its only source of story data, plan §3 \"Live refresh\"), and `eslint.config.js` rejects a runtime import should one come back. `@story/types` is imported type-only. `@story/visualizer-protocol` is the typed contract with `Visualizer/server`. The `@codemirror/*` packages and `@uiw/react-codemirror` are the in-app source editor (`components/SourceEditorDialog.tsx`, multiple stories plan D9); `@codemirror/view` and `@codemirror/state` are peers of `@uiw/react-codemirror`, declared for that reason and imported through it.",
     "dependencies": {
+        "@codemirror/lang-javascript": "^6.2.5",
+        "@codemirror/lint": "^6.9.7",
+        "@codemirror/state": "^6.7.6",
+        "@codemirror/view": "^6.43.13",
         "@emotion/react": "^11.13.3",
         "@emotion/styled": "^11.13.0",
         "@mui/icons-material": "^6.1.0",
@@ -18,6 +22,7 @@
         "@story/types": "workspace:^",
         "@story/ui": "workspace:^",
         "@story/visualizer-protocol": "workspace:^",
+        "@uiw/react-codemirror": "^4.25.12",
         "mobx": "^6.13.2",
         "mobx-react-lite": "^4.0.7",
         "react": "18.3.1",

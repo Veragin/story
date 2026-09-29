@@ -15,10 +15,12 @@ import {
     type TLocationDto,
     type TMapDto,
     type TNpcDto,
-    type TOpenDto,
     type TPassageDto,
     type TPassageEdgeDto,
     type TProjectDto,
+    type TSourceDto,
+    type TSourceOwner,
+    type TStoryInfoDto,
     type TTimelineLayoutDto,
     type TTriggerDto,
     type TValue,
@@ -56,14 +58,16 @@ const fail = (status: number, body: TApiErrorBody): never => {
 };
 const notFound = (what: string) => fail(404, { error: 'not_found', message: `No ${what}` });
 const clone = <T>(value: T): T => structuredClone(value);
-/** The mock never starts an editor: it answers like a server without `code` on its PATH. */
-const openReply = ({ file, line }: { file: string; line?: number }): TOpenDto => ({
-    ok: true,
-    opened: false,
-    file,
-    line: line ?? 1,
-    message: 'The mock api does not open editors',
-});
+/** The story the mock pretends to edit; it ignores `STORY_ID` (there is only this one). */
+const MOCK_STORY: TStoryInfoDto = {
+    id: 'example',
+    name: 'Example (mock)',
+    author: '',
+    description: 'The in-memory sample story of the mock api.',
+    mapSize: { width: 40, height: 30 },
+    public: true,
+    version: 'mock-story',
+};
 
 /** Display text of a maybe-code string field: the literal, or the argument of `_('…')`. */
 export const displayText = (value: TValue | undefined, fallback: string): string => {
@@ -134,6 +138,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
     let chapterLayouts = new Map<string, TChapterLayoutDto>();
     /** Uploaded images by `<owner>/<id>`; the seed has none (the mock never reads `data/`). */
     let images = new Map<string, TImageDto>();
+    /** Source texts saved through `updateSource`, by `<owner>/<id>`. */
+    let sources = new Map<string, TSourceDto>();
 
     const load = (s: TMockSeed) => {
         const withVersion = <T>(x: T) => ({ ...clone(x), version: nextVersion() });
@@ -152,6 +158,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
             Object.entries(s.chapterLayouts).map(([id, l]) => [id, { ...withVersion(l), chapterId: id }])
         );
         images = new Map();
+        sources = new Map();
         refreshDerived();
     };
 
@@ -169,9 +176,10 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         }
     };
 
-    const emit = (event: TChangeEvent) => {
+    /** `markSaved: false` for a source save, which the pages must see (like `httpApi`). */
+    const emit = (event: TChangeEvent, { markSaved = true } = {}) => {
         if (!events) return;
-        if (event.version) events.markSaved(event.version); // own save: its echo is ignored
+        if (event.version && markSaved) events.markSaved(event.version); // own save: its echo is ignored
         setTimeout(() => events.dispatch(event), 0);
     };
 
@@ -208,6 +216,19 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         return { owner, id, file: found.file.replace(/\.ts$/, '.png'), version: '', url: null };
     };
 
+    /**
+     * A file's text. The mock has no files, so until one is saved it is the DTO printed as a
+     * TypeScript constant: enough to try the source editor, not the real source.
+     */
+    const sourceOf = (owner: TSourceOwner, id: string): TSourceDto => {
+        const saved = sources.get(`${owner}/${id}`);
+        if (saved) return saved;
+        const { version, ...dto } = owner === 'chapter' ? get(chapters, id, 'chapter') : get(passages, id, 'passage');
+        const name = `${owner === 'chapter' ? id : id.split('-').pop()}${owner === 'chapter' ? 'Chapter' : 'Passage'}`;
+        const text = `// mock api: this is the ${owner} as JSON, not its real source\nexport const ${name} = ${JSON.stringify(dto, null, 4)};\n`;
+        return { file: dto.file, text, version: `src-${version}` };
+    };
+
     load(seed ?? createMockSeed());
 
     const api: TMockApi = {
@@ -215,9 +236,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
             reply(() => ({
                 ok: true as const,
                 service: '@story/visualizer-server' as const,
-                root: '(mock)',
+                storiesRoot: '(mock)',
                 watching: false,
             })),
+        login: () => reply(() => undefined),
+        getStoryInfo: () => reply(() => MOCK_STORY),
 
         getProject: () =>
             reply(
@@ -306,7 +329,6 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 emit({ kind: 'chapter', id: chapterId, version: null, op: 'deleted', chapterId });
                 return { ok: true as const };
             }),
-        openChapter: (chapterId) => reply(() => openReply(get(chapters, chapterId, 'chapter'))),
         addChapterCharacter: (chapterId, { characterId, startPassageLocalId = 'intro' }) =>
             reply(() => {
                 const chapter = get(chapters, chapterId, 'chapter');
@@ -424,7 +446,17 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 emit({ kind: 'passage', id: passageId, version: null, op: 'deleted', chapterId: current.chapterId });
                 return { ok: true as const };
             }),
-        openPassage: (passageId) => reply(() => openReply(get(passages, passageId, 'passage'))),
+
+        getSource: (owner, id) => reply(() => sourceOf(owner, id)),
+        updateSource: (owner, id, { version, text }) =>
+            reply(() => {
+                checkVersion(sourceOf(owner, id), version);
+                const next: TSourceDto = { file: sourceOf(owner, id).file, text, version: nextVersion() };
+                sources.set(`${owner}/${id}`, next);
+                const chapterId = owner === 'chapter' ? id : get(passages, id, 'passage').chapterId;
+                emit({ kind: owner, id, version: next.version, op: 'updated', chapterId }, { markSaved: false });
+                return next;
+            }),
 
         createTrigger: (chapterId, body) =>
             reply(() => {

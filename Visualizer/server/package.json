@@ -3,16 +3,17 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
-    "comment:scripts": "Same pattern as MultiEngine/server: no build step and no `dist/`, the TypeScript runs under `tsx`. `tsx` is declared here as well as at the root because Yarn 4 only puts a workspace's *own* dependencies' binaries on a script's PATH — without it `yarn workspace @story/visualizer-server dev` answers `command not found: tsx`. Listens on :8123 (plan §1). `STORY_ROOT` picks the project root it reads and writes (default: the repo root); tests point it at a temp copy.",
+    "comment:scripts": "Same pattern as MultiEngine/server: no build step and no `dist/`, the TypeScript runs under `tsx`. `tsx` is declared here as well as at the root because Yarn 4 only puts a workspace's *own* dependencies' binaries on a script's PATH — without it `yarn workspace @story/visualizer-server dev` answers `command not found: tsx`. Listens on :8123 (plan §1). `STORIES_ROOT` is the folder holding one folder per story (default: `stories`; relative to the repo root); tests point it at a temp copy.",
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "start": "tsx src/index.ts"
     },
-    "comment:dependencies": "`chokidar` watches data/ and types/ for /api/events. `ts-morph` and `prettier` are the source writer's (WP2): it edits the author's .ts files through the AST and formats them with the repo's prettier config, so both are runtime dependencies here rather than root dev tooling. Deliberately no @story/data or @story/core: the server reads the story as *source text*, it never imports it.",
+    "comment:dependencies": "`chokidar` watches each loaded story's data/ and types/ for its /api/stories/<id>/events. `ts-morph` and `prettier` are the source writer's (WP2): it edits the author's .ts files through the AST and formats them with the repo's prettier config, so both are runtime dependencies here rather than root dev tooling. `fflate` (pure JS, no native build) packs and unpacks story zips for export and import (multiple stories, phase 5). Deliberately no @story/data or @story/core: the server reads the story as *source text*, it never imports it.",
     "dependencies": {
         "@story/shared": "workspace:^",
         "@story/visualizer-protocol": "workspace:^",
         "chokidar": "^4.0.3",
+        "fflate": "^0.8.3",
         "prettier": "^3.3.3",
         "ts-morph": "^24.0.0"
     },

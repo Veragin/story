@@ -1,8 +1,12 @@
-import { styled, Tab, Tabs } from '@mui/material';
+import { useEffect } from 'react';
+import { Button, styled, Tab, Tabs, Typography } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
+import { landingUrl, STORY_ID } from '../api';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
+import { storyInfo } from './storyInfoStore';
 
 type TTab = {
     value: string;
@@ -41,8 +45,21 @@ export const TopBar = observer(() => {
     const active =
         TABS.find((t) => t.pages.includes(router.route.page))?.value ?? false;
 
+    useEffect(() => void storyInfo.load(), []);
+
     return (
         <SBar>
+            <SBack
+                color="inherit"
+                size="small"
+                startIcon={<ArrowBackIcon />}
+                href={landingUrl()}
+            >
+                {_('Stories')}
+            </SBack>
+            <SStoryName variant="subtitle2" title={STORY_ID}>
+                {storyInfo.info?.name ?? STORY_ID}
+            </SStoryName>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -73,6 +90,21 @@ const SBar = styled(Row)`
     background-color: ${appTheme.palette.primary.dark};
     border-bottom: 1px solid ${appTheme.palette.primary.main};
     color: white;
+`;
+
+const SBack = styled(Button)`
+    flex-shrink: 0;
+    text-transform: none;
+    opacity: 0.8;
+` as typeof Button;
+
+const SStoryName = styled(Typography)`
+    flex-shrink: 1;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
 `;
 
 const STabs = styled(Tabs)`

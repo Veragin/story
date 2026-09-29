@@ -9,6 +9,7 @@ import {
     type TPassageEdgeDto,
     type TProjectDto,
     type TReferenceDto,
+    type TSourceOwner,
 } from '@story/visualizer-protocol';
 import { ApiError, displayText, type ApiEvents, type TVisualizerApi } from '../../api';
 import { getUiState, setUiState } from '../../ui-state';
@@ -486,10 +487,9 @@ export class ChapterGraphStore {
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
     }
 
-    /** "Open in editor": the selected passage's file, else the chapter file. */
-    async openInCodeEditor(passageId = this.selectedId): Promise<void> {
-        if (passageId) await this.api.openPassage(passageId);
-        else await this.api.openChapter(this.chapterId);
+    /** What the source editor opens: the selected passage's file, else the chapter file. */
+    sourceTarget(passageId = this.selectedId): { owner: TSourceOwner; id: string } {
+        return passageId ? { owner: 'passage', id: passageId } : { owner: 'chapter', id: this.chapterId };
     }
 
     async destroy(): Promise<void> {

@@ -5,6 +5,7 @@ import { observer } from 'mobx-react-lite';
 import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
 import { ModalHost } from './ModalHost';
+import { LoginPrompt } from './LoginPrompt';
 import MapPage from '../pages/Map';
 import TimelinePage from '../pages/Timeline';
 import ChapterPage from '../pages/Chapter';
@@ -51,6 +52,7 @@ export const Shell = observer(() => {
                 </Suspense>
             </SPage>
             <ModalHost />
+            <LoginPrompt />
         </SRoot>
     );
 });

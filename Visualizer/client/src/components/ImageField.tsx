@@ -29,7 +29,7 @@ const readBase64 = (file: Blob) =>
 /**
  * The picture of a passage, character or npc (protocol `dto/image.ts`): the `.png` next to the
  * owner's `.ts` file. Shows it when there is one, and uploads a new one through
- * `PUT /api/images/:owner/:id`. PNG only — the file picker offers nothing else and the server
+ * `PUT /images/:owner/:id`. PNG only — the file picker offers nothing else and the server
  * refuses anything without a PNG signature, since there is no conversion.
  *
  * The upload is written right away; it is not part of the form's draft or its Save.

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { STORY_ID } from './api/story';
 
 /**
  * View state that should survive a page reload (camera, selection, open panel, unsaved input…).
@@ -6,9 +7,13 @@ import { useCallback, useState } from 'react';
  * Backed by `sessionStorage`, so it is per browser tab and is gone when the tab closes. Every
  * access is wrapped in try/catch: storage can be missing, full, blocked or hold garbage, and the
  * app must keep working without it (plan §3 "Live refresh", point 4).
+ *
+ * Keys are per story (`visualizer:<storyId>:<key>`): a tab keeps its drafts, camera and selection
+ * apart for each story it opens, so a draft of one story never shows up in another.
  */
 
-const PREFIX = 'visualizer:';
+export const UI_STATE_PREFIX = `visualizer:${STORY_ID}:`;
+const PREFIX = UI_STATE_PREFIX;
 
 const getStorage = (): Storage | null => {
     try {

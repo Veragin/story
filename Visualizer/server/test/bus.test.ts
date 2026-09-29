@@ -3,23 +3,26 @@ import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { TChangeEvent } from '@story/visualizer-protocol';
 import { createApp, type TApp } from '../src/app';
+import type { TServerContext } from '../src/context';
 import { version } from '../src/events/version';
 import { readTextOrNull } from '../src/json/atomicWrite';
-import { makeTempProject, sleep } from './helpers';
+import { login, makeTempProject, sleep } from './helpers';
 
 /** Long enough for chokidar to report and a 50 ms batch to flush, with margin for a slow CI box. */
 const QUIET_MS = 700;
 
 let app: TApp;
+let story: TServerContext;
 let cleanup: () => Promise<void>;
 let events: TChangeEvent[];
 
 beforeEach(async () => {
     const temp = await makeTempProject();
     cleanup = temp.cleanup;
-    app = await createApp({ project: temp.project, watch: true, batchMs: 50 });
+    app = await createApp({ storiesRoot: temp.storiesRoot, watch: true, batchMs: 50 });
+    story = await app.story('example');
     events = [];
-    app.bus.subscribe((e) => events.push(e));
+    story.bus.subscribe((e) => events.push(e));
 });
 
 afterEach(async () => {
@@ -37,7 +40,7 @@ const waitFor = async (predicate: () => boolean, timeoutMs = 5000) => {
 
 describe('event bus: hand edits', () => {
     it('turns an edit of a passage file into one passage event carrying the content hash', async () => {
-        const file = app.project.abs('data/chapters/village/thomas.passages/intro.ts');
+        const file = story.project.abs('data/chapters/village/thomas.passages/intro.ts');
         await appendFile(file, '\n// edited by hand\n');
         await waitFor(() => events.length > 0);
         await sleep(QUIET_MS);
@@ -54,7 +57,7 @@ describe('event bus: hand edits', () => {
     });
 
     it("names a passage event after the file's id literal, not its file name", async () => {
-        const file = app.project.abs('data/chapters/village/thomas.passages/intro.ts');
+        const file = story.project.abs('data/chapters/village/thomas.passages/intro.ts');
         const source = (await readTextOrNull(file))!;
         await writeFile(file, source.replace("id: 'intro'", "id: 'introRenamed'"));
         await waitFor(() => events.length > 0);
@@ -66,7 +69,7 @@ describe('event bus: hand edits', () => {
     });
 
     it('batches several edits of one resource into one event', async () => {
-        const file = app.project.abs('data/characters/thomas.ts');
+        const file = story.project.abs('data/characters/thomas.ts');
         for (let i = 0; i < 3; i++) await appendFile(file, `// ${i}\n`);
         await waitFor(() => events.length > 0);
         await sleep(QUIET_MS);
@@ -74,13 +77,13 @@ describe('event bus: hand edits', () => {
     });
 
     it('reports a deleted primary file with version null', async () => {
-        await rm(app.project.abs('data/npcs/Franta.ts'));
+        await rm(story.project.abs('data/npcs/Franta.ts'));
         await waitFor(() => events.length > 0);
         expect(events[0]).toEqual({ kind: 'entity', id: 'npcs/franta', version: null, op: 'deleted' });
     });
 
     it('reports a new JSON store as created', async () => {
-        await writeFile(app.project.paths.timelineLayout, '{"chapters":{},"triggers":{}}\n');
+        await writeFile(story.project.paths.timelineLayout, '{"chapters":{},"triggers":{}}\n');
         await waitFor(() => events.length > 0);
         expect(events[0]).toMatchObject({ kind: 'layout', id: 'timeline', op: 'created' });
     });
@@ -88,9 +91,9 @@ describe('event bus: hand edits', () => {
 
 describe('event bus: transactions', () => {
     it('a server write that touches four files produces exactly one event', async () => {
-        const p = app.project.paths;
+        const p = story.project.paths;
         const chapterSource = 'export const x = 1;\n';
-        const result = await app.bus.transaction(async (tx) => {
+        const result = await story.bus.transaction(async (tx) => {
             await tx.writeFile(p.chapterFile('forest'), chapterSource);
             await tx.writeFile(p.chapterPassagesFile('forest'), 'export default {};\n');
             await tx.writeFile(p.register, ((await readTextOrNull(p.register)) ?? '') + '// forest\n');
@@ -100,14 +103,14 @@ describe('event bus: transactions', () => {
         });
         expect(result).toBe('done');
         await sleep(QUIET_MS);
-        await app.bus.settle();
+        await story.bus.settle();
         expect(events).toEqual([{ kind: 'chapter', id: 'forest', version: version(chapterSource), op: 'created' }]);
     });
 
     it('deleting a folder in a transaction is one event too', async () => {
-        await app.bus.transaction(async (tx) => {
-            await tx.deleteDir(app.project.paths.characterPassagesDir('village', 'thomas'));
-            await tx.writeFile(app.project.paths.chapterPassagesFile('village'), 'export default {};\n');
+        await story.bus.transaction(async (tx) => {
+            await tx.deleteDir(story.project.paths.characterPassagesDir('village', 'thomas'));
+            await tx.writeFile(story.project.paths.chapterPassagesFile('village'), 'export default {};\n');
             tx.setEvent({ kind: 'chapter', id: 'village', version: 'v', op: 'updated' });
         });
         await sleep(QUIET_MS);
@@ -115,9 +118,9 @@ describe('event bus: transactions', () => {
     });
 
     it('emits nothing of its own when it throws, and the watcher reports what did land', async () => {
-        const file = app.project.abs('data/characters/annie.ts');
+        const file = story.project.abs('data/characters/annie.ts');
         await expect(
-            app.bus.transaction(async (tx) => {
+            story.bus.transaction(async (tx) => {
                 await tx.writeFile(file, '// half done\n');
                 tx.setEvent({ kind: 'entity', id: 'characters/annie', version: 'never', op: 'updated' });
                 throw new Error('validation failed');
@@ -131,8 +134,8 @@ describe('event bus: transactions', () => {
     });
 
     it('still reports a hand edit made right after a server write', async () => {
-        const file = app.project.abs('data/chapters/kingdom/annie.passages/palace.ts');
-        await app.bus.transaction(async (tx) => {
+        const file = story.project.abs('data/chapters/kingdom/annie.passages/palace.ts');
+        await story.bus.transaction(async (tx) => {
             await tx.writeFile(file, '// server\n');
             tx.setEvent({ kind: 'passage', id: 'kingdom-annie-palace', version: version('// server\n') });
         });
@@ -146,12 +149,12 @@ describe('event bus: transactions', () => {
     it('runs transactions one at a time', async () => {
         const order: string[] = [];
         await Promise.all([
-            app.bus.transaction(async () => {
+            story.bus.transaction(async () => {
                 order.push('a:start');
                 await sleep(50);
                 order.push('a:end');
             }),
-            app.bus.transaction(() => {
+            story.bus.transaction(() => {
                 order.push('b:start');
                 order.push('b:end');
                 return Promise.resolve();
@@ -161,11 +164,12 @@ describe('event bus: transactions', () => {
     });
 });
 
-describe('GET /api/events', () => {
+describe('GET /api/stories/:storyId/events', () => {
     it('streams hello, then one change event per edit', async () => {
         const port = await app.listen(0, '127.0.0.1');
         const received: { event: string; data: unknown }[] = [];
-        const req = http.get(`http://127.0.0.1:${port}/api/events`);
+        const cookie = await login(`http://127.0.0.1:${port}`);
+        const req = http.get(`http://127.0.0.1:${port}/api/stories/example/events`, { headers: { cookie } });
         const response = await new Promise<http.IncomingMessage>((resolve) => req.on('response', resolve));
         expect(response.statusCode).toBe(200);
         expect(response.headers['content-type']).toContain('text/event-stream');
@@ -185,7 +189,7 @@ describe('GET /api/events', () => {
         await waitFor(() => received.length === 1);
         expect(received[0].event).toBe('hello');
 
-        await appendFile(app.project.abs('data/locations/village.location.ts'), '// x\n');
+        await appendFile(story.project.abs('data/locations/village.location.ts'), '// x\n');
         await waitFor(() => received.length === 2);
         expect(received[1]).toMatchObject({ event: 'change', data: { kind: 'entity', id: 'locations/village' } });
         req.destroy();

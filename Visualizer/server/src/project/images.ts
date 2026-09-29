@@ -50,18 +50,18 @@ const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, b
         id,
         file: sp.root.rel(abs),
         version: v,
-        url: bytes === null ? null : `${buildPath('getImageFile', { owner, id })}?v=${v}`,
+        url: bytes === null ? null : `${buildPath(sp.root.storyId, 'getImageFile', { owner, id })}?v=${v}`,
     };
 };
 
-/** `GET /api/images/:owner/:id` */
+/** `GET /images/:owner/:id` */
 export const readImage = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<TImageDto> => {
         const abs = imageFile(sp, owner, id);
         return toDto(sp, owner, id, abs, await readBytesOrNull(abs));
     });
 
-/** `GET /api/images/:owner/:id/png` — the bytes and their version; 404 when there is no image. */
+/** `GET /images/:owner/:id/png` — the bytes and their version; 404 when there is no image. */
 export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<{ bytes: Buffer; version: string }> => {
         const abs = imageFile(sp, owner, id);
@@ -73,7 +73,7 @@ export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string)
 const isPng = (bytes: Uint8Array) =>
     bytes.length > PNG_SIGNATURE.length && PNG_SIGNATURE.every((b, i) => bytes[i] === b);
 
-/** `PUT /api/images/:owner/:id` — write the owner's sibling `.png` (create or replace). */
+/** `PUT /images/:owner/:id` — write the owner's sibling `.png` (create or replace). */
 export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string, rawBody: TUploadImageBody) =>
     sp.run(async (): Promise<TImageDto> => {
         const body = asBody(rawBody);

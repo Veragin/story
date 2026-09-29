@@ -1,14 +1,14 @@
 /**
  * The layout stores (plan §1.1): view-only positions that are not part of the story source.
  *
- *  - `data/chapters/timeline.layout.json` — `GET/PUT /api/layout/timeline`
+ *  - `data/chapters/timeline.layout.json` — `GET/PUT /layout/timeline`
  *
  *        {
  *            "chapters": { "kingdom": { "y": 40 }, "village": { "y": 120 } },
  *            "triggers": { "bellRings": { "y": -30 } }
  *        }
  *
- *  - `data/chapters/<ch>/<ch>.layout.json` — `GET/PUT /api/layout/chapters/:chapterId`
+ *  - `data/chapters/<ch>/<ch>.layout.json` — `GET/PUT /layout/chapters/:chapterId`
  *
  *        { "passages": { "village-thomas-intro": { "x": 0, "y": 0 }, … } }
  *

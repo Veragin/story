@@ -1,7 +1,7 @@
 import type { TVersion } from './common';
 
 /**
- * Change notices on `GET /api/events` (Server-Sent Events, plan §3 "Live refresh" point 2).
+ * Change notices on `GET /events` (Server-Sent Events, plan §3 "Live refresh" point 2).
  *
  * Each SSE message is `event: change` with a JSON `TChangeEvent` as `data`. One server operation
  * (a whole multi-file write) produces exactly one event; hand edits are batched over ~150 ms and

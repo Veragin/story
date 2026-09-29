@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { format, resolveConfig, type Options } from 'prettier';
-import { REPO_ROOT } from '../project/ProjectRoot';
+import { EXAMPLE_STORY_ROOT } from '../project/ProjectRoot';
 
 /**
  * The JSON text of every store file: diff-friendly and exactly what `yarn pretty` would write, so
@@ -12,7 +12,8 @@ import { REPO_ROOT } from '../project/ProjectRoot';
  *     object is expanded, one key per line. Prettier keeps an object on one line only when the
  *     input has no newline after `{`, so this choice is what survives step 2.
  *  2. prettier (`parser: 'json'`) with the repo's config (`.prettierrc`: 4 spaces, `printWidth`
- *     80 for JSON), resolved from the *repo* root so a temp `STORY_ROOT` formats the same way.
+ *     80 for JSON), resolved from the example story inside the repo (whose nearest config is
+ *     the root `.prettierrc`), so a temp `STORIES_ROOT` outside the repo formats the same way.
  *     It collapses short arrays and breaks lines that are too long.
  */
 export const formatJson = async (value: unknown): Promise<string> => {
@@ -22,7 +23,7 @@ export const formatJson = async (value: unknown): Promise<string> => {
 let optionsPromise: Promise<Options> | null = null;
 
 const prettierOptions = (): Promise<Options> => {
-    optionsPromise ??= resolveConfig(path.join(REPO_ROOT, 'data', 'store.json'))
+    optionsPromise ??= resolveConfig(path.join(EXAMPLE_STORY_ROOT, 'data', 'store.json'))
         .then((config) => config ?? {})
         .catch(() => ({}))
         .then((config) => ({ tabWidth: 4, printWidth: 80, endOfLine: 'lf' as const, ...config }));

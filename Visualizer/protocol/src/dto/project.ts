@@ -1,7 +1,7 @@
 import type { TMaybeCode, TTimeRangeDto, TVersioned } from './common';
 
 /**
- * `GET /api/project` — the lists behind every picker and the Timeline: ids and display names of
+ * `GET /project` — the lists behind every picker and the Timeline: ids and display names of
  * all chapters, characters, npcs, locations, items and triggers. Titles that are code in the
  * source (`_('Wedding Chapter')`) are reduced to a display string by the server (the literal
  * argument of `_()` when there is one, else the id).
@@ -34,8 +34,8 @@ export type TProjectChapterDto = TProjectEntryDto & {
 export type THealthDto = {
     ok: true;
     service: '@story/visualizer-server';
-    /** Absolute project root the server reads and writes (`STORY_ROOT`). */
-    root: string;
-    /** Whether the file watcher behind `/api/events` is running. */
+    /** Absolute folder holding every story, `stories/<id>/` (`STORIES_ROOT`). */
+    storiesRoot: string;
+    /** Whether each story's file watcher (behind its `/events`) runs while the story is loaded. */
     watching: boolean;
 };

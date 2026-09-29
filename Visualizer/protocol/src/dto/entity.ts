@@ -1,7 +1,7 @@
 import type { TDataTypeDto } from './chapter';
 import type { TMaybeCode, TSourceRef, TValue, TValueRecord, TVersioned, TVersionedBody } from './common';
 
-/** The entity kinds of the Entities page and of `/api/entities/:kind` (plan §3). */
+/** The entity kinds of the Entities page and of `/entities/:kind` (plan §3). */
 export const ENTITY_KINDS = ['characters', 'npcs', 'locations', 'items'] as const;
 export type TEntityKind = (typeof ENTITY_KINDS)[number];
 
@@ -101,17 +101,17 @@ type TEntityServerFields = 'version' | 'file' | 'line' | 'exportName' | 'kind';
 /** Editable fields of an entity of kind `K` (id is read-only once created). */
 export type TEntityEditable<K extends TEntityKind> = Omit<TEntityDtoByKind[K], TEntityServerFields | 'id'>;
 
-/** `POST /api/entities/:kind` */
+/** `POST /entities/:kind` */
 export type TCreateEntityBody<K extends TEntityKind = TEntityKind> = { id: string } & Partial<TEntityEditable<K>> &
     (K extends 'items' ? { type: string } : unknown);
 
-/** `PUT /api/entities/:kind/:id` — omitted fields are left untouched. */
+/** `PUT /entities/:kind/:id` — omitted fields are left untouched. */
 export type TUpdateEntityBody<K extends TEntityKind = TEntityKind> = TVersionedBody & Partial<TEntityEditable<K>>;
 
-/** `DELETE /api/entities/:kind/:id` — refused with 409 `referenced` while still referenced. */
+/** `DELETE /entities/:kind/:id` — refused with 409 `referenced` while still referenced. */
 export type TDeleteEntityBody = TVersionedBody;
 
-/** `GET /api/entities/:kind` */
+/** `GET /entities/:kind` */
 export type TEntityListDto<K extends TEntityKind = TEntityKind> = {
     kind: K;
     entities: TEntityDtoByKind[K][];

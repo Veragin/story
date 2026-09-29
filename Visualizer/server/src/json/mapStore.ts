@@ -1,5 +1,5 @@
 /**
- * `data/locations/map.json` — the map store behind `GET/PUT /api/maps/:mapId` (plan §1, WP2/WP4).
+ * `data/locations/map.json` — the map store behind `GET/PUT /maps/:mapId` (plan §1, WP2/WP4).
  *
  * The API speaks `TMapDto` (protocol `dto/map.ts`: `data[i][j]` is row `i` of `height`, column `j`
  * of `width`, every tile an object). The file on disk is a compact, diff-friendly encoding of the
@@ -336,10 +336,17 @@ const load = async (project: ProjectRoot, file: string): Promise<{ map: TMapFile
 export const readMapFile = async (project: ProjectRoot): Promise<TMapFile | null> =>
     (await load(project, project.paths.map)).map;
 
-/** `GET /api/maps/:mapId`: the map, or the default map with `version: ''` while there is no file. */
-export const readMap = async (project: ProjectRoot, mapId: string): Promise<TMapDto> => {
+/**
+ * `GET /maps/:mapId`: the map, or an empty map with `version: ''` while there is no file. The
+ * empty map has `size` when given (the story's `mapSize`), else `createDefaultMap`'s default.
+ */
+export const readMap = async (
+    project: ProjectRoot,
+    mapId: string,
+    size?: { width: number; height: number }
+): Promise<TMapDto> => {
     const { map, version } = await load(project, mapPath(project, mapId));
-    return { ...(map ?? createDefaultMap(mapId)), version };
+    return { ...(map ?? createDefaultMap(mapId, size)), version };
 };
 
 /** Write the global map inside a transaction (no event); returns the new version. */
@@ -349,7 +356,7 @@ export const writeMapFile = async (tx: TTransaction, map: TMapFile): Promise<TVe
     return version(text);
 };
 
-/** `PUT /api/maps/:mapId`: validated whole-document replace, 409 `stale` on a version mismatch. */
+/** `PUT /maps/:mapId`: validated whole-document replace, 409 `stale` on a version mismatch. */
 export const updateMap = async (
     { project, bus }: Pick<TServerContext, 'project' | 'bus'>,
     mapId: string,

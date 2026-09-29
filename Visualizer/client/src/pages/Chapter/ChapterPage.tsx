@@ -14,7 +14,7 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import DeleteIcon from '@mui/icons-material/Delete';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CodeIcon from '@mui/icons-material/Code';
 import {
     api as defaultApi,
     apiEvents,
@@ -22,6 +22,7 @@ import {
     type TVisualizerApi,
 } from '../../api';
 import { ResizableSplitter } from '../../components/ResizableSplitter';
+import { openSourceEditor } from '../../components/openSourceEditor';
 import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { ChapterGraphStore } from './ChapterGraphStore';
 import { openChapterInfoDialog } from './ChapterInfoForm';
@@ -69,10 +70,11 @@ export const ChapterPage = observer(
             return true;
         });
 
-        const openInEditor = () =>
-            void store
-                .openInCodeEditor()
-                .catch((e: unknown) => console.error(e));
+        /** The source editor on a passage's file, else the selected one's, else the chapter's. */
+        const editSource = (passageId?: string) => {
+            const { owner, id } = store.sourceTarget(passageId);
+            openSourceEditor(owner, id, api, events);
+        };
 
         return (
             <PageContainer>
@@ -116,12 +118,12 @@ export const ChapterPage = observer(
                     <ToolButton
                         title={
                             store.selectedId
-                                ? _('Open passage in editor')
-                                : _('Open chapter in editor')
+                                ? _('Edit passage source')
+                                : _('Edit chapter source')
                         }
-                        onClick={openInEditor}
+                        onClick={() => editSource()}
                     >
-                        <OpenInNewIcon fontSize="small" />
+                        <CodeIcon fontSize="small" />
                     </ToolButton>
                     <Button
                         color="inherit"
@@ -168,14 +170,10 @@ export const ChapterPage = observer(
                                                     store.editor?.passageId
                                                 )
                                             }
-                                            onOpenInEditor={() =>
-                                                void store
-                                                    .openInCodeEditor(
-                                                        store.editor?.passageId
-                                                    )
-                                                    .catch((e: unknown) =>
-                                                        console.error(e)
-                                                    )
+                                            onEditSource={() =>
+                                                editSource(
+                                                    store.editor?.passageId
+                                                )
                                             }
                                         />
                                     ) : (

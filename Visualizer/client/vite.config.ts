@@ -16,9 +16,11 @@ const repoRoot = at('../..');
  * `data/` were watched, or in the module graph, every edit of a story file — by hand or by the
  * server — would fully reload the page and lose the camera, selection and unsaved input. The
  * lint rule in `eslint.config.js` keeps runtime `@story/data` / `@story/core` imports out of the
- * client; `types/` stays, because type-only imports resolve through it.
+ * client; `types/` stays, because type-only imports resolve through it. Both are the example
+ * story's folders (`stories/example/`, multiple stories phase 2): the one story the client's
+ * type-only imports are checked against.
  */
-const siblingPackages = ['../../types', '../../shared', '../../ui', '../protocol'].map(at);
+const siblingPackages = ['../../stories/example/types', '../../shared', '../../ui', '../protocol'].map(at);
 
 /**
  * Vite seeds its watcher with `root` only; anything outside is added lazily, the first time a
@@ -42,10 +44,18 @@ const watchSiblingPackages = () => ({
  */
 // https://vitejs.dev/config/
 export default defineConfig({
+    /**
+     * The public path the app is served under: `/` in dev, `/visualizer/` behind the production
+     * proxy (`docker-compose.prod.yml`, `VISUALIZER_BASE=/visualizer/`, with both slashes). Only
+     * the built asset URLs move: routing is the hash (`#/map`), and every API call is the absolute
+     * `/api/…`, so it still reaches the server at the origin's root, never `/visualizer/api`.
+     */
+    base: process.env.VISUALIZER_BASE || '/',
     assetsInclude: ['**/*.png', '**/*.jpg'],
     // No static-serve root. Story art (the `.png` next to a passage / character / npc file) is
     // not bundled here: the Visualizer never imports `data/`, it shows the art through the
-    // server's `/api/images/…` routes. Only the favicon (`data/assets/story.png`) is bundled.
+    // server's `/api/stories/<id>/images/…` routes. Only the favicon (`stories/example/data/assets/story.png`)
+    // is bundled.
     publicDir: false,
     plugins: [react(), watchSiblingPackages()],
     resolve: {
@@ -67,7 +77,7 @@ export default defineConfig({
             // type-only (Visualizer plan §3 "Live refresh"), so they must never be resolved.
 
             { find: '@story/visualizer-protocol', replacement: at('../protocol/src/index.ts') },
-            { find: '@story/types', replacement: at('../../types/index.ts') },
+            { find: '@story/types', replacement: at('../../stories/example/types/index.ts') },
             { find: '@story/shared', replacement: at('../../shared/src/index.ts') },
         ],
     },
@@ -87,13 +97,17 @@ export default defineConfig({
         },
         /**
          * `Visualizer/server` (plan §1): every API call is same-origin `/api/...`, so the
-         * client has no hard-coded server URL and no CORS. Includes the `/api/events` SSE stream
+         * client has no hard-coded server URL and no CORS. Includes each story's `/api/stories/<id>/events` SSE stream
          * (http-proxy streams it through unbuffered). `VISUALIZER_SERVER` overrides the target.
+         *
+         * The browser's `Cookie` (the `story_session` login) and `Origin` headers pass through
+         * untouched. `changeOrigin` stays off so `Host` does too: the server's CSRF check accepts a
+         * mutation whose `Origin` matches its `Host`, so the client works under any host name
+         * (`localhost`, `127.0.0.1`, a LAN address), not just the `ALLOWED_ORIGINS` defaults.
          */
         proxy: {
             '/api': {
                 target: process.env.VISUALIZER_SERVER ?? 'http://localhost:8123',
-                changeOrigin: true,
             },
         },
     },

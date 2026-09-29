@@ -1,28 +1,53 @@
 import {
+    buildGlobalPath,
     buildPath,
-    ROUTES,
+    GLOBAL_ROUTES,
+    STORY_ROUTES,
     type TApiErrorBody,
     type TEntityDtoByKind,
     type TEntityKind,
     type TEntityListDto,
+    type TGlobalRouteName,
     type TRouteBody,
     type TRouteName,
     type TRouteParams,
     type TRouteResponse,
+    type TStoryRouteName,
 } from '@story/visualizer-protocol';
 import { ApiError } from './ApiError';
+import { STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
 export type THttpApiOptions = {
     /** Prefix for every route; `''` = same origin, i.e. through the Vite `/api` proxy. */
     baseUrl?: string;
+    /** The story whose routes (`/api/stories/<id>/…`) story-scoped calls go to. */
+    storyId?: string;
     fetch?: typeof fetch;
     /**
      * Called with the `version` of every resource a mutation returns — wire it to
      * `apiEvents.markSaved` so the client does not refetch its own saves (plan §3 point 3).
      */
     onSaved?: (version: string) => void;
+    /**
+     * Called when a mutation is sent; the returned function is called once its response has been
+     * handled (after `onSaved`). Wire it to `apiEvents.hold`: the server emits a save's event
+     * before it answers, and the echo must wait for `onSaved` to be recognised as an own save.
+     */
+    onMutation?: () => () => void;
+    /**
+     * Called on a `401` (no grant for the story; `login` itself excepted). Resolve once logged
+     * in, and the request is sent once more; reject to fail it with the 401 (`AuthStore`).
+     */
+    onUnauthorized?: (error: ApiError) => Promise<void>;
 };
+
+/**
+ * Mutations whose returned `version` is not marked as an own save. A source save rewrites a whole
+ * chapter or passage file behind the forms' back, so the pages must get its change event like a
+ * hand edit's (refetch, or "Changed on disk" over unsaved input).
+ */
+const NOT_MARKED_SAVED: readonly TRouteName[] = ['updateSource'];
 
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
     try {
@@ -37,38 +62,75 @@ const parseError = async (res: Response): Promise<TApiErrorBody> => {
     };
 };
 
+const isGlobalRoute = (route: TRouteName): route is TGlobalRouteName =>
+    Object.prototype.hasOwnProperty.call(GLOBAL_ROUTES, route);
+
+/** Method and URL of a route: a global route as it is, a story route under the story's prefix. */
+const endpoint = <R extends TRouteName>(storyId: string, route: R, params: TRouteParams<R>) =>
+    isGlobalRoute(route)
+        ? { method: GLOBAL_ROUTES[route].method, path: buildGlobalPath(route, params as TRouteParams<typeof route>) }
+        : {
+              method: STORY_ROUTES[route as TStoryRouteName].method,
+              path: buildPath(storyId, route as TStoryRouteName, params as TRouteParams<TStoryRouteName>),
+          };
+
 /**
  * Low-level typed request for any protocol route:
  *
  *     await request('getChapter', { chapterId: 'village' });
  *     await request('updateChapter', { chapterId }, { version, title: 'Village' });
  */
-export const createRequest = ({ baseUrl = '', fetch: fetchImpl = fetch, onSaved }: THttpApiOptions = {}) => {
+export const createRequest = ({
+    baseUrl = '',
+    storyId = STORY_ID,
+    fetch: fetchImpl = fetch,
+    onSaved,
+    onMutation,
+    onUnauthorized,
+}: THttpApiOptions = {}) => {
     return async <R extends TRouteName>(
         route: R,
         params: TRouteParams<R>,
         body?: TRouteBody<R>
     ): Promise<TRouteResponse<R>> => {
-        const { method } = ROUTES[route];
-        let res: Response;
+        const { method, path } = endpoint(storyId, route, params);
+        const send = async (): Promise<Response> => {
+            try {
+                return await fetchImpl(baseUrl + path, {
+                    method,
+                    // on every mutation, bodyless ones included: the server's CSRF check requires it
+                    headers: method === 'GET' ? undefined : { 'content-type': 'application/json' },
+                    body: body === undefined ? undefined : JSON.stringify(body),
+                });
+            } catch (e) {
+                throw new ApiError(0, { error: 'internal', message: `Network error: ${(e as Error).message}` }, route);
+            }
+        };
+        const hold = () => (method !== 'GET' && onMutation ? onMutation() : () => {});
+        let release = hold();
         try {
-            res = await fetchImpl(baseUrl + buildPath(route, params), {
-                method,
-                headers: body === undefined ? undefined : { 'content-type': 'application/json' },
-                body: body === undefined ? undefined : JSON.stringify(body),
-            });
-        } catch (e) {
-            throw new ApiError(0, { error: 'internal', message: `Network error: ${(e as Error).message}` }, route);
+            let res = await send();
+            if (res.status === 401 && route !== 'login' && onUnauthorized) {
+                // events are not held while the password prompt is open
+                release();
+                // log in (the password prompt), then retry once; a cancel fails with this 401
+                await onUnauthorized(new ApiError(res.status, await parseError(res), route));
+                release = hold();
+                res = await send();
+            }
+            if (!res.ok) {
+                throw new ApiError(res.status, await parseError(res), route);
+            }
+            if (res.status === 204) return undefined as TRouteResponse<R>;
+            const json = (await res.json()) as TRouteResponse<R>;
+            if (method !== 'GET' && onSaved && !NOT_MARKED_SAVED.includes(route)) {
+                const version = (json as { version?: unknown } | null)?.version;
+                if (typeof version === 'string' && version !== '') onSaved(version);
+            }
+            return json;
+        } finally {
+            release();
         }
-        if (!res.ok) {
-            throw new ApiError(res.status, await parseError(res), route);
-        }
-        const json = (await res.json()) as TRouteResponse<R>;
-        if (method !== 'GET' && onSaved) {
-            const version = (json as { version?: unknown } | null)?.version;
-            if (typeof version === 'string' && version !== '') onSaved(version);
-        }
-        return json;
     };
 };
 
@@ -77,13 +139,14 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
     const request = createRequest(options);
     return {
         health: () => request('health', {}),
+        login: (password) => request('login', { storyId: options.storyId ?? STORY_ID }, { password }),
+        getStoryInfo: () => request('getStoryInfo', {}),
         getProject: () => request('getProject', {}),
 
         createChapter: (body) => request('createChapter', {}, body),
         getChapter: (chapterId) => request('getChapter', { chapterId }),
         updateChapter: (chapterId, body) => request('updateChapter', { chapterId }, body),
         deleteChapter: (chapterId, body) => request('deleteChapter', { chapterId }, body),
-        openChapter: (chapterId) => request('openChapter', { chapterId }),
         addChapterCharacter: (chapterId, body) => request('addChapterCharacter', { chapterId }, body),
         removeChapterCharacter: (chapterId, characterId, body) =>
             request('removeChapterCharacter', { chapterId, characterId }, body),
@@ -93,7 +156,6 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         getPassage: (passageId) => request('getPassage', { passageId }),
         updatePassage: (passageId, body) => request('updatePassage', { passageId }, body),
         deletePassage: (passageId, body) => request('deletePassage', { passageId }, body),
-        openPassage: (passageId) => request('openPassage', { passageId }),
 
         createTrigger: (chapterId, body) => request('createTrigger', { chapterId }, body),
         getTrigger: (triggerId) => request('getTrigger', { triggerId }),
@@ -109,6 +171,9 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         updateEntity: async <K extends TEntityKind>(kind: K, id: string, body: TRouteBody<'updateEntity'>) =>
             (await request('updateEntity', { kind, id }, body)) as TEntityDtoByKind[K],
         deleteEntity: (kind, id, body) => request('deleteEntity', { kind, id }, body),
+
+        getSource: (owner, id) => request('getSource', { owner, id }),
+        updateSource: (owner, id, body) => request('updateSource', { owner, id }, body),
 
         getImage: (owner, id) => request('getImage', { owner, id }),
         uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),

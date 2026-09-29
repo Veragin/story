@@ -20,7 +20,7 @@ export type TLocationFormProps = {
     /** The latest known DTO. When it changes under unsaved input, the form offers "reload / keep mine". */
     location: TLocationDto;
     readOnly?: boolean;
-    /** `PUT /api/entities/locations/:id` with only the changed fields; resolves with the new DTO. */
+    /** `PUT /entities/locations/:id` with only the changed fields; resolves with the new DTO. */
     onSave: (patch: TLocationPatch, version: string) => Promise<TLocationDto>;
     onSaved?: (dto: TLocationDto) => void;
     onCancel?: () => void;

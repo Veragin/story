@@ -117,6 +117,8 @@ export class MapPageStore implements IMapHost {
     viewport: TSize = { width: 0, height: 0 };
     /** Whether the camera came from `ui-state` (else the view fits the map once it knows its size). */
     readonly hasSavedCamera: boolean;
+    /** Size of the empty map shown while there is no `map.json`: the story's `mapSize`. */
+    private emptySize: { width: number; height: number } | null = null;
 
     private readonly events?: ApiEvents;
     private readonly autosaveMs: number;
@@ -244,7 +246,9 @@ export class MapPageStore implements IMapHost {
             this.applyRemote(dto, 'replace');
         } catch (e) {
             if (!(e instanceof ApiError && e.isNotFound)) throw e;
-            // No map.json yet: start from an empty map. It is written with the first edit.
+            // No map.json yet: start from an empty map of the story's size (`story.json`). It is
+            // written with the first edit. (The server answers such a map itself; the mock 404s.)
+            this.emptySize = (await this.api.getStoryInfo().catch(() => null))?.mapSize ?? null;
             this.applyRemote(null, 'replace');
         }
     };
@@ -269,7 +273,8 @@ export class MapPageStore implements IMapHost {
         if (how === 'merge' && local) {
             this.map = remote ? mergeMaps(this.base, local, remote) : local;
         } else {
-            this.map = remote ?? createDefaultMapData(this.mapId, _('World'));
+            this.map =
+                remote ?? createDefaultMapData(this.mapId, _('World'), this.emptySize?.width, this.emptySize?.height);
             this.dirty = false;
         }
         this.base = remote ? structuredClone(remote) : null;
@@ -554,7 +559,7 @@ export class MapPageStore implements IMapHost {
     };
 
     /**
-     * Creates the location entity (`POST /api/entities/locations`), then its shape in the middle
+     * Creates the location entity (`POST /entities/locations`), then its shape in the middle
      * of the view, and saves the map right away. Rejects with the `ApiError` (e.g. `409 exists`).
      */
     addLocation = async (body: { id: string; name: string; description?: string }, center?: TPoint) => {
@@ -628,7 +633,7 @@ export class MapPageStore implements IMapHost {
     };
 
     /**
-     * `PUT /api/entities/locations/:id` with the changed fields. Rejects with the `ApiError`
+     * `PUT /entities/locations/:id` with the changed fields. Rejects with the `ApiError`
      * (the form handles `409 stale`: "reload / keep mine").
      */
     saveLocation = async (id: string, patch: Omit<TUpdateEntityBody<'locations'>, 'version'>, version: string) => {
