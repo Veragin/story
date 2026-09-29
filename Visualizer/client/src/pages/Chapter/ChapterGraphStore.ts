@@ -11,7 +11,7 @@ import {
     type TReferenceDto,
     type TSourceOwner,
 } from '@story/visualizer-protocol';
-import { ApiError, displayText, type ApiEvents, type TVisualizerApi } from '../../api';
+import { ApiError, displayText, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
 import { getUiState, setUiState } from '../../ui-state';
 import { BOX, GAP, placeMissing } from './graph/autoLayout';
 import { buildGraph, type TGraph } from './graph/buildGraph';
@@ -117,7 +117,7 @@ export class ChapterGraphStore {
         this.selectedId = getUiState<string | null>(uiKeys.selected(chapterId), null);
         this.pendingEditorId = getUiState<string | null>(uiKeys.editor(chapterId), null);
 
-        makeObservable<this, 'applyPassages' | 'applyLayout'>(this, {
+        makeObservable<this, 'applyPassages' | 'applyLayout' | 'liveEdges'>(this, {
             status: observable,
             loadError: observable,
             chapter: observable.ref,
@@ -131,6 +131,7 @@ export class ChapterGraphStore {
             saveStatus: observable,
             saveError: observable,
             graph: computed,
+            liveEdges: computed,
             positions: computed,
             chapterTitle: computed,
             chapterCharacters: computed,
@@ -148,7 +149,27 @@ export class ChapterGraphStore {
     // ---- derived -----------------------------------------------------------------------------
 
     get graph(): TGraph {
-        return buildGraph(this.passages, this.rawEdges);
+        return buildGraph(this.passages, this.liveEdges);
+    }
+
+    /**
+     * The server's static edges, with the open editor's unsaved links in place of its passage's
+     * saved ones — so an arrow shows up while the author adds a link, not only after Save.
+     */
+    private get liveEdges(): TPassageEdgeDto[] {
+        const draft = this.editor?.dirty ? this.editor.draft : null;
+        if (!draft) return this.rawEdges;
+        // Other chapters' passages are only known as targets the server already resolved.
+        const known = new Set([
+            ...this.passages.map((p) => p.passageId),
+            ...this.rawEdges.filter((e) => e.resolved).map((e) => e.to),
+        ]);
+        const saved = this.rawEdges.filter((e) => e.from === draft.passageId);
+        // A target being typed would flash a red box per keystroke: new dangling ones wait for Save.
+        const drafted = extractEdges([draft], known).filter(
+            (e) => e.resolved || saved.some((s) => s.to === e.to)
+        );
+        return [...this.rawEdges.filter((e) => e.from !== draft.passageId), ...drafted];
     }
 
     /** Top-left corner of every box (saved, else automatic) and of every ghost box. */

@@ -309,4 +309,30 @@ describe('passage editor', () => {
         expect(store.graph.nodes.find((n) => n.id === 'village-thomas-forest')?.title).toBe('Deep forest');
         await store.destroy();
     });
+
+    it('draws the open passage’s unsaved links, and drops them again on reset', async () => {
+        const { store } = setup('village');
+        await store.load();
+        store.openEditor('village-thomas-intro');
+        const editor = store.editor!;
+        const edgeIds = () => store.graph.edges.map((e) => e.id);
+        expect(edgeIds()).not.toContain('village-thomas-intro->village-thomas-cool');
+
+        editor.edit((d) => {
+            if (d.type === 'screen' && Array.isArray(d.body) && Array.isArray(d.body[0].links))
+                d.body[0].links.push({ text: 'x', passageId: 'village-th' });
+        });
+        // a half-typed target is not an arrow yet
+        expect(store.graph.ghosts.map((g) => g.passageId)).not.toContain('village-th');
+        editor.edit((d) => {
+            if (d.type === 'screen' && Array.isArray(d.body) && Array.isArray(d.body[0].links))
+                d.body[0].links[1].passageId = 'village-thomas-cool';
+        });
+        expect(edgeIds()).toContain('village-thomas-intro->village-thomas-cool');
+        expect(edgeIds()).toContain('village-thomas-intro->village-thomas-forest');
+
+        editor.reset();
+        expect(edgeIds()).not.toContain('village-thomas-intro->village-thomas-cool');
+        await store.destroy();
+    });
 });
