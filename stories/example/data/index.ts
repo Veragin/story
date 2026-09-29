@@ -35,6 +35,6 @@ export * from './items/itemInfo';
 
 /* No art here: an image is the `.png` next to the passage / character / npc file it belongs
    to, found by convention (SingleEngine's `src/images.ts` globs them). Nothing under `data/`
-   uses `import.meta.glob`, so `@story/core`, which imports this barrel, stays runnable under
-   plain node for the future MultiEngine server (§2). `data/assets/story.png` is only the
+   uses `import.meta.glob`, so this barrel — which the MultiEngine server imports to hand
+   `register` / `itemInfo` to `@story/core` — stays runnable under plain node (§2). `data/assets/story.png` is only the
    apps' favicon. */

@@ -1,13 +1,16 @@
 import { ReactNode } from 'react';
 import { worldStateContext, engineContext, storeContext } from './context';
-import { e, s } from './worldState';
 import { applyFormatting } from '@story/ui';
+import type { Engine } from '@story/core';
+import type { TWorldState } from '@story/data';
 
 type Props = {
+    s: TWorldState;
+    e: Engine;
     children: ReactNode;
 };
 
-export const Wrapper = ({ children }: Props) => {
+export const Wrapper = ({ s, e, children }: Props) => {
     return (
         <worldStateContext.Provider value={s}>
             <engineContext.Provider value={e}>

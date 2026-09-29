@@ -16,6 +16,10 @@ export * from './components/Text';
 export * from './components/css';
 /* Modal */
 export * from './components/Modal';
+/* PasswordDialog — the story password prompt (multiple stories) */
+export * from './components/PasswordDialog';
+/* passwordErrorMessage — how it words a failed login (401, 429, anything else) */
+export * from './components/passwordErrorMessage';
 
 /* GlobalThemeWrapper */
 export * from './theme/GlobalThemeWrapper';

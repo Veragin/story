@@ -1,0 +1,24 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        /* This story's own view of the world (multiple stories, phase 2). Every story has its own
+           type universe — `types/ids.ts` derives the id unions from *this* story's
+           `data/TWorldState.ts` — so `@story/types` and `@story/data` must resolve to the story's
+           own folders, never to another story's. The engine packages are shared and resolve to
+           the repo. `scripts/typecheck-stories.mjs` (part of `yarn typecheck`) runs
+           `tsc --noEmit -p` over this file for every story under `stories/`. */
+        "paths": {
+            "@story/types": ["types/index.ts"],
+            "@story/data": ["data/index.ts"],
+            "@story/data/*": ["data/*"],
+            "@story/core": ["../../core/src/index.ts"],
+            "@story/shared": ["../../shared/src/index.ts"],
+            "@story/ui": ["../../ui/src/index.ts"]
+        }
+    },
+    "include": ["data", "types"],
+    /* `data/test` is the example's vitest suite (the root program checks it, with node types);
+       `data/assets` is art. Neither is part of the story's type universe. */
+    "exclude": ["data/test", "data/assets", "node_modules"]
+}

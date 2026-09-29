@@ -1,8 +1,8 @@
 import { css, styled } from '@mui/material';
 import { useEngine } from '../../context';
-import { itemInfo } from '@story/data';
 import { TPassageId } from '@story/shared';
-import { TItemId, TLink } from '@story/types';
+import type { TItemId, TLink } from '@story/types';
+import type { TItemInfoRegister } from '@story/core';
 
 type Props = {
     link: TLink<TPassageId>;
@@ -16,7 +16,7 @@ export const PassageLink = ({ link }: Props) => {
         cost.time.s > 0 ? ` (${e.timeManager.renderDeltaTime(cost.time)})` : '';
     const items =
         cost.items && cost.items.length > 0
-            ? ` (${renderItems(cost.items)})`
+            ? ` (${renderItems(cost.items, e.storyModule.itemInfo)})`
             : '';
     const tools =
         cost.tools && cost.tools.length > 0
@@ -40,7 +40,10 @@ export const PassageLink = ({ link }: Props) => {
     );
 };
 
-const renderItems = (items: { id: TItemId; amount: number }[]) => {
+const renderItems = (
+    items: { id: TItemId; amount: number }[],
+    itemInfo: TItemInfoRegister
+) => {
     return items
         .map((item) => `${item.amount} ${itemInfo[item.id].name}`)
         .join(', ');

@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
  * Schema / reference-integrity checks over the authored story (REFACTOR_PLAN §7: "the thing
  * an author is most likely to break").
  *
- * The whole project is duplicated per story (§2.1), so `data/` is the folder that changes
- * every day and `core/` is the folder that does not. Everything asserted here is derived from
+ * A story is its folder under `stories/` (this is `stories/example/`), so its `data/` is the
+ * folder that changes every day and `core/` is the folder that does not. Everything asserted here is derived from
  * `register` rather than hard-coded, so adding a chapter, a character or a passage extends the
  * coverage instead of dating it.
  *
