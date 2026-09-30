@@ -1,4 +1,4 @@
-import type { TCode, TDeltaTimeDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
+import type { TDeltaTimeDto, TFunctionDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
 
 /**
  * A passage — `data/chapters/<ch>/<character>.passages/<local>[.<suffix>].ts`, one exported
@@ -21,6 +21,7 @@ type TPassageBaseDto = TVersioned &
         params: string[];
         /** Statements before the `return` of a block-bodied passage function, verbatim. */
         preamble?: string;
+        execute?: TFunctionDto;
     };
 
 export type TScreenPassageDto = TPassageBaseDto & {
@@ -49,7 +50,8 @@ export type TTransitionPassageDto = TPassageBaseDto & {
 export type TPassageDto = TScreenPassageDto | TLinearPassageDto | TTransitionPassageDto;
 
 export type TBodyItemDto = {
-    condition?: TMaybeCode<boolean>;
+    /** An expression (`s.x > 0`), not a function; a literal `true` reads as `{ code: 'true' }`. */
+    condition?: TFunctionDto;
     /** Full passage id. */
     redirect?: TMaybeCode<string>;
     text?: TMaybeCode<string>;
@@ -63,8 +65,8 @@ export type TLinkDto = {
     /** Spelled as in `types/TPassage.ts` (sic). */
     autoPriortiy?: TMaybeCode<number>;
     cost?: TMaybeCode<TLinkCostDto>;
-    /** Always code: a function. */
-    onFinish?: TCode;
+    /** A function, always code. */
+    onFinish?: TFunctionDto;
 };
 
 /** `TLinkCost = DeltaTime | { time?, items?, tools? }` — tell them apart with `isDeltaTime`. */
@@ -102,9 +104,9 @@ export type TChapterPassagesDto = {
 
 /** Editable fields per passage type (ids, type and source ref are read-only in v1). */
 export type TPassageEditable =
-    | Partial<Pick<TScreenPassageDto, 'title' | 'image' | 'body'>>
-    | Partial<Pick<TLinearPassageDto, 'description' | 'nextPassageId'>>
-    | Partial<Pick<TTransitionPassageDto, 'nextPassageId'>>;
+    | Partial<Pick<TScreenPassageDto, 'execute' | 'title' | 'image' | 'body'>>
+    | Partial<Pick<TLinearPassageDto, 'execute' | 'description' | 'nextPassageId'>>
+    | Partial<Pick<TTransitionPassageDto, 'execute' | 'nextPassageId'>>;
 
 /** `POST /chapters/:chapterId/passages` */
 export type TCreatePassageBody = {

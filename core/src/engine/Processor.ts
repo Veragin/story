@@ -34,6 +34,7 @@ export class Processor {
         const { chapterId } = parsePassageId(turn.passageId);
         const passages = await this.e.storyModule.register.passages[chapterId]();
         this.e.activePassage = passages.default[turn.passageId](this.s, this.e);
+        this.e.activePassage.execute?.();
 
         if (this.e.activePassage.type === 'transition') {
             this.e.history.addTurn({
@@ -59,7 +60,6 @@ export class Processor {
 
         if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
             this.autoProcess(activeScreenPassage);
-            void this.continue();
             return;
         }
 
@@ -70,6 +70,7 @@ export class Processor {
         const actions = this.getPossibleActions(p);
         if (actions.length === 0) {
             this.e.history.addEnd(p.characterId, 'NO_ACTIONS');
+            void this.continue();
             return;
         }
 

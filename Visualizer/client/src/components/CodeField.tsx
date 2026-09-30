@@ -25,19 +25,6 @@ import {
 } from '@story/visualizer-protocol';
 import { parseStringLiteral, quoteString } from './codeLiterals';
 
-/**
- * Editors for the code-field convention of the protocol (plan §3): a field typed `T | TCode`
- * is edited either as a literal (a text box, a number, a picker…) or as a raw TypeScript
- * snippet in a monospace textarea, and a toggle switches between the two. Fields that are
- * always code (`onFinish`) have no toggle.
- *
- *     <StringCodeField label={_('Title')} value={p.title} onChange={(title) => edit({ title })} />
- *     <CodeField label="onFinish" value={link.onFinish} onChange={…} optional emptyCode="() => {}" />
- *
- * Switching literal → code writes the literal as TS source (`toCode`); code → literal reads it
- * back with `fromCode` when the snippet is a plain literal, else falls back to `emptyLiteral`.
- */
-
 export type TCodeFieldProps<T> = {
     label: string;
     value: TMaybeCode<T> | undefined;
@@ -187,12 +174,14 @@ export const CodeTextArea = ({
     hasError,
     disabled,
     minRows = 1,
+    ariaLabel,
 }: {
     value: string;
     onChange: (code: string) => void;
     hasError?: boolean;
     disabled?: boolean;
     minRows?: number;
+    ariaLabel?: string;
 }) => {
     const ref = useRef<HTMLTextAreaElement>(null);
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -212,6 +201,7 @@ export const CodeTextArea = ({
             ref={ref}
             value={value}
             spellCheck={false}
+            aria-label={ariaLabel}
             disabled={disabled}
             rows={Math.max(minRows, value.split('\n').length)}
             data-error={hasError ? 'true' : undefined}

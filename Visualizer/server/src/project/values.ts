@@ -1,17 +1,29 @@
 import { DeltaTime } from '@story/shared';
-import { isCode, type TCode, type TValue } from '@story/visualizer-protocol';
-import { type Expression, Node, type ObjectLiteralExpression, type SourceFile } from 'ts-morph';
+import { isCode, type TCode, type TFunctionDto, type TValue } from '@story/visualizer-protocol';
+import {
+    type Expression,
+    Node,
+    type ObjectLiteralExpression,
+    type PropertyAssignment,
+    type SourceFile,
+} from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import { assertExpression } from './validate';
 import {
+    applyTextEdits,
     asArray,
     asObject,
     ensureNamedImport,
+    formatJsDoc,
     getProp,
     isPlainObject,
+    jsDocEdit,
     keyText,
     propertyKey,
+    propertyRemovalEdit,
     quote,
+    readJsDoc,
+    type TTextEdit,
     unwrap,
 } from './ast';
 
@@ -30,6 +42,11 @@ import {
  *
  * A typed `object` schema only reads the fields it knows and never removes a property it does
  * not know, so anything the reader did not understand is kept.
+ *
+ * `fn` is a described function (`TFunctionDto`, plan D1): the initializer verbatim as `code`,
+ * plus the JSDoc directly above the property as `description`. Only property values can be `fn`.
+ * Comment edits are text edits, which forget every node of the file, so `updateValue` queues
+ * them and `applyPartial` applies them once all node edits are done (`flushJsDocs`).
  */
 export type TSchema =
     | { t: 'value' }
@@ -37,6 +54,8 @@ export type TSchema =
     | { t: 'number' }
     | { t: 'boolean' }
     | { t: 'code' }
+    /** `empty`: the code a description-only stub gets (plan D8). */
+    | { t: 'fn'; empty: string }
     | { t: 'time' }
     | { t: 'timeRange' }
     | { t: 'delta' }
@@ -76,6 +95,8 @@ export const S = {
     number: { t: 'number' } as TSchema,
     boolean: { t: 'boolean' } as TSchema,
     code: { t: 'code' } as TSchema,
+    /** A described function; `empty` is written when only a description is given (`'true'` for a condition). */
+    fn: (empty = '() => {}'): TSchema => ({ t: 'fn', empty }),
     time: { t: 'time' } as TSchema,
     timeRange: { t: 'timeRange' } as TSchema,
     delta: { t: 'delta' } as TSchema,
@@ -92,6 +113,18 @@ export const S = {
 };
 
 const codeOf = (expr: Expression): TCode => ({ code: expr.getText() });
+
+/** The property whose initializer `expr` is, if any. */
+const ownerProp = (expr: Expression): PropertyAssignment | undefined => {
+    const parent = expr.getParent();
+    return Node.isPropertyAssignment(parent) && parent.getInitializer() === expr ? parent : undefined;
+};
+
+const fnOf = (expr: Expression): TFunctionDto => {
+    const prop = ownerProp(expr);
+    const description = prop ? readJsDoc(prop) : undefined;
+    return description === undefined ? codeOf(expr) : { code: expr.getText(), description };
+};
 
 /** The verbatim text of a `{ code }` value, after checking it is exactly one expression. */
 const codeText = (value: TCode, ctx: TWriteCtx): string => {
@@ -236,6 +269,8 @@ export const readValue = (expr: Expression, schema: TSchema): unknown => {
             return readBoolean(expr) ?? codeOf(expr);
         case 'code':
             return codeOf(expr);
+        case 'fn':
+            return fnOf(expr);
         case 'time':
             return readTime(expr) ?? codeOf(expr);
         case 'delta': {
@@ -371,20 +406,45 @@ const genTime = (value: unknown, ctx: TWriteCtx): string => {
     return `${local}.fromString(${quote(value)})`;
 };
 
+/** A `TFunctionDto` from a request body, with the stub code (D8) filled in. */
+const asFunction = (value: unknown, empty: string, ctx: TWriteCtx): { code: string; description?: string } => {
+    const ok =
+        isRecordValue(value) &&
+        Object.keys(value).every((k) => k === 'code' || k === 'description' || value[k] === undefined) &&
+        (value.code === undefined || typeof value.code === 'string') &&
+        (value.description === undefined || typeof value.description === 'string');
+    if (!ok) {
+        throw HttpError.badRequest(`Field "${ctx.path}" must be { code, description? } (got ${JSON.stringify(value)})`);
+    }
+    const raw = (value.code as string | undefined) ?? '';
+    const code = raw.trim() === '' ? empty : codeText({ code: raw }, ctx);
+    const description = value.description as string | undefined;
+    return description ? { code, description } : { code };
+};
+
 const genObject = (value: unknown, fields: Record<string, TField>, ctx: TWriteCtx): string => {
     if (isCode(value)) return codeText(value, ctx);
     if (!isRecordValue(value)) throw bad(ctx, 'an object', value);
     const parts: string[] = [];
+    let described = false;
     for (const [key, v] of Object.entries(value)) {
         if (v === undefined) continue;
         const field = fields[key];
         if (!field) throw HttpError.badRequest(`Unknown field "${ctx.path ? ctx.path + '.' : ''}${key}"`);
-        parts.push(`${keyText(field.src ?? key)}: ${genValue(v, field.schema, child(ctx, key))}`);
+        const text = `${keyText(field.src ?? key)}: ${genValue(v, field.schema, child(ctx, key))}`;
+        const description =
+            field.schema.t === 'fn' ? asFunction(v, field.schema.empty, child(ctx, key)).description : undefined;
+        described ||= description !== undefined;
+        parts.push(description === undefined ? text : `${formatJsDoc(description)}\n${text}`);
     }
-    return parts.length === 0 ? '{}' : `{ ${parts.join(', ')} }`;
+    if (parts.length === 0) return '{}';
+    // a JSDoc goes on its own line: one property per line (prettier keeps the object expanded)
+    return described ? `{\n${parts.join(',\n')},\n}` : `{ ${parts.join(', ')} }`;
 };
 
 export const genValue = (value: unknown, schema: TSchema, ctx: TWriteCtx): string => {
+    // the description of an `fn` goes into a comment before the property (`genObject`, `afterAdd`)
+    if (schema.t === 'fn') return asFunction(value, schema.empty, ctx).code;
     if (isCode(value)) return codeText(value, ctx);
     switch (schema.t) {
         case 'value':
@@ -433,6 +493,55 @@ const replace = (expr: Expression, text: string) => {
     if (expr.getText() !== text) expr.replaceWithText(text);
 };
 
+/** JSDoc edits waiting for `flushJsDocs`: set / remove the description, or remove the whole property. */
+type TPendingDoc = { prop: PropertyAssignment } & ({ description: string | undefined } | { removeProp: true });
+
+const pendingDocs = new WeakMap<SourceFile, TPendingDoc[]>();
+
+const queueDoc = (sf: SourceFile, entry: TPendingDoc) => {
+    const list = pendingDocs.get(sf) ?? [];
+    list.push(entry);
+    pendingDocs.set(sf, list);
+};
+
+/** A property was just added with the value `v`: queue the JSDoc of an `fn`. */
+const afterAdd = (prop: PropertyAssignment, schema: TSchema, v: unknown, ctx: TWriteCtx) => {
+    if (schema.t !== 'fn') return;
+    const { description } = asFunction(v, schema.empty, ctx);
+    if (description !== undefined) queueDoc(ctx.sf, { prop, description });
+};
+
+/** Remove a property; an `fn` goes with its JSDoc (a text edit, queued). */
+const removeProp = (prop: PropertyAssignment, schema: TSchema | undefined, sf: SourceFile) => {
+    if (schema?.t === 'fn') queueDoc(sf, { prop, removeProp: true });
+    else prop.remove();
+};
+
+/**
+ * Apply the queued JSDoc edits of `sf` (`fn` fields). Forgets every previously navigated node of
+ * the file. Entries whose property was replaced or removed meanwhile are dropped.
+ */
+export const flushJsDocs = (sf: SourceFile) => {
+    const list = pendingDocs.get(sf);
+    pendingDocs.delete(sf);
+    if (!list) return;
+    const edits: TTextEdit[] = [];
+    for (const entry of list) {
+        if (entry.prop.wasForgotten()) continue;
+        const edit = 'removeProp' in entry ? propertyRemovalEdit(entry.prop) : jsDocEdit(entry.prop, entry.description);
+        if (edit) edits.push(edit);
+    }
+    applyTextEdits(sf, edits);
+};
+
+const updateFn = (expr: Expression, empty: string, next: unknown, ctx: TWriteCtx) => {
+    const { code, description } = asFunction(next, empty, ctx);
+    const prop = ownerProp(expr);
+    if (!prop) throw new Error(`Field "${ctx.path}": a described function must be a property value`);
+    replace(expr, code);
+    queueDoc(ctx.sf, { prop, description });
+};
+
 /**
  * Apply `next` to the property set of an object literal: update the keys present in `next`, add
  * the missing ones, and (when `removeMissing` is given) remove the listed keys `next` lacks.
@@ -453,16 +562,26 @@ const updateObjectLiteral = (
         if (prop) {
             updateValue(prop.getInitializerOrThrow(), field.schema, v, child(ctx, key));
         } else {
-            obj.addPropertyAssignment({ name: keyText(src), initializer: genValue(v, field.schema, child(ctx, key)) });
+            const added = obj.addPropertyAssignment({
+                name: keyText(src),
+                initializer: genValue(v, field.schema, child(ctx, key)),
+            });
+            afterAdd(added, field.schema, v, child(ctx, key));
         }
     }
     for (const key of removable) {
         if (next[key] !== undefined) continue;
-        getProp(obj, fieldOf(key)?.src ?? key)?.remove();
+        const field = fieldOf(key);
+        const prop = getProp(obj, field?.src ?? key);
+        if (prop) removeProp(prop, field?.schema, ctx.sf);
     }
 };
 
 export const updateValue = (expr: Expression, schema: TSchema, next: unknown, ctx: TWriteCtx): void => {
+    if (schema.t === 'fn') {
+        updateFn(expr, schema.empty, next, ctx);
+        return;
+    }
     const current = readValue(expr, schema);
     if (deepEqual(current, next)) return;
     if (isCode(next)) {
@@ -558,6 +677,24 @@ export const applyPartial = (
     sf: SourceFile,
     { skip = [], optional = [] }: { skip?: string[]; optional?: string[] } = {}
 ) => {
+    try {
+        applyFields(obj, body, fields, sf, skip, optional);
+    } catch (e) {
+        pendingDocs.delete(sf); // a refused write applies nothing, not even the queued comments
+        throw e;
+    }
+    // last: the comment edits forget the nodes navigated above
+    flushJsDocs(sf);
+};
+
+const applyFields = (
+    obj: ObjectLiteralExpression,
+    body: Record<string, unknown>,
+    fields: Record<string, TField>,
+    sf: SourceFile,
+    skip: string[],
+    optional: string[]
+) => {
     for (const [key, v] of Object.entries(body)) {
         if (key === 'version' || skip.includes(key) || v === undefined) continue;
         const field = fields[key];
@@ -566,7 +703,7 @@ export const applyPartial = (
         const prop = getProp(obj, src);
         if (v === null) {
             if (!optional.includes(key)) throw HttpError.badRequest(`Field "${key}" is required and cannot be removed`);
-            prop?.remove();
+            if (prop) removeProp(prop, field.schema, sf);
             continue;
         }
         const ctx: TWriteCtx = { sf, path: key };
@@ -574,8 +711,10 @@ export const applyPartial = (
         else {
             const added = { name: keyText(src), initializer: genValue(v, field.schema, ctx) };
             const anchor = field.after?.map((k) => getProp(obj, fields[k]?.src ?? k)).find((p) => p !== undefined);
-            if (anchor) obj.insertPropertyAssignment(obj.getProperties().indexOf(anchor) + 1, added);
-            else obj.addPropertyAssignment(added);
+            const addedProp = anchor
+                ? obj.insertPropertyAssignment(obj.getProperties().indexOf(anchor) + 1, added)
+                : obj.addPropertyAssignment(added);
+            afterAdd(addedProp, field.schema, v, ctx);
         }
     }
 };

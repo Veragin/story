@@ -110,6 +110,13 @@ describe('readers', () => {
         const annie = (await t.get('/api/stories/example/passages/kingdom-annie-intro')).body;
         expect(annie.body[0].condition).toEqual({ code: 's.characters.annie.health > 0' });
         expect(annie.body[0].links[0].cost).toEqual({ time: { seconds: 600 }, items: [{ id: 'berries', amount: 1 }] });
+        const forestDto = (await t.get('/api/stories/example/passages/village-thomas-forest')).body;
+        expect(forestDto.execute).toEqual({
+            code: expect.stringContaining('s.characters.annie.health += 50;'),
+            description: 'Annie gets healed when she is weak.',
+        });
+        expect(forestDto.execute.code).toMatch(/^\(\) => \{/);
+        expect(forestDto.body[0].condition).toEqual({ code: 'true' });
         expect((await t.get('/api/stories/example/passages/village-thomas-nope')).status).toBe(404);
     });
 

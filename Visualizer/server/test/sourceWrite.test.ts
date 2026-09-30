@@ -64,6 +64,104 @@ describe('passages', () => {
         await expectTsc();
     }, 60_000);
 
+    it('edits the description of execute (a JSDoc) without touching its code, and removes execute', async () => {
+        const file = 'data/chapters/village/thomas.passages/forest.ts';
+        const url = '/api/stories/example/passages/village-thomas-forest';
+        const original = await read(file);
+        const forest = (await t.get(url)).body;
+        const code = forest.execute.code;
+        const put = async (patch: Record<string, unknown>) => {
+            const current = (await t.get(url)).body;
+            const res = await t.put(url, { version: current.version, ...patch });
+            expect(res.status, JSON.stringify(res.body)).toBe(200);
+            return res.body;
+        };
+
+        // change the description: only the comment changes
+        let dto = await put({ execute: { code, description: 'Heals Annie.' } });
+        expect(dto.execute).toEqual({ code, description: 'Heals Annie.' });
+        expect(await read(file)).toBe(
+            original.replace('/** Annie gets healed when she is weak. */', '/** Heals Annie. */')
+        );
+
+        // a `*/` in the text is escaped, and reads back as written
+        dto = await put({ execute: { code, description: 'Heals */ Annie.' } });
+        expect(dto.execute.description).toBe('Heals */ Annie.');
+        expect(await read(file)).toContain('/** Heals *\\/ Annie. */');
+
+        // several lines become ` * ` lines
+        dto = await put({ execute: { code, description: 'Heals Annie\nwhen she is weak.' } });
+        expect(dto.execute).toEqual({ code, description: 'Heals Annie\nwhen she is weak.' });
+        expect(await read(file)).toContain(
+            '    /**\n     * Heals Annie\n     * when she is weak.\n     */\n    execute: () => {'
+        );
+
+        // no description: the comment goes, the code stays
+        dto = await put({ execute: { code } });
+        expect(dto.execute).toEqual({ code });
+        expect(await read(file)).toBe(original.replace('    /** Annie gets healed when she is weak. */\n', ''));
+
+        // set it again
+        dto = await put({ execute: { code, description: 'Annie gets healed when she is weak.' } });
+        expect(await read(file)).toBe(original);
+
+        // `null` removes execute together with its comment
+        dto = await put({ execute: null });
+        expect(dto.execute).toBeUndefined();
+        let text = await read(file);
+        expect(text).not.toContain('execute');
+        expect(text).not.toContain('Annie gets healed');
+        expect(text).toContain("    id: 'forest',\n\n    type: 'screen',");
+
+        // a description-only stub gets `() => {}` (D8), added after `id`
+        dto = await put({ execute: { code: '', description: 'Something happens.' } });
+        expect(dto.execute).toEqual({ code: '() => {}', description: 'Something happens.' });
+        text = await read(file);
+        expect(text).toMatch(/ {4}id: 'forest',\n\s*\/\*\* Something happens\. \*\/\n {4}execute: \(\) => \{\},\n/);
+        await expectHealthy();
+        await expectTsc();
+    }, 60_000);
+
+    it('reads and writes descriptions of link onFinish and body conditions', async () => {
+        const file = 'data/chapters/village/thomas.passages/forest.ts';
+        const url = '/api/stories/example/passages/village-thomas-forest';
+        const forest = (await t.get(url)).body;
+        expect(forest.body[0].condition).toEqual({ code: 'true' });
+        const item = forest.body[0];
+        const link = item.links[0];
+        let res = await t.put(url, {
+            version: forest.version,
+            body: [
+                {
+                    ...item,
+                    condition: { code: 's.time.s >= 0', description: 'Always, really.' },
+                    links: [{ ...link, onFinish: { code: '', description: 'Nothing yet.' } }],
+                },
+                // a new item: generated as a whole, with the comment on its own line
+                { condition: { code: '', description: 'A stub condition.' }, text: 'More' },
+            ],
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.body[0].condition).toEqual({ code: 's.time.s >= 0', description: 'Always, really.' });
+        expect(res.body.body[0].links[0].onFinish).toEqual({ code: '() => {}', description: 'Nothing yet.' });
+        expect(res.body.body[1].condition).toEqual({ code: 'true', description: 'A stub condition.' });
+        let text = await read(file);
+        expect(text).toContain('/** Always, really. */\n            condition: s.time.s >= 0,');
+        expect(text).toContain('/** Nothing yet. */\n                    onFinish: () => {},');
+        expect(text).toContain('/** A stub condition. */\n            condition: true,');
+
+        // removing the fields removes their comments
+        res = await t.put(url, { version: res.body.version, body: [{ text: item.text, links: [link] }] });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        text = await read(file);
+        expect(text).not.toContain('Always, really.');
+        expect(text).not.toContain('Nothing yet.');
+        expect(text).not.toContain('onFinish');
+        expect(text).not.toContain('condition:');
+        await expectHealthy();
+        await expectTsc();
+    }, 60_000);
+
     it('keeps a trigger closure when a sibling literal changes', async () => {
         const trigger = (await t.get('/api/stories/example/triggers/nobleHouseRobbery')).body;
         const before = await read('data/chapters/village/triggers.ts');
@@ -202,12 +300,12 @@ describe('passages', () => {
                 res = await t.put(`/api/stories/example/passages/${id}`, {
                     version: res.body.version,
                     ...patch,
-                    body: [{ ...patch.body![0], condition: true }],
+                    body: [{ ...patch.body![0], condition: { code: 'true' } }],
                 });
             }
             expect(res.status, JSON.stringify(res.body)).toBe(200);
             expect(res.body).toMatchObject(
-                type === 'screen' ? { ...patch, body: [{ ...patch.body![0], condition: true }] } : patch
+                type === 'screen' ? { ...patch, body: [{ ...patch.body![0], condition: { code: 'true' } }] } : patch
             );
             await expectHealthy();
 

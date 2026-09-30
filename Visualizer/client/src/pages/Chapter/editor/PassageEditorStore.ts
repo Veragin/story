@@ -6,9 +6,9 @@ import { mapDiagnostics, passageFieldPaths, type TDiagnosticIndex } from './diag
 
 /** The fields a PUT may carry per passage type (ids, type and the source ref are read-only). */
 export const EDITABLE_FIELDS: Record<TPassageType, readonly string[]> = {
-    screen: ['title', 'image', 'body'],
-    linear: ['description', 'nextPassageId'],
-    transition: ['nextPassageId'],
+    screen: ['execute', 'title', 'image', 'body'],
+    linear: ['execute', 'description', 'nextPassageId'],
+    transition: ['execute', 'nextPassageId'],
 };
 
 /**
@@ -99,7 +99,8 @@ export class PassageEditorStore {
         const draft = this.draft as unknown as Record<string, unknown>;
         const base = this.base as unknown as Record<string, unknown>;
         for (const field of EDITABLE_FIELDS[this.base.type]) {
-            if (!same(draft[field], base[field])) patch[field] = toJS(draft[field]);
+            // a removed optional field (`execute`, `nextPassageId`) is sent as `null`
+            if (!same(draft[field], base[field])) patch[field] = draft[field] === undefined ? null : toJS(draft[field]);
         }
         return patch;
     }

@@ -101,7 +101,7 @@ export const extractEdges = (
                 continue;
             }
             for (const item of p.body) {
-                const conditional = item.condition !== undefined && item.condition !== true;
+                const conditional = item.condition !== undefined && item.condition.code.trim() !== 'true';
                 if (item.redirect !== undefined) add(p.passageId, item.redirect, 'redirect', conditional);
                 if (item.links === undefined) continue;
                 if (isCode(item.links)) {
@@ -349,7 +349,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                     type: 'screen',
                     title: startPassageLocalId,
                     image: '',
-                    body: [{ condition: true, text: '', links: [] }],
+                    body: [{ condition: { code: 'true' }, text: '', links: [] }],
                 });
                 chapter.characters.push({ characterId, passageCount: 0, passageIds: [] });
                 chapter.version = nextVersion();
@@ -409,7 +409,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                               type,
                               title: title ?? localId,
                               image: '',
-                              body: [{ condition: true, text: '', links: [] }],
+                              body: [{ condition: { code: 'true' }, text: '', links: [] }],
                           }
                         : type === 'linear'
                           ? { ...base, type, description: title ?? '' }
@@ -425,6 +425,10 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 const current = get(passages, passageId, 'passage');
                 checkVersion(current, version);
                 const next = { ...current, ...patch, version: nextVersion() } as TPassageDto;
+                // `null` removes an optional field (`execute`, `nextPassageId`), as on the server
+                for (const [key, value] of Object.entries(patch)) {
+                    if (value === null) delete (next as Record<string, unknown>)[key];
+                }
                 passages.set(passageId, next);
                 emit({
                     kind: 'passage',

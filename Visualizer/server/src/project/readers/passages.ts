@@ -1,4 +1,10 @@
-import type { TChapterPassagesDto, TPassageDto, TPassageEdgeDto, TPassageType } from '@story/visualizer-protocol';
+import type {
+    TChapterPassagesDto,
+    TFunctionDto,
+    TPassageDto,
+    TPassageEdgeDto,
+    TPassageType,
+} from '@story/visualizer-protocol';
 import { Node, type SourceFile, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
 import { propertyKey, stringProp, unwrap } from '../ast';
@@ -19,37 +25,43 @@ const LINK = S.object({
     passageId: S.string,
     autoPriortiy: S.number,
     cost: S.linkCost,
-    onFinish: S.code,
+    onFinish: S.fn(),
 });
 
 const BODY_ITEM = S.object({
-    condition: S.boolean,
+    condition: S.fn('true'),
     redirect: S.string,
     text: S.string,
     links: S.array(LINK),
 });
 
+/** `execute?: () => void` of every passage type; a new one goes after `id`, before `type`. */
+const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
+
 /** Editable fields per passage type (`types/TPassage.ts`). */
 export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
     screen: {
+        execute: EXECUTE,
         title: { schema: S.string },
         image: { schema: S.string },
         body: { schema: S.array(BODY_ITEM) },
     },
     linear: {
+        execute: EXECUTE,
         description: { schema: S.string },
         nextPassageId: { schema: S.string },
     },
     transition: {
+        execute: EXECUTE,
         nextPassageId: { schema: S.string },
     },
 };
 
 /** Optional fields a PUT may remove with `null`. */
 export const PASSAGE_OPTIONAL: Record<TPassageType, string[]> = {
-    screen: [],
-    linear: ['nextPassageId'],
-    transition: [],
+    screen: ['execute'],
+    linear: ['execute', 'nextPassageId'],
+    transition: ['execute'],
 };
 
 export const passageType = (src: TPassageSource): TPassageType | undefined => {
@@ -76,6 +88,7 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
     if (!owner || !src) throw new Error(`${sp.root.rel(sf.getFilePath())}: no passage function returning an object`);
     const localId = passageLocalId(src, sf);
     const type = passageType(src) ?? 'screen';
+    const fields = readFields(src.obj, PASSAGE_FIELDS[type]);
     const base = {
         passageId: `${owner.chapterId}-${owner.characterId}-${localId}`,
         chapterId: owner.chapterId,
@@ -87,8 +100,8 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
         exportName: src.exportName,
         params: src.params,
         ...(src.preamble.length > 0 ? { preamble: src.preamble.map((s) => s.getText()).join('\n') } : {}),
+        ...(fields.execute !== undefined ? { execute: fields.execute as TFunctionDto } : {}),
     };
-    const fields = readFields(src.obj, PASSAGE_FIELDS[type]);
     switch (type) {
         case 'screen':
             return {

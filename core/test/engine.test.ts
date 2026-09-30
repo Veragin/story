@@ -1,10 +1,54 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DeltaTime, Time } from '@story/shared';
-import { register } from '@story/data';
-import { newSession, waitForPassage } from './support/engine';
+import { createWorldState, type Engine, type TPassagesModule } from '@story/core';
+import { itemInfo, register } from '@story/data';
+import type { TWorldState } from '@story/data';
+import type { TChapterId, TChapterPassage } from '@story/types';
+import { newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
 
 /** `Array.prototype.at` is ES2022; `tsconfig.base.json` targets ES2020 libs. */
 const last = <T>(items: T[]): T => items[items.length - 1];
+
+type TPassageFn = (s: TWorldState, e: Engine) => TChapterPassage<TChapterId>;
+
+/**
+ * A play session over the real story with extra passage functions registered in the village
+ * chapter (keys like `village-thomas-probe`), so a test can author exactly the passage it needs.
+ */
+const sessionWith = (extra: Record<string, TPassageFn>) => {
+    const passages = {
+        ...register.passages,
+        village: async (): Promise<TPassagesModule> => {
+            const module = (await register.passages.village()) as unknown as TPassagesModule;
+            return { default: { ...module.default, ...extra } };
+        },
+    };
+    return createWorldState({ ...register, passages } as typeof register, itemInfo, TEST_STORY_ID);
+};
+
+/** A screen passage of Thomas in the village, with one link per `links` entry. */
+const screen = (
+    id: string,
+    fields: Partial<Extract<TChapterPassage<'village'>, { type: 'screen' }>>
+): TChapterPassage<'village'> => ({
+    chapterId: 'village',
+    characterId: 'thomas',
+    id,
+    type: 'screen',
+    title: id,
+    image: '',
+    body: [],
+    ...fields,
+});
+
+/**
+ * Ends Annie's story and plays Thomas's first turn, so no NPC is ever auto-played. That keeps
+ * the tests independent of how the chapters' time ranges interleave.
+ */
+const soloThomas = async (e: Engine) => {
+    e.history.addEnd('annie', 'NO_ACTIONS');
+    await e.processor.continue();
+};
 
 /**
  * The turn loop: `History` decides *whose* turn is next, `Processor` resolves the passage and
@@ -178,31 +222,145 @@ describe('Engine turn loop', () => {
         expect(action).not.toHaveBeenCalled();
     });
 
-    describe('known defect: an auto-played turn starts the loop twice', () => {
-        it('runs a booked callback once per duplicated loop', async () => {
-            // `Processor.continue` ends the non-main-character branch with
-            //
-            //     this.autoProcess(activeScreenPassage);
-            //     void this.continue();
-            //
-            // but `autoProcess` → `Story.goToPassage` already ends with `void continue()` of
-            // its own. Every NPC's turn therefore spawns a second, parallel turn
-            // loop: the next passage is resolved twice and any `onStart`/`onFinish` callback
-            // the author attached to it runs twice. It fans out with the number of
-            // auto-played characters, which is why it is worth catching now, while the story
-            // has exactly one.
-            //
-            // The trailing `void this.continue()` is only needed for `autoProcess`'s
-            // `addEnd` early return; moving it there is the fix, and it is a `core` source
-            // change outside this phase. If this goes red, the defect is fixed — assert 1.
-            const { e } = newSession();
+    describe('passage execute', () => {
+        it('runs execute once per entry', async () => {
+            const execute = vi.fn();
+            const { e } = sessionWith({
+                'village-thomas-probe': () =>
+                    screen('probe', {
+                        execute,
+                        body: [{ links: [{ text: 'again', passageId: 'village-thomas-probe' }] }],
+                    }),
+            });
+            await soloThomas(e);
+            expect(execute).not.toHaveBeenCalled();
+
+            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            await waitForPassage(e, 'village-thomas-probe');
+            expect(execute).toHaveBeenCalledTimes(1);
+
+            // Re-entering the same passage is a new entry.
+            const turns = e.history.data.thomas!.length;
+            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(2));
+            expect(e.history.data.thomas).toHaveLength(turns + 1);
+        });
+
+        it('evaluates a body condition on the entry state, not the state after execute', async () => {
+            const { s, e } = sessionWith({
+                'village-thomas-probe': (s) =>
+                    screen('probe', {
+                        execute: () => {
+                            s.characters.thomas.health = 1;
+                        },
+                        body: [{ condition: s.characters.thomas.health > 1, text: 'healthy on entry' }],
+                    }),
+            });
+            await soloThomas(e);
+            expect(s.characters.thomas.health).toBeGreaterThan(1);
+
+            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            const probe = await waitForPassage(e, 'village-thomas-probe');
+
+            expect(s.characters.thomas.health).toBe(1);
+            expect(probe.body[0].condition).toBe(true);
+        });
+
+        it('lets the following link"s onFinish and the next passage see what execute did', async () => {
+            const seenByOnFinish = vi.fn();
+            const { s, e } = sessionWith({
+                'village-thomas-probe': (s) =>
+                    screen('probe', {
+                        execute: () => {
+                            s.characters.thomas.health = 42;
+                        },
+                        body: [
+                            {
+                                links: [
+                                    {
+                                        text: 'on',
+                                        passageId: 'village-thomas-next',
+                                        onFinish: () => seenByOnFinish(s.characters.thomas.health),
+                                    },
+                                ],
+                            },
+                        ],
+                    }),
+                'village-thomas-next': (s) =>
+                    screen('next', { body: [{ condition: s.characters.thomas.health === 42, text: 'saw it' }] }),
+            });
+            await soloThomas(e);
+
+            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            const probe = await waitForPassage(e, 'village-thomas-probe');
+            const [link] = e.processor.getPossibleActions(probe);
+            e.story.goToPassage(link.passageId, link.cost, link.onFinish);
+            const next = await waitForPassage(e, 'village-thomas-next');
+
+            expect(seenByOnFinish).toHaveBeenCalledWith(42);
+            expect(next.body[0].condition).toBe(true);
+            expect(s.characters.thomas.health).toBe(42);
+        });
+
+        it('runs execute on a transition passage too, before moving on', async () => {
+            const execute = vi.fn();
+            const { e } = sessionWith({
+                'village-thomas-hop': () => ({
+                    chapterId: 'village',
+                    characterId: 'thomas',
+                    id: 'hop',
+                    type: 'transition',
+                    execute,
+                    nextPassageId: 'village-thomas-next',
+                }),
+                'village-thomas-next': () => screen('next', {}),
+            });
+            await soloThomas(e);
+
+            e.story.goToPassage('village-thomas-hop', DeltaTime.fromMin(1));
+            await waitForPassage(e, 'village-thomas-next');
+
+            expect(execute).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('an auto-played turn', () => {
+        it('starts the loop once, so the next passage and its callbacks run once per entry', async () => {
+            // Regression: `Processor.continue` used to end the non-main-character branch with
+            // `void this.continue()` on top of the one `autoProcess` → `Story.goToPassage`
+            // already starts. Every NPC turn spawned a second, parallel loop and the next
+            // passage (its `execute`, the link's `onFinish`) ran twice.
+            const probeExecute = vi.fn();
+            const restExecute = vi.fn();
             const onFinish = vi.fn();
+            const { s, e } = sessionWith({
+                'village-annie-probe': () => ({
+                    ...screen('probe', {
+                        execute: probeExecute,
+                        body: [{ links: [{ text: 'rest', passageId: 'village-annie-rest', onFinish }] }],
+                    }),
+                    characterId: 'annie',
+                }),
+                // No links: Annie's story ends here and the loop hands over to Thomas.
+                'village-annie-rest': () => ({
+                    ...screen('rest', { execute: restExecute }),
+                    characterId: 'annie',
+                }),
+                'village-thomas-probe': () => screen('probe', {}),
+            });
+            // Set the turns by hand so the test does not depend on the chapters' time ranges.
+            e.history.data.annie = [{ passageId: 'village-annie-probe', time: s.time }];
+            e.history.data.thomas = [
+                { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+            ];
 
             await e.processor.continue();
-            e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10), onFinish);
-            await waitForPassage(e, 'village-thomas-forest');
+            await waitForPassage(e, 'village-thomas-probe');
 
-            expect(onFinish).toHaveBeenCalledTimes(2);
+            expect(probeExecute).toHaveBeenCalledTimes(1);
+            expect(onFinish).toHaveBeenCalledTimes(1);
+            expect(restExecute).toHaveBeenCalledTimes(1);
+            expect(last(e.history.data.annie!)).toMatchObject({ reason: 'NO_ACTIONS' });
         });
     });
 });

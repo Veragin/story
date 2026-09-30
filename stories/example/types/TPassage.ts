@@ -21,6 +21,8 @@ export type TPassageScreen<
     title: string;
     image: string;
     type: 'screen';
+
+    execute?: () => void;
     body: {
         condition?: boolean;
         redirect?: Ids;
@@ -50,7 +52,9 @@ export type TPassageTransition<E extends TChapterId, Ch extends TCharacterId> = 
     chapterId: E;
     characterId: Ch;
     id: string;
+
     type: 'transition';
+    execute?: () => void;
     nextPassageId: TChapterCharacterPassageId<TChapterId, Ch>;
 };
 
@@ -62,8 +66,10 @@ export type TPassageLinear<
     chapterId: E;
     characterId: Ch;
     id: string;
+
     type: 'linear';
     description: string;
+    execute?: () => void;
     nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;
 };
 

@@ -10,6 +10,7 @@ import {
     SyntaxKind,
     type TypeAliasDeclaration,
     type VariableDeclaration,
+    ts,
 } from 'ts-morph';
 
 /**
@@ -91,6 +92,130 @@ export const quote = (s: string): string =>
 
 /** The 1-based line a node starts on (after leading trivia). */
 export const lineOf = (node: Node) => node.getStartLineNumber();
+
+// ---------------------------------------------------------------------------------------------
+// JSDoc descriptions (`/** … */` directly above a property, plan D1)
+//
+// `PropertyAssignment` is not a `JSDocableNode` in ts-morph, and TypeScript attaches a JSDoc only
+// when it starts its own line. So the helpers work on the raw comment ranges of the node's
+// leading trivia and on text edits. A text edit (`sourceFile.replaceText`) forgets every node of
+// the file: compute all edits first (`jsDocEdit`), then apply them together (`applyTextEdits`).
+
+/** A replacement of `[start, end)` of a file's full text. */
+export type TTextEdit = { start: number; end: number; text: string };
+
+/** The comment ranges in the trivia before `node`, the inline ones (same line as the previous token) included. */
+const triviaComments = (node: Node): ts.CommentRange[] => {
+    const text = node.getSourceFile().getFullText();
+    const pos = node.getPos();
+    return [...(ts.getTrailingCommentRanges(text, pos) ?? []), ...(ts.getLeadingCommentRanges(text, pos) ?? [])];
+};
+
+/** The `/** … *\/` comment directly before `node` (only whitespace in between), if any. */
+export const leadingJsDocRange = (node: Node): { pos: number; end: number } | undefined => {
+    const comments = triviaComments(node);
+    const last = comments[comments.length - 1];
+    if (!last || last.kind !== SyntaxKind.MultiLineCommentTrivia) return undefined;
+    const text = node.getSourceFile().getFullText();
+    const comment = text.slice(last.pos, last.end);
+    if (!comment.startsWith('/**') || comment === '/**/') return undefined;
+    if (text.slice(last.end, node.getStart()).trim() !== '') return undefined;
+    return { pos: last.pos, end: last.end };
+};
+
+/** `/** a\n * b *\/` → `'a\nb'`: the markers and ` * ` line prefixes stripped, `*\/` unescaped. */
+export const parseJsDoc = (comment: string): string => {
+    const lines = comment
+        .slice(3, -2)
+        .split(/\r?\n/)
+        .map((line, i) => (i === 0 ? line : line.replace(/^\s*\*(?: |(?=\S)|$)?|^\s+/, '')).trimEnd());
+    while (lines.length > 0 && lines[0].trim() === '') lines.shift();
+    while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+    if (lines.length > 0) lines[0] = lines[0].trimStart();
+    return lines.join('\n').replace(/\*\\\//g, '*/');
+};
+
+/** The description in the JSDoc directly before `node`; undefined when there is none or it is empty. */
+export const readJsDoc = (node: Node): string | undefined => {
+    const range = leadingJsDocRange(node);
+    if (!range) return undefined;
+    const description = parseJsDoc(node.getSourceFile().getFullText().slice(range.pos, range.end));
+    return description === '' ? undefined : description;
+};
+
+/**
+ * `description` as a JSDoc comment: `/** text *\/` for one line, ` * ` lines otherwise. `indent`
+ * goes before every line after the first. `*\/` in the text is escaped as `*\\/`.
+ */
+export const formatJsDoc = (description: string, indent = ''): string => {
+    const lines = description.replace(/\*\//g, '*\\/').split(/\r?\n/);
+    if (lines.length === 1) return `/** ${lines[0]} */`;
+    return ['/**', ...lines.map((l) => (l === '' ? ' *' : ` * ${l}`)), ' */'].join(`\n${indent}`);
+};
+
+/** The whitespace before `node` on its line, or undefined when something else precedes it there. */
+const lineIndent = (node: Node): string | undefined => {
+    const text = node.getSourceFile().getFullText();
+    const start = node.getStart();
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const before = text.slice(lineStart, start);
+    return before.trim() === '' ? before : undefined;
+};
+
+/**
+ * The edit that makes the JSDoc directly before `node` read as `description` (`undefined` or `''`
+ * removes it); undefined when it already does. Other comments before the node are kept.
+ */
+export const jsDocEdit = (node: Node, description: string | undefined): TTextEdit | undefined => {
+    const want = description === '' ? undefined : description;
+    if (readJsDoc(node) === want) return undefined;
+    const range = leadingJsDocRange(node);
+    const start = node.getStart();
+    const indent = lineIndent(node);
+    if (want === undefined) {
+        // the comment and the whitespace up to the node (the node keeps the comment's indentation)
+        return range ? { start: range.pos, end: start, text: '' } : undefined;
+    }
+    const comment = formatJsDoc(want, indent ?? '');
+    if (range) return { start: range.pos, end: range.end, text: comment };
+    return { start, end: start, text: indent === undefined ? `${comment} ` : `${comment}\n${indent}` };
+};
+
+/**
+ * The edit that removes a property together with its JSDoc and its comma. When the property had
+ * its line(s) to itself, the whole lines go.
+ */
+export const propertyRemovalEdit = (prop: Node): TTextEdit => {
+    const text = prop.getSourceFile().getFullText();
+    let start = leadingJsDocRange(prop)?.pos ?? prop.getStart();
+    let end = prop.getEnd();
+    const comma = /^\s*,[ \t]*/.exec(text.slice(end));
+    if (comma) end += comma[0].length;
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const rest = /^[ \t]*(\r?\n|$)/.exec(text.slice(end));
+    if (text.slice(lineStart, start).trim() === '' && rest) {
+        start = lineStart;
+        end += rest[0].length;
+    }
+    return { start, end, text: '' };
+};
+
+/**
+ * Apply edits computed on the current text, from the end of the file backwards so that earlier
+ * offsets stay valid. Forgets every previously navigated node of `sf`.
+ */
+export const applyTextEdits = (sf: SourceFile, edits: TTextEdit[]) => {
+    const sorted = [...edits].sort((a, b) => b.start - a.start || b.end - a.end);
+    for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i].end > sorted[i - 1].start) throw new Error('applyTextEdits: overlapping edits');
+    }
+    for (const e of sorted) {
+        if (e.start === e.end) {
+            if (e.text !== '') sf.insertText(e.start, e.text);
+        } else if (e.text === '') sf.removeText(e.start, e.end);
+        else sf.replaceText([e.start, e.end], e.text);
+    }
+};
 
 // ---------------------------------------------------------------------------------------------
 // Declarations

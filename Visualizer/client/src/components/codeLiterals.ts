@@ -15,3 +15,13 @@ export const parseStringLiteral = (code: string): string | undefined => {
         return undefined;
     }
 };
+
+/**
+ * The plain text a code-valued string field converts to ("Convert to text"): the string of a
+ * plain literal or of a `_('…')` call, else the code itself, so the author starts from what was
+ * there.
+ */
+export const codeToText = (code: string): string => {
+    const call = /^_\(\s*([\s\S]*?)\s*\)$/.exec(code.trim());
+    return parseStringLiteral(call ? call[1] : code) ?? code;
+};

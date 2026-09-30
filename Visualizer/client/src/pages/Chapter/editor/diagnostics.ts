@@ -40,7 +40,7 @@ const closestField = (path: string, fields: ReadonlySet<string>): string | null 
  * diagnostic about a whole item shows at that item.
  */
 export const passageFieldPaths = (p: TPassageDto): Set<string> => {
-    const fields = new Set<string>();
+    const fields = new Set<string>(['execute']);
     if (p.type === 'linear') {
         fields.add('description').add('nextPassageId');
     } else if (p.type === 'transition') {

@@ -18,6 +18,13 @@ export type TPassageScreen<
     characterId: Ch;
     id: string;
 
+    /**
+     * Runs once when the passage is entered, after its fields were evaluated: `condition`,
+     * texts and costs reflect the state on entry, not the state after `execute` (D2). Link
+     * `onFinish` callbacks and the next passage see its effects.
+     */
+    execute?: () => void;
+
     title: string;
     image: string;
     type: 'screen';
@@ -50,6 +57,12 @@ export type TPassageTransition<E extends TChapterId, Ch extends TCharacterId> = 
     chapterId: E;
     characterId: Ch;
     id: string;
+    /**
+     * Runs once when the passage is entered, after its fields were evaluated: `condition`,
+     * texts and costs reflect the state on entry, not the state after `execute` (D2). Link
+     * `onFinish` callbacks and the next passage see its effects.
+     */
+    execute?: () => void;
     type: 'transition';
     nextPassageId: TChapterCharacterPassageId<TChapterId, Ch>;
 };
@@ -62,6 +75,12 @@ export type TPassageLinear<
     chapterId: E;
     characterId: Ch;
     id: string;
+    /**
+     * Runs once when the passage is entered, after its fields were evaluated: `condition`,
+     * texts and costs reflect the state on entry, not the state after `execute` (D2). Link
+     * `onFinish` callbacks and the next passage see its effects.
+     */
+    execute?: () => void;
     type: 'linear';
     description: string;
     nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;

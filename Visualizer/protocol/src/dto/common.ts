@@ -28,6 +28,20 @@ export const isCode = (value: unknown): value is TCode =>
 export const code = (source: string): TCode => ({ code: source });
 
 /**
+ * A function-valued (or expression-valued) field with an optional author description (plan D1):
+ * passage `execute`, link `onFinish`, body item `condition`, trigger `condition` / `action`.
+ *
+ * `code` is the whole initializer, verbatim (`() => { … }`, `s.x > 0`, `true`). `description` is
+ * the text of the `/** … *\/` JSDoc comment directly above the property in the source, without
+ * the comment markers and `*` line prefixes. An empty `code` with a description is a stub: the
+ * writer emits a default (`() => {}`, or `true` for a condition) with the comment.
+ *
+ * Without a description a `TFunctionDto` has the same shape as a `TCode` (and `isCode` holds for
+ * it). That is intended: it is code.
+ */
+export type TFunctionDto = { code: string; description?: string };
+
+/**
  * A free-form, JSON-like value read out of an object literal (`init`, item properties).
  * Anything that is not a plain literal / array / object literal is a `TCode`.
  */

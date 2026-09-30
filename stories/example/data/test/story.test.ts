@@ -57,6 +57,7 @@ type TAnyPassage = {
     image?: unknown;
     description?: unknown;
     nextPassageId?: string;
+    execute?: unknown;
     body?: { condition?: unknown; redirect?: string; text?: unknown; links?: unknown[] }[];
 };
 
@@ -192,6 +193,15 @@ describe('passage schema', () => {
                 continue;
             }
             expect(passage.description, `linear "${key}" description`).toBeTypeOf('string');
+        }
+    });
+
+    it('gives every passage that has an `execute` a function there', () => {
+        // `execute` runs once when the passage is entered (`Processor.continue`), so it is never
+        // called here: building a passage must stay side-effect free.
+        for (const { key, passage } of passages) {
+            if (passage.execute === undefined) continue;
+            expect(passage.execute, `passage "${key}" execute`).toBeTypeOf('function');
         }
     });
 

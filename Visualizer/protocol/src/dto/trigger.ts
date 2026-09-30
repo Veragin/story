@@ -1,4 +1,4 @@
-import type { TCode, TMaybeCode, TSourceRef, TTimeString, TVersioned, TVersionedBody } from './common';
+import type { TFunctionDto, TMaybeCode, TSourceRef, TTimeString, TVersioned, TVersionedBody } from './common';
 
 /**
  * A time trigger — an exported `TTimeTrigger` (`types/TTimeTrigger.ts`) declared in
@@ -18,9 +18,9 @@ export type TTriggerDto = TVersioned &
         description: TMaybeCode<string>;
         /** `Time.fromString('1.12 0:0')` → `'1.12 0:0'`. */
         time: TMaybeCode<TTimeString>;
-        /** Functions in the source — always code. */
-        condition: TCode;
-        action: TCode;
+        /** Functions in the source — always code, with an optional JSDoc description. */
+        condition: TFunctionDto;
+        action: TFunctionDto;
     };
 
 export type TTriggerEditable = Pick<TTriggerDto, 'name' | 'description' | 'time' | 'condition' | 'action'>;

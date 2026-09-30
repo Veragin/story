@@ -38,3 +38,24 @@ export const parseDelta = (code: string): TDeltaTimeDto | undefined => {
     const factor = m[1] === 'Min' ? 60 : m[1] === 'Hour' ? 3600 : 1;
     return { seconds: Number(m[2]) * factor };
 };
+
+/**
+ * A duration for display: `1 min`, `2 h 5 min`, `1 d 3 h`, `1 min 30 s` (zero parts are left out,
+ * `0 min` for none).
+ */
+export const formatDelta = (seconds: number): string => {
+    const units: [number, string][] = [
+        [86400, 'd'],
+        [3600, 'h'],
+        [60, 'min'],
+        [1, 's'],
+    ];
+    let rest = Math.round(Math.abs(seconds));
+    const parts: string[] = [];
+    for (const [size, unit] of units) {
+        const n = Math.floor(rest / size);
+        rest -= n * size;
+        if (n > 0) parts.push(`${n} ${unit}`);
+    }
+    return `${seconds < 0 ? '-' : ''}${parts.join(' ') || '0 min'}`;
+};

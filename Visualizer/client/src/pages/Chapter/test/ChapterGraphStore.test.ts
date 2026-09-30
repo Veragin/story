@@ -264,6 +264,26 @@ describe('passage editor', () => {
         editor.destroy();
     });
 
+    it('reads execute with its description, maps its diagnostics and removes it with null', async () => {
+        const api = createMockApi();
+        const forest = await api.getPassage('village-thomas-forest');
+        expect(forest.execute).toEqual({
+            code: expect.stringContaining('health += 50'),
+            description: 'Annie gets healed when she is weak.',
+        });
+        expect(passageFieldPaths(forest).has('execute')).toBe(true);
+        const update = vi.spyOn(api, 'updatePassage');
+        const editor = new PassageEditorStore(forest, api);
+        editor.edit((d) => {
+            delete d.execute;
+        });
+        expect(editor.patch).toEqual({ execute: null });
+        expect(await editor.save()).toBe(true);
+        expect(update.mock.calls[0][1]).toMatchObject({ execute: null });
+        expect((await api.getPassage('village-thomas-forest')).execute).toBeUndefined();
+        editor.destroy();
+    });
+
     it('handles 409 stale with reload / keep mine, and restores unsaved input after a reload', async () => {
         const api = createMockApi();
         const intro = await introOf(api);

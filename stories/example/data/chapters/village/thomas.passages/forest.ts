@@ -8,6 +8,12 @@ export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVi
     characterId: 'thomas',
     id: 'forest',
 
+    execute: () => {
+        if (s.characters.annie.health < 50) {
+            s.characters.annie.health += 50;
+        }
+    },
+
     type: 'screen',
     title: 'Forest',
     image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',

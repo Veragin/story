@@ -116,7 +116,7 @@ export const createMockSeed = (): TMockSeed => ({
             image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
             body: [
                 {
-                    condition: true,
+                    condition: { code: 'true' },
                     text: 'text',
                     links: [
                         {
@@ -137,12 +137,16 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('village', 'thomas', 'forest.ts'),
             exportName: 'forestPassage',
             params: ['s'],
+            execute: {
+                code: '() => {\n    if (s.characters.annie.health < 50) {\n        s.characters.annie.health += 50;\n    }\n}',
+                description: 'Annie gets healed when she is weak.',
+            },
             type: 'screen',
             title: 'Forest',
             image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
             body: [
                 {
-                    condition: true,
+                    condition: { code: 'true' },
                     text: 'text',
                     links: [
                         {
@@ -205,7 +209,7 @@ export const createMockSeed = (): TMockSeed => ({
             image: '',
             body: [
                 {
-                    condition: true,
+                    condition: { code: 'true' },
                     text: 'text',
                     links: [
                         {

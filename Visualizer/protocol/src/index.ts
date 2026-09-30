@@ -13,7 +13,7 @@
    RAW_BODY_ROUTES, NO_CONTENT_ROUTES, THttpMethod */
 export * from './routes';
 
-/* TCode, TMaybeCode, isCode, code, TValue, TValueRecord, TVersion, EMPTY_VERSION, TVersioned,
+/* TCode, TMaybeCode, isCode, code, TFunctionDto, TValue, TValueRecord, TVersion, EMPTY_VERSION, TVersioned,
    TVersionedBody, TSourceRef, TTimeString, TTimeRangeDto, TDeltaTimeDto, isDeltaTime, TOkDto */
 export * from './dto/common';
 /* THealthDto, TProjectDto, TProjectEntryDto, TProjectChapterDto */

@@ -1,4 +1,4 @@
-import type { TCode, TMaybeCode, TTriggerDto } from '@story/visualizer-protocol';
+import type { TFunctionDto, TMaybeCode, TTriggerDto } from '@story/visualizer-protocol';
 import { version } from '../../events/version';
 import { lineOf } from '../ast';
 import type { SourceProject } from '../SourceProject';
@@ -10,8 +10,8 @@ export const TRIGGER_FIELDS: Record<string, TField> = {
     name: { schema: S.string },
     description: { schema: S.string },
     time: { schema: S.time },
-    condition: { schema: S.code },
-    action: { schema: S.code },
+    condition: { schema: S.fn('() => true') },
+    action: { schema: S.fn() },
 };
 
 export const readTriggerSource = (sp: SourceProject, t: TTriggerSource): TTriggerDto => {
@@ -28,8 +28,8 @@ export const readTriggerSource = (sp: SourceProject, t: TTriggerSource): TTrigge
         name: (fields.name ?? t.triggerId) as TMaybeCode<string>,
         description: (fields.description ?? '') as TMaybeCode<string>,
         time: (fields.time ?? { code: '' }) as TMaybeCode<string>,
-        condition: (fields.condition ?? { code: '() => true' }) as TCode,
-        action: (fields.action ?? { code: '() => {}' }) as TCode,
+        condition: (fields.condition ?? { code: '() => true' }) as TFunctionDto,
+        action: (fields.action ?? { code: '() => {}' }) as TFunctionDto,
     };
 };
 
