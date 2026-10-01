@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { worldStateContext, engineContext, storeContext } from './context';
-import { applyFormatting } from '@story/ui';
 import type { Engine } from '@story/core';
 import type { TWorldState } from '@story/data';
 
@@ -21,5 +20,3 @@ export const Wrapper = ({ s, e, children }: Props) => {
         </worldStateContext.Provider>
     );
 };
-
-applyFormatting('we have to load _ finction', []);
