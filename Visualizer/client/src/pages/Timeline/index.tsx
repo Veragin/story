@@ -18,7 +18,9 @@ import { useVisualizerStore } from '../../context';
 import { ControlBar, modals, PageContainer, router, useKey } from '../../shell';
 import { TimelineStore, toastNotify } from './store/TimelineStore';
 import { TimelineView, type TTimelineTooltip } from './canvas/TimelineView';
-import { AddModal, ReferencesModal, TriggerModal } from './TimelineModals';
+import { AddModal } from './AddModal';
+import { ReferencesModal } from './ReferencesModal';
+import { TriggerModal } from './TriggerModal';
 
 const ALL = '__all__';
 
@@ -43,11 +45,7 @@ const createStore = () =>
             }),
     });
 
-/**
- * Timeline page (`#/timeline`, plan WP5): chapters as boxes on the time axis, time triggers on the
- * strip, a character filter, "Add", and toggles for the chapter connections and the triggers.
- */
-const TimelinePage = observer(() => {
+export const TimelinePage = observer(() => {
     const { timeManager } = useVisualizerStore();
     const [store] = useState(createStore);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -203,8 +201,6 @@ const TimelinePage = observer(() => {
         </PageContainer>
     );
 });
-
-export default TimelinePage;
 
 const SControls = styled('div')`
     display: flex;

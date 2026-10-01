@@ -14,10 +14,6 @@ import { registerStoryInfoRoutes } from './storyInfo';
 import { registerStoryRoutes } from './stories';
 import { registerTriggerRoutes } from './triggers';
 
-/**
- * Register every `STORY_ROUTES` handler on one story's router. `StoryContexts` calls it for each
- * story it loads, and asserts afterwards that none is missing.
- */
 export const registerRoutes = (ctx: TServerContext) => {
     registerEventRoutes(ctx);
     registerProjectRoutes(ctx);
@@ -32,7 +28,6 @@ export const registerRoutes = (ctx: TServerContext) => {
     registerSourceRoutes(ctx);
 };
 
-/** Register every `GLOBAL_ROUTES` handler on the app's router. `app.ts` asserts that none is missing. */
 export const registerGlobalRoutes = (ctx: TGlobalContext) => {
     registerHealthRoutes(ctx);
     registerStoryRoutes(ctx);

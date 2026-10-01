@@ -20,33 +20,18 @@ import { StoryContexts } from './stories/StoryContexts';
 import { StoryStore } from './stories/StoryStore';
 
 export type TAppOptions = {
-    /** The folder holding one folder per story (default: `STORIES_ROOT`, else `<repo>/stories`). */
     storiesRoot?: string;
-    /** Start a chokidar watcher behind each loaded story's `/events` (default true). */
     watch?: boolean;
     batchMs?: number;
-    /** Unload a story after this long without use (default 30 min, see `StoryContexts`). */
     idleMs?: number;
-    /**
-     * Who may reach a story (default: `sessionAccessCheck`, a login grant in the session cookie).
-     * Tests about something other than auth may pass `allowAllStoryAccess`. See `stories/access.ts`.
-     */
     checkAccess?: TStoryAccessCheck;
-    /** The login grants (default: a new in-memory store; tests pass one to control the TTL). */
     sessions?: SessionStore;
     loginLimiter?: LoginLimiter;
-    /** Key the login limiter on `X-Forwarded-For`'s last hop (default: `TRUST_PROXY=1`). */
     trustProxy?: boolean;
-    /** Origins a mutation may come from (default: `ALLOWED_ORIGINS`, see `auth/csrf.ts`). */
     allowedOrigins?: readonly string[];
-    /** Mark the session cookie `Secure` (default: `COOKIE_SECURE=1`). */
     cookieSecure?: boolean;
 };
 
-/**
- * End a response that is still streaming (`/events`) when the grant that let it through expires.
- * The timer goes away with the response.
- */
 const endAtExpiry = (res: ServerResponse, expiresAt: number) => {
     // setTimeout overflows past ~24.8 days; grants last 24 h
     const timer = setTimeout(() => res.end(), Math.min(Math.max(0, expiresAt - Date.now()), 2 ** 31 - 1));
@@ -57,31 +42,11 @@ const endAtExpiry = (res: ServerResponse, expiresAt: number) => {
 export type TApp = TGlobalContext & {
     server: Server;
     contexts: StoryContexts;
-    /** A story's context (its project, bus and router), loading it if needed. */
     story(storyId: string): Promise<TServerContext>;
-    /** Start listening; resolves with the bound port (pass 0 for an ephemeral one in tests). */
     listen(port: number, host?: string): Promise<number>;
     close(): Promise<void>;
 };
 
-/**
- * Build the server without starting it: the global router, the story registry and the lazily
- * loaded story contexts. `index.ts` is the process entry; tests call this with a temp
- * `storiesRoot`.
- *
- * Every request goes through one dispatcher:
- *
- *  0. A mutation (not GET / HEAD) of a known route must pass the CSRF check (`auth/csrf.ts`): its
- *     content type and its `Origin`. (One that matches no route does nothing but answer 404.)
- *  1. A `GLOBAL_ROUTES` match goes to the global router. Global routes come first, so they may
- *     live under `/api/stories/…` too (`login`, `getStoryAccess`: the two story URLs that need no
- *     grant).
- *  2. `/api/stories/:storyId/<rest>`: 404 unless the story exists, then the access check
- *     (`checkAccess`: a login grant for the story, `stories/access.ts`), then the story is loaded
- *     and its own router answers `<rest>` against `STORY_ROUTES`. A response still open when the
- *     grant expires (the `/events` stream) is ended then; the client's next request gets `401`.
- *  3. Anything else: the global router's 404.
- */
 export const createApp = async ({
     storiesRoot,
     watch = true,
@@ -104,16 +69,14 @@ export const createApp = async ({
     const access = checkAccess ?? sessionAccessCheck({ sessions, stories });
     const origins = new Set(allowedOrigins);
     registerGlobalRoutes(gctx);
-    const missing = router.missing();
-    if (missing.length > 0) {
-        throw new Error(`Protocol routes without a handler: ${missing.join(', ')}`);
-    }
+    router.assertComplete();
     const contexts = new StoryContexts({ stories, watch, batchMs, idleMs });
 
     const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
         try {
             const method = req.method ?? 'GET';
             const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+            // global first: `login` / `getStoryAccess` live under /api/stories/ but need no grant
             const global = router.match(method, pathname);
             const scoped = global ? null : splitStoryPath(pathname);
             if (!scoped) {
@@ -125,15 +88,15 @@ export const createApp = async ({
             const route = matchRoute(STORY_ROUTES, method, rest)?.route ?? null;
             if (route) assertSafeMutation(req, origins, route);
             if (!(await stories.exists(storyId))) {
-                throw HttpError.notFound(`No story "${storyId}"`);
+                throw HttpError.noStory(storyId);
             }
-            // The grant check. Before `acquire`, so a refused request never loads the story.
+            // before `acquire`, so a refused request never loads the story
             const grant = await access({ req, storyId, route });
             const lease = await contexts.acquire(storyId);
             try {
                 await lease.ctx.router.dispatch(req, res, rest);
             } finally {
-                // An `/events` stream outlives this: it keeps the story loaded as a bus listener.
+                // an open `/events` stream keeps the story loaded as a bus listener
                 lease.release();
             }
             if (grant && !res.writableEnded) endAtExpiry(res, grant.expiresAt);

@@ -8,7 +8,7 @@
         "build": "vite build",
         "preview": "vite preview"
     },
-    "comment:dependencies": "Grepped from the tree, not guessed. `@emotion/react` is the one entry with no direct import: it is the required peer of `@emotion/styled` and of `@mui/material`, so it is declared here rather than relied on through hoisting. The client has no `@story/data` / `@story/core` dependency at all since Visualizer WP8: it never runs the story (the server is its only source of story data, plan §3 \"Live refresh\"), and `eslint.config.js` rejects a runtime import should one come back. `@story/types` is imported type-only. `@story/visualizer-protocol` is the typed contract with `Visualizer/server`. The `@codemirror/*` packages and `@uiw/react-codemirror` are the in-app source editor (`components/SourceEditorDialog.tsx`, multiple stories plan D9); `@codemirror/view` and `@codemirror/state` are peers of `@uiw/react-codemirror`, declared for that reason and imported through it.",
+    "comment:dependencies": "@emotion/react is the required peer of @emotion/styled and @mui/material. @codemirror/view and @codemirror/state are peers of @uiw/react-codemirror.",
     "dependencies": {
         "@codemirror/lang-javascript": "^6.2.5",
         "@codemirror/lint": "^6.9.7",

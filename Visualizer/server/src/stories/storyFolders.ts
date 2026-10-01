@@ -9,33 +9,11 @@ import { createDefaultMap, encodeMapFile } from '../json/mapStore';
 import { REPO_ROOT } from '../project/ProjectRoot';
 import { STORY_FILE, storyFileText, type StoryStore, type TStoryFile } from './StoryStore';
 
-/**
- * Making story folders (multiple stories, phase 5): create one from the template, or from an
- * imported zip. Both build the folder under a temp name in `STORIES_ROOT` (same filesystem, and
- * a name that is not a story id, so no one lists or loads it half-built) and then `rename` it
- * into place inside `StoryStore.exclusive`, so the id is still free at that moment and a story
- * appears whole or not at all.
- */
+const TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../template');
 
-/**
- * `Visualizer/server/template/`: the smallest story that type-checks and plays (one chapter, one
- * character with one passage, one location, one npc, one item). An empty story is not enough:
- * empty id unions collapse to `never` and break the types. Engine-owned, not a story: it is
- * not under `STORIES_ROOT`, and it has its own `tsconfig.json` (checked by
- * `scripts/typecheck-stories.mjs`), which is not copied (`storyTsconfig` writes the story's).
- */
-export const TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../template');
-
-/** What is copied from the template into a new story. */
 const TEMPLATE_DIRS = ['data', 'types'];
 
-/**
- * The `tsconfig.json` of a story folder: the example's shape (`stories/example/tsconfig.json`),
- * with `@story/types` / `@story/data` pointing at the story's own folders and the engine packages
- * at this repo. The engine paths are relative to the folder, so it is written for where the story
- * lives (on create, and again on import: a zip's own copy may come from another checkout).
- */
-export const storyTsconfig = (storyDir: string): Promise<string> => {
+const storyTsconfig = (storyDir: string): Promise<string> => {
     const repo = path.relative(storyDir, REPO_ROOT).split(path.sep).join('/') || '.';
     const config = {
         extends: `${repo}/tsconfig.base.json`,
@@ -56,15 +34,10 @@ export const storyTsconfig = (storyDir: string): Promise<string> => {
     return formatJson(config);
 };
 
-/**
- * The id of a story named `name` (plan D3): lowercase ASCII letters and digits, anything else
- * becomes `-` (accents are dropped first: `Příběh` → `pribeh`), at most 64 characters. A name
- * with nothing left (`!!!`, `故事`) gives `story`.
- */
 export const slugify = (name: string): string =>
     name
         .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/[̀-ͯ]/g, '') // combining accents
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+/, '')
@@ -73,7 +46,6 @@ export const slugify = (name: string): string =>
 
 const exists = async (file: string) => (await lstat(file).catch(() => null)) !== null;
 
-/** `slug`, else `slug-2`, `slug-3`, … — the first one no folder in the root has. */
 const freeId = async (stories: StoryStore, slug: string): Promise<string> => {
     for (let n = 1; ; n++) {
         const suffix = n === 1 ? '' : `-${n}`;
@@ -82,7 +54,7 @@ const freeId = async (stories: StoryStore, slug: string): Promise<string> => {
     }
 };
 
-/** A fresh temp folder name inside the stories root (a dot name: never a story id). */
+// a dot name is never a story id, so nobody lists or loads it half-built
 const tempDir = (stories: StoryStore, kind: string) =>
     path.join(stories.root, `.${kind}-${randomBytes(6).toString('hex')}`);
 
@@ -92,11 +64,6 @@ const writeInto = async (dir: string, rel: string, contents: string | Uint8Array
     await writeFile(file, contents);
 };
 
-/**
- * Create a story from the template: its `data/` and `types/`, then `story.json`, a
- * `tsconfig.json` for its folder, and an empty `data/locations/map.json` of `mapSize` (plan D6).
- * The id is a slug of the name, with a numeric suffix when taken. Returns the id.
- */
 export const createStoryFolder = (stories: StoryStore, file: TStoryFile): Promise<string> =>
     stories.exclusive(async () => {
         const id = await freeId(stories, slugify(file.name));
@@ -119,11 +86,6 @@ export const createStoryFolder = (stories: StoryStore, file: TStoryFile): Promis
 
 const emptyMap = ({ width, height }: TMapSizeDto) => createDefaultMap(GLOBAL_MAP_ID, { title: 'World', width, height });
 
-/**
- * Put an unpacked story zip (`zip.ts#unzipStory`, `story.json` already validated) in place as
- * story `id`: `409 exists` when the id is taken (plan D8). The zip's `story.json` is kept as it
- * is, password hash included; its `tsconfig.json` is replaced by one for this folder.
- */
 export const importStoryFolder = async (stories: StoryStore, id: string, files: Map<string, Uint8Array>) => {
     const dir = stories.dir(id);
     const taken = () => HttpError.exists(`A story "${id}" already exists; import it under another id`);
@@ -132,6 +94,7 @@ export const importStoryFolder = async (stories: StoryStore, id: string, files: 
     try {
         await mkdir(tmp);
         for (const [rel, bytes] of files) await writeInto(tmp, rel, bytes);
+        // the zip's own tsconfig may point at another checkout's engine
         await writeInto(tmp, 'tsconfig.json', await storyTsconfig(dir));
         await stories.exclusive(async () => {
             if (await exists(dir)) throw taken();

@@ -7,11 +7,12 @@ import { darkTheme } from './theme';
 import '@story/ui/index.css';
 import { goToLanding, STORY_ID } from './api';
 
-// The Visualizer edits the story in `?story=<id>` (`api/story.ts`); the landing page picks it.
+const rootElement = document.getElementById('root');
+
 if (!STORY_ID) {
     goToLanding();
-} else {
-    createRoot(document.getElementById('root')!).render(
+} else if (rootElement) {
+    createRoot(rootElement).render(
         <GlobalThemeWrapper>
             <ThemeProvider theme={darkTheme}>
                 <Wrapper>

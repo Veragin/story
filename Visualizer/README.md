@@ -162,7 +162,7 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
 - `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
 
-In the client, `components/ImageField.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `components/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
 The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`SingleEngine/vite/storiesPlugin.ts`, read by `SingleEngine/src/images.ts`), so there too a missing `.png` just means no picture.
 

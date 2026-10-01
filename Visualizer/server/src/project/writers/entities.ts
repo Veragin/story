@@ -9,11 +9,12 @@ import {
     type TUpdateEntityBody,
 } from '@story/visualizer-protocol';
 import { Node } from 'ts-morph';
-import { assertVersion, version } from '../../events/version';
+import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removeLocationPolygon } from '../../json';
 import { siblingPng } from '../images';
-import { asObject, cap, getProp, keyText, propertyKey, quote } from '../ast';
+import { capitalize } from '@story/shared';
+import { asObject, getProp, keyText, propertyKey, quote } from '../ast';
 import {
     containerForType,
     DATA_TYPE_SUFFIX,
@@ -41,13 +42,12 @@ import {
 import type { SourceProject } from '../SourceProject';
 import { assertId, chapterCharacterFiles, chapterIds } from '../story';
 import { applyPartial, genValue, S, updateValue } from '../values';
-import { applyDataType, asBody, DERIVED_FIELDS, type TWriter } from './common';
+import { applyDataType, asBody, assertCurrentVersion, DERIVED_FIELDS, type TWriter } from './common';
 
 type TSourceKind = Exclude<TEntityKind, 'items'>;
 
 const ENTITY_DERIVED = [...DERIVED_FIELDS, 'dataType'];
 
-/** Where a new entity goes, what it exports, and its skeleton (plan §2 "Data model"). */
 const NEW_ENTITY: Record<
     TSourceKind,
     {
@@ -61,13 +61,13 @@ const NEW_ENTITY: Record<
 > = {
     characters: {
         file: (id) => `data/characters/${id}.ts`,
-        exportName: (id) => cap(id),
-        dataType: (id) => `T${cap(id)}CharacterData`,
+        exportName: (id) => capitalize(id),
+        dataType: (id) => `T${capitalize(id)}CharacterData`,
         text: (id, exportName, dataType) => `import { TCharacter } from '@story/types';
 
 export const ${exportName}: TCharacter<'${id}'> = {
     id: '${id}',
-    name: ${quote(cap(id))},
+    name: ${quote(capitalize(id))},
 
     init: {
         health: 100,
@@ -81,14 +81,14 @@ export type ${dataType} = {};
         storyTypes: ['TCharacter', 'TCharacterData'],
     },
     npcs: {
-        file: (id) => `data/npcs/${cap(id)}.ts`,
-        exportName: (id) => cap(id),
-        dataType: (id) => `T${cap(id)}NpcData`,
+        file: (id) => `data/npcs/${capitalize(id)}.ts`,
+        exportName: (id) => capitalize(id),
+        dataType: (id) => `T${capitalize(id)}NpcData`,
         text: (id, exportName, dataType) => `import { TNpc } from '@story/types';
 
 export const ${exportName}: TNpc<'${id}'> = {
     id: '${id}',
-    name: ${quote(cap(id))},
+    name: ${quote(capitalize(id))},
     description: '',
 
     init: {
@@ -106,12 +106,12 @@ export type ${dataType} = {};
     locations: {
         file: (id) => `data/locations/${id}.location.ts`,
         exportName: (id) => `${id}Location`,
-        dataType: (id) => `T${cap(id)}LocationData`,
+        dataType: (id) => `T${capitalize(id)}LocationData`,
         text: (id, exportName, dataType) => `import { TLocation } from '@story/types';
 
 export const ${exportName}: TLocation<'${id}'> = {
     id: '${id}',
-    name: ${quote(cap(id))},
+    name: ${quote(capitalize(id))},
     description: '',
 
     localCharacters: [],
@@ -133,9 +133,6 @@ const entityEvent = (kind: TEntityKind, id: string, v: string | null, op: 'creat
     op,
 });
 
-// ---------------------------------------------------------------------------------------------
-// Items
-
 const ITEM_DERIVED = [...DERIVED_FIELDS, 'source'];
 
 const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unknown>) => {
@@ -144,7 +141,7 @@ const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unkn
         `name: ${genValue(dto.name ?? '', S.string, { ...ctx, path: 'name' })}`,
         `type: ${quote(String(dto.type))}`,
     ];
-    const props = (dto.props ?? {}) as Record<string, unknown>;
+    const props = dto.props ?? {};
     if (typeof props !== 'object' || props === null || Array.isArray(props)) {
         throw HttpError.badRequest('Field "props" must be an object');
     }
@@ -155,7 +152,6 @@ const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unkn
     return `{ ${parts.join(', ')} }`;
 };
 
-/** `bow.damage` (a path in the items object) → `props.damage`; other items' paths are dropped. */
 const itemField =
     (id: string) =>
     (path: string): string | undefined => {
@@ -166,18 +162,22 @@ const itemField =
         return ['props', key, ...rest].join('.');
     };
 
+const requireContainer = (sp: SourceProject, type: string): TItemContainer => {
+    const container = containerForType(sp, type);
+    if (!container) throw new Error('data/items/itemInfo.ts: no `itemInfo` object');
+    return container;
+};
+
 const createItem = async ({ sp, bus }: TWriter, body: Record<string, unknown>): Promise<TEntityDto> => {
     const id = assertId(body.id, 'id');
-    if (typeof body.type !== 'string' || body.type === '')
-        throw HttpError.badRequest('Field "type" must be a non-empty string');
+    const type = body.type;
+    if (typeof type !== 'string' || type === '') throw HttpError.badRequest('Field "type" must be a non-empty string');
     if (itemNodes(sp).some((n) => n.id === id)) throw HttpError.exists(`Item "${id}" already exists`);
-    const container = containerForType(sp, body.type);
-    if (!container) throw new Error('data/items/itemInfo.ts: no `itemInfo` object');
-    const abs = container.sf.getFilePath();
+    const abs = requireContainer(sp, type).sf.getFilePath();
     const s = sp.session();
     s.apply(() => {
         s.edit(abs);
-        const c = containerForType(sp, body.type as string)!;
+        const c = requireContainer(sp, type);
         c.obj.addPropertyAssignment({ name: keyText(id), initializer: itemText(sp, c, { name: id, ...body }) });
     });
     await s.commit(bus, (texts) => entityEvent('items', id, version(texts.get(abs) ?? sp.text(abs)), 'created'), {
@@ -189,7 +189,7 @@ const createItem = async ({ sp, bus }: TWriter, body: Record<string, unknown>): 
 const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string, unknown>): Promise<TEntityDto> => {
     const node = findItem(sp, id);
     const current = readItemNode(sp, node);
-    await assertVersion(body.version as string, current.version, () => current);
+    assertCurrentVersion(body, current);
     for (const key of Object.keys(body)) {
         if (!['name', 'type', 'props', ...ITEM_DERIVED].includes(key))
             throw HttpError.badRequest(`Field "${key}" cannot be edited here`);
@@ -207,14 +207,13 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
         if (moves) {
             const merged = { name: current.name, props: current.props, ...body, type };
             n.prop.remove();
-            const c = containerForType(sp, type)!;
+            const c = requireContainer(sp, type);
             c.obj.addPropertyAssignment({ name: keyText(id), initializer: itemText(sp, c, merged) });
             return;
         }
         if (body.name !== undefined) {
             const nameCtx = { ...ctx, path: 'name' };
             const prop = getProp(n.item, 'name');
-            // `name` is optional on disk (the reader falls back to the id): add it when missing.
             if (prop) updateValue(prop.getInitializerOrThrow(), S.string, body.name, nameCtx);
             else
                 n.item.insertPropertyAssignment(0, {
@@ -226,7 +225,7 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
             getProp(n.item, 'type')?.getInitializerOrThrow().replaceWithText(quote(type));
         }
         if (body.props !== undefined) {
-            const props = body.props as Record<string, unknown>;
+            const props = body.props;
             if (typeof props !== 'object' || props === null || Array.isArray(props) || isCode(props)) {
                 throw HttpError.badRequest('Field "props" must be an object');
             }
@@ -256,20 +255,18 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
 const deleteItem = async ({ sp, bus }: TWriter, id: string, body: Record<string, unknown>): Promise<TOkDto> => {
     const node = findItem(sp, id);
     const current = readItemNode(sp, node);
-    await assertVersion(body.version as string, current.version, () => current);
+    assertCurrentVersion(body, current);
     const s = sp.session();
     s.apply(() => {
         s.edit(node.sf.getFilePath());
         findItem(sp, id).prop.remove();
     });
-    // `TItemId` is `keyof typeof itemInfo`: every inventory / cost that names the item stops compiling
+    // `TItemId` is `keyof typeof itemInfo`, so leftover mentions surface as type errors
     await s.commit(bus, () => entityEvent('items', id, null, 'deleted'), {
         asReferences: (d) => diagnosticsAsReferences(sp, d),
     });
     return { ok: true };
 };
-
-// ---------------------------------------------------------------------------------------------
 
 export const createEntity = ({ sp, bus }: TWriter, kind: TEntityKind, rawBody: TCreateEntityBody) =>
     sp.run(async (): Promise<TEntityDto> => {
@@ -279,14 +276,15 @@ export const createEntity = ({ sp, bus }: TWriter, kind: TEntityKind, rawBody: T
         const spec = NEW_ENTITY[kind];
         const abs = sp.root.abs(spec.file(id));
         if (registerEntriesOf(sp, kind).some((e) => e.id === id) || sp.file(abs)) {
-            throw HttpError.exists(`${cap(kind.slice(0, -1))} "${id}" already exists`);
+            throw HttpError.exists(`${capitalize(kind.slice(0, -1))} "${id}" already exists`);
         }
         const exportName = spec.exportName(id);
         const dataType = spec.dataType(id);
         const s = sp.session();
         s.apply(() => {
             const sf = s.create(abs, spec.text(id, exportName, dataType));
-            const obj = asObject(sf.getVariableDeclarationOrThrow(exportName).getInitializer())!;
+            const obj = asObject(sf.getVariableDeclarationOrThrow(exportName).getInitializer());
+            if (!obj) throw new Error(`${spec.file(id)}: no \`${exportName}\` object`);
             applyPartial(obj, body, entityFields(sp, kind), sf, {
                 skip: ENTITY_DERIVED,
                 optional: ENTITY_OPTIONAL[kind],
@@ -311,7 +309,7 @@ export const updateEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
         if (kind === 'items') return updateItem({ sp, bus }, id, body);
         const src = findEntitySource(sp, kind, id);
         const current = readEntitySource(sp, src);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const abs = src.sf.getFilePath();
         const s = sp.session();
         s.apply(() => {
@@ -335,21 +333,20 @@ export const deleteEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
         if (kind === 'items') return deleteItem({ sp, bus }, id, body);
         const src = findEntitySource(sp, kind, id);
         const current = readEntitySource(sp, src);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const abs = src.sf.getFilePath();
         const paths = sp.root.paths;
         const own = (f: string) => f === abs || f === paths.register || f === paths.worldState;
 
         const refs: TReferenceDto[] = [...findImportReferences(sp, abs, own)];
         if (kind === 'characters') {
-            // a chapter that still has a `<character>.passages/` folder
             for (const ch of chapterIds(sp)) {
                 const files = chapterCharacterFiles(sp, ch).get(id) ?? [];
                 refs.push(...files.map((sf) => referenceAt(sp, sf, 1)));
             }
         }
         if (refs.length > 0)
-            throw HttpError.referenced(dedupe(refs), `${cap(kind.slice(0, -1))} "${id}" is still referenced`);
+            throw HttpError.referenced(dedupe(refs), `${capitalize(kind.slice(0, -1))} "${id}" is still referenced`);
 
         const s = sp.session();
         s.apply(() => {
@@ -358,10 +355,8 @@ export const deleteEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
             worldStateRemove(s, kind, id);
         });
         if (kind === 'locations') s.after((tx) => removeLocationPolygon(tx, id));
-        // a character's / npc's portrait goes with it (`project/images.ts`)
         else s.after((tx) => tx.deleteFile(siblingPng(abs)));
-        // ids are `keyof TWorldState[...]` / `keyof register.locations`: a literal that still names
-        // the entity stops compiling, and is reported as a reference
+        // ids are `keyof` types, so leftover mentions surface as type errors
         await s.commit(bus, () => entityEvent(kind, id, null, 'deleted'), {
             asReferences: (d) => diagnosticsAsReferences(sp, d),
         });

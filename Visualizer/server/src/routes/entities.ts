@@ -1,19 +1,12 @@
 import { isEntityKind, type TEntityKind } from '@story/visualizer-protocol';
 import type { TServerContext } from '../context';
-import { HttpError } from '../http/HttpError';
+import { pathParam } from '../http/params';
 import { listEntities, readEntity } from '../project/readers/entities';
 import { SourceProject } from '../project/SourceProject';
 import { createEntity, deleteEntity, updateEntity } from '../project/writers/entities';
 
-const kindOf = (kind: string): TEntityKind => {
-    if (!isEntityKind(kind)) throw HttpError.notFound(`No entity kind "${kind}"`);
-    return kind;
-};
+const kindOf = (kind: string): TEntityKind => pathParam(kind, isEntityKind, 'entity kind');
 
-/**
- * Characters, npcs, locations, items: `/entities/:kind[/:id]`
- * (`project/readers/entities.ts`, `project/writers/entities.ts`).
- */
 export const registerEntityRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);
     const w = { sp, bus };

@@ -2,7 +2,6 @@ import { Alert } from '@mui/material';
 import type { TDiagnosticDto } from '@story/visualizer-protocol';
 import { SList } from './styles';
 
-/** The diagnostics of a body item or link as a compact list (nothing when there are none). */
 export const ItemDiagnostics = ({
     diagnostics,
 }: {

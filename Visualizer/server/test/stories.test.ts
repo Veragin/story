@@ -1,21 +1,11 @@
 import { appendFile, readFile } from 'node:fs/promises';
-import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { TChangeEvent, TStoryRouteName } from '@story/visualizer-protocol';
+import type { TStoryRouteName } from '@story/visualizer-protocol';
 import { createApp, type TApp } from '../src/app';
 import { HttpError } from '../src/http/HttpError';
 import type { ProjectRoot } from '../src/project/ProjectRoot';
 import type { TStoryAccessRequest } from '../src/stories/access';
-import { makeTempStories, sleep } from './helpers';
-
-/**
- * Two stories in one server (multiple stories, phase 3): each has its own project, bus, watcher
- * and router, so writes and events never cross over. `alpha` and `beta` are both copies of the
- * example story.
- */
-
-/** Long enough for chokidar to report and a 50 ms batch to flush, with margin for a slow CI box. */
-const QUIET_MS = 700;
+import { listenLocal, makeTempStories, openEventStream, QUIET_MS, requestJson, sleep, waitFor } from './helpers';
 
 let app: TApp;
 let base: string;
@@ -39,7 +29,7 @@ const start = async (options: { idleMs?: number; lockBeta?: boolean } = {}) => {
             if (options.lockBeta && request.storyId === 'beta') throw HttpError.unauthorized();
         },
     });
-    base = `http://127.0.0.1:${await app.listen(0, '127.0.0.1')}`;
+    base = await listenLocal(app);
 };
 
 afterEach(async () => {
@@ -47,47 +37,9 @@ afterEach(async () => {
     await cleanup();
 });
 
-const waitFor = async (predicate: () => boolean, timeoutMs = 5000) => {
-    const started = Date.now();
-    while (!predicate()) {
-        if (Date.now() - started > timeoutMs) throw new Error('timed out');
-        await sleep(20);
-    }
-};
+const call = (method: string, path: string, body?: unknown) => requestJson(base + path, method, { body });
 
-const call = async (method: string, path: string, body?: unknown) => {
-    const res = await fetch(base + path, {
-        method,
-        headers: body === undefined ? {} : { 'content-type': 'application/json' },
-        body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { status: res.status, body: (await res.json()) as any };
-};
-
-/** Open a story's SSE stream and collect its `change` events. */
-const openStream = async (storyId: string) => {
-    const changes: TChangeEvent[] = [];
-    let hello = false;
-    const req = http.get(`${base}/api/stories/${storyId}/events`);
-    const response = await new Promise<http.IncomingMessage>((resolve) => req.on('response', resolve));
-    let buffer = '';
-    response.setEncoding('utf8');
-    response.on('data', (chunk: string) => {
-        buffer += chunk;
-        let end;
-        while ((end = buffer.indexOf('\n\n')) >= 0) {
-            const frame = buffer.slice(0, end);
-            buffer = buffer.slice(end + 2);
-            const event = /^event: (.*)$/m.exec(frame)?.[1];
-            const data = /^data: (.*)$/m.exec(frame)?.[1];
-            if (event === 'hello') hello = true;
-            if (event === 'change' && data) changes.push(JSON.parse(data) as TChangeEvent);
-        }
-    });
-    await waitFor(() => hello);
-    return { changes, status: response.statusCode, close: () => req.destroy() };
-};
+const openStream = (storyId: string) => openEventStream(`${base}/api/stories/${storyId}/events`);
 
 describe('two stories', () => {
     beforeEach(() => start());
@@ -112,7 +64,7 @@ describe('two stories', () => {
     it('sends each story its own events only, for server writes and hand edits', async () => {
         const a = await openStream('alpha');
         const b = await openStream('beta');
-        expect(a.status).toBe(200);
+        expect(a.response.statusCode).toBe(200);
 
         const doc = { chapters: { village: { y: 1 } }, triggers: {} };
         const put = await call('PUT', '/api/stories/alpha/layout/timeline', { ...doc, version: '' });
@@ -178,7 +130,7 @@ describe('idle stories', () => {
 
         stream.close();
         await waitFor(() => first.bus.listenerCount === 0);
-        expect(await app.contexts.evictIdle(Date.now())).toEqual([]); // used a moment ago
+        expect(await app.contexts.evictIdle(Date.now())).toEqual([]);
         expect(await app.contexts.evictIdle(later)).toEqual(['alpha']);
         expect(app.contexts.loadedIds()).toEqual([]);
         expect(first.watching()).toBe(false);

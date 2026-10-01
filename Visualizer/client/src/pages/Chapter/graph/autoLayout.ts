@@ -1,28 +1,15 @@
 import type { TPoint } from '@story/shared';
 
-/**
- * Automatic placement of passage boxes that have no saved position in `<ch>.layout.json`
- * (plan WP6). A simple left-to-right layered layout: each character gets its own band of rows,
- * a passage's column is its BFS distance from the band's roots (passages nobody links to, or
- * the start passage when everything is in a cycle), and passages in the same column stack
- * downwards.
- *
- * Once the author has placed some boxes, new passages are put next to a placed neighbour
- * (right of a predecessor, else left of a successor, else below everything) and pushed down
- * until they do not overlap anything.
- */
-
 export const BOX = { width: 180, height: 64 } as const;
 export const GAP = { x: 90, y: 40, band: 80 } as const;
 
-export type TLayoutNode = { id: string; group: string };
-export type TLayoutEdge = { from: string; to: string };
+type TLayoutNode = { id: string; group: string };
+type TLayoutEdge = { from: string; to: string };
 
 const STEP_X = BOX.width + GAP.x;
 const STEP_Y = BOX.height + GAP.y;
 
-/** Column of every node (BFS rank from the roots, within its group). */
-export const rankNodes = (nodes: TLayoutNode[], edges: TLayoutEdge[]): Map<string, number> => {
+const rankNodes = (nodes: TLayoutNode[], edges: TLayoutEdge[]): Map<string, number> => {
     const groupOf = new Map(nodes.map((n) => [n.id, n.group]));
     const out = new Map<string, string[]>();
     const indegree = new Map<string, number>(nodes.map((n) => [n.id, 0]));
@@ -58,14 +45,13 @@ export const rankNodes = (nodes: TLayoutNode[], edges: TLayoutEdge[]): Map<strin
     return rank;
 };
 
-/** Start passages first, then by id — keeps the layout stable between runs. */
+// a stable order keeps the layout stable between runs
 const compareNodes = (a: TLayoutNode, b: TLayoutNode) => {
     const ai = a.id.endsWith('-intro') ? 0 : 1;
     const bi = b.id.endsWith('-intro') ? 0 : 1;
     return ai - bi || a.id.localeCompare(b.id);
 };
 
-/** Positions (top-left corners) for every node, ignoring any saved ones. */
 export const layeredLayout = (
     nodes: TLayoutNode[],
     edges: TLayoutEdge[],
@@ -94,10 +80,6 @@ export const layeredLayout = (
 const overlaps = (a: TPoint, b: TPoint) =>
     Math.abs(a.x - b.x) < BOX.width + GAP.x / 3 && Math.abs(a.y - b.y) < BOX.height + GAP.y / 2;
 
-/**
- * Positions for the nodes missing from `fixed`. Nodes in `fixed` never move. With nothing fixed
- * this is `layeredLayout`.
- */
 export const placeMissing = (
     nodes: TLayoutNode[],
     edges: TLayoutEdge[],

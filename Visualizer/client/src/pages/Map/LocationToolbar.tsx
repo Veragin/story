@@ -14,7 +14,6 @@ type Props = {
     onDelete: (locationId: string) => void;
 };
 
-/** The tooling row of the `locations` mode: add, colour, open, delete. */
 export const LocationToolbar = observer(
     ({ store, onAdd, onOpen, onDelete }: Props) => {
         const id = store.selectedLocationId;

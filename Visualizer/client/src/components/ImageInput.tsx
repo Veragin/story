@@ -21,22 +21,19 @@ import {
 import { spacingCss } from '@story/ui';
 import { api as defaultApi, ApiError, type TVisualizerApi } from '../api';
 import { FieldDiagnostics } from './CodeField';
+import { FieldLabel } from './FieldLabel';
 import { PlainTextInput } from './PlainTextField';
 
 type TProps = {
     owner: TImageOwner;
-    /** A full passage id, or a character / npc id. */
     id: string;
-    /** The owner's `image` field: a text description of the picture (its alt text too). */
     description: TMaybeCode<string> | undefined;
     onDescriptionChange: (value: string) => void;
-    /** Diagnostics of the `image` field. */
     diagnostics?: TDiagnosticDto[];
     disabled?: boolean;
     api?: TVisualizerApi;
 };
 
-/** A file's content, base64 without the `data:…;base64,` prefix. */
 const readBase64 = (file: Blob) =>
     new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -61,7 +58,7 @@ export const ImageInput = ({
     const [error, setError] = useState<string | null>(null);
     const [showDescription, setShowDescription] = useState(false);
     const input = useRef<HTMLInputElement>(null);
-    /** The owner shown now: a late upload response for another one is dropped. */
+    // a late upload response for a previous owner is dropped
     const current = useRef({ owner, id });
     current.current = { owner, id };
 
@@ -71,10 +68,15 @@ export const ImageInput = ({
         setError(null);
         setBusy(false);
         setShowDescription(false);
-        api.getImage(owner, id).then(
-            (dto) => alive && setImage(dto),
-            (e) => alive && setError((e as Error).message)
-        );
+        const load = async () => {
+            try {
+                const dto = await api.getImage(owner, id);
+                if (alive) setImage(dto);
+            } catch (e) {
+                if (alive) setError(e instanceof Error ? e.message : String(e));
+            }
+        };
+        void load();
         return () => {
             alive = false;
         };
@@ -111,13 +113,12 @@ export const ImageInput = ({
         } catch (e) {
             if (!alive()) return;
             if (e instanceof ApiError && e.isStale && e.current) {
-                // someone replaced it meanwhile: show theirs, let the author decide again
                 setImage(e.current as TImageDto);
                 setError(
                     _('The image changed on disk. Upload again to replace it.')
                 );
             } else {
-                setError((e as Error).message);
+                setError(e instanceof Error ? e.message : String(e));
             }
         } finally {
             if (alive()) setBusy(false);
@@ -147,12 +148,7 @@ export const ImageInput = ({
     return (
         <SField>
             <SHeader>
-                <Typography
-                    variant="caption"
-                    color={hasError ? 'error' : 'text.secondary'}
-                >
-                    {_('Image')}
-                </Typography>
+                <FieldLabel hasError={hasError}>{_('Image')}</FieldLabel>
                 <Tooltip
                     title={_(
                         'An upload is written right away. The description is written on Save.'
@@ -306,11 +302,6 @@ const SOverlay = styled('div')`
     transition: opacity 120ms;
 `;
 
-/**
- * The image (or the description in its place) with the overlay buttons in the top-right
- * corner. They show on hover, on keyboard focus inside the frame, always on touch devices
- * (no hover there), and always in the description view (the way back to the image).
- */
 const SFrame = styled('div')`
     position: relative;
     align-self: flex-start;

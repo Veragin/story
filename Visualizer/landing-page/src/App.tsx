@@ -9,15 +9,13 @@ import { ImportStoryButton } from './ImportStoryButton';
 import { StoriesStore } from './StoriesStore';
 import { StoryList } from './StoryList';
 
-/** The page: a header with New story / Import, the list, and the password prompt. */
 export const App = observer(() => {
     const [store] = useState(() => new StoriesStore(createLandingApi()));
     const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         void store.load();
-        // A login or a logout in another tab (the Visualizer, SingleEngine) changes the
-        // `unlocked` flags, and a grant expires after 24 h: re-read the list on return.
+        // logins elsewhere and expiring grants change the `unlocked` flags
         const refresh = () => void store.load();
         window.addEventListener('focus', refresh);
         return () => window.removeEventListener('focus', refresh);

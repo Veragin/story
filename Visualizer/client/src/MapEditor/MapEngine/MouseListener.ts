@@ -4,20 +4,6 @@ import { computeTileIndex, isInsideMap, mapWorldBounds, minimapSize } from './ut
 
 type THold = 'paint' | 'select' | 'minimap' | 'pan';
 
-/**
- * Pointer input of the tiles canvas. Everything is attached to the canvas itself, plus
- * `window` move/up listeners only while a button is held (the old version put keyboard, mouse
- * move, wheel and context-menu listeners on `document`, so they fired on every page).
- *
- * Only active while `mapStore.interactive` (the page's `tiles` mode); otherwise the Locations
- * scene above it owns the input. Keyboard panning is the scene's job in every mode, so both
- * layers move with one camera and there is a single WASD handler.
- *
- *  - left button: paint the brush (paint tool) or select the tile (select tool); on the minimap
- *    it moves the view;
- *  - right / middle drag: pan;
- *  - wheel: zoom at the cursor; Shift + wheel: brush size.
- */
 export class MouseListener {
     private hold: THold | null = null;
     private last: TPoint | null = null;
@@ -42,10 +28,14 @@ export class MouseListener {
         for (const c of this.cleanups.splice(0)) c();
     };
 
-    private listen(target: EventTarget, type: string, handler: (e: never) => void, options?: AddEventListenerOptions) {
-        const fn = handler as unknown as EventListener;
-        target.addEventListener(type, fn, options);
-        this.cleanups.push(() => target.removeEventListener(type, fn, options));
+    private listen<K extends keyof HTMLElementEventMap>(
+        target: HTMLElement,
+        type: K,
+        handler: (e: HTMLElementEventMap[K]) => void,
+        options?: AddEventListenerOptions
+    ) {
+        target.addEventListener(type, handler, options);
+        this.cleanups.push(() => target.removeEventListener(type, handler, options));
     }
 
     private get active() {
@@ -65,19 +55,22 @@ export class MouseListener {
         return isInsideMap(map, tile) ? tile : null;
     }
 
+    private viewSize() {
+        return this.mapStore.draw?.size ?? { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
+    }
+
     private isOnMinimap(screen: TPoint) {
         const map = this.mapStore.data;
         if (!map || !this.mapStore.showMinimap) return false;
-        const size = this.mapStore.draw?.size ?? { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
+        const size = this.viewSize();
         const mini = minimapSize(size, map);
         return screen.x < mini.width && screen.y > size.height - mini.height;
     }
 
-    /** Centres the view on the map point under a minimap position. */
     private moveByMinimap(screen: TPoint) {
         const map = this.mapStore.data;
         if (!map) return;
-        const size = this.mapStore.draw?.size ?? { width: this.canvas.clientWidth, height: this.canvas.clientHeight };
+        const size = this.viewSize();
         const mini = minimapSize(size, map);
         const bounds = mapWorldBounds(map);
         const fx = Math.min(1, Math.max(0, screen.x / mini.width));
@@ -186,8 +179,6 @@ export class MouseListener {
         const delta = Math.max(-300, Math.min(300, raw * unit));
         if (delta === 0) return;
         if (e.shiftKey) {
-            // `event.shiftKey` rather than tracking key state by hand (the old keyup handler
-            // compared against 'ctrl' and keydown against 'Ctrl', neither of which is a key name)
             this.mapStore.setBrushSize(this.mapStore.brushSize - Math.sign(delta));
             return;
         }

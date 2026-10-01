@@ -45,11 +45,9 @@ describe('SourceEditorStore', () => {
     it('turns 409 stale into Reload / Keep mine', async () => {
         const { api, store } = await setup();
         const first = store.base!;
-        // someone else saves the file
         await api.updateSource('passage', 'village-thomas-intro', { version: first.version, text: 'theirs' });
         store.setText('mine');
         await flush();
-        // the change event arrived while the text was dirty
         expect(store.conflict?.current?.text).toBe('theirs');
         await store.keepMine();
         expect(store.conflict).toBeNull();

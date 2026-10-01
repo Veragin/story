@@ -11,13 +11,8 @@ import { SourceProject } from '../src/project/SourceProject';
 import { diagnoseProject } from '../src/project/validate';
 import { slugify } from '../src/stories/storyFolders';
 import { STORY_FILE } from '../src/stories/StoryStore';
-import { EXAMPLE_PASSWORD, login, makeTempStories } from './helpers';
+import { EXAMPLE_PASSWORD, listenLocal, login, makeTempStories, requestJson, type TJsonResponse } from './helpers';
 import { storyProblems } from './sourceHelpers';
-
-/**
- * The stories API (multiple stories, phase 5): create from the template, list, edit the info,
- * export and import. Every story is made in a temp `STORIES_ROOT`, never in `stories/`.
- */
 
 let app: TApp;
 let base: string;
@@ -29,7 +24,7 @@ beforeEach(async () => {
     storiesRoot = temp.storiesRoot;
     cleanup = temp.cleanup;
     app = await createApp({ storiesRoot, watch: false });
-    base = `http://127.0.0.1:${await app.listen(0, '127.0.0.1')}`;
+    base = await listenLocal(app);
 });
 
 afterEach(async () => {
@@ -37,20 +32,8 @@ afterEach(async () => {
     await cleanup();
 });
 
-type TCall = { status: number; headers: Headers; body: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-const call = async (method: string, url: string, { body, cookie }: { body?: unknown; cookie?: string } = {}) => {
-    const res = await fetch(base + url, {
-        method,
-        headers: {
-            ...(method === 'GET' ? {} : { 'content-type': 'application/json' }),
-            ...(cookie ? { cookie } : {}),
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await res.text();
-    return { status: res.status, headers: res.headers, body: text ? JSON.parse(text) : undefined } as TCall;
-};
+const call = (method: string, url: string, { body, cookie }: { body?: unknown; cookie?: string } = {}) =>
+    requestJson(base + url, method, { body, headers: cookie ? { cookie } : {} });
 
 const NEW_STORY = {
     name: 'My Story',
@@ -61,7 +44,6 @@ const NEW_STORY = {
     public: false,
 };
 
-/** Create a story; returns its id and the creator's cookie. */
 const create = async (overrides: Record<string, unknown> = {}) => {
     const res = await call('POST', '/api/stories', { body: { ...NEW_STORY, ...overrides } });
     expect(res.status).toBe(201);
@@ -74,16 +56,16 @@ const exportZip = async (storyId: string, cookie: string) => {
     return { res, bytes: new Uint8Array(await res.arrayBuffer()) };
 };
 
-const importZip = async (id: string, zip: Uint8Array, contentType = 'application/zip') => {
+const importZip = async (id: string, zip: Uint8Array, contentType = 'application/zip'): Promise<TJsonResponse> => {
     const res = await fetch(`${base}/api/stories/import?id=${encodeURIComponent(id)}`, {
         method: 'POST',
         headers: { 'content-type': contentType },
         body: new Uint8Array(zip),
     });
-    return { status: res.status, body: await res.json() } as TCall;
+    return { status: res.status, headers: res.headers, body: await res.json() };
 };
 
-/** What the stories root holds: story folders and any temp folder left behind. */
+/** Includes any temp folder left behind. */
 const rootEntries = async () => (await readdir(storiesRoot)).sort();
 
 describe('slugify', () => {
@@ -111,7 +93,6 @@ describe('create', () => {
             expect((await stat(path.join(dir, f))).isFile()).toBe(true);
         }
 
-        // the creator's cookie opens it; the map is an empty map of mapSize
         const map = await call('GET', `/api/stories/${id}/maps/global`, { cookie });
         expect(map.status).toBe(200);
         expect(map.body).toMatchObject({ width: 20, height: 10, locations: {} });
@@ -134,15 +115,20 @@ describe('create', () => {
         expect(await storyProblems(dir)).toEqual([]);
 
         const tsc = path.join(REPO_ROOT, 'node_modules/typescript/bin/tsc');
-        const out = await promisify(execFile)(process.execPath, [
-            tsc,
-            '--noEmit',
-            '-p',
-            path.join(dir, 'tsconfig.json'),
-        ])
-            .then(({ stdout }) => stdout)
-            .catch((e: { stdout?: string }) => e.stdout ?? String(e));
-        expect(out).toBe('');
+        const runTsc = async () => {
+            try {
+                const { stdout } = await promisify(execFile)(process.execPath, [
+                    tsc,
+                    '--noEmit',
+                    '-p',
+                    path.join(dir, 'tsconfig.json'),
+                ]);
+                return stdout;
+            } catch (e) {
+                return e instanceof Error && 'stdout' in e && typeof e.stdout === 'string' ? e.stdout : String(e);
+            }
+        };
+        expect(await runTsc()).toBe('');
     }, 60_000);
 
     it('validates the body', async () => {
@@ -205,12 +191,12 @@ describe('list and info', () => {
         expect((await put({ version: info.body.version, name: '' })).status).toBe(400);
         expect((await put({ version: info.body.version, color: 'red' })).status).toBe(400);
 
-        // the whole DTO sent back, edited: mapSize and id unchanged are fine
+        // the whole DTO sent back: an unchanged mapSize and id are fine
         const edited = await put({ ...info.body, name: 'Alpha 2', public: true, password: 'new-password' });
         expect(edited.status).toBe(200);
         expect(edited.body).toMatchObject({ id, name: 'Alpha 2', public: true, author: 'Tester' });
         expect(edited.body.version).not.toBe(info.body.version);
-        expect(await rootEntries()).toContain('alpha'); // the id never changes (plan D3)
+        expect(await rootEntries()).toContain('alpha'); // the id never changes on rename
 
         const stale = await put({ version: info.body.version, name: 'Lost' });
         expect(stale.status).toBe(409);
@@ -219,7 +205,6 @@ describe('list and info', () => {
         await expect(login(base, id, { password: NEW_STORY.password })).rejects.toThrow('401');
         expect(await login(base, id, { password: 'new-password' })).toMatch(/^story_session=/);
 
-        // an empty password keeps the current one
         const kept = await put({ version: edited.body.version, password: '', description: 'Changed' });
         expect(kept.status).toBe(200);
         expect(await login(base, id, { password: 'new-password' })).toMatch(/^story_session=/);
@@ -243,8 +228,7 @@ describe('export and import', () => {
             await readFile(path.join(storiesRoot, id, STORY_FILE), 'utf8')
         );
 
-        // the example has art (binary) and extra files; they round-trip too. Only its hand-written
-        // tsconfig.json is replaced: an import writes one for the story's folder
+        // an import writes its own tsconfig.json for the story's folder
         const exampleCookie = await login(base, 'example', { password: EXAMPLE_PASSWORD });
         const example = unzipSync((await exportZip('example', exampleCookie)).bytes);
         expect(Object.keys(example)).toContain('data/chapters/village/thomas.passages/intro.png');
@@ -258,7 +242,6 @@ describe('export and import', () => {
         }
         expect((await call('GET', '/api/stories/example-copy/project', { cookie: copyOfExample })).status).toBe(200);
 
-        // the id is taken (plan D8), or not an id; the content type is the zip's
         expect(await importZip('copy', bytes)).toMatchObject({ status: 409, body: { error: 'exists' } });
         expect(await importZip('example', bytes)).toMatchObject({ status: 409, body: { error: 'exists' } });
         expect((await importZip('Bad Id', bytes)).status).toBe(400);

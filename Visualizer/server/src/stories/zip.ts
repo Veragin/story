@@ -1,39 +1,19 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
-import { HttpError } from '../http/HttpError';
+import { errorMessage, HttpError } from '../http/HttpError';
 import { isTempFile } from '../json/atomicWrite';
 import { STORY_FILE } from './StoryStore';
 
-/**
- * Story zips (multiple stories, phase 5): `GET /export` packs a story folder, `POST
- * /api/stories/import` checks and unpacks one. A zip holds, at its root, exactly what a story
- * folder holds:
- *
- *     story.json  tsconfig.json  data/…  types/…
- *
- * Nothing else is exported (no `node_modules`, no temp files of an atomic write in flight, no
- * symlinks) and nothing else is accepted.
- */
-
-/** The top-level files of a story zip. */
 const TOP_FILES = [STORY_FILE, 'tsconfig.json'];
-/** The top-level folders of a story zip. */
 const TOP_DIRS = ['data', 'types'];
 
-/** At most this many entries … */
 const MAX_ENTRIES = 10_000;
-/** … and this many bytes once unpacked (against zip bombs; the zip itself is at most 50 MB). */
 const MAX_UNPACKED_BYTES = 200 * 1024 * 1024;
 
-/**
- * Every entry gets this timestamp, so an export is a function of the story's content: exporting
- * the same story twice, or a story and its re-import, gives the same bytes. (A zip's DOS time is
- * local time and starts in 1980, hence a local date well inside that range.)
- */
+// fixed so an export depends only on content; DOS time is local and starts in 1980
 const ZIP_MTIME = new Date(1980, 0, 2);
 
-/** The files to export, as `relative path → absolute path`, sorted. Skips what the zip must not hold. */
 const exportedFiles = async (storyDir: string): Promise<[string, string][]> => {
     const out: [string, string][] = [];
     const walk = async (rel: string) => {
@@ -58,7 +38,6 @@ const exportedFiles = async (storyDir: string): Promise<[string, string][]> => {
     return out.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 };
 
-/** Pack a story folder into a zip (deflate, fixed timestamps; see `ZIP_MTIME`). */
 export const zipStory = async (storyDir: string): Promise<Uint8Array> => {
     const files: Zippable = {};
     for (const [rel, abs] of await exportedFiles(storyDir)) {
@@ -69,11 +48,7 @@ export const zipStory = async (storyDir: string): Promise<Uint8Array> => {
 
 type TZipEntry = { name: string; symlink: boolean; encrypted: boolean; size: number };
 
-/**
- * The entries of a zip, read from its central directory: fflate does not report whether an entry
- * is a symlink (a unix mode in the "external attributes"), so the checks read the directory
- * themselves. ZIP64 archives are refused, a story is nowhere near their 4 GB threshold.
- */
+// fflate does not report symlinks, so the central directory is read directly
 const readCentralDirectory = (zip: Uint8Array): TZipEntry[] => {
     const bad = (why: string) => HttpError.badRequest(`Not a valid zip: ${why}`);
     const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
@@ -119,11 +94,6 @@ const readCentralDirectory = (zip: Uint8Array): TZipEntry[] => {
     return entries;
 };
 
-/**
- * Check one entry name and return its path inside the story, or `null` for a directory entry.
- * Refuses (400) anything that could land outside the story folder (zip-slip: `..`, an absolute
- * or drive path, a backslash) and anything outside the allowed top-level names.
- */
 const entryPath = (name: string): string | null => {
     const refuse = (why: string) => HttpError.badRequest(`Zip entry ${JSON.stringify(name)}: ${why}`);
     if (name === '' || name.startsWith('/') || name.includes('\\') || /^[A-Za-z]:/.test(name) || name.includes('\0')) {
@@ -139,12 +109,6 @@ const entryPath = (name: string): string | null => {
     return isDir ? null : segments.join('/');
 };
 
-/**
- * Check a story zip and unpack it in memory: `relative path → bytes`. Every check happens before
- * anything is decompressed or written: entry names (see `entryPath`), no symlinks, no
- * encryption, no duplicates, a `story.json`, and the unpacked size. Throws a 400 naming the
- * problem. The caller validates `story.json` itself.
- */
 export const unzipStory = (zip: Uint8Array): Map<string, Uint8Array> => {
     const entries = readCentralDirectory(zip);
     const wanted = new Set<string>();
@@ -168,7 +132,7 @@ export const unzipStory = (zip: Uint8Array): Map<string, Uint8Array> => {
     try {
         unpacked = unzipSync(zip, { filter: (file) => wanted.has(file.name) });
     } catch (e) {
-        throw HttpError.badRequest(`Not a valid zip: ${(e as Error).message}`);
+        throw HttpError.badRequest(`Not a valid zip: ${errorMessage(e)}`);
     }
     const files = new Map<string, Uint8Array>();
     let actual = 0;

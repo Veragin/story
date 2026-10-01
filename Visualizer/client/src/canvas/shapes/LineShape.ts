@@ -3,10 +3,8 @@ import { drawTextBlock } from '../text';
 import type { TPoint, TRect } from '../types';
 import { applyStroke, halfStrokeWidth, Shape, type TRenderContext, type TShapeProps } from './Shape';
 
-/** A line end anchored to another shape. `border` (default) stops at the shape's outline. */
 export type TShapeAnchor = { shape: Shape; anchor?: 'center' | 'border'; offset?: TPoint };
 
-/** A free world point, or an anchor that follows a shape as it moves. */
 export type TLineEnd = TPoint | TShapeAnchor;
 
 export type TArrow = 'none' | 'start' | 'end' | 'both';
@@ -15,7 +13,6 @@ export type TLineProps<TData = unknown> = TShapeProps<TData> & {
     from: TLineEnd;
     to: TLineEnd;
     arrow?: TArrow;
-    /** Arrowhead length in world units. Default `max(10, 4 × stroke width)`. */
     arrowSize?: number;
 };
 
@@ -42,7 +39,6 @@ export class LineShape<TData = unknown> extends Shape<TData> {
         return super.update(patch);
     }
 
-    /** The two resolved world end points (anchors resolved against the other end). */
     getEndpoints(): [TPoint, TPoint] {
         const ref = (end: TLineEnd): TPoint => (isAnchor(end) ? end.shape.getCenter() : end);
         const resolve = (end: TLineEnd, other: TLineEnd): TPoint => {
@@ -113,24 +109,19 @@ export class LineShape<TData = unknown> extends Shape<TData> {
         if (this.arrow === 'end' || this.arrow === 'both') drawArrowHead(ctx, a, b, len);
         if (this.arrow === 'start' || this.arrow === 'both') drawArrowHead(ctx, b, a, len);
         if (this.label) {
-            const s = this.labelStyle ?? {};
             drawTextBlock(ctx, this.label, {
+                ...this.labelFont(stroke.color, 12),
                 x: (a.x + b.x) / 2,
                 y: (a.y + b.y) / 2,
                 align: 'center',
                 verticalAlign: 'bottom',
-                color: s.color ?? stroke.color,
-                fontSize: s.fontSize ?? 12,
-                fontFamily: s.fontFamily,
-                fontWeight: s.fontWeight,
             });
         }
         ctx.restore();
     }
 }
 
-/** Filled triangular head at `tip`, pointing away from `from`. */
-export function drawArrowHead(ctx: CanvasRenderingContext2D, from: TPoint, tip: TPoint, length: number): void {
+export const drawArrowHead = (ctx: CanvasRenderingContext2D, from: TPoint, tip: TPoint, length: number): void => {
     const angle = Math.atan2(tip.y - from.y, tip.x - from.x);
     const spread = Math.PI / 7;
     ctx.beginPath();
@@ -139,4 +130,4 @@ export function drawArrowHead(ctx: CanvasRenderingContext2D, from: TPoint, tip: 
     ctx.lineTo(tip.x - length * Math.cos(angle + spread), tip.y - length * Math.sin(angle + spread));
     ctx.closePath();
     ctx.fill();
-}
+};

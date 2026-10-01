@@ -5,27 +5,16 @@ import type { TPoint } from '../types';
 import type { SelectionController } from './SelectionController';
 
 export type TVertexEditOptions = {
-    /** Vertex handle radius in screen px. Default 5. */
     handleRadius?: number;
-    /** Which gesture on an edge inserts a vertex. Default `dblclick`. */
     insertOn?: 'click' | 'dblclick' | 'both';
-    /** Vertices a polygon keeps at least. Default 3. */
     minVertices?: number;
-    /** Handle colors. */
     handleFill?: string;
     handleStroke?: string;
-    /** Snap/limit a dragged vertex. */
     constrainVertex?: (p: TPoint, index: number, shape: PolygonShape) => TPoint;
-    /** Must beat the selection controller. Default 10. */
+    // must beat the selection controller
     priority?: number;
 };
 
-/**
- * Edits the vertices of the selected `PolygonShape` (while the scene is editable and the
- * polygon's `vertexEditable` is true): drag a handle to move a vertex, click/double-click an
- * edge to insert one, right-click a handle to remove one. Emits `change` with
- * `vertex-move` / `vertex-add` / `vertex-remove`.
- */
 export class VertexEditController implements ISceneInteraction {
     readonly priority: number;
     private readonly options: Required<Omit<TVertexEditOptions, 'priority' | 'constrainVertex'>> &
@@ -60,7 +49,6 @@ export class VertexEditController implements ISceneInteraction {
         this.dispose();
     }
 
-    /** The polygon currently being edited, or null. */
     get target(): PolygonShape | null {
         const s = this.selection.selected;
         if (!this.scene.editable || !(s instanceof PolygonShape) || !s.vertexEditable || !s.visible) return null;
@@ -103,7 +91,7 @@ export class VertexEditController implements ISceneInteraction {
     onPointerMove(e: TScenePointerEvent): void {
         const d = this.drag;
         if (!d) return;
-        // Move by the pointer's delta, not to the pointer: grabbing a handle off-centre must not snap it.
+        // by the pointer's delta, so grabbing a handle off-centre does not snap it
         const moved = {
             x: d.startVertex.x + e.world.x - d.startWorld.x,
             y: d.startVertex.y + e.world.y - d.startWorld.y,
@@ -132,7 +120,7 @@ export class VertexEditController implements ISceneInteraction {
     onClick(e: TScenePointerEvent): boolean {
         const t = this.target;
         if (!t) return false;
-        // A click on a handle keeps the polygon selected instead of reaching the selection controller.
+        // swallow handle clicks so the selection controller keeps the polygon selected
         if (this.vertexAt(e.world) >= 0) return true;
         if (this.options.insertOn === 'dblclick') return false;
         return this.insertAt(e);

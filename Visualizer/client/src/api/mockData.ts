@@ -11,13 +11,7 @@ import type {
     TTriggerDto,
 } from '@story/visualizer-protocol';
 
-/**
- * Seed for `mockApi`: the sample story of `data/` as the server's readers would return it
- * (versions are filled in by the mock). A hand-written copy, not an import — the client must not
- * import `@story/data` at runtime (plan §3 "Live refresh"). It mirrors the real files closely so
- * that pages built against the mock behave the same on the real server, including the code
- * fields (`_('…')`, conditional costs, closures).
- */
+// hand-written copy: the client must not import `@story/data` at runtime
 
 type TSeed<T> = T extends unknown ? Omit<T, 'version'> : never;
 
@@ -410,7 +404,6 @@ export const createMockSeed = (): TMockSeed => ({
     chapterLayouts: {},
 });
 
-/** A small 12×8 map with two location polygons, enough to exercise every map feature. */
 function createSampleMap(): TMapFile {
     const width = 12;
     const height = 8;

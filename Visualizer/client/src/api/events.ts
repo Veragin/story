@@ -1,11 +1,6 @@
 import { buildPath, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/visualizer-protocol';
 import { STORY_ID } from './story';
 
-/**
- * Which change events a subscriber wants. `kind: '*'` is everything. `id` narrows to one resource
- * (wildcard events such as `trigger` `*` or `entity` `items/*` still match). `chapterId` narrows to
- * events scoped to one chapter.
- */
 export type TEventFilter = {
     kind: TResourceKind | '*';
     id?: string;
@@ -20,26 +15,23 @@ type TEventSourceLike = Pick<EventSource, 'addEventListener' | 'close' | 'readyS
 };
 
 export type TApiEventsOptions = {
-    /** The stream's URL; defaults to the edited story's `/events`. */
     url?: string;
-    /**
-     * Injected for tests; defaults to the browser `EventSource` (absent → events are a no-op).
-     * `null` never opens a stream (mock mode). Note that `undefined` means "use the default".
-     */
+    // `null` never opens a stream; `undefined` means the browser default
     createEventSource?: ((url: string) => TEventSourceLike) | null;
-    /** How long a version passed to `markSaved` is remembered. */
     savedTtlMs?: number;
-    /** The longest a `hold` holds events back, should its release never come. */
     holdMaxMs?: number;
-    /** Backoff for re-creating a stream the browser gave up on. */
     reconnectMinMs?: number;
     reconnectMaxMs?: number;
-    /**
-     * Called each time the browser gives up on the stream (a non-200 answer). An `EventSource`
-     * cannot tell a `401` from a `502`, so the app probes with a plain request here, which opens
-     * the password prompt on a 401; after the login it calls `reconnectNow` (`api/index.ts`).
-     */
     onGiveUp?: () => void;
+};
+
+const EVENT_SOURCE_CLOSED = 2;
+
+const addTo = <T>(set: Set<T>, entry: T): (() => void) => {
+    set.add(entry);
+    return () => {
+        set.delete(entry);
+    };
 };
 
 export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolean => {
@@ -52,22 +44,6 @@ export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolea
     return false;
 };
 
-/**
- * The client end of a story's `GET /events` (plan §3 "Live refresh", points 2–3).
- *
- *     // a store keeps its resource fresh:
- *     const off = apiEvents.subscribe({ kind: 'passage', id: passageId }, () => this.refetch());
- *     // after a real reconnect you may have missed events — refetch what is on screen:
- *     const offResync = apiEvents.onResync(() => this.refetch());
- *
- * Own saves are not echoed: the http api calls `markSaved(version)` for every resource a mutation
- * returns, and an event carrying one of those versions is dropped (once). The server emits a
- * save's event on commit, before it answers the request, so the echo usually arrives before the
- * response: the http api therefore `hold`s events while a mutation is in flight, and they are
- * delivered (or dropped) once its version is marked. The stream is opened
- * lazily by the first `subscribe` and re-created with backoff when the browser gives up on it
- * (e.g. the proxy answers 502 while the server restarts under `tsx watch`).
- */
 export class ApiEvents {
     private readonly url: string;
     private readonly createEventSource?: (url: string) => TEventSourceLike;
@@ -112,42 +88,26 @@ export class ApiEvents {
         return this._status;
     }
 
-    /** Subscribe to events of a kind (`'passage'`) or matching a filter. Returns the unsubscribe. */
     subscribe(filter: TEventFilter | TResourceKind | '*', listener: TEventListener): () => void {
         const entry = { filter: typeof filter === 'string' ? { kind: filter } : filter, listener };
-        this.listeners.add(entry);
+        const unsubscribe = addTo(this.listeners, entry);
         this.connect();
-        return () => {
-            this.listeners.delete(entry);
-        };
+        return unsubscribe;
     }
 
-    /** Called after a reconnect (not the first connect): events may have been missed. */
     onResync(listener: () => void): () => void {
-        this.resyncListeners.add(listener);
-        return () => {
-            this.resyncListeners.delete(listener);
-        };
+        return addTo(this.resyncListeners, listener);
     }
 
     onStatus(listener: (status: TConnectionStatus) => void): () => void {
-        this.statusListeners.add(listener);
-        return () => {
-            this.statusListeners.delete(listener);
-        };
+        return addTo(this.statusListeners, listener);
     }
 
-    /** Remember a version this client just wrote, so its echo event is ignored. */
     markSaved(version: TVersion) {
         this.saved.set(version, Date.now() + this.savedTtlMs);
     }
 
-    /**
-     * Hold events back until the returned release is called (idempotent), then deliver them
-     * through the own-save filter. The http api holds while one of this tab's mutations is in
-     * flight, so its echo, which may arrive before the response, meets the version `markSaved`
-     * gets from that response. Holds nest; a hold never released lets go after `holdMaxMs`.
-     */
+    // a save's echo can beat its response, so events wait until `markSaved` has the version
     hold(): () => void {
         this.holds++;
         let released = false;
@@ -165,7 +125,6 @@ export class ApiEvents {
         return release;
     }
 
-    /** Deliver an event to the subscribers (the SSE stream and `mockApi` both come through here). */
     dispatch(event: TChangeEvent) {
         if (this.holds > 0) {
             this.held.push(event);
@@ -187,7 +146,6 @@ export class ApiEvents {
         }
     }
 
-    /** Open the stream (idempotent; `subscribe` calls it). */
     connect() {
         if (this.source || this.reconnectTimer || !this.createEventSource) return;
         this.setStatus(this.connectedOnce ? 'reconnecting' : 'connecting');
@@ -208,11 +166,9 @@ export class ApiEvents {
             }
         });
         source.onerror = () => {
-            // A late error from a stream that was closed (or replaced) meanwhile.
             if (this.source !== source) return;
-            // CONNECTING: the browser retries by itself (the server sent `retry:`).
-            // CLOSED: it gave up (non-200 answer) — re-create it ourselves, with backoff.
-            if (source.readyState === 2 /* CLOSED */) {
+            // while CONNECTING the browser retries by itself; CLOSED means it gave up
+            if (source.readyState === EVENT_SOURCE_CLOSED) {
                 source.close();
                 this.source = null;
                 this.setStatus('reconnecting');
@@ -228,10 +184,6 @@ export class ApiEvents {
         };
     }
 
-    /**
-     * Re-create a stream that is waiting out its backoff right away (after a login: the stream
-     * failed on the missing grant). No-op while a stream is open or when nobody subscribed.
-     */
     reconnectNow() {
         if (!this.reconnectTimer) return;
         clearTimeout(this.reconnectTimer);

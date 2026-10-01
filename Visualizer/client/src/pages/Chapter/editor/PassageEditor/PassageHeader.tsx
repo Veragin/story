@@ -10,11 +10,9 @@ type TProps = {
     store: PassageEditorStore;
     onClose: () => void;
     onDelete: () => void;
-    /** Open the passage's whole file in the source editor. */
     onEditSource: () => void;
 };
 
-/** The panel's header: id, type, unsaved chip, file and the Save / Revert / Edit source / Delete buttons. */
 export const PassageHeader = observer(
     ({ store, onClose, onDelete, onEditSource }: TProps) => {
         const { base, dirty, saving, conflict } = store;

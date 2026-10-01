@@ -16,7 +16,6 @@ import { CreateEntityDialog } from './CreateEntityDialog';
 import type { EntitiesStore } from './EntitiesStore';
 import { displayName } from './entityFields';
 
-/** The left column: the entities of the selected kind, and "Add". */
 export const EntityList = observer(({ store }: { store: EntitiesStore }) => {
     const { kind } = store;
 

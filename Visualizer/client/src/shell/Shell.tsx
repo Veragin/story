@@ -6,12 +6,12 @@ import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
 import { ModalHost } from './ModalHost';
 import { LoginPrompt } from './LoginPrompt';
-import MapPage from '../pages/Map';
-import TimelinePage from '../pages/Timeline';
-import ChapterPage from '../pages/Chapter';
-import EntitiesPage from '../pages/Entities';
+import { MapPage } from '../pages/Map';
+import { TimelinePage } from '../pages/Timeline';
+import { ChapterPage } from '../pages/Chapter/ChapterPage';
+import { EntitiesPage } from '../pages/Entities';
 
-/** Dev canvas playground (WP3), loaded lazily so it stays out of the main bundle. */
+// dev-only, kept out of the main bundle
 const CanvasPlayground = lazy(async () => ({
     default: (await import('../canvas/playground/CanvasPlayground'))
         .CanvasPlayground,
@@ -64,7 +64,6 @@ const SRoot = styled(Column)`
     background-color: #000;
 `;
 
-/** Pages get the whole area under the top bar; they should fill it with `height: 100%`. */
 const SPage = styled(Column)`
     flex: 1;
     min-height: 0;

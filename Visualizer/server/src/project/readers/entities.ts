@@ -29,7 +29,7 @@ import { readDataType } from './chapters';
 
 type TSourceKind = Exclude<TEntityKind, 'items'>;
 
-export const REGISTER_SECTION: Record<TSourceKind, 'characters' | 'npcs' | 'locations'> = {
+const REGISTER_SECTION: Record<TSourceKind, 'characters' | 'npcs' | 'locations'> = {
     characters: 'characters',
     npcs: 'npcs',
     locations: 'locations',
@@ -41,7 +41,6 @@ export const DATA_TYPE_SUFFIX: Record<TSourceKind, string> = {
     locations: 'LocationData',
 };
 
-/** Editable fields per entity kind (`types/TCharacter.ts`, `types/TLocation.ts`). */
 export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => {
     switch (kind) {
         case 'characters':
@@ -106,7 +105,7 @@ export const registerEntriesOf = (sp: SourceProject, kind: TSourceKind): TRegist
     registerEntries(sp, REGISTER_SECTION[kind]);
 
 export const entitySources = (sp: SourceProject, kind: TSourceKind): TEntitySource[] =>
-    registerEntries(sp, REGISTER_SECTION[kind])
+    registerEntriesOf(sp, kind)
         .map((e) => entitySourceOf(kind, e))
         .filter((e): e is TEntitySource => !!e);
 
@@ -158,17 +157,13 @@ export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharac
     }
 };
 
-// ---------------------------------------------------------------------------------------------
-// Items
-
 export type TItemContainer = { source: TItemSource; sf: SourceFile; obj: ObjectLiteralExpression };
 
 export type TItemSourceNode = TItemContainer & { id: string; prop: PropertyAssignment; item: ObjectLiteralExpression };
 
 const itemInfoFile = (sp: SourceProject) => sp.file(sp.root.abs('data/items/itemInfo.ts'));
 
-/** `itemInfo` and the objects spread into it (`...foodInfo`, `...toolInfo`). */
-export const itemContainers = (sp: SourceProject): TItemContainer[] => {
+const itemContainers = (sp: SourceProject): TItemContainer[] => {
     const sf = itemInfoFile(sp);
     const decl = sf?.getVariableDeclaration('itemInfo');
     const obj = asObject(decl?.getInitializer());
@@ -201,7 +196,6 @@ export const findItem = (sp: SourceProject, id: string): TItemSourceNode => {
     return found;
 };
 
-/** The file a new item of `type` goes into (plan WP7). */
 export const containerForType = (sp: SourceProject, type: string): TItemContainer | undefined => {
     const all = itemContainers(sp);
     const wanted: TItemSource = type === 'food' ? 'foodInfo' : type === 'tool' ? 'toolInfo' : 'itemInfo';
@@ -234,8 +228,6 @@ export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto
         props,
     };
 };
-
-// ---------------------------------------------------------------------------------------------
 
 export const readEntity = (sp: SourceProject, kind: TEntityKind, id: string): TEntityDto =>
     kind === 'items' ? readItemNode(sp, findItem(sp, id)) : readEntitySource(sp, findEntitySource(sp, kind, id));

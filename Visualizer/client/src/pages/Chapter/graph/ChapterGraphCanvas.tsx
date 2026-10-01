@@ -46,13 +46,6 @@ const nodeLabel = (n: TGraphNode) =>
 
 type TTooltip = { text: string; x: number; y: number } | null;
 
-/**
- * The chapter graph on the WP3 canvas library: a `RectShape` per passage, a `LineShape` arrow
- * per (deduplicated) static edge, and small dashed boxes for link targets outside the chapter.
- * The shapes follow `store` through a MobX reaction (live refresh updates them in place);
- * dragging a box calls `store.setPosition` (debounced save), double-click opens the passage
- * editor, the camera is kept in `ui-state`.
- */
 export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [tooltip, setTooltip] = useState<TTooltip>(null);
@@ -246,7 +239,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             }
         };
 
-        /** Two passages linking both ways: shift both arrows sideways so they do not overlap. */
+        // two-way links: shift both arrows sideways so they do not overlap
         const applyOffsets = () => {
             for (const line of lines.values()) {
                 const data = line.data;
@@ -273,7 +266,6 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             }
         };
 
-        /** First visit: show the whole graph, at most at 100 %, anchored top-left. */
         const fitView = () => {
             if (scene.isDestroyed) return;
             if (scene.size.width === 0) {

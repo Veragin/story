@@ -6,16 +6,6 @@ import type { TGlobalContext } from '../context';
 import { requireString } from '../http/body';
 import { HttpError } from '../http/HttpError';
 
-/**
- * Auth (multiple stories, phase 4): unlock a story with its password, drop the session, list what
- * is unlocked, and ask what a browser may do with a story. The grant check itself is
- * `stories/access.ts`; the CSRF check (every mutation, these included) is in the dispatcher.
- *
- *  - `POST /api/stories/:storyId/login {password}` → `204` + `story_session` cookie, `401`, `429`
- *  - `POST /api/logout` → `204`, cookie cleared
- *  - `GET /api/session` → `TSessionDto`
- *  - `GET /api/stories/:storyId/access` → `TStoryAccessDto`
- */
 export const registerAuthRoutes = ({
     router,
     stories,
@@ -29,7 +19,7 @@ export const registerAuthRoutes = ({
             const { storyId } = params;
             const password = requireString(body, 'password');
             const story = await stories.read(storyId);
-            if (!story) throw HttpError.notFound(`No story "${storyId}"`);
+            if (!story) throw HttpError.noStory(storyId);
             const key = loginKey(clientAddress(req, trustProxy), storyId);
             if (loginLimiter.isBlocked(key)) {
                 throw HttpError.tooManyRequests('Too many wrong passwords, try again in a few minutes');
@@ -51,7 +41,7 @@ export const registerAuthRoutes = ({
         .handle('getSession', ({ req }): TSessionDto => ({ storyIds: sessions.storyIds(readSessionToken(req)) }))
         .handle('getStoryAccess', async ({ params, req }): Promise<TStoryAccessDto> => {
             const story = await stories.read(params.storyId);
-            if (!story) throw HttpError.notFound(`No story "${params.storyId}"`);
+            if (!story) throw HttpError.noStory(params.storyId);
             const canEdit = sessions.expiresAt(readSessionToken(req), params.storyId) !== null;
             return { canEdit, canPlay: canEdit || story.public };
         });

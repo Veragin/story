@@ -1,10 +1,5 @@
 import { STORY_LIMITS, type TCreateStoryBody, type TStoryDto, type TUpdateStoryBody } from '@story/visualizer-protocol';
 
-/**
- * The create / edit story form (`CreateStoryDialog`, `EditStoryDialog`) as the user types it:
- * the map size as text, the password twice. `validateStoryForm` checks what the server checks
- * (`STORY_LIMITS`, `server/src/stories/storyInput.ts`), so a bad form is caught before sending.
- */
 export type TStoryFormValue = {
     name: string;
     author: string;
@@ -18,7 +13,6 @@ export type TStoryFormValue = {
 
 export type TStoryFormErrors = Partial<Record<keyof TStoryFormValue, string>>;
 
-/** A new story's defaults: the plan's example map size (40 × 30). */
 export const EMPTY_STORY_FORM: TStoryFormValue = {
     name: '',
     author: '',
@@ -30,7 +24,6 @@ export const EMPTY_STORY_FORM: TStoryFormValue = {
     public: false,
 };
 
-/** The Edit form of a story: its info, with the password fields empty ("leave empty to keep"). */
 export const storyFormOf = (story: TStoryDto): TStoryFormValue => ({
     name: story.name,
     author: story.author,
@@ -52,10 +45,6 @@ const mapSideError = (text: string) => {
     return undefined;
 };
 
-/**
- * The errors of a form, by field (empty when it is valid). `passwordRequired`: a new story needs
- * one; an edit may leave both password fields empty to keep the current password.
- */
 export const validateStoryForm = (
     value: TStoryFormValue,
     { passwordRequired }: { passwordRequired: boolean }
@@ -88,7 +77,6 @@ export const validateStoryForm = (
 
 export const hasErrors = (errors: TStoryFormErrors) => Object.keys(errors).length > 0;
 
-/** `POST /api/stories` from a valid form. */
 export const toCreateBody = (value: TStoryFormValue): TCreateStoryBody => ({
     name: value.name.trim(),
     author: value.author.trim(),
@@ -98,7 +86,6 @@ export const toCreateBody = (value: TStoryFormValue): TCreateStoryBody => ({
     public: value.public,
 });
 
-/** `PUT /api/stories/:id/info` from a valid form: no `mapSize` (read-only), no empty password. */
 export const toUpdateBody = (value: TStoryFormValue, version: string): TUpdateStoryBody => ({
     version,
     name: value.name.trim(),

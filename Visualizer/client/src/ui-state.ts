@@ -1,19 +1,8 @@
 import { useCallback, useState } from 'react';
 import { STORY_ID } from './api/story';
 
-/**
- * View state that should survive a page reload (camera, selection, open panel, unsaved input…).
- *
- * Backed by `sessionStorage`, so it is per browser tab and is gone when the tab closes. Every
- * access is wrapped in try/catch: storage can be missing, full, blocked or hold garbage, and the
- * app must keep working without it (plan §3 "Live refresh", point 4).
- *
- * Keys are per story (`visualizer:<storyId>:<key>`): a tab keeps its drafts, camera and selection
- * apart for each story it opens, so a draft of one story never shows up in another.
- */
-
+// Every access is try/catch: storage can be missing, full, blocked or hold garbage
 export const UI_STATE_PREFIX = `visualizer:${STORY_ID}:`;
-const PREFIX = UI_STATE_PREFIX;
 
 const getStorage = (): Storage | null => {
     try {
@@ -23,10 +12,9 @@ const getStorage = (): Storage | null => {
     }
 };
 
-/** Read `key`. Returns `fallback` when it is missing, unreadable or not valid JSON. */
 export const getUiState = <T>(key: string, fallback: T): T => {
     try {
-        const raw = getStorage()?.getItem(PREFIX + key);
+        const raw = getStorage()?.getItem(UI_STATE_PREFIX + key);
         if (raw === null || raw === undefined) return fallback;
         return JSON.parse(raw) as T;
     } catch {
@@ -34,15 +22,14 @@ export const getUiState = <T>(key: string, fallback: T): T => {
     }
 };
 
-/** Write `key`. `undefined` removes it. Failures are ignored. */
 export const setUiState = <T>(key: string, value: T): void => {
     try {
         const storage = getStorage();
         if (!storage) return;
         if (value === undefined) {
-            storage.removeItem(PREFIX + key);
+            storage.removeItem(UI_STATE_PREFIX + key);
         } else {
-            storage.setItem(PREFIX + key, JSON.stringify(value));
+            storage.setItem(UI_STATE_PREFIX + key, JSON.stringify(value));
         }
     } catch {
         // storage unavailable or full: view state is best effort
@@ -51,16 +38,12 @@ export const setUiState = <T>(key: string, value: T): void => {
 
 export const removeUiState = (key: string): void => {
     try {
-        getStorage()?.removeItem(PREFIX + key);
+        getStorage()?.removeItem(UI_STATE_PREFIX + key);
     } catch {
-        // ignore
+        // best effort, like setUiState
     }
 };
 
-/**
- * `useState` that also mirrors its value into `sessionStorage` under `key`.
- * The initial value comes from storage when present.
- */
 export const useUiState = <T>(key: string, initial: T): [T, (value: T | ((prev: T) => T)) => void] => {
     const [value, setValue] = useState<T>(() => getUiState(key, initial));
 

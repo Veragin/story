@@ -3,12 +3,11 @@ import { Divider, Typography } from '@mui/material';
 import { isCode, type TScreenPassageDto } from '@story/visualizer-protocol';
 import { ImageInput } from '../../../../components/ImageInput';
 import { PlainTextField } from '../../../../components/PlainTextField';
-import { CodeBlock } from '../CostField';
+import { CodeBlock } from '../CodeBlock';
 import { BodyItems } from './BodyItems';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
-/** Title, image, execute and the body (plan phase 6). */
 export const ScreenFields = observer(
     ({
         draft,

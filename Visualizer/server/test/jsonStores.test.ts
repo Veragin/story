@@ -14,7 +14,7 @@ import {
     removePassagePositions,
     removeTimelineEntries,
 } from '../src/json';
-import { login, makeTempProject } from './helpers';
+import { listenLocal, login, makeTempProject } from './helpers';
 
 let app: TApp;
 let story: TServerContext;
@@ -29,7 +29,7 @@ beforeAll(async () => {
     app = await createApp({ storiesRoot: temp.storiesRoot, watch: false, batchMs: 20 });
     story = await app.story('example');
     story.bus.subscribe((e) => events.push(e));
-    base = `http://127.0.0.1:${await app.listen(0, '127.0.0.1')}`;
+    base = await listenLocal(app);
     cookie = await login(base);
 });
 
@@ -55,13 +55,16 @@ const call = async <T = Record<string, unknown>>(method: string, route: string, 
     return { status: res.status, json: (await res.json()) as T };
 };
 
-const exists = (file: string) =>
-    stat(file).then(
-        () => true,
-        () => false
-    );
+const exists = async (file: string) => {
+    try {
+        await stat(file);
+        return true;
+    } catch {
+        return false;
+    }
+};
 
-/** A small map with every feature: runs, a label, a description, polygons, a sub-map. */
+/** Every feature: runs, a label, a description, polygons, a sub-map. */
 const sampleMap = (): TMapFile => {
     const map = createDefaultMap('global', { title: 'World', width: 6, height: 3 });
     map.data[0] = map.data[0].map(() => ({ tile: 'water' }));
@@ -96,14 +99,13 @@ describe('map store', () => {
         expect(json).toMatchObject({
             mapId: 'global',
             title: 'Untitled',
-            // story.json's mapSize
             width: 80,
             height: 60,
             locations: {},
             maps: [],
         });
-        expect(json.data).toHaveLength(60); // rows = height
-        expect(json.data[0]).toHaveLength(80); // columns = width
+        expect(json.data).toHaveLength(60);
+        expect(json.data[0]).toHaveLength(80);
         expect(json.data[0][0]).toEqual({ tile: 'none' });
         expect(Object.keys(json.palette)).toEqual([
             'none',

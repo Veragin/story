@@ -12,34 +12,14 @@ import { passwordErrorMessage } from './passwordErrorMessage';
 
 type Props = {
     open: boolean;
-    /** The story being unlocked, shown in the default title ("Unlock <storyName>"). */
     storyName: string;
-    /** Replaces the default title. */
     title?: string;
-    /** A line above the field, e.g. why the password is needed. */
     message?: string;
-    /**
-     * Log in with the password. Resolve to close (the caller sets `open` to false); reject to keep
-     * the dialog open with the error shown under the field. See `passwordErrorMessage` for how
-     * the error is worded.
-     */
+    /** Resolve to close (caller sets `open` false); reject to keep it open showing the error. */
     onSubmit: (password: string) => Promise<void>;
     onCancel: () => void;
 };
 
-/**
- * The story password prompt (multiple stories): the landing page asks it before Edit / Open /
- * Export (and Play of a private story), the Visualizer client and SingleEngine when the server
- * answers 401. It only collects the password; logging in is the caller's `onSubmit`, so this knows
- * nothing about the API.
- *
- *     <PasswordDialog
- *         open={prompt !== null}
- *         storyName={prompt.name}
- *         onSubmit={(password) => api.login(prompt.id, password)}
- *         onCancel={() => setPrompt(null)}
- *     />
- */
 export const PasswordDialog = ({
     open,
     storyName,
@@ -52,7 +32,6 @@ export const PasswordDialog = ({
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
-    // Every opening starts empty: a password must not linger for the next story.
     useEffect(() => {
         if (open) {
             setPassword('');

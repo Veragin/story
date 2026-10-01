@@ -10,44 +10,26 @@ import type { StoryStore } from './StoryStore';
 
 export type TStoryContextsOptions = {
     stories: StoryStore;
-    /** Start a chokidar watcher for each loaded story (default true). */
     watch?: boolean;
-    /** The bus's batch window, passed through (tests shorten it). */
     batchMs?: number;
-    /** Unload a story after this long without use (default 30 min). */
     idleMs?: number;
-    /** How often to look for idle stories (default: `idleMs`, at most once a minute). */
     sweepMs?: number;
 };
 
-/** A story checked out for one request. Call `release` when the request is done. */
 export type TStoryLease = { ctx: TServerContext; release: () => void };
 
 type TEntry = {
     ready: Promise<TServerContext>;
-    /** Set once `ready` resolves; eviction only looks at loaded entries. */
     ctx: TServerContext | null;
     close: () => Promise<void>;
-    /** Requests in flight. */
     active: number;
     lastUsed: number;
 };
 
+type TLoaded = { watcher: FSWatcher | null; bus: EventBus | null };
+
 const DEFAULT_IDLE_MS = 30 * 60_000;
 
-/**
- * The loaded stories: a lazy cache `storyId → TServerContext`. A story is loaded on its first
- * request: its `ProjectRoot`, `EventBus`, file watcher and a `Router` over `STORY_ROUTES` filled by
- * `registerRoutes(ctx)` (which also creates its `SourceProject`, `SourceProject.for(project)`).
- * Route handlers close over that context, so they are per story without knowing it.
- *
- * A story is **idle** when no request is in flight, no one listens on its bus (an open `/events`
- * stream is a listener) and nothing used it for `idleMs`. Idle stories are unloaded: the watcher
- * and bus are closed and the context dropped, which lets the `SourceProject` (a ts-morph project,
- * tens of MB) be collected. The next request loads the story again.
- *
- * Callers must check that the story exists (`StoryStore.exists`) first; this class trusts the id.
- */
 export class StoryContexts {
     private readonly stories: StoryStore;
     private readonly watch: boolean;
@@ -66,15 +48,10 @@ export class StoryContexts {
         this.sweepTimer.unref();
     }
 
-    /** Ids of the stories loaded (or loading) right now. */
     loadedIds(): string[] {
         return [...this.entries.keys()];
     }
 
-    /**
-     * Check a story out for one request, loading it if needed. The story is not evicted until the
-     * lease is released.
-     */
     async acquire(storyId: string): Promise<TStoryLease> {
         if (this.closed) throw new Error('StoryContexts is closed');
         const entry = this.entry(storyId);
@@ -99,14 +76,12 @@ export class StoryContexts {
         };
     }
 
-    /** The context of a story, loading it if needed (tests, and code that holds no request). */
     async get(storyId: string): Promise<TServerContext> {
         const lease = await this.acquire(storyId);
         lease.release();
         return lease.ctx;
     }
 
-    /** Unload every idle story (see the class comment). Returns the ids unloaded. */
     async evictIdle(now = Date.now()): Promise<string[]> {
         const idle = [...this.entries].filter(
             ([, e]) =>
@@ -116,7 +91,6 @@ export class StoryContexts {
         return idle.map(([id]) => id);
     }
 
-    /** Unload one story now, whatever it is doing (open streams are cut off). */
     async evict(storyId: string): Promise<void> {
         const entry = this.entries.get(storyId);
         if (!entry) return;
@@ -124,7 +98,6 @@ export class StoryContexts {
         await entry.close();
     }
 
-    /** Unload everything and stop the sweep timer. */
     async close(): Promise<void> {
         this.closed = true;
         clearInterval(this.sweepTimer);
@@ -135,7 +108,7 @@ export class StoryContexts {
         const existing = this.entries.get(storyId);
         if (existing) return existing;
 
-        const loaded: { watcher: FSWatcher | null; bus: EventBus | null } = { watcher: null, bus: null };
+        const loaded: TLoaded = { watcher: null, bus: null };
         const ready = this.load(storyId, loaded);
         const entry: TEntry = {
             ready,
@@ -150,24 +123,21 @@ export class StoryContexts {
                 await loaded.bus?.close();
             },
         };
-        ready.then(
-            (ctx) => {
-                entry.ctx = ctx;
-            },
-            () => {
-                // a failed load is not cached: the next request tries again
-                if (this.entries.get(storyId) === entry) this.entries.delete(storyId);
-            }
-        );
+        void this.settle(storyId, entry);
         this.entries.set(storyId, entry);
         return entry;
     }
 
-    /** Build a story's context. `loaded` receives the watcher and bus as they are made, for `close`. */
-    private async load(
-        storyId: string,
-        loaded: { watcher: FSWatcher | null; bus: EventBus | null }
-    ): Promise<TServerContext> {
+    private async settle(storyId: string, entry: TEntry): Promise<void> {
+        try {
+            entry.ctx = await entry.ready;
+        } catch {
+            // a failed load is not cached: the next request tries again
+            if (this.entries.get(storyId) === entry) this.entries.delete(storyId);
+        }
+    }
+
+    private async load(storyId: string, loaded: TLoaded): Promise<TServerContext> {
         const project = new ProjectRoot(this.stories.dir(storyId), storyId);
         const bus = new EventBus({ project, batchMs: this.batchMs });
         loaded.bus = bus;
@@ -181,10 +151,7 @@ export class StoryContexts {
             watching: () => loaded.watcher !== null,
         };
         registerRoutes(ctx);
-        const missing = router.missing();
-        if (missing.length > 0) {
-            throw new Error(`Protocol routes without a handler: ${missing.join(', ')}`);
-        }
+        router.assertComplete();
         if (this.watch) loaded.watcher = await startWatcher(bus);
         return ctx;
     }

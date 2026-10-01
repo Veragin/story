@@ -10,13 +10,7 @@ import { createApp, type TApp, type TAppOptions } from '../src/app';
 import { EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
 import { PUBLIC_STORY_READS } from '../src/stories/access';
 import { STORY_FILE } from '../src/stories/StoryStore';
-import { EXAMPLE_PASSWORD, login, makeTempStories, sleep } from './helpers';
-
-/**
- * Security (multiple stories, phase 4): password hashing, session grants, the grant check on every
- * story route, the cookie, CSRF and the login rate limit. `example` is public (like the real one),
- * `secret` is a private copy of it.
- */
+import { EXAMPLE_PASSWORD, listenLocal, login, makeTempStories, requestJson, sleep } from './helpers';
 
 describe('password', () => {
     it('verifies the example story hash', async () => {
@@ -89,7 +83,7 @@ describe('SessionStore', () => {
         const { token } = sessions.grant(undefined, 'alpha');
         const internal = (sessions as unknown as { sessions: Map<string, unknown> }).sessions;
         vi.advanceTimersByTime(1500);
-        expect(internal.size).toBe(0); // the timer did it, without an access
+        expect(internal.size).toBe(0); // not `sessions.size`: that getter prunes by itself
 
         const fresh = sessions.grant(token, 'alpha');
         expect(fresh.token).not.toBe(token);
@@ -128,7 +122,7 @@ describe('over HTTP', () => {
         const secret = JSON.parse(await readFile(secretFile, 'utf8')) as Record<string, unknown>;
         await writeFile(secretFile, JSON.stringify({ ...secret, name: 'Secret', public: false }));
         app = await createApp({ storiesRoot: temp.storiesRoot, watch: false, ...options });
-        base = `http://127.0.0.1:${await app.listen(0, '127.0.0.1')}`;
+        base = await listenLocal(app);
     };
 
     afterEach(async () => {
@@ -136,21 +130,12 @@ describe('over HTTP', () => {
         await cleanup();
     });
 
-    const call = async (method: string, url: string, headers: Record<string, string> = {}, body?: unknown) => {
-        const res = await fetch(base + url, {
-            method,
-            headers: method === 'GET' ? headers : { 'content-type': 'application/json', ...headers },
-            body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        const text = await res.text();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { status: res.status, headers: res.headers, body: (text ? JSON.parse(text) : undefined) as any };
-    };
+    const call = (method: string, url: string, headers: Record<string, string> = {}, body?: unknown) =>
+        requestJson(base + url, method, { body, headers });
 
     const tryLogin = (storyId: string, password: string, headers: Record<string, string> = {}) =>
         call('POST', `/api/stories/${storyId}/login`, headers, { password });
 
-    /** Every story route of `storyId`, with made-up parameters and a plausible body. */
     const everyRoute = (storyId: string) =>
         (Object.keys(STORY_ROUTES) as TStoryRouteName[]).map((route) => {
             const { method, path: template } = STORY_ROUTES[route];
@@ -165,14 +150,14 @@ describe('over HTTP', () => {
 
     it('answers 401 on every story route without a grant, and never loads the story', async () => {
         await start();
-        const other = await login(base, 'example'); // a grant for another story does not help
+        const other = await login(base, 'example');
         for (const cookie of [undefined, 'story_session=forged', other]) {
             for (const { route, method, url } of everyRoute('secret')) {
                 const res = await call(method, url, cookie ? { cookie } : {}, method === 'GET' ? undefined : {});
                 expect([route, res.status, res.body?.error]).toEqual([route, 401, 'unauthorized']);
             }
         }
-        expect(app.contexts.loadedIds()).toEqual([]); // logging in does not load a story either
+        expect(app.contexts.loadedIds()).toEqual([]);
     }, 60_000);
 
     it('lets only the art of a public story through without a grant', async () => {
@@ -197,7 +182,7 @@ describe('over HTTP', () => {
 
         const ok = await tryLogin('secret', EXAMPLE_PASSWORD);
         expect(ok.status).toBe(204);
-        const setCookie = ok.headers.get('set-cookie')!;
+        const setCookie = ok.headers.get('set-cookie') ?? '';
         expect(setCookie).toMatch(/^story_session=[\w-]{43}; /);
         const flags = setCookie.split('; ').slice(1);
         expect(flags).toEqual(['HttpOnly', 'SameSite=Lax', 'Path=/', 'Max-Age=86400']);
@@ -212,7 +197,7 @@ describe('over HTTP', () => {
         await start({ cookieSecure: true });
         const ok = await tryLogin('secret', EXAMPLE_PASSWORD);
         expect(ok.headers.get('set-cookie')).toMatch(/; Secure$/);
-        const out = await call('POST', '/api/logout', { cookie: ok.headers.get('set-cookie')!.split(';')[0] });
+        const out = await call('POST', '/api/logout', { cookie: (ok.headers.get('set-cookie') ?? '').split(';')[0] });
         expect(out.headers.get('set-cookie')).toMatch(/^story_session=; .*Max-Age=0; Secure$/);
     });
 
@@ -275,7 +260,7 @@ describe('over HTTP', () => {
         const json = { 'content-type': 'application/json; charset=utf-8' };
         expect((await put({ ...json, origin: 'https://evil.example' })).status).toBe(403);
         expect((await put({ ...json, origin: 'null' })).status).toBe(403);
-        // an allowed origin, the server's own origin (the Vite proxy keeps Host), or no Origin (not a browser)
+        // the server's own origin passes because the Vite proxy keeps Host
         const version = async () => (await call('GET', url, { cookie })).body.version as string;
         doc.version = await version();
         expect((await put({ ...json, origin: 'https://stories.example.com' })).status).toBe(200);
@@ -284,7 +269,6 @@ describe('over HTTP', () => {
         doc.version = await version();
         expect((await put(json)).status).toBe(200);
 
-        // login and logout are mutations too
         const foreign = await tryLogin('secret', EXAMPLE_PASSWORD, { origin: 'https://evil.example' });
         expect(foreign.status).toBe(403);
         const plain = await fetch(`${base}/api/logout`, { method: 'POST' });
@@ -306,7 +290,6 @@ describe('over HTTP', () => {
         const blocked = await tryLogin('secret', 'wrong again');
         expect(blocked.status).toBe(429);
         expect(blocked.body.error).toBe('too_many_requests');
-        // even the right password, until the window ends; other stories are not affected
         expect((await tryLogin('secret', EXAMPLE_PASSWORD)).status).toBe(429);
         expect((await tryLogin('example', EXAMPLE_PASSWORD)).status).toBe(204);
     }, 30_000);

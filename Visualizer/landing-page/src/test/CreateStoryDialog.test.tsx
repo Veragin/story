@@ -114,7 +114,7 @@ describe('CreateStoryDialog', () => {
             `[data-field="${field}"]`
         )!;
 
-    /** Type into a React-controlled input: set the value natively, then fire `input`. */
+    // React tracks controlled values; bypass via the native setter so `input` registers
     const type = (field: keyof TStoryFormValue, value: string) => {
         const el = input(field);
         const setter = Object.getOwnPropertyDescriptor(

@@ -5,7 +5,6 @@ import { halfStrokeWidth, Shape, type TShapeProps } from './Shape';
 
 export type TPolygonProps<TData = unknown> = TShapeProps<TData> & {
     points: TPoint[];
-    /** Whether `VertexEditController` may edit it. Default true. */
     vertexEditable?: boolean;
 };
 
@@ -34,7 +33,6 @@ export class PolygonShape<TData = unknown> extends Shape<TData> {
         this.invalidate();
     }
 
-    /** Inserts `p` so it becomes vertex `index`. */
     insertVertex(index: number, p: TPoint): void {
         this.points.splice(index, 0, { ...p });
         this.invalidate();
@@ -76,17 +74,13 @@ export class PolygonShape<TData = unknown> extends Shape<TData> {
 
     protected drawLabel(ctx: CanvasRenderingContext2D): void {
         if (!this.label) return;
-        const s = this.labelStyle ?? {};
         const c = this.getCenter();
         drawTextBlock(ctx, this.label, {
+            ...this.labelFont('#fff', 14),
             x: c.x,
             y: c.y,
             align: 'center',
             verticalAlign: 'middle',
-            color: s.color ?? '#fff',
-            fontSize: s.fontSize ?? 14,
-            fontFamily: s.fontFamily,
-            fontWeight: s.fontWeight,
         });
     }
 }

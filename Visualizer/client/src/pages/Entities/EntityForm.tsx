@@ -1,3 +1,4 @@
+import { capitalize } from '@story/shared';
 import { useEffect, useState } from 'react';
 import {
     Button,
@@ -73,7 +74,6 @@ const isRecord = (v: unknown): v is TValueRecord =>
 const isStringArray = (v: unknown): v is string[] =>
     Array.isArray(v) && v.every((x) => typeof x === 'string');
 
-/** The right-hand form of the selected entity. */
 export const EntityForm = observer(({ store }: { store: EntitiesStore }) => {
     const { draft, base } = store;
 
@@ -278,7 +278,6 @@ const KindFields = observer(({ store, draft, errorsOf }: TFieldsProps) => {
         </>
     );
 
-    /** Characters and npcs have a portrait: the `.png` next to their file, with its description. */
     const portrait = (owner: 'characters' | 'npcs') => (
         <ImageInput
             api={store.api}
@@ -496,9 +495,11 @@ const StartPassageField = observer(
         const projectVersion = store.project?.version;
         useEffect(() => {
             let alive = true;
-            void store.passageIdsOf(character.id).then((ids) => {
+            const loadOptions = async () => {
+                const ids = await store.passageIdsOf(character.id);
                 if (alive) setOptions(ids);
-            });
+            };
+            void loadOptions();
             return () => {
                 alive = false;
             };
@@ -516,9 +517,6 @@ const StartPassageField = observer(
     }
 );
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-/** `export type T<Name><Suffix>Data = { … }` next to the entity — always code. */
 const DataTypeField = observer(
     ({
         store,

@@ -1,13 +1,10 @@
 import '@story/shared'; // installs the global `_`
+import { $, typeInto } from './dom';
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TFunctionDto } from '@story/visualizer-protocol';
 import { FunctionInput } from '../FunctionInput';
-
-(
-    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('FunctionInput', () => {
     let root: Root | null = null;
@@ -18,7 +15,6 @@ describe('FunctionInput', () => {
         document.body.innerHTML = '';
     });
 
-    /** Renders the input with its value held in state, like a form draft; returns the change spy. */
     const render = (
         initial: TFunctionDto | undefined,
         props: { optional?: boolean; emptyCode?: string } = {}
@@ -46,25 +42,11 @@ describe('FunctionInput', () => {
         return onChange;
     };
 
-    const $ = <T extends Element = HTMLElement>(selector: string) =>
-        document.querySelector<T & HTMLElement>(selector);
     const code = () =>
         $<HTMLTextAreaElement>('textarea[aria-label="Execute code"]');
     const description = () =>
         $<HTMLTextAreaElement>('[data-field="function-description"]');
     const click = (selector: string) => act(() => $(selector)!.click());
-
-    /** Type into a React-controlled textarea: set the value natively, then fire `input`. */
-    const type = (el: HTMLTextAreaElement, value: string) => {
-        const setter = Object.getOwnPropertyDescriptor(
-            Object.getPrototypeOf(el),
-            'value'
-        )!.set!;
-        act(() => {
-            setter.call(el, value);
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-    };
 
     it('starts in the code view without a description', () => {
         render({ code: '() => {}' });
@@ -86,9 +68,9 @@ describe('FunctionInput', () => {
 
     it('keeps both values while toggling between the views', () => {
         const onChange = render({ code: '() => {}' });
-        type(code()!, '() => heal()');
+        typeInto(code()!, '() => heal()');
         click('[data-action="show-description"]');
-        type(description()!, 'Heals Annie.');
+        typeInto(description()!, 'Heals Annie.');
         expect(onChange).toHaveBeenLastCalledWith({
             code: '() => heal()',
             description: 'Heals Annie.',
@@ -102,7 +84,7 @@ describe('FunctionInput', () => {
 
     it('drops the description key when it is cleared', () => {
         const onChange = render({ code: 'true', description: 'Always.' });
-        type(description()!, '');
+        typeInto(description()!, '');
         expect(onChange).toHaveBeenLastCalledWith({ code: 'true' });
         expect(Object.keys(onChange.mock.lastCall![0] as object)).toEqual([
             'code',

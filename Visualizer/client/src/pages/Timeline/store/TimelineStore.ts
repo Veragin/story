@@ -25,18 +25,15 @@ export type TTimelineSelection = { kind: 'chapter' | 'trigger'; id: string } | n
 
 export type TTimelineCamera = { x: number; y: number };
 
-/** Everything the store needs from the app shell; injected so tests can answer the dialogs. */
 export type TTimelineDeps = {
     confirm: (options: { title: string; message?: string; danger?: boolean }) => Promise<boolean>;
-    /** Shows the 409 `referenced` list of a refused delete. */
     showReferences: (title: string, references: TReferenceDto[]) => void;
     notify: (message: string, variant?: TToastVariant) => void;
     openChapter: (chapterId: string) => void;
 };
 
-/** Height of a chapter box and the vertical gap between default rows, in px (= world units). */
 export const CHAPTER_HEIGHT = 50;
-export const DEFAULT_ROW_HEIGHT = 70;
+const DEFAULT_ROW_HEIGHT = 70;
 
 const UI_KEYS = {
     camera: 'timeline:camera',
@@ -53,7 +50,7 @@ const DEFAULT_TOGGLES: TToggles = {
     pps: DEFAULT_PX_PER_SECOND,
 };
 
-const errorMessage = (e: unknown) => {
+export const errorMessage = (e: unknown) => {
     if (e instanceof ApiError) {
         if (e.isNotImplemented) return _('The server does not implement this yet (501).');
         if (e.isInvalid) return e.diagnostics.map((d) => `${d.file}:${d.line} ${d.message}`).join('\n') || e.message;
@@ -62,19 +59,6 @@ const errorMessage = (e: unknown) => {
     return e instanceof Error ? e.message : String(e);
 };
 
-/**
- * Data and view state of the Timeline page (plan WP5). Framework-free apart from MobX: the canvas
- * (`TimelineView`) renders it and reports the user's edits back through `commit*`, and the React
- * page reads it for the control bar and the modals.
- *
- * - Data: the project summary, every chapter and trigger DTO (with `version`), and the timeline
- *   layout. Loaded by `load()`, kept fresh by `start()` (live refresh through `apiEvents`: only the
- *   resource named by an event is refetched, in place).
- * - Edits are optimistic: the DTO changes at once and is replaced by the server's answer (or rolled
- *   back on an error). Saves of one resource are queued, so a second drag waits for the first
- *   one's new `version`.
- * - View state (camera, time scale, toggles, selection) is mirrored into `ui-state`.
- */
 export class TimelineStore {
     project: TProjectDto | null = null;
     readonly chapters = observable.map<string, TChapterDto>({}, { deep: false });
@@ -84,17 +68,14 @@ export class TimelineStore {
     status: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
     loadError: string | null = null;
 
-    /** Time scale: world px per second. */
     pps: number;
     showConnections: boolean;
     showTriggers: boolean;
-    /** Character filter; `null` = all characters. */
     characterId: string | null;
     selected: TTimelineSelection;
-    /** Bumped when a rejected edit is rolled back without any DTO change, so the view re-syncs. */
+    // makes the view re-sync after a rollback that changed no DTO
     revision = 0;
 
-    /** Camera as saved in `ui-state` (read once by the view). `null` = never saved. */
     readonly savedCamera: TTimelineCamera | null;
 
     private queues = new Map<string, Promise<unknown>>();
@@ -119,7 +100,7 @@ export class TimelineStore {
         makeAutoObservable<this, 'queues' | 'disposers' | 'cameraTimer'>(this, {
             api: false,
             events: false,
-            // DTOs are replaced, never mutated; plain objects also go straight into request bodies.
+            // replaced, never mutated; plain objects go straight into request bodies
             layout: observable.ref,
             project: observable.ref,
             selected: observable.ref,
@@ -144,21 +125,15 @@ export class TimelineStore {
         });
     }
 
-    // ---- time mapping --------------------------------------------------------------------------
-
     timeToX = (seconds: number) => timeToX(seconds, this.pps);
     xToTime = (x: number) => xToTime(x, this.pps);
 
-    /** Changes the time scale; returns the applied (clamped) value. */
     setPps = (pps: number) => {
         this.pps = clampPxPerSecond(pps);
         this.saveToggles();
         return this.pps;
     };
 
-    // ---- derived -------------------------------------------------------------------------------
-
-    /** The chapter's `[start, end]` in seconds; `null` when the time range is code. */
     chapterRange = (chapterId: string) => {
         const dto = this.chapters.get(chapterId);
         return dto ? parseRange(dto.timeRange) : null;
@@ -171,7 +146,6 @@ export class TimelineStore {
         return dto ? displayText(dto.title, chapterId) : chapterId;
     };
 
-    /** Chapter ids in project order (chapters only the store knows about come last). */
     get chapterIds(): string[] {
         const order = this.project?.chapters.map((c) => c.id) ?? [];
         const known = order.filter((id) => this.chapters.has(id));
@@ -179,14 +153,12 @@ export class TimelineStore {
         return [...known, ...rest];
     }
 
-    /** The saved y, or a default row by position in the project. */
     chapterY = (chapterId: string): number => {
         const saved = this.layout?.chapters[chapterId]?.y;
         if (typeof saved === 'number' && Number.isFinite(saved)) return saved;
         return Math.max(0, this.chapterIds.indexOf(chapterId)) * DEFAULT_ROW_HEIGHT;
     };
 
-    /** Characters of a chapter: its `<character>.passages/` folders (chapter DTO, else the project). */
     chapterCharacterIds = (chapterId: string): string[] => {
         const dto = this.chapters.get(chapterId);
         if (dto) return dto.characters.map((c) => c.characterId);
@@ -196,7 +168,6 @@ export class TimelineStore {
     isChapterVisible = (chapterId: string) =>
         this.characterId === null || this.chapterCharacterIds(chapterId).includes(this.characterId);
 
-    /** Parent → child pairs (both ends known). */
     get connections(): { from: string; to: string }[] {
         const out: { from: string; to: string }[] = [];
         for (const [id, dto] of this.chapters) {
@@ -210,7 +181,6 @@ export class TimelineStore {
         return out;
     }
 
-    /** Chapters / triggers that cannot be placed because their time is code. */
     get unplaced(): { chapters: string[]; triggers: string[] } {
         return {
             chapters: [...this.chapters.keys()].filter((id) => this.chapterRange(id) === null),
@@ -221,8 +191,6 @@ export class TimelineStore {
     get characters() {
         return this.project?.characters ?? [];
     }
-
-    // ---- view state ----------------------------------------------------------------------------
 
     select = (selection: TTimelineSelection) => {
         this.selected = selection;
@@ -246,7 +214,6 @@ export class TimelineStore {
         this.saveToggles();
     };
 
-    /** Called by the view on camera moves; written to `ui-state` with a short debounce. */
     saveCamera = (camera: TTimelineCamera) => {
         if (this.cameraTimer) clearTimeout(this.cameraTimer);
         this.cameraTimer = setTimeout(() => {
@@ -264,17 +231,13 @@ export class TimelineStore {
         });
     }
 
-    // ---- loading and live refresh --------------------------------------------------------------
-
-    /** Loads (or reloads, in place) the project, every chapter and trigger, and the layout. */
     load = async () => {
         runInAction(() => {
             if (this.status !== 'ready') this.status = 'loading';
         });
         try {
             const [project, layout] = await Promise.all([this.api.getProject(), this.api.getTimelineLayout()]);
-            // One chapter / trigger that fails to load (e.g. 422, its source does not type-check)
-            // is left out rather than failing the whole timeline.
+            // one unloadable chapter / trigger (e.g. 422) must not fail the whole timeline
             const [chapters, triggers] = await Promise.all([
                 Promise.all(project.chapters.map((c) => this.api.getChapter(c.id).catch(() => null))),
                 Promise.all(project.triggers.map((t) => this.api.getTrigger(t.id).catch(() => null))),
@@ -296,7 +259,6 @@ export class TimelineStore {
         }
     };
 
-    /** Subscribes to live changes. Returns (and remembers for `dispose`) the unsubscribe. */
     start = () => {
         const offs = [
             this.events.subscribe('chapter', (e) => void this.onChapterEvent(e)),
@@ -327,7 +289,7 @@ export class TimelineStore {
 
     private onTriggerEvent = async (e: TChangeEvent) => {
         if (e.id === '*') {
-            // A hand edit of a chapter's triggers.ts: find out which triggers exist now.
+            // '*' = hand edit of a chapter's triggers.ts
             await this.reconcileProject();
             const ids = [...this.triggers.values()]
                 .filter((t) => e.chapterId === undefined || t.chapterId === e.chapterId)
@@ -335,7 +297,7 @@ export class TimelineStore {
             await Promise.all(ids.map((id) => this.refetchTrigger(id)));
             return;
         }
-        // Adding / removing a trigger also edits the chapter's `triggers: [...]` (a new chapter version).
+        // adding / removing a trigger also bumps its chapter's version
         const chapterId = e.chapterId ?? this.triggers.get(e.id)?.chapterId;
         if (e.op === 'deleted' || e.version === null) {
             runInAction(() => this.removeTrigger(e.id));
@@ -375,7 +337,6 @@ export class TimelineStore {
         }
     };
 
-    /** Refetches the project summary and loads / drops the chapters and triggers it added / removed. */
     reconcileProject = async () => {
         let project: TProjectDto;
         try {
@@ -413,12 +374,12 @@ export class TimelineStore {
         if (!exists) this.select(null);
     }
 
-    // ---- edits ---------------------------------------------------------------------------------
-
-    /** Runs saves of one resource one after another, so each one uses the previous one's version. */
     private enqueue<T>(key: string, fn: () => Promise<T>): Promise<T> {
         const prev = this.queues.get(key) ?? Promise.resolve();
-        const next = prev.then(fn, fn);
+        const next = (async () => {
+            await prev;
+            return fn();
+        })();
         this.queues.set(
             key,
             next.catch(() => undefined)
@@ -426,10 +387,6 @@ export class TimelineStore {
         return next;
     }
 
-    /**
-     * A chapter was dragged or resized: saves the new time range (`PUT /chapters/:id`) and / or
-     * the new y (`PUT /layout/timeline`). Times are seconds; unchanged parts are not sent.
-     */
     commitChapter = async (chapterId: string, next: { start?: number; end?: number; y?: number }) => {
         const tasks: Promise<unknown>[] = [];
         const range = this.chapterRange(chapterId);
@@ -464,8 +421,7 @@ export class TimelineStore {
                         if (current) this.chapters.set(chapterId, current);
                         else this.removeChapter(chapterId);
                     } else {
-                        // Roll back the range only: an earlier queued save may have advanced
-                        // the version since `before` was captured.
+                        // an earlier queued save may have advanced the version since `before`
                         const latest = this.chapters.get(chapterId);
                         if (latest) this.chapters.set(chapterId, { ...latest, timeRange: before.timeRange });
                     }
@@ -474,7 +430,7 @@ export class TimelineStore {
         });
     }
 
-    /** The layout is one file for all chapters: on `stale`, re-apply this one y onto the fresh file once. */
+    // one file for all chapters: on stale, re-apply this y onto the fresh file once
     private saveChapterY(chapterId: string, y: number) {
         const apply = (layout: TTimelineLayoutDto | null): TTimelineLayoutDto => ({
             version: layout?.version ?? '',
@@ -506,7 +462,6 @@ export class TimelineStore {
         });
     }
 
-    /** A trigger was dragged: saves its new time (`PUT /triggers/:id`). */
     commitTrigger = async (triggerId: string, seconds: number) => {
         const before = this.triggers.get(triggerId);
         const time = Math.round(seconds);
@@ -528,7 +483,7 @@ export class TimelineStore {
                         if (current) this.triggers.set(triggerId, current);
                         else this.removeTrigger(triggerId);
                     } else {
-                        // Roll back the time only, keeping the latest known version.
+                        // an earlier queued save may have advanced the version since `before`
                         const latest = this.triggers.get(triggerId);
                         if (latest) this.triggers.set(triggerId, { ...latest, time: before.time });
                     }
@@ -537,7 +492,6 @@ export class TimelineStore {
         });
     };
 
-    /** Name / description edit from the trigger modal. Throws the `ApiError` (the modal shows `stale`). */
     updateTrigger = async (triggerId: string, body: TUpdateTriggerBody) => {
         const saved = await this.enqueue(`trigger:${triggerId}`, () => this.api.updateTrigger(triggerId, body));
         runInAction(() => this.triggers.set(triggerId, saved));
@@ -556,14 +510,14 @@ export class TimelineStore {
         }
     }
 
-    /** Delete key: confirm, then `DELETE`. A 409 `referenced` answer shows the references. */
     deleteSelected = async () => {
         const selection = this.selected;
         if (!selection) return false;
         const isChapter = selection.kind === 'chapter';
-        const dto = isChapter ? this.chapters.get(selection.id) : this.triggers.get(selection.id);
+        const trigger = isChapter ? undefined : this.triggers.get(selection.id);
+        const dto = isChapter ? this.chapters.get(selection.id) : trigger;
         if (!dto) return false;
-        const name = isChapter ? this.chapterTitle(selection.id) : displayText((dto as TTriggerDto).name, selection.id);
+        const name = trigger ? displayText(trigger.name, selection.id) : this.chapterTitle(selection.id);
         const ok = await this.deps.confirm({
             title: isChapter ? _('Delete chapter %s?', name) : _('Delete trigger %s?', name),
             message: isChapter
@@ -586,8 +540,8 @@ export class TimelineStore {
                 else this.removeTrigger(selection.id);
             });
             void this.reconcileProject();
-            // Deleting a trigger also edits its chapter's `triggers: [...]`: take the new version.
-            if (!isChapter) await this.refetchChapter((dto as TTriggerDto).chapterId);
+            // its chapter's triggers list (and version) changed
+            if (trigger) await this.refetchChapter(trigger.chapterId);
             return true;
         } catch (e) {
             if (e instanceof ApiError && e.isReferenced) {
@@ -609,7 +563,6 @@ export class TimelineStore {
         }
     };
 
-    /** "Add" → chapter. Placed at `start` for one day. Throws the `ApiError` for the modal to show. */
     createChapter = async (body: { chapterId: string; location: string; start: number; title?: string }) => {
         const start = Math.round(body.start);
         const dto = await this.api.createChapter({
@@ -626,7 +579,6 @@ export class TimelineStore {
         return dto;
     };
 
-    /** "Add" → trigger in `chapterId` at `time`. Throws the `ApiError` for the modal to show. */
     createTrigger = async (body: { chapterId: string; triggerId: string; time: number; name?: string }) => {
         const dto = await this.api.createTrigger(body.chapterId, {
             triggerId: body.triggerId,
@@ -646,7 +598,4 @@ export class TimelineStore {
     openChapter = (chapterId: string) => this.deps.openChapter(chapterId);
 }
 
-/** Default dependencies: shell modals, toasts, router. Imported lazily by the page. */
 export const toastNotify = (message: string, variant: TToastVariant = 'info') => showToast(message, { variant });
-
-export { errorMessage };

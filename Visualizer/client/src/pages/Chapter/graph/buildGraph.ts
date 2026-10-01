@@ -1,34 +1,25 @@
 import type { TPassageDto, TPassageEdgeDto, TPassageType } from '@story/visualizer-protocol';
 import { displayText } from '../../../api';
 
-/** A passage box of the chapter graph. */
 export type TGraphNode = {
     id: string;
     characterId: string;
     type: TPassageType;
     title: string;
-    /** The passage links to itself (drawn as a marker, not an arrow). */
     selfLoop: boolean;
 };
 
-/**
- * A link target that is not a passage of this chapter: a passage of another chapter (a
- * transition, `resolved`) or one that does not exist at all (a dangling id).
- */
 export type TGhostNode = {
     id: string;
     passageId: string;
     resolved: boolean;
 };
 
-/** One arrow. Several links between the same two passages collapse into one edge with a `count`. */
 export type TGraphEdge = {
     id: string;
     from: string;
-    /** A passage id, or a ghost id (`ghost:<passageId>`). */
     to: string;
     kinds: TPassageEdgeDto['kind'][];
-    /** Every link it stands for is conditional (inside code, or under a `condition`). */
     conditional: boolean;
     resolved: boolean;
     count: number;
@@ -39,14 +30,8 @@ export type TGraph = { nodes: TGraphNode[]; ghosts: TGhostNode[]; edges: TGraphE
 export const ghostId = (passageId: string) => `ghost:${passageId}`;
 export const isGhostId = (id: string) => id.startsWith('ghost:');
 
-export const passageTitle = (p: TPassageDto): string =>
-    p.type === 'screen' ? displayText(p.title, p.localId) : p.localId;
+const passageTitle = (p: TPassageDto): string => (p.type === 'screen' ? displayText(p.title, p.localId) : p.localId);
 
-/**
- * Nodes, ghost nodes and deduplicated arrows from `GET /chapters/:ch/passages` (the
- * server's static edge extraction, plan §1.1). Edges out of passages that are not in the list
- * are dropped.
- */
 export const buildGraph = (passages: TPassageDto[], edges: TPassageEdgeDto[]): TGraph => {
     const ids = new Set(passages.map((p) => p.passageId));
     const selfLoops = new Set<string>();

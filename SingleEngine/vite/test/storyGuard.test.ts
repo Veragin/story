@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { classifyStoryRequest, createStoryAccessCache, type TStoryRequestContext } from '../storyGuard';
 
-/**
- * A fake file system: `/app` is the repo, `/app/stories` holds `example` and `secret`, and the
- * workspace symlink `/app/node_modules/@story/data` points at the example's `data/` (as yarn makes
- * it). `realpath` throws for anything else that does not exist, like `fs.realpathSync`.
- */
+// `/app/node_modules/@story/data` is the workspace symlink yarn makes to the example's `data/`
 const EXISTING = new Set([
     '/',
     '/app',

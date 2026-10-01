@@ -2,9 +2,7 @@ import { Time, type TimeManager } from '@story/shared';
 import { geometry, Shape, type TPoint, type TRect, type TSize } from '../../../canvas';
 import { labelStep, xToTime } from '../store/timeScale';
 
-/** Height of the strip band at the bottom of the canvas, in screen px. */
 export const STRIP_HEIGHT = 96;
-/** Offsets inside the band, from its top. */
 export const TRIGGER_DOT_OFFSET = 34;
 const BAR_TOP = 52;
 const BAR_HEIGHT = 10;
@@ -23,23 +21,15 @@ export type TStripOptions = {
     timeManager: TimeManager;
 };
 
-/**
- * The time strip (the old `TimelineRender`, ported): a band pinned to the bottom of the view with
- * the time bar, tick labels whose spacing follows the time scale, and a red marker with the time
- * under the pointer. Its bounds follow the camera, so it never moves on screen; it is interactive
- * (hits on it do not fall through to chapters) but not selectable. The camera zoom is locked at 1
- * on the timeline, so world units equal screen pixels here.
- */
 export class TimeStripShape extends Shape<{ kind: 'strip' }> {
     readonly kind = 'time-strip';
-    /** Screen x of the pointer while it is over the strip, for the marker. */
+    // screen x, usable as a world offset because the timeline's zoom is locked at 1
     hoverX: number | null = null;
 
     constructor(private readonly opts: TStripOptions) {
         super({ id: 'time-strip', selectable: false, cursor: 'grab', data: { kind: 'strip' }, zIndex: 0 });
     }
 
-    /** World y of the band's top edge. */
     get top(): number {
         const cam = this.host?.camera;
         const { height } = this.opts.getViewport();
@@ -67,7 +57,6 @@ export class TimeStripShape extends Shape<{ kind: 'strip' }> {
         return false;
     }
 
-    /** Visible tick times, for the strip and the background grid. */
     ticks(): { seconds: number; label: string }[] {
         const cam = this.host?.camera;
         if (!cam) return [];

@@ -11,11 +11,9 @@ export type TRectProps<TData = unknown> = TShapeProps<TData> & {
     width: number;
     height: number;
     cornerRadius?: number;
-    /** Edges the selection controller offers as resize handles (while selected + editable). */
     resizeEdges?: TRectEdge[];
     minWidth?: number;
     minHeight?: number;
-    /** Last word on a resize: receives the proposed rect and returns the one to use. */
     constrainResize?: (rect: TRect, edge: TRectEdge, shape: RectShape<TData>) => TRect;
 };
 
@@ -85,22 +83,18 @@ export class RectShape<TData = unknown> extends Shape<TData> {
         if (!this.label) return;
         const s = this.labelStyle ?? {};
         const padding = s.padding ?? 6;
-        const fontSize = s.fontSize ?? 14;
         ctx.save();
         ctx.beginPath();
         ctx.rect(this.x, this.y, this.width, this.height);
         ctx.clip();
         const topLeft = s.placement === 'top-left';
         drawTextBlock(ctx, this.label, {
+            ...this.labelFont('#fff', 14),
             x: topLeft ? this.x + padding : this.x + this.width / 2,
             y: topLeft ? this.y + padding : this.y + this.height / 2,
             align: topLeft ? 'left' : 'center',
             verticalAlign: topLeft ? 'top' : 'middle',
             maxWidth: Math.max(0, this.width - padding * 2),
-            color: s.color ?? '#fff',
-            fontSize,
-            fontFamily: s.fontFamily,
-            fontWeight: s.fontWeight,
         });
         ctx.restore();
     }

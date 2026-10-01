@@ -1,5 +1,5 @@
 /**
- * Every non-2xx reply carries a `TApiErrorBody` (plan §3 "Server API").
+ * Every non-2xx reply carries a `TApiErrorBody`.
  *
  * | status | `error`            | extra fields     | meaning                                              |
  * | ------ | ------------------ | ---------------- | ---------------------------------------------------- |
@@ -33,30 +33,27 @@ export type TApiErrorBody = {
     message?: string;
     diagnostics?: TDiagnosticDto[];
     references?: TReferenceDto[];
-    /** For `stale`: the current resource DTO, or `null` when it no longer exists. */
+    /** For `stale`: the current DTO, or `null` when deleted. */
     current?: unknown;
 };
 
-/** A TypeScript diagnostic from `validate.ts`, positioned in the file that would be written. */
+/** Positioned in the file that would have been written. */
 export type TDiagnosticDto = {
-    /** Project-relative path (`data/chapters/village/thomas.passages/intro.ts`). */
     file: string;
     /** 1-based. */
     line: number;
     /** 1-based. */
     column: number;
     message: string;
-    /** TS error number (`2322`). */
+    /** TS error number. */
     code?: number;
-    /** Dotted path of the DTO field the diagnostic belongs to, when the server can tell (`body.0.links.1.cost`). */
+    /** Dotted DTO field path (`body.0.links.1.cost`), when known. */
     field?: string;
 };
 
-/** A place that still refers to a resource being deleted. */
 export type TReferenceDto = {
     file: string;
     line: number;
-    /** The referring passage / chapter / entity, when it is one. */
     passageId?: string;
     /** The line's text, trimmed. */
     text?: string;

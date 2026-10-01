@@ -24,7 +24,6 @@ import {
 } from '../story';
 import { readFields, readValue, S, type TField, type TSchema } from '../values';
 
-/** Fields of `TChapter` the Visualizer edits, and how each one reads (plan WP6 "edit chapter info"). */
 export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
     title: { schema: S.string },
     description: { schema: S.string },
@@ -42,20 +41,18 @@ export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
     init: { schema: S.record() },
 });
 
-export const triggerIdsSchema = (sp: SourceProject): TSchema => S.array(S.ref(triggerRef(sp)));
+const triggerIdsSchema = (sp: SourceProject): TSchema => S.array(S.ref(triggerRef(sp)));
 
-/** `export type T<Name>Data = { … }` next to an entity, by suffix (`ChapterData`, `NpcData`, …). */
 export const readDataType = (sf: SourceFile, suffix: string): TDataTypeDto | undefined => {
     const alias = findTypeAlias(sf, (n) => n.startsWith('T') && n.endsWith(suffix));
     const node = alias?.getTypeNode();
     return alias && node ? { name: alias.getName(), code: node.getText() } : undefined;
 };
 
-/** The chapter's version: its chapter file and its passages registry (which lists its characters' passages). */
 export const chapterVersion = (sp: SourceProject, chapterId: string) =>
     version(sp.text(sp.root.paths.chapterFile(chapterId)), chapterPassagesFile(sp, chapterId)?.getFullText() ?? null);
 
-export const readChapterCharacters = (sp: SourceProject, chapterId: string): TChapterCharacterDto[] =>
+const readChapterCharacters = (sp: SourceProject, chapterId: string): TChapterCharacterDto[] =>
     [...chapterCharacterFiles(sp, chapterId)].map(([characterId, files]) => {
         const passageIds = files
             .map((sf) => `${chapterId}-${characterId}-${passageLocalId(passageSource(sf), sf)}`)
@@ -90,7 +87,6 @@ export const readChapter = (sp: SourceProject, chapterId: string): TChapterDto =
     };
 };
 
-/** The `/project` entry of a chapter. */
 export const readProjectChapter = (sp: SourceProject, chapterId: string): TProjectChapterDto | undefined => {
     const sf = sp.file(sp.root.paths.chapterFile(chapterId));
     if (!sf) return undefined;

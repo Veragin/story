@@ -1,21 +1,9 @@
 /**
- * Building blocks shared by every DTO.
- *
- * ## Code fields (plan §3 "Code-field convention")
- *
- * A field whose source initializer may be an arbitrary expression is typed `X | TCode`.
- * Readers return the plain literal when the initializer is one (`'Forest'`, `true`, `10`), and
- * `{ code }` — the initializer's source text, verbatim — whenever it is not (`_('visit')`,
- * `s.characters.annie.health > 0`, `() => {}`). Writers put `code` back with `setInitializer`.
- *
- * Known ambiguity: inside a free-form value (`TValue`, used for `init` objects) a literal object
- * whose only key is a string `code` is indistinguishable from a `TCode`. Readers must return such
- * an object as `{ code: '{ code: "…" }' }` so that it round-trips.
+ * The verbatim source text of an initializer that is not a plain literal. A literal object whose
+ * only key is a string `code` must be read as `{ code: '{ code: "…" }' }` so it round-trips.
  */
-
 export type TCode = { code: string };
 
-/** A value that is either the literal `T` or a code snippet. */
 export type TMaybeCode<T> = T | TCode;
 
 export const isCode = (value: unknown): value is TCode =>
@@ -23,92 +11,63 @@ export const isCode = (value: unknown): value is TCode =>
     value !== null &&
     !Array.isArray(value) &&
     Object.keys(value).length === 1 &&
-    typeof (value as { code?: unknown }).code === 'string';
+    'code' in value &&
+    typeof value.code === 'string';
 
 export const code = (source: string): TCode => ({ code: source });
 
 /**
- * A function-valued (or expression-valued) field with an optional author description (plan D1):
- * passage `execute`, link `onFinish`, body item `condition`, trigger `condition` / `action`.
- *
- * `code` is the whole initializer, verbatim (`() => { … }`, `s.x > 0`, `true`). `description` is
- * the text of the `/** … *\/` JSDoc comment directly above the property in the source, without
- * the comment markers and `*` line prefixes. An empty `code` with a description is a stub: the
- * writer emits a default (`() => {}`, or `true` for a condition) with the comment.
- *
- * Without a description a `TFunctionDto` has the same shape as a `TCode` (and `isCode` holds for
- * it). That is intended: it is code.
+ * A function- or expression-valued field. `description` is its `/** … *\/` JSDoc text without the
+ * markers. An empty `code` with a description is a stub: the writer emits a default (`() => {}`, or
+ * `true` for a condition). Without a description it is a `TCode`.
  */
 export type TFunctionDto = { code: string; description?: string };
 
-/**
- * A free-form, JSON-like value read out of an object literal (`init`, item properties).
- * Anything that is not a plain literal / array / object literal is a `TCode`.
- */
+/** A JSON-like value read from an object literal; anything else is a `TCode`. */
 export type TValue = string | number | boolean | null | TCode | TValue[] | { [key: string]: TValue };
 
-/** A record of free-form values — the shape of every `init` object. */
 export type TValueRecord = { [key: string]: TValue };
 
 /**
- * Content-hash version of the file(s) backing a resource (plan §3 "Live refresh", point 3).
- * Opaque to the client: compare for equality only. `''` (`EMPTY_VERSION`) means "no file yet":
- * a PUT carrying `''` succeeds only if the backing file does not exist (create-if-missing for
- * `map.json` and the `*.layout.json` files).
+ * Content hash of the file(s) backing a resource; compare for equality only. `''` means "no file
+ * yet": a PUT carrying it succeeds only if the file does not exist.
  */
 export type TVersion = string;
 export const EMPTY_VERSION: TVersion = '';
 
-/** Every resource DTO carries the version it was read at. */
 export type TVersioned = { version: TVersion };
 
-/** Every PUT / DELETE body carries the version it was based on (409 `stale` on mismatch). */
+/** 409 `stale` when `version` is not the one on disk. */
 export type TVersionedBody = { version: TVersion };
 
-/**
- * Where a resource lives on disk, relative to its story's folder (`stories/<id>/`), with `/`
- * separators — e.g. `data/chapters/village/thomas.passages/intro.ts`. Shown in the forms and
- * with diagnostics.
- */
 export type TSourceRef = {
+    /** Relative to the story folder, `/`-separated. */
     file: string;
-    /** 1-based line of the resource's declaration, when known. */
+    /** 1-based. */
     line?: number;
-    /** Exported binding that holds the resource (`introPassage`, `villageChapter`, `Thomas`). */
     exportName?: string;
 };
 
-/**
- * A point in time as the source writes it: the argument of `Time.fromString(…)` from
- * `@story/shared`, e.g. `'2.1. 8:00'` or `'1.12 0:0'`. Use `Time.fromString` on the client to
- * get seconds. Initializers that are not `Time.fromString('<literal>')` come back as `TCode`.
- */
+/** The argument of `Time.fromString(…)`, e.g. `'2.1. 8:00'`. */
 export type TTimeString = string;
 
 /**
- * A time range. Both source forms read to this one shape:
- *  - `{ start: Time.fromString('2.1. 8:00'), end: Time.fromString('5.1. 8:00') }`
- *  - `TimeRange.fromString('5.1. 9:00', '6.1. 8:00')`
- * Writers keep whichever form the file already uses.
+ * Read from both `{ start: Time.fromString(…), end: … }` and `TimeRange.fromString(a, b)`; writers
+ * keep the file's form.
  */
 export type TTimeRangeDto = {
     start: TMaybeCode<TTimeString>;
     end: TMaybeCode<TTimeString>;
 };
 
-/**
- * A duration (`DeltaTime`) in seconds. Readers accept `DeltaTime.fromMin(n)`,
- * `DeltaTime.fromHour(n)`, `DeltaTime.fromS(n)` and `DeltaTime.fromString('<literal>')` with
- * literal arguments; anything else (`s.time.s < 10 ? … : …`) is a `TCode`. Writers emit the
- * simplest form (`fromMin` when divisible by 60, else `fromS`) unless the value is unchanged.
- */
+/** A `DeltaTime` with a literal argument; anything else is a `TCode`. */
 export type TDeltaTimeDto = { seconds: number };
 
 export const isDeltaTime = (value: unknown): value is TDeltaTimeDto =>
     typeof value === 'object' &&
     value !== null &&
-    typeof (value as { seconds?: unknown }).seconds === 'number' &&
+    'seconds' in value &&
+    typeof value.seconds === 'number' &&
     Object.keys(value).length === 1;
 
-/** `{ ok: true }` — the reply of actions that return no resource (delete). */
 export type TOkDto = { ok: true };

@@ -8,30 +8,16 @@ import { setStoryImages, storyIcon } from './images';
 import { getStoryAccess, getStoryName, login, StoryApiError } from './storyApi';
 import { loadStory, startStory } from './worldState';
 
-/**
- * Boot (multiple stories, phase 9). SingleEngine plays the story named by `?story=<id>` (the
- * landing page's "Play as single" links here):
- *
- *  1. `GET /api/stories/:id/access`; an unknown story goes back to the landing page
- *  2. if `!canPlay` (a private story this browser has not unlocked): `PasswordDialog`, then log in;
- *     a cancel goes back to the landing page
- *  3. import the story's virtual module (`worldState.ts#loadStory`), which the dev server only
- *     serves once step 1 says `canPlay` for this browser (`vite/storiesPlugin.ts`)
- *  4. `createWorldState(register, itemInfo, id)` (`startStory`)
- *  5. render
- *
- * Without `?story=` there is nothing to play: straight to the landing page.
- */
-const root = createRoot(document.getElementById('root')!);
+const container = document.getElementById('root');
+if (container === null) throw new Error('Missing #root element');
+const root = createRoot(container);
 
-/** The landing page: `VITE_LANDING_URL`, else this host on port 8103. */
 const landingUrl = () =>
     import.meta.env.VITE_LANDING_URL ||
     `${window.location.protocol}//${window.location.hostname}:8103`;
 
 const toLanding = () => window.location.replace(landingUrl());
 
-/** Asks for the story's password until it logs in (`true`) or the player cancels (`false`). */
 const unlock = async (storyId: string): Promise<boolean> => {
     const storyName = await getStoryName(storyId);
     return new Promise((resolve) => {
@@ -43,9 +29,10 @@ const unlock = async (storyId: string): Promise<boolean> => {
                     message={_(
                         'This story is private: enter its password to play it.'
                     )}
-                    onSubmit={(password) =>
-                        login(storyId, password).then(() => resolve(true))
-                    }
+                    onSubmit={async (password) => {
+                        await login(storyId, password);
+                        resolve(true);
+                    }}
                     onCancel={() => resolve(false)}
                 />
             </GlobalThemeWrapper>
@@ -53,7 +40,6 @@ const unlock = async (storyId: string): Promise<boolean> => {
     });
 };
 
-/** The favicon is the story's own `data/assets/story.png`, when it has one. */
 const setFavicon = (href: string | undefined) => {
     if (!href) return;
     const link = document.createElement('link');
@@ -81,11 +67,10 @@ const boot = async (storyId: string) => {
     );
 };
 
-const storyId = new URLSearchParams(window.location.search).get('story');
-if (!storyId) {
-    toLanding();
-} else {
-    boot(storyId).catch((err: unknown) => {
+const start = async (storyId: string) => {
+    try {
+        await boot(storyId);
+    } catch (err: unknown) {
         if (err instanceof StoryApiError && err.status === 404)
             return toLanding();
         console.error(err);
@@ -97,5 +82,12 @@ if (!storyId) {
                 </Alert>
             </GlobalThemeWrapper>
         );
-    });
+    }
+};
+
+const storyId = new URLSearchParams(window.location.search).get('story');
+if (!storyId) {
+    toLanding();
+} else {
+    void start(storyId);
 }

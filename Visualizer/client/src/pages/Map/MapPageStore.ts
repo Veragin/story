@@ -8,6 +8,7 @@ import {
     type TReferenceDto,
     type TUpdateEntityBody,
 } from '@story/visualizer-protocol';
+import { isOneOf } from '@story/shared';
 import { ApiError, displayText, type ApiEvents, type TVisualizerApi } from '../../api';
 import { Camera, type TCameraState, type TPoint, type TSize } from '../../canvas';
 import { createDefaultMapData } from '../../MapEditor/createDefaultMapData';
@@ -19,11 +20,9 @@ import type { TConfirmOptions } from '../../shell/modals';
 import { getUiState, setUiState } from '../../ui-state';
 import { mergeMaps, sameMap, toMapDocument } from './mergeMap';
 
-/** The Map page's modes (plan WP4): read-only, edit location shapes, paint tiles. */
 export const MAP_MODES = ['view', 'locations', 'tiles'] as const;
 export type TMapMode = (typeof MAP_MODES)[number];
 
-/** `pending` = unsaved changes waiting for the debounce; `saved` = everything is on disk. */
 export type TSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 export type TMapNotice = { kind: 'info' | 'warning' | 'error'; text: string; references?: TReferenceDto[] };
@@ -32,33 +31,26 @@ export type TDeleteResult = 'deleted' | 'cancelled' | 'referenced' | 'failed';
 
 export type TMapPageStoreOptions = {
     api: TVisualizerApi;
-    /** Live-refresh feed; omit in tests that do not need it. */
     events?: ApiEvents;
     mapId?: string;
-    /** Debounce between the last edit and the save. Default 1000 ms. */
     autosaveMs?: number;
-    /** Yes/no dialog for deletes (the shell's `modals.confirm` in the app). */
     confirm?: (options: TConfirmOptions) => Promise<boolean>;
-    /** Keep mode and camera in `sessionStorage` (`ui-state`). Default true. */
     persistUiState?: boolean;
 };
 
 const UI_MODE_KEY = 'map:mode';
 const UI_CAMERA_KEY = 'map:camera';
-/** Location ids become file names and TS identifiers (`<id>.location.ts`, `<id>Location`). */
 export const LOCATION_ID_RE = /^[a-z][A-Za-z0-9_]*$/;
 const MAX_STALE_RETRIES = 3;
 
 const LOCATION_COLORS = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292', '#aed581'];
 
-/** A pleasant default colour per location id (stable, so reloads do not reshuffle). */
 export const defaultLocationColor = (id: string) => {
     let h = 0;
     for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
     return LOCATION_COLORS[h % LOCATION_COLORS.length];
 };
 
-/** The `#rrggbb` a shape is drawn in (its stroke, or the opaque part of its fill). */
 export const locationColor = (id: string, shape: TLocationShapeDto | undefined): string => {
     for (const candidate of [shape?.stroke, shape?.fill]) {
         if (!candidate) continue;
@@ -73,7 +65,6 @@ export const locationColor = (id: string, shape: TLocationShapeDto | undefined):
     return defaultLocationColor(id);
 };
 
-/** Fill and stroke for a location colour: the fill is the colour at 35 % opacity. */
 export const locationStyle = (color: string): Pick<TLocationShapeDto, 'fill' | 'stroke'> => ({
     fill: `${color.slice(0, 7)}59`,
     stroke: color.slice(0, 7),
@@ -84,16 +75,6 @@ const errorMessage = (e: unknown) => {
     return e instanceof Error ? e.message : String(e);
 };
 
-/**
- * Everything the Map page does that is not drawing: loading and autosaving `map.json`, the
- * location entities, the mode, the shared camera and live refresh. Framework-free apart from
- * MobX, so the tests drive it against `createMockApi` without a DOM canvas.
- *
- * Saving: every edit (`onMapEdited`) marks the document dirty and (re)starts a debounce timer;
- * when it fires the whole document is PUT with the version it was based on. A `409 stale` merges
- * the local edits into the server's current map (`mergeMaps`) and saves again. Events for this
- * map refetch it in place, merging when there are unsaved edits.
- */
 export class MapPageStore implements IMapHost {
     readonly api: TVisualizerApi;
     readonly mapId: string;
@@ -102,9 +83,9 @@ export class MapPageStore implements IMapHost {
 
     loadState: 'loading' | 'ready' | 'error' = 'loading';
     loadError: string | null = null;
-    /** The document being edited. Not deeply observable (a map has thousands of tiles): watch `revision`. */
+    // shallow: thousands of tiles; watch `revision`
     map: TMapDocument | null = null;
-    /** Version of `map.json` the local document is based on; `''` = the file does not exist yet. */
+    // '' = no map.json yet
     version = '';
     revision = 0;
     mode: TMapMode;
@@ -113,18 +94,14 @@ export class MapPageStore implements IMapHost {
     notice: TMapNotice | null = null;
     locations = observable.map<string, TLocationDto>([], { deep: false });
     selectedLocationId: string | null = null;
-    /** Size of the canvas area in CSS px (set by the view), for "middle of the view" and camera bounds. */
     viewport: TSize = { width: 0, height: 0 };
-    /** Whether the camera came from `ui-state` (else the view fits the map once it knows its size). */
     readonly hasSavedCamera: boolean;
-    /** Size of the empty map shown while there is no `map.json`: the story's `mapSize`. */
     private emptySize: { width: number; height: number } | null = null;
 
     private readonly events?: ApiEvents;
     private readonly autosaveMs: number;
     private readonly confirm: (options: TConfirmOptions) => Promise<boolean>;
     private readonly persist: boolean;
-    /** The last document known to be on the server (base of the three-way merge). */
     private base: TMapDocument | null = null;
     private dirty = false;
     private timer: ReturnType<typeof setTimeout> | null = null;
@@ -144,7 +121,7 @@ export class MapPageStore implements IMapHost {
         this.persist = options.persistUiState ?? true;
 
         const savedMode = this.persist ? getUiState<string>(UI_MODE_KEY, 'view') : 'view';
-        this.mode = (MAP_MODES as readonly string[]).includes(savedMode) ? (savedMode as TMapMode) : 'view';
+        this.mode = isOneOf(savedMode, MAP_MODES) ? savedMode : 'view';
         const savedCamera = this.persist ? getUiState<TCameraState | null>(UI_CAMERA_KEY, null) : null;
         this.hasSavedCamera = isCameraState(savedCamera);
         this.camera = new Camera({
@@ -181,9 +158,6 @@ export class MapPageStore implements IMapHost {
         });
     }
 
-    // ---- lifecycle ---------------------------------------------------------------------------
-
-    /** Loads the map and the locations and starts live refresh. */
     init = async () => {
         if (this.events) {
             this.disposers.push(
@@ -210,13 +184,12 @@ export class MapPageStore implements IMapHost {
         await this.load();
     };
 
-    /** Stops timers and subscriptions. Unsaved edits are saved right away (not awaited). */
     destroy = () => {
         if (this.destroyed) return;
         this.destroyed = true;
         for (const d of this.disposers.splice(0)) d();
         if (this.cameraTimer) clearTimeout(this.cameraTimer);
-        // only a camera that was actually set (fit, pan, zoom); else the next mount would skip its fit
+        // an untouched camera must not suppress the next mount's fit
         if (this.persist && this.cameraMoved) setUiState(UI_CAMERA_KEY, this.camera.state);
         this.tiles.detach();
         if (this.dirty) void this.flush();
@@ -246,8 +219,7 @@ export class MapPageStore implements IMapHost {
             this.applyRemote(dto, 'replace');
         } catch (e) {
             if (!(e instanceof ApiError && e.isNotFound)) throw e;
-            // No map.json yet: start from an empty map of the story's size (`story.json`). It is
-            // written with the first edit. (The server answers such a map itself; the mock 404s.)
+            // the server answers an empty map itself; the mock 404s
             this.emptySize = (await this.api.getStoryInfo().catch(() => null))?.mapSize ?? null;
             this.applyRemote(null, 'replace');
         }
@@ -263,10 +235,6 @@ export class MapPageStore implements IMapHost {
         });
     };
 
-    /**
-     * Takes a server version of the map (`null` = no file). `replace` drops local edits;
-     * `merge` keeps them on top of it (three-way, against `base`).
-     */
     private applyRemote(dto: TMapDto | null, how: 'replace' | 'merge') {
         const remote = dto ? toMapDocument(dto) : null;
         const local = this.map;
@@ -284,7 +252,6 @@ export class MapPageStore implements IMapHost {
         this.tiles.onDataReplaced();
     }
 
-    /** Live refresh of the map (an event, or a reconnect). */
     refetchMap = async () => {
         if (this.destroyed) return;
         if (this.saving) {
@@ -342,8 +309,6 @@ export class MapPageStore implements IMapHost {
         }
     };
 
-    // ---- modes, camera -----------------------------------------------------------------------
-
     setMode = (mode: TMapMode) => {
         if (mode === this.mode) return;
         this.mode = mode;
@@ -363,23 +328,19 @@ export class MapPageStore implements IMapHost {
 
     private fitted = false;
 
-    /** Without a saved camera, fit the map into the view once both the map and the view size are known. */
     private ensureInitialView() {
         if (this.fitted || this.hasSavedCamera || !this.map || this.viewport.width <= 0) return;
         this.fitted = true;
         this.fitMap();
     }
 
-    /** World point in the middle of the view. */
     viewCenter = (): TPoint => this.camera.screenToWorld({ x: this.viewport.width / 2, y: this.viewport.height / 2 });
 
-    /** Zooms and pans so the whole map is in view. */
     fitMap = () => {
         if (!this.map || this.viewport.width <= 0) return;
         this.camera.fitRect(mapWorldBounds(this.map), this.viewport, 20);
     };
 
-    /** Keeps at least a strip of the map in view. */
     private constrainCamera(next: TCameraState): TCameraState {
         const map = this.map;
         if (!map) return next;
@@ -396,9 +357,6 @@ export class MapPageStore implements IMapHost {
         };
     }
 
-    // ---- saving ------------------------------------------------------------------------------
-
-    /** `IMapHost`: tiles, texts, palette or shapes changed. */
     onMapEdited = () => {
         if (!this.map) return;
         this.dirty = true;
@@ -420,7 +378,6 @@ export class MapPageStore implements IMapHost {
         }, this.autosaveMs);
     }
 
-    /** Saves now (skipping the debounce) and resolves when everything is on disk or failed. */
     flush = async () => {
         if (this.timer) {
             clearTimeout(this.timer);
@@ -430,7 +387,6 @@ export class MapPageStore implements IMapHost {
         if (this.dirty) await this.save();
     };
 
-    /** One PUT of the whole document; re-runs itself on `409 stale` (after merging) and for edits made meanwhile. */
     save = async (): Promise<void> => {
         if (this.saving) {
             await this.saving;
@@ -469,7 +425,6 @@ export class MapPageStore implements IMapHost {
             } catch (e) {
                 this.dirty = true;
                 if (e instanceof ApiError && e.isStale && attempt < MAX_STALE_RETRIES) {
-                    // Someone else wrote map.json since we read it: merge and try again.
                     this.applyRemote((e.current as TMapDto | null) ?? null, 'merge');
                     if (sameMap(this.map, this.base)) {
                         this.dirty = false;
@@ -493,7 +448,6 @@ export class MapPageStore implements IMapHost {
         this.saveError = error;
     }
 
-    /** "Retry" of the error indicator. */
     retrySave = () => {
         this.dirty = true;
         return this.flush();
@@ -503,12 +457,8 @@ export class MapPageStore implements IMapHost {
         this.notice = notice;
     };
 
-    // ---- locations ---------------------------------------------------------------------------
-
-    /** Display name of a location (its literal name, the text inside `_('…')`, or the id). */
     locationName = (id: string) => displayText(this.locations.get(id)?.name, id);
 
-    /** Location entities that have no shape on the map yet. */
     get unplacedLocations(): TLocationDto[] {
         const shapes = this.map?.locations ?? {};
         return [...this.locations.values()].filter((l) => !shapes[l.id]);
@@ -532,7 +482,6 @@ export class MapPageStore implements IMapHost {
         this.onMapEdited();
     };
 
-    /** Gives an existing location a default shape (a hexagon) in the middle of the view. */
     placeLocation = (id: string, center: TPoint = this.viewCenter()) => {
         const map = this.map;
         if (!map || map.locations[id]) return;
@@ -548,7 +497,6 @@ export class MapPageStore implements IMapHost {
         this.onMapEdited();
     };
 
-    /** Checks a new location id; returns the error text or null. */
     validateLocationId = (id: string): string | null => {
         if (!id) return _('Enter an id');
         if (!LOCATION_ID_RE.test(id)) {
@@ -558,10 +506,6 @@ export class MapPageStore implements IMapHost {
         return null;
     };
 
-    /**
-     * Creates the location entity (`POST /entities/locations`), then its shape in the middle
-     * of the view, and saves the map right away. Rejects with the `ApiError` (e.g. `409 exists`).
-     */
     addLocation = async (body: { id: string; name: string; description?: string }, center?: TPoint) => {
         const invalid = this.validateLocationId(body.id);
         if (invalid) throw new Error(invalid);
@@ -577,11 +521,6 @@ export class MapPageStore implements IMapHost {
         return dto;
     };
 
-    /**
-     * Asks, then deletes the location entity (`DELETE`, refused with `409 referenced` while
-     * chapters, npcs or passages still point at it) and its shape. A shape without an entity is
-     * just removed.
-     */
     deleteLocation = async (id: string): Promise<TDeleteResult> => {
         const entity = this.locations.get(id);
         const name = this.locationName(id);
@@ -632,10 +571,6 @@ export class MapPageStore implements IMapHost {
         return 'deleted';
     };
 
-    /**
-     * `PUT /entities/locations/:id` with the changed fields. Rejects with the `ApiError`
-     * (the form handles `409 stale`: "reload / keep mine").
-     */
     saveLocation = async (id: string, patch: Omit<TUpdateEntityBody<'locations'>, 'version'>, version: string) => {
         const dto = await this.api.updateEntity('locations', id, { ...patch, version });
         runInAction(() => this.locations.set(id, dto));
@@ -646,5 +581,11 @@ export class MapPageStore implements IMapHost {
 const isCameraState = (v: unknown): v is TCameraState =>
     typeof v === 'object' &&
     v !== null &&
-    ['x', 'y', 'zoom'].every((k) => Number.isFinite((v as Record<string, unknown>)[k])) &&
-    (v as TCameraState).zoom > 0;
+    'x' in v &&
+    'y' in v &&
+    'zoom' in v &&
+    Number.isFinite(v.x) &&
+    Number.isFinite(v.y) &&
+    typeof v.zoom === 'number' &&
+    Number.isFinite(v.zoom) &&
+    v.zoom > 0;

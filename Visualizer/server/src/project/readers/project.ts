@@ -6,10 +6,7 @@ import { allTriggers, chapterIds, displayName } from '../story';
 import { readProjectChapter } from './chapters';
 import { entitySources, itemNodes } from './entities';
 
-/**
- * `GET /project`. Its version hashes every story source file (in path order): the summary
- * depends on nearly all of them, and a hash of a few dozen small strings is cheap.
- */
+// The summary depends on nearly every file, so its version hashes all of them.
 export const readProject = (sp: SourceProject): TProjectDto => {
     const files = sp.storyFiles().sort((a, b) => a.getFilePath().localeCompare(b.getFilePath()));
     const entries = (kind: 'characters' | 'npcs' | 'locations') =>

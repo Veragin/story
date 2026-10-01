@@ -1,6 +1,6 @@
 let measureCtx: CanvasRenderingContext2D | null | undefined;
 
-function getMeasureContext(): CanvasRenderingContext2D | null {
+const getMeasureContext = (): CanvasRenderingContext2D | null => {
     if (measureCtx === undefined) {
         try {
             measureCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
@@ -9,32 +9,39 @@ function getMeasureContext(): CanvasRenderingContext2D | null {
         }
     }
     return measureCtx;
-}
+};
 
 export type TFontSpec = { fontSize: number; fontFamily?: string; fontWeight?: string | number };
 
-export const DEFAULT_FONT_FAMILY = 'system-ui, sans-serif';
+export type TAlign = 'left' | 'center' | 'right';
+export type TVerticalAlign = 'top' | 'middle' | 'bottom';
 
-export function fontString({ fontSize, fontFamily, fontWeight }: TFontSpec): string {
-    return `${fontWeight ?? 'normal'} ${fontSize}px ${fontFamily ?? DEFAULT_FONT_FAMILY}`;
-}
+const DEFAULT_FONT_FAMILY = 'system-ui, sans-serif';
+const LINE_HEIGHT_RATIO = 1.25;
 
-/**
- * Width of `text` in the units of `fontSize`. Uses a shared offscreen 2D context; when there is
- * none (jsdom, SSR) it falls back to an average-glyph estimate so hit-testing still works.
- */
-export function measureTextWidth(text: string, font: TFontSpec): number {
+const fontString = ({ fontSize, fontFamily, fontWeight }: TFontSpec): string =>
+    `${fontWeight ?? 'normal'} ${fontSize}px ${fontFamily ?? DEFAULT_FONT_FAMILY}`;
+
+export const lineHeightFor = (fontSize: number): number => fontSize * LINE_HEIGHT_RATIO;
+
+export const alignOffset = (align: TAlign | TVerticalAlign | undefined, size: number): number => {
+    if (align === 'center' || align === 'middle') return size / 2;
+    if (align === 'right' || align === 'bottom') return size;
+    return 0;
+};
+
+export const measureTextWidth = (text: string, font: TFontSpec): number => {
     const ctx = getMeasureContext();
     if (ctx) {
         ctx.font = fontString(font);
         const w = ctx.measureText(text)?.width;
         if (typeof w === 'number' && w > 0) return w;
     }
+    // average-glyph estimate keeps hit-testing working without a canvas (jsdom)
     return text.length * font.fontSize * 0.55;
-}
+};
 
-/** Greedy word wrap. Explicit `\n` always breaks. */
-export function wrapText(text: string, maxWidth: number | undefined, font: TFontSpec): string[] {
+export const wrapText = (text: string, maxWidth: number | undefined, font: TFontSpec): string[] => {
     const paragraphs = text.split('\n');
     if (!maxWidth || maxWidth <= 0) return paragraphs;
     const lines: string[] = [];
@@ -56,31 +63,26 @@ export function wrapText(text: string, maxWidth: number | undefined, font: TFont
         lines.push(line);
     }
     return lines;
-}
+};
 
-export type TTextBlockOptions = TFontSpec & {
+type TTextBlockOptions = TFontSpec & {
     x: number;
     y: number;
     color: string;
     align?: CanvasTextAlign;
-    /** Vertical placement of the whole block relative to `y`. */
-    verticalAlign?: 'top' | 'middle' | 'bottom';
+    verticalAlign?: TVerticalAlign;
     lineHeight?: number;
     maxWidth?: number;
 };
 
-/** Draws (possibly wrapped) multi-line text and returns the lines it drew. */
-export function drawTextBlock(ctx: CanvasRenderingContext2D, text: string, o: TTextBlockOptions): string[] {
+export const drawTextBlock = (ctx: CanvasRenderingContext2D, text: string, o: TTextBlockOptions): string[] => {
     const lines = wrapText(text, o.maxWidth, o);
-    const lineHeight = o.lineHeight ?? o.fontSize * 1.25;
-    const total = lines.length * lineHeight;
-    let top = o.y;
-    if (o.verticalAlign === 'middle') top = o.y - total / 2;
-    else if (o.verticalAlign === 'bottom') top = o.y - total;
+    const lineHeight = o.lineHeight ?? lineHeightFor(o.fontSize);
+    const top = o.y - alignOffset(o.verticalAlign, lines.length * lineHeight);
     ctx.font = fontString(o);
     ctx.fillStyle = o.color;
     ctx.textAlign = o.align ?? 'left';
     ctx.textBaseline = 'middle';
     lines.forEach((line, i) => ctx.fillText(line, o.x, top + lineHeight * (i + 0.5)));
     return lines;
-}
+};

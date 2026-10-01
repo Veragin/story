@@ -8,16 +8,16 @@ import { CHAPTER_INFO_FIELDS, chapterInfoOf, type TChapterInfoValue } from './ch
 const draftKey = (chapterId: string) => `chapter-info-draft:${chapterId}`;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-const FIELD_PATHS = (v: TChapterInfoValue) => {
+const fieldPathsOf = (v: TChapterInfoValue | null) => {
     const fields = new Set<string>(CHAPTER_INFO_FIELDS);
     fields.add('timeRange.start').add('timeRange.end');
-    if (Array.isArray(v.children)) {
-        v.children.forEach((_c, i) => fields.add(`children.${i}.chapterId`).add(`children.${i}.condition`));
+    const children = v?.children;
+    if (Array.isArray(children)) {
+        children.forEach((_c, i) => fields.add(`children.${i}.chapterId`).add(`children.${i}.condition`));
     }
     return fields;
 };
 
-/** Load / edit / save of one chapter's info, with versions, 409 stale and 422 diagnostics. */
 export class ChapterInfoEditorStore {
     chapter: TChapterDto | null = null;
     project: TProjectDto | null = null;
@@ -25,7 +25,7 @@ export class ChapterInfoEditorStore {
     saving = false;
     error: string | null = null;
     diagnostics: TDiagnosticDto[] = [];
-    /** On disk now, when it changed under the draft (`null`: deleted). */
+    // current: null when the chapter was deleted
     conflict: { current: TChapterDto | null } | null = null;
 
     constructor(
@@ -62,11 +62,14 @@ export class ChapterInfoEditorStore {
         return Object.keys(this.patch).length > 0;
     }
 
-    diagnosticsFor = (path: string) =>
-        mapDiagnostics(this.diagnostics, FIELD_PATHS(this.draft ?? ({} as TChapterInfoValue))).byField.get(path) ?? [];
+    private get diagnosticIndex() {
+        return mapDiagnostics(this.diagnostics, fieldPathsOf(this.draft));
+    }
+
+    diagnosticsFor = (path: string) => this.diagnosticIndex.byField.get(path) ?? [];
 
     get unmappedDiagnostics() {
-        return mapDiagnostics(this.diagnostics, FIELD_PATHS(this.draft ?? ({} as TChapterInfoValue))).unmapped;
+        return this.diagnosticIndex.unmapped;
     }
 
     async load() {
@@ -134,10 +137,7 @@ export class ChapterInfoEditorStore {
         removeUiState(draftKey(this.chapterId));
     }
 
-    /**
-     * "Keep mine": rebase the draft on the version on disk and save it over. Fields the author
-     * did not touch take the disk's value, so only their own edits overwrite the other change.
-     */
+    // untouched fields take the disk's value, so only the author's edits overwrite
     keepMine(): Promise<boolean> {
         const current = this.conflict?.current;
         if (!current || !this.chapter || !this.draft) return Promise.resolve(false);
@@ -155,7 +155,6 @@ export class ChapterInfoEditorStore {
         return this.save();
     }
 
-    /** A chapter change event arrived. */
     async onExternal() {
         const current = await this.api.getChapter(this.chapterId).catch(() => null);
         runInAction(() => {

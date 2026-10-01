@@ -6,6 +6,6 @@ export const without = <T extends object>(obj: T, key: keyof T): T => {
     return next;
 };
 
-/** Sets an optional field; `undefined` removes the key so it is not written as `key: undefined`. */
+// removes the key rather than writing `key: undefined`
 export const setField = <T extends object, K extends keyof T>(obj: T, key: K, value: T[K] | undefined): T =>
     value === undefined ? without(obj, key) : { ...obj, [key]: value };

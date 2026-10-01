@@ -19,16 +19,14 @@ import { PassageEditorStore } from './editor/PassageEditorStore';
 
 export type TSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
-export type TChapterGraphOptions = {
+type TChapterGraphOptions = {
     chapterId: string;
     api: TVisualizerApi;
     events: ApiEvents;
-    /** Delay between the last box move and the layout PUT. */
     saveDelayMs?: number;
 };
 
-/** What the remove-character confirmation shows. */
-export type TRemoveCharacterSummary = {
+type TRemoveCharacterSummary = {
     characterId: string;
     name: string;
     chapterTitle: string;
@@ -37,7 +35,6 @@ export type TRemoveCharacterSummary = {
     message: string;
 };
 
-/** The remove / delete was refused with `409 referenced`. */
 export class ReferencedError extends Error {
     constructor(readonly references: TReferenceDto[]) {
         super('referenced');
@@ -51,7 +48,7 @@ export const uiKeys = {
     editor: (chapterId: string) => `chapter:${chapterId}:editor`,
 };
 
-/** Re-running an async loader while it is in flight queues exactly one more run. */
+// a call while in flight queues exactly one more run
 const coalesce = (fn: () => Promise<void>) => {
     let running: Promise<void> | null = null;
     let again = false;
@@ -74,12 +71,6 @@ const coalesce = (fn: () => Promise<void>) => {
     };
 };
 
-/**
- * Everything the chapter view (plan WP6) shows and does, without the canvas: the chapter, its
- * passages and static edges, the saved box positions (`<ch>.layout.json`) plus automatic ones
- * for boxes that have none, the selection, the open passage editor, the debounced layout save
- * and live refresh through `apiEvents`.
- */
 export class ChapterGraphStore {
     readonly chapterId: string;
     readonly api: TVisualizerApi;
@@ -95,7 +86,6 @@ export class ChapterGraphStore {
     layout: TChapterLayoutDto | null = null;
     project: TProjectDto | null = null;
 
-    /** In-memory positions of boxes without a saved one; stable until the page closes. */
     autoPositions: Record<string, TPoint> = {};
 
     selectedId: string | null;
@@ -146,33 +136,25 @@ export class ChapterGraphStore {
         });
     }
 
-    // ---- derived -----------------------------------------------------------------------------
-
     get graph(): TGraph {
         return buildGraph(this.passages, this.liveEdges);
     }
 
-    /**
-     * The server's static edges, with the open editor's unsaved links in place of its passage's
-     * saved ones — so an arrow shows up while the author adds a link, not only after Save.
-     */
+    // unsaved editor links replace saved ones so arrows appear before Save
     private get liveEdges(): TPassageEdgeDto[] {
         const draft = this.editor?.dirty ? this.editor.draft : null;
         if (!draft) return this.rawEdges;
-        // Other chapters' passages are only known as targets the server already resolved.
+        // other chapters' passages are known only as server-resolved targets
         const known = new Set([
             ...this.passages.map((p) => p.passageId),
             ...this.rawEdges.filter((e) => e.resolved).map((e) => e.to),
         ]);
         const saved = this.rawEdges.filter((e) => e.from === draft.passageId);
-        // A target being typed would flash a red box per keystroke: new dangling ones wait for Save.
-        const drafted = extractEdges([draft], known).filter(
-            (e) => e.resolved || saved.some((s) => s.to === e.to)
-        );
+        // a target being typed would flash a red box per keystroke
+        const drafted = extractEdges([draft], known).filter((e) => e.resolved || saved.some((s) => s.to === e.to));
         return [...this.rawEdges.filter((e) => e.from !== draft.passageId), ...drafted];
     }
 
-    /** Top-left corner of every box (saved, else automatic) and of every ghost box. */
     get positions(): Record<string, TPoint> {
         const result: Record<string, TPoint> = {};
         const saved = this.layout?.passages ?? {};
@@ -180,7 +162,6 @@ export class ChapterGraphStore {
             const p = saved[n.id] ?? this.autoPositions[n.id];
             if (p) result[n.id] = p;
         }
-        // Ghosts sit to the right of the first passage that links to them, stacked.
         const perSource = new Map<string, number>();
         for (const e of this.graph.edges) {
             if (result[e.to] || !this.graph.ghosts.some((g) => g.id === e.to)) continue;
@@ -206,7 +187,6 @@ export class ChapterGraphStore {
         }));
     }
 
-    /** Characters of the project that are not in this chapter yet (for "Add character"). */
     get availableCharacters(): { id: string; name: string }[] {
         const inChapter = new Set(this.chapter?.characters.map((c) => c.characterId));
         return (this.project?.characters ?? []).filter((c) => !inChapter.has(c.id));
@@ -219,8 +199,6 @@ export class ChapterGraphStore {
     characterName(characterId: string): string {
         return this.project?.characters.find((c) => c.id === characterId)?.name ?? characterId;
     }
-
-    // ---- loading and live refresh --------------------------------------------------------------
 
     async load(): Promise<void> {
         try {
@@ -251,7 +229,6 @@ export class ChapterGraphStore {
         }
     }
 
-    /** Subscribe to change events. Returns the store (`await store.start().load()` style is not needed). */
     start(): this {
         const ch = this.chapterId;
         this.disposers.push(
@@ -263,7 +240,7 @@ export class ChapterGraphStore {
                     });
                     return;
                 }
-                // Adding / removing a character is a chapter event that also adds / removes passages.
+                // a character change also adds / removes passages
                 void this.refetchChapter();
                 void this.refetchPassages();
             }),
@@ -310,7 +287,6 @@ export class ChapterGraphStore {
         if (this.editor) this.editor.onExternal(passages.find((p) => p.passageId === this.editor?.passageId) ?? null);
     }
 
-    /** A fetched layout, with the moves that are not saved yet laid over it. */
     private applyLayout(layout: TChapterLayoutDto) {
         this.layout = {
             ...layout,
@@ -319,7 +295,6 @@ export class ChapterGraphStore {
         this.fillAutoPositions();
     }
 
-    /** Give every box without a saved or automatic position an automatic one. */
     private fillAutoPositions() {
         const { nodes, edges } = this.graph;
         const fixed: Record<string, TPoint> = { ...this.autoPositions, ...(this.layout?.passages ?? {}) };
@@ -327,8 +302,6 @@ export class ChapterGraphStore {
         const added = placeMissing(layoutNodes, edges, fixed);
         if (Object.keys(added).length > 0) this.autoPositions = { ...this.autoPositions, ...added };
     }
-
-    // ---- selection, editor ------------------------------------------------------------------------
 
     select(passageId: string | null) {
         this.selectedId = passageId;
@@ -354,13 +327,10 @@ export class ChapterGraphStore {
         runInAction(() => {
             this.passages = this.passages.map((p) => (p.passageId === saved.passageId ? saved : p));
         });
-        // Links may have changed: the edges come from the server's static extraction.
+        // edges come from the server's static extraction
         void this.refetchPassages();
     }
 
-    // ---- positions ----------------------------------------------------------------------------------
-
-    /** A box was dragged: keep it there and save the layout after `saveDelayMs` of quiet. */
     setPosition(passageId: string, p: TPoint) {
         const point = { x: Math.round(p.x), y: Math.round(p.y) };
         this.pendingMoves.set(passageId, point);
@@ -381,7 +351,6 @@ export class ChapterGraphStore {
         return this.pendingMoves.size > 0 || this.saving !== null;
     }
 
-    /** Save the pending moves now (also called on unmount). */
     async flushLayout(): Promise<void> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
@@ -403,7 +372,7 @@ export class ChapterGraphStore {
         runInAction(() => (this.saveStatus = 'saving'));
         const known = new Set(this.passages.map((p) => p.passageId));
         const base = this.layout?.passages ?? {};
-        // Positions of passages that no longer exist are dropped (unless nothing is loaded yet).
+        // keep everything while passages are not loaded yet
         const passages = Object.fromEntries(
             Object.entries({ ...base, ...Object.fromEntries(moves) }).filter(
                 ([id]) => known.size === 0 || known.has(id)
@@ -420,10 +389,10 @@ export class ChapterGraphStore {
                 this.saveError = null;
             });
         } catch (e) {
-            // Put the moves back (newer ones win) so nothing is lost.
+            // newer moves win
             for (const [id, p] of moves) if (!this.pendingMoves.has(id)) this.pendingMoves.set(id, p);
             if (e instanceof ApiError && e.isStale && attempt === 0) {
-                // Someone else wrote the layout: take theirs, lay our moves over it, try once more.
+                // someone else wrote the layout: lay our moves over theirs and retry once
                 const current = e.current as TChapterLayoutDto | null;
                 runInAction(() =>
                     this.applyLayout(current ?? { chapterId: this.chapterId, version: EMPTY_VERSION, passages: {} })
@@ -437,8 +406,6 @@ export class ChapterGraphStore {
         }
     }
 
-    // ---- actions ------------------------------------------------------------------------------------
-
     async addCharacter(characterId: string, startPassageLocalId?: string): Promise<TChapterDto> {
         const chapter = await this.api.addChapterCharacter(this.chapterId, {
             characterId,
@@ -451,7 +418,6 @@ export class ChapterGraphStore {
         return chapter;
     }
 
-    /** Text and numbers for the "Remove Thomas from Village? This deletes 3 passages." confirmation. */
     removeCharacterSummary(characterId: string): TRemoveCharacterSummary {
         const entry = this.chapter?.characters.find((c) => c.characterId === characterId);
         const passageCount = entry?.passageCount ?? 0;
@@ -464,7 +430,6 @@ export class ChapterGraphStore {
         return { characterId, name, chapterTitle, passageCount, passageIds: entry?.passageIds ?? [], message };
     }
 
-    /** Throws `ReferencedError` on `409 referenced` (nothing was deleted). */
     async removeCharacter(characterId: string): Promise<void> {
         const version = this.chapter?.version ?? EMPTY_VERSION;
         try {
@@ -472,10 +437,7 @@ export class ChapterGraphStore {
             runInAction(() => (this.chapter = chapter));
         } catch (e) {
             if (e instanceof ApiError && e.isReferenced) throw new ReferencedError(e.references);
-            if (e instanceof ApiError && e.isStale) {
-                // The chapter changed under us; refresh so the next try uses the new version.
-                await this.refetchChapter();
-            }
+            if (e instanceof ApiError && e.isStale) await this.refetchChapter();
             throw e;
         }
         if (this.editor && this.editor.base.characterId === characterId) this.closeEditor();
@@ -489,7 +451,6 @@ export class ChapterGraphStore {
         return passage;
     }
 
-    /** Throws `ReferencedError` on `409 referenced`. */
     async deletePassage(passageId: string): Promise<void> {
         const passage = this.passages.find((p) => p.passageId === passageId);
         if (!passage) return;
@@ -508,7 +469,6 @@ export class ChapterGraphStore {
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
     }
 
-    /** What the source editor opens: the selected passage's file, else the chapter file. */
     sourceTarget(passageId = this.selectedId): { owner: TSourceOwner; id: string } {
         return passageId ? { owner: 'passage', id: passageId } : { owner: 'chapter', id: this.chapterId };
     }

@@ -23,10 +23,7 @@ const json = (status: number, body?: unknown) =>
 
 type TCall = { method: string; url: string; headers: Record<string, string>; body: unknown };
 
-/**
- * A fake Visualizer server behind `fetch`: stories `open` (unlocked), `locked`, `pub` (public,
- * locked); the password of every story is `secret`; `tooMany` makes every login a 429.
- */
+// every story's password is `secret`
 const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
     const stories = [story('locked'), story('open', { unlocked: true }), story('pub', { public: true })];
     const calls: TCall[] = [];
@@ -63,7 +60,6 @@ const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
     return { store, calls, navigate, fetchMock };
 };
 
-/** Let the store's pending promises run (the prompt opens after `requireUnlocked` is called). */
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 describe('StoriesStore', () => {

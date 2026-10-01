@@ -1,10 +1,6 @@
-/**
- * How `PasswordDialog` words a rejected `onSubmit`. An error with a numeric `status` (every app's
- * `ApiError` has one) gets the login route's cases: 401 wrong password, 429 too many attempts
- * (the server allows 10 wrong ones per 10 minutes). Anything else shows its `message`.
- */
+/** User-facing wording for a failed story login: 401, 429, else the error's message. */
 export const passwordErrorMessage = (err: unknown): string => {
-    const status = (err as { status?: unknown } | null)?.status;
+    const status = typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined;
     if (status === 401) return _('Wrong password.');
     if (status === 429) return _('Too many wrong attempts. Try again in a few minutes.');
     if (err instanceof Error && err.message) return err.message;

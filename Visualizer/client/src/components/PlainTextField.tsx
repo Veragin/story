@@ -1,4 +1,4 @@
-import { Button, styled, TextField, Tooltip, Typography } from '@mui/material';
+import { Button, styled, TextField, Tooltip } from '@mui/material';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import {
     isCode,
@@ -8,6 +8,8 @@ import {
 import { spacingCss } from '@story/ui';
 import { FieldDiagnostics } from './CodeField';
 import { codeToText } from './codeLiterals';
+import { FieldLabel } from './FieldLabel';
+import { SField } from './fieldLayout';
 
 type TInputProps = {
     value: TMaybeCode<string> | undefined;
@@ -16,9 +18,7 @@ type TInputProps = {
     placeholder?: string;
     hasError?: boolean;
     disabled?: boolean;
-    /** Accessible name of the text box (and of the code, when the value is code). */
     ariaLabel?: string;
-    /** `data-field` of the text box, for tests and styling. */
     dataField?: string;
 };
 
@@ -76,7 +76,6 @@ type TFieldProps = Omit<TInputProps, 'hasError' | 'ariaLabel'> & {
     diagnostics?: TDiagnosticDto[];
 };
 
-/** `PlainTextInput` with a caption label and the field's diagnostics. */
 export const PlainTextField = ({
     label,
     diagnostics = [],
@@ -85,24 +84,12 @@ export const PlainTextField = ({
     const hasError = diagnostics.length > 0;
     return (
         <SField>
-            <Typography
-                variant="caption"
-                color={hasError ? 'error' : 'text.secondary'}
-            >
-                {label}
-            </Typography>
+            <FieldLabel hasError={hasError}>{label}</FieldLabel>
             <PlainTextInput {...props} hasError={hasError} ariaLabel={label} />
             <FieldDiagnostics diagnostics={diagnostics} />
         </SField>
     );
 };
-
-const SField = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-`;
 
 const SCodeBlock = styled('div')`
     display: flex;

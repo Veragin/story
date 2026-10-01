@@ -6,17 +6,6 @@ export type TLocationShapeData = { locationId: string };
 
 const LAYER = 'locations';
 
-/**
- * The Locations layer: one `PolygonShape` per `map.locations` entry, on a transparent `Scene`
- * that sits over the tiles canvas and shares its camera.
- *
- *  - `view`: not editable, double-click opens the location modal;
- *  - `locations`: select, drag, edit vertices (Canvas library), double-click opens the modal;
- *  - `tiles`: the layer is hidden and the scene canvas lets pointer events through to the tiles.
- *
- * Shape edits go back to the store on the final `change` event; store changes (load, live refresh,
- * colour, add, delete) are synced into the scene by a MobX reaction.
- */
 export class LocationsLayer {
     readonly selection: SelectionController;
     private readonly vertexEdit: VertexEditController;
@@ -61,7 +50,6 @@ export class LocationsLayer {
         );
     }
 
-    /** Brings the scene in line with the store. */
     sync = () => {
         const { store, scene } = this;
         const mode = store.mode;
@@ -120,7 +108,10 @@ export class LocationsLayer {
     };
 }
 
-const locationIdOf = (shape: Shape): string | undefined => (shape.data as TLocationShapeData | undefined)?.locationId;
+const locationIdOf = ({ data }: Shape): string | undefined =>
+    typeof data === 'object' && data !== null && 'locationId' in data && typeof data.locationId === 'string'
+        ? data.locationId
+        : undefined;
 
 const samePoints = (a: { x: number; y: number }[], b: { x: number; y: number }[]) =>
     a.length === b.length && a.every((p, i) => p.x === b[i].x && p.y === b[i].y);

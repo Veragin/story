@@ -14,7 +14,6 @@ type TProps = TOptionsProps & {
     diag: TDiag;
 };
 
-/** An expanded link: text, target, auto priority, cost and onFinish (under its `LinkSummary`). */
 export const LinkEditor = ({
     link,
     path,

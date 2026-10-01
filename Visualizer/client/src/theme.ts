@@ -1,13 +1,11 @@
 import { alpha, createTheme, type ThemeOptions } from '@mui/material';
 
-/** Form control colours shared by every Visualizer page (toggle buttons, outlined inputs). */
 const FORM = {
     text: '#ffffff',
     label: 'rgba(255, 255, 255, 0.75)',
     border: 'rgba(255, 255, 255, 0.5)',
     borderHover: '#ffffff',
     borderDisabled: 'rgba(255, 255, 255, 0.2)',
-    /** Selected toggle / focused input: a brighter shade of the timeline's trigger green. */
     accent: '#66bb6a',
 };
 
@@ -32,8 +30,7 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiToggleButtonGroup: {
         styleOverrides: {
-            // Grouped buttons after the first get a transparent left border; the selected one
-            // shows its full green outline.
+            // MUI blanks the left border of later grouped buttons
             grouped: { '&.Mui-selected': { borderLeftColor: FORM.accent } },
         },
     },
@@ -72,10 +69,6 @@ const formComponents: ThemeOptions['components'] = {
     },
 };
 
-/**
- * The Visualizer's MUI theme, applied to the whole app in `main.tsx` (inside `@story/ui`'s
- * `GlobalThemeWrapper`, whose `appTheme` is shared with the engines).
- */
 export const darkTheme = createTheme({
     palette: {
         mode: 'dark',

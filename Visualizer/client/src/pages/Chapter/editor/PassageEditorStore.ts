@@ -4,25 +4,21 @@ import { ApiError, type TVisualizerApi } from '../../../api';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics, passageFieldPaths, type TDiagnosticIndex } from './diagnostics';
 
-/** The fields a PUT may carry per passage type (ids, type and the source ref are read-only). */
-export const EDITABLE_FIELDS: Record<TPassageType, readonly string[]> = {
+const EDITABLE_FIELDS: Record<TPassageType, readonly string[]> = {
     screen: ['execute', 'title', 'image', 'body'],
     linear: ['execute', 'description', 'nextPassageId'],
     transition: ['execute', 'nextPassageId'],
 };
 
-/**
- * `current` is what is on disk now (`null`: the passage was deleted). Shown as "changed on disk
- * — reload / keep mine".
- */
-export type TPassageConflict = { current: TPassageDto | null };
+// current: null when the passage was deleted
+type TPassageConflict = { current: TPassageDto | null };
 
 type TSavedDraft = { version: string; draft: TPassageDto };
 
-export const draftKey = (passageId: string) => `passage-draft:${passageId}`;
+const draftKey = (passageId: string) => `passage-draft:${passageId}`;
 
 const clone = <T>(value: T): T => structuredClone(toJS(value));
-/** JSON with sorted keys, so re-adding a removed optional field does not count as a change. */
+// sorted keys, so re-adding a removed optional field is not a change
 const stableJson = (value: unknown): string =>
     JSON.stringify(value, (_key, v: unknown) =>
         v && typeof v === 'object' && !Array.isArray(v)
@@ -31,11 +27,6 @@ const stableJson = (value: unknown): string =>
     );
 const same = (a: unknown, b: unknown) => stableJson(a) === stableJson(b);
 
-/**
- * State of the passage editor for one passage: the DTO it is based on (`base`, with its
- * version), the author's working copy (`draft`), save status, 422 diagnostics and the 409 /
- * live-refresh conflict. Unsaved input is mirrored into `ui-state` so it survives a reload.
- */
 export class PassageEditorStore {
     base: TPassageDto;
     draft: TPassageDto;
@@ -57,7 +48,7 @@ export class PassageEditorStore {
         const saved = getUiState<TSavedDraft | null>(draftKey(passage.passageId), null);
         if (saved && saved.draft?.type === passage.type && saved.draft.passageId === passage.passageId) {
             this.draft = { ...clone(saved.draft), version: passage.version } as TPassageDto;
-            // The draft was typed against an older file: let the author choose.
+            // draft typed against an older file
             if (saved.version !== passage.version && this.dirty) this.conflict = { current: this.base };
         }
 
@@ -93,7 +84,6 @@ export class PassageEditorStore {
         return this.base.passageId;
     }
 
-    /** The editable fields that differ from `base` — exactly what `save` sends. */
     get patch(): Record<string, unknown> {
         const patch: Record<string, unknown> = {};
         const draft = this.draft as unknown as Record<string, unknown>;
@@ -113,13 +103,11 @@ export class PassageEditorStore {
         return mapDiagnostics(this.diagnostics, passageFieldPaths(this.draft));
     }
 
-    /** Mutate the draft: `store.edit((d) => { if (d.type === 'screen') d.title = 'x'; })`. */
     edit(mutate: (draft: TPassageDto) => void) {
         mutate(this.draft);
         this.error = null;
     }
 
-    /** Throw the draft away. */
     reset() {
         this.draft = clone(this.base);
         this.diagnostics = [];
@@ -163,17 +151,13 @@ export class PassageEditorStore {
         }
     }
 
-    /** "Reload": take what is on disk and drop the draft. */
     reloadFromDisk() {
         const current = this.conflict?.current;
         if (current) this.base = clone(current);
         this.reset();
     }
 
-    /**
-     * "Keep mine": rebase the draft on the version on disk and save it over. Fields the author
-     * did not touch take the disk's value, so only their own edits overwrite the other change.
-     */
+    // untouched fields take the disk's value, so only the author's edits overwrite
     keepMine(): Promise<boolean> {
         const current = this.conflict?.current;
         if (!current) return Promise.resolve(false);
@@ -190,10 +174,6 @@ export class PassageEditorStore {
         return this.save();
     }
 
-    /**
-     * The passage changed outside this editor (live refresh, or the graph refetched). A clean
-     * editor follows silently; a dirty one gets the conflict banner. `null`: deleted.
-     */
     onExternal(passage: TPassageDto | null) {
         if (passage === null) {
             this.conflict = { current: null };
@@ -210,7 +190,6 @@ export class PassageEditorStore {
         }
     }
 
-    /** Forget the persisted draft too (the author closed the editor and discarded it). */
     discard() {
         removeUiState(draftKey(this.passageId));
     }

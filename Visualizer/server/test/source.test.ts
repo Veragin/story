@@ -3,10 +3,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { changedFiles, snapshot, startSourceApp } from './sourceHelpers';
 
-/**
- * The in-app source editor: `GET/PUT /source/:owner/:id` (`project/writers/source.ts`). The 401
- * without a grant is covered by the loop over every story route in `auth.test.ts`.
- */
 let t: Awaited<ReturnType<typeof startSourceApp>>;
 
 beforeEach(async () => {
@@ -30,7 +26,6 @@ describe('source editor', () => {
 
         const passage = await t.get(`${S}/passage/village-thomas-intro`);
         expect(passage.body).toMatchObject({ file: PASSAGE, text: await read(PASSAGE) });
-        // a passage's source version is its DTO's version
         const dto = await t.get('/api/stories/example/passages/village-thomas-intro');
         expect(passage.body.version).toBe(dto.body.version);
     });
@@ -41,7 +36,7 @@ describe('source editor', () => {
         t.events.length = 0;
         const saved = await t.put(`${S}/chapter/village`, { version: before.body.version, text });
         expect(saved.status).toBe(200);
-        // prettier ran: single quotes, one space
+        // prettier ran
         expect(saved.body.text).toContain("title: 'Hamlet Chapter',");
         expect(await read(CHAPTER)).toBe(saved.body.text);
         expect(saved.body.version).not.toBe(before.body.version);
@@ -91,7 +86,6 @@ describe('source editor', () => {
 
         expect(changedFiles(files, await snapshot(t.project.root))).toEqual([]);
         expect(t.events).toEqual([]);
-        // the in-memory project was rolled back too
         expect((await t.get(`${S}/chapter/village`)).body).toEqual(before.body);
     });
 

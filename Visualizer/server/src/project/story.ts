@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { capitalize } from '@story/shared';
 import {
     type ArrowFunction,
     type Expression,
@@ -26,18 +27,6 @@ import {
 import type { SourceProject } from './SourceProject';
 import type { TRefResolver, TWriteCtx } from './values';
 
-/**
- * Where things live in a story (plan §2 "Data model"), read off the AST:
- *
- *  - `data/register.ts` — `register.{characters,npcs,chapters,locations,passages}`
- *  - `data/TWorldState.ts` — `TWorldState.{characters,npcs,chapters,locations}`
- *  - `data/chapters/<ch>/<ch>.chapter.ts`, `<ch>.passages.ts`, `triggers.ts`,
- *    `<character>.passages/<local>[.<suffix>].ts`
- *  - `data/characters/<id>.ts`, `data/npcs/<Id>.ts`, `data/locations/<id>.location.ts`,
- *    `data/items/{itemInfo,foodInfo,toolInfo}.ts`
- */
-
-/** Ids are identifiers starting with a lower-case letter; `-` is the passage-id separator (plan §2). */
 export const ID_RE = /^[a-z][A-Za-z0-9_]*$/;
 
 export const assertId = (value: unknown, field: string): string => {
@@ -53,8 +42,7 @@ export type TRegisterSection = 'characters' | 'npcs' | 'chapters' | 'locations' 
 
 export const registerFile = (sp: SourceProject) => sp.fileOrThrow(sp.root.paths.register, 'register.ts');
 
-/** The `register` object literal of `data/register.ts`. */
-export const registerObject = (sf: SourceFile): ObjectLiteralExpression => {
+const registerObject = (sf: SourceFile): ObjectLiteralExpression => {
     const decl = sf.getVariableDeclaration('register');
     const obj = asObject(decl?.getInitializer());
     if (!obj) throw new Error('data/register.ts: no `export const register = { … }`');
@@ -69,14 +57,11 @@ export const registerSection = (sf: SourceFile, section: TRegisterSection): Obje
 
 export type TRegisterEntry = {
     id: string;
-    /** The identifier the entry points at (`Thomas`). */
     local: string;
-    /** The file that declares it, when it resolves. */
     file?: SourceFile;
     exportName?: string;
 };
 
-/** The entries of `register.<section>` whose value is an imported identifier. */
 export const registerEntries = (
     sp: SourceProject,
     section: Exclude<TRegisterSection, 'passages'>
@@ -102,9 +87,6 @@ export const registerEntries = (
     return out;
 };
 
-// ---------------------------------------------------------------------------------------------
-// Chapters
-
 export const chapterIds = (sp: SourceProject): string[] => registerEntries(sp, 'chapters').map((e) => e.id);
 
 export const chapterFile = (sp: SourceProject, chapterId: string): SourceFile => {
@@ -114,21 +96,18 @@ export const chapterFile = (sp: SourceProject, chapterId: string): SourceFile =>
     return sf;
 };
 
-/** The exported `TChapter` object of a chapter file. */
 export const chapterObject = (sf: SourceFile) => {
     const found = findExportedObject(sf, (obj) => stringProp(obj, 'chapterId') !== undefined);
     if (!found) throw new Error(`${sf.getBaseName()}: no exported chapter object`);
     return found;
 };
 
-/** `data/chapters/<ch>/<ch>.chapter.ts` → `<ch>`. */
-export const chapterIdOfFile = (sp: SourceProject, abs: string): string | undefined => {
+const chapterIdOfFile = (sp: SourceProject, abs: string): string | undefined => {
     const rel = sp.root.rel(abs);
     const m = /^data\/chapters\/([^/]+)\/([^/]+)\.chapter\.ts$/.exec(rel);
     return m && m[1] === m[2] ? m[1] : undefined;
 };
 
-/** `<character>.passages/` folders of a chapter with their passage files (in memory). */
 export const chapterCharacterFiles = (sp: SourceProject, chapterId: string): Map<string, SourceFile[]> => {
     const dir = sp.root.paths.chapterDir(chapterId);
     const out = new Map<string, SourceFile[]>();
@@ -147,10 +126,13 @@ export const chapterCharacterFiles = (sp: SourceProject, chapterId: string): Map
 export const chapterPassagesFile = (sp: SourceProject, chapterId: string) =>
     sp.file(sp.root.paths.chapterPassagesFile(chapterId));
 
-/** The `Record<…>` object of `<ch>.passages.ts` (the default export's initializer). */
-export const passagesRecord = (sf: SourceFile): ObjectLiteralExpression | undefined => {
+const defaultExportExpr = (sf: SourceFile): Expression | undefined => {
     const def = sf.getExportAssignment((e) => !e.isExportEquals());
-    const defExpr = def ? unwrap(def.getExpression()) : undefined;
+    return def ? unwrap(def.getExpression()) : undefined;
+};
+
+export const passagesRecord = (sf: SourceFile): ObjectLiteralExpression | undefined => {
+    const defExpr = defaultExportExpr(sf);
     if (defExpr && Node.isIdentifier(defExpr)) {
         const obj = asObject(sf.getVariableDeclaration(defExpr.getText())?.getInitializer());
         if (obj) return obj;
@@ -163,7 +145,6 @@ export const passagesRecord = (sf: SourceFile): ObjectLiteralExpression | undefi
     return undefined;
 };
 
-/** Every passage id registered in any chapter's `<ch>.passages.ts` Record. */
 export const registeredPassageIds = (sp: SourceProject): Set<string> => {
     const ids = new Set<string>();
     for (const ch of chapterIds(sp)) {
@@ -177,26 +158,18 @@ export const registeredPassageIds = (sp: SourceProject): Set<string> => {
     return ids;
 };
 
-export const chapterPassageUnionName = (chapterId: string) => `T${cap(chapterId)}PassageId`;
+export const chapterPassageUnionName = (chapterId: string) => `T${capitalize(chapterId)}PassageId`;
 export const characterPassageUnionName = (chapterId: string, characterId: string) =>
-    `T${cap(chapterId)}${cap(characterId)}PassageId`;
-
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-// ---------------------------------------------------------------------------------------------
-// Passages
+    `T${capitalize(chapterId)}${capitalize(characterId)}PassageId`;
 
 type TFn = ArrowFunction | FunctionExpression | FunctionDeclaration;
 
 export type TPassageSource = {
     sf: SourceFile;
     fn: TFn;
-    /** Exported binding (`introPassage`), or `default`. */
     exportName: string;
-    /** The object literal the function returns. */
     obj: ObjectLiteralExpression;
     params: string[];
-    /** Statements before the `return` of a block body. */
     preamble: Statement[];
     line: number;
 };
@@ -205,7 +178,7 @@ const returnedObject = (fn: TFn): { obj: ObjectLiteralExpression; preamble: Stat
     const body = fn.getBody();
     if (!body) return undefined;
     if (!Node.isBlock(body)) {
-        const obj = asObject(body as Expression);
+        const obj = Node.isExpression(body) ? asObject(body) : undefined;
         return obj ? { obj, preamble: [] } : undefined;
     }
     const statements = body.getStatements();
@@ -219,13 +192,9 @@ const returnedObject = (fn: TFn): { obj: ObjectLiteralExpression; preamble: Stat
     return undefined;
 };
 
-/** Find the passage function of a passage file and the object it returns. */
 export const passageSource = (sf: SourceFile): TPassageSource | undefined => {
-    const defaultName = (() => {
-        const def = sf.getExportAssignment((e) => !e.isExportEquals());
-        const e = def ? unwrap(def.getExpression()) : undefined;
-        return e && Node.isIdentifier(e) ? e.getText() : undefined;
-    })();
+    const defExpr = defaultExportExpr(sf);
+    const defaultName = defExpr && Node.isIdentifier(defExpr) ? defExpr.getText() : undefined;
     const candidates: { fn: TFn; name: string; exported: boolean }[] = [];
     for (const decl of topLevelVariables(sf)) {
         const init = decl.getInitializer();
@@ -244,11 +213,11 @@ export const passageSource = (sf: SourceFile): TPassageSource | undefined => {
     for (const c of candidates) {
         const ret = returnedObject(c.fn);
         if (!ret || (!ret.obj.getProperty('type') && !ret.obj.getProperty('chapterId'))) continue;
-        const exported = c.exported || (Node.isFunctionDeclaration(c.fn) && c.fn.isDefaultExport());
+        const isDefaultFunction = Node.isFunctionDeclaration(c.fn) && c.fn.isDefaultExport();
         return {
             sf,
             fn: c.fn,
-            exportName: exported && !(Node.isFunctionDeclaration(c.fn) && c.fn.isDefaultExport()) ? c.name : 'default',
+            exportName: c.exported && !isDefaultFunction ? c.name : 'default',
             obj: ret.obj,
             params: c.fn.getParameters().map((p) => p.getName()),
             preamble: ret.preamble,
@@ -258,24 +227,18 @@ export const passageSource = (sf: SourceFile): TPassageSource | undefined => {
     return undefined;
 };
 
-/** `cool.transition.ts` → `cool`. */
-export const localIdFromFileName = (sf: SourceFile) => sf.getBaseName().split('.')[0];
+const localIdFromFileName = (sf: SourceFile) => sf.getBaseName().split('.')[0];
 
-/** The passage's local id: its `id` literal, else the file name. */
 export const passageLocalId = (src: TPassageSource | undefined, sf: SourceFile): string =>
     (src && stringProp(src.obj, 'id')) ?? localIdFromFileName(sf);
 
-/**
- * `<ch>-<character>-<local>` → its parts; 404 for anything else. The chapter and character must
- * be ids (they become path segments, so `..` or `/` never reach `ProjectRoot.abs`).
- */
+// Chapter and character become path segments, so they must be ids (no `..` or `/`).
 export const parsePassageId = (passageId: string) => {
     const m = /^([^-]+)-([^-]+)-(.+)$/.exec(passageId);
     if (!m || !ID_RE.test(m[1]) || !ID_RE.test(m[2])) throw HttpError.notFound(`No passage "${passageId}"`);
     return { chapterId: m[1], characterId: m[2], localId: m[3] };
 };
 
-/** The file of a passage, found in its character folder by `id` (or file name). */
 export const findPassageFile = (sp: SourceProject, passageId: string): SourceFile => {
     const { chapterId, characterId, localId } = parsePassageId(passageId);
     const files = sp.file(sp.root.paths.chapterFile(chapterId))
@@ -286,9 +249,6 @@ export const findPassageFile = (sp: SourceProject, passageId: string): SourceFil
     return byId;
 };
 
-// ---------------------------------------------------------------------------------------------
-// Triggers
-
 export type TTriggerSource = {
     chapterId: string;
     sf: SourceFile;
@@ -297,7 +257,6 @@ export type TTriggerSource = {
     triggerId: string;
 };
 
-/** Every trigger object declared in a chapter's `triggers.ts`. */
 export const chapterTriggers = (sp: SourceProject, chapterId: string): TTriggerSource[] => {
     const sf = sp.file(sp.root.paths.triggersFile(chapterId));
     if (!sf) return [];
@@ -320,9 +279,6 @@ export const findTrigger = (sp: SourceProject, triggerId: string): TTriggerSourc
     return t;
 };
 
-// ---------------------------------------------------------------------------------------------
-// Reference resolvers for the value engine
-
 const importFrom = (ctx: TWriteCtx, target: SourceFile, exportName: string): string => {
     if (ctx.sf === target) return exportName;
     return ensureNamedImport(ctx.sf, exportName, relativeModule(ctx.sf.getFilePath(), target.getFilePath()));
@@ -334,7 +290,12 @@ const identifierTarget = (expr: Expression) => {
     return resolveIdentifierFile(e.getSourceFile(), e.getText());
 };
 
-/** `chapter: villageChapter` ⇄ `'village'`. */
+const referencedObjectId = (expr: Expression): string | undefined => {
+    const t = identifierTarget(expr);
+    if (!t) return undefined;
+    return stringProp(asObject(t.file.getVariableDeclaration(t.exportName)?.getInitializer()), 'id');
+};
+
 export const chapterRef = (sp: SourceProject): TRefResolver => ({
     what: 'chapter',
     read: (expr) => {
@@ -348,15 +309,9 @@ export const chapterRef = (sp: SourceProject): TRefResolver => ({
     },
 });
 
-/** `triggers: [nobleHouseRobberyTrigger]` ⇄ `'nobleHouseRobbery'`. */
 export const triggerRef = (sp: SourceProject): TRefResolver => ({
     what: 'trigger',
-    read: (expr) => {
-        const t = identifierTarget(expr);
-        if (!t) return undefined;
-        const obj = asObject(t.file.getVariableDeclaration(t.exportName)?.getInitializer());
-        return stringProp(obj, 'id');
-    },
+    read: referencedObjectId,
     write: (id, ctx) => {
         const t = allTriggers(sp).find((x) => x.triggerId === id);
         if (!t) throw HttpError.badRequest(`Field "${ctx.path}": no trigger "${id}"`);
@@ -364,15 +319,9 @@ export const triggerRef = (sp: SourceProject): TRefResolver => ({
     },
 });
 
-/** `sublocations: [villageLocation]` ⇄ `'village'`. */
 export const locationRef = (sp: SourceProject): TRefResolver => ({
     what: 'location',
-    read: (expr) => {
-        const t = identifierTarget(expr);
-        if (!t) return undefined;
-        const obj = asObject(t.file.getVariableDeclaration(t.exportName)?.getInitializer());
-        return stringProp(obj, 'id');
-    },
+    read: referencedObjectId,
     write: (id, ctx) => {
         const entry = registerEntries(sp, 'locations').find((e) => e.id === id);
         if (!entry?.file || !entry.exportName) throw HttpError.badRequest(`Field "${ctx.path}": no location "${id}"`);
@@ -380,7 +329,6 @@ export const locationRef = (sp: SourceProject): TRefResolver => ({
     },
 });
 
-/** A display string for a title that may be code: the literal, the argument of `_('…')`, else `fallback`. */
 export const displayName = (expr: Expression | undefined, fallback: string): string => {
     if (!expr) return fallback;
     const lit = stringLiteral(expr);

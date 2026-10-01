@@ -4,7 +4,6 @@ import type { TCharacterDto, TEntityDto, TItemDto } from '@story/visualizer-prot
 import { ApiError, ApiEvents, createMockApi, type TMockApi } from '../../../api';
 import { EntitiesStore } from '../EntitiesStore';
 
-/** Let the mock's `setTimeout(0)` events and the refetches they trigger run. */
 const flush = async () => {
     for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
 };

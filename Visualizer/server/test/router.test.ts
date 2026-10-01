@@ -14,7 +14,7 @@ import type { TServerContext } from '../src/context';
 import { HttpError } from '../src/http/HttpError';
 import { ProjectRoot } from '../src/project/ProjectRoot';
 import { StoryStore } from '../src/stories/StoryStore';
-import { login, makeTempProject } from './helpers';
+import { listenLocal, login, makeTempProject } from './helpers';
 
 let app: TApp;
 let story: TServerContext;
@@ -29,7 +29,7 @@ beforeAll(async () => {
     storiesRoot = temp.storiesRoot;
     app = await createApp({ storiesRoot: temp.storiesRoot, watch: false });
     story = await app.story('example');
-    // Test-only handlers on real protocol routes, to exercise the error mapping.
+    // overrides real routes to exercise the error mapping
     story.router.handle('getTrigger', ({ params }) => {
         switch (params.triggerId) {
             case 'stale':
@@ -48,8 +48,7 @@ beforeAll(async () => {
     });
     story.router.handle('createTrigger', ({ params, body }) => ({ echo: { params, body } }) as never);
     story.router.handle('updateTrigger', ({ body }) => ({ echo: body }) as never);
-    const port = await app.listen(0, '127.0.0.1');
-    base = `http://127.0.0.1:${port}`;
+    base = await listenLocal(app);
     cookie = await login(base);
 });
 
@@ -104,7 +103,7 @@ describe('router', () => {
         expect(app.contexts.loadedIds()).toEqual(['example']);
     });
 
-    it('has no 501 stubs left since WP2 (the source routes answer)', async () => {
+    it('answers the source routes (no 501 stubs)', async () => {
         const { status, json } = await call('GET', '/api/stories/example/chapters/village');
         expect(status).toBe(200);
         expect(json.chapterId).toBe('village');
@@ -193,8 +192,8 @@ describe('protocol paths', () => {
                 [...template.matchAll(/:([A-Za-z]+)/g)].map(([, name]) => [name, `${name}-x y`])
             );
             const split = splitStoryPath(buildPath('my-story', route, params as never));
-            expect(split?.storyId).toBe('my-story');
-            expect(matchPath(template, split!.rest)).toEqual(params);
+            expect(split).toEqual({ storyId: 'my-story', rest: expect.any(String) });
+            expect(matchPath(template, split?.rest ?? '')).toEqual(params);
         }
         expect(matchPath('/chapters/:chapterId', '/chapters/')).toBeNull();
         expect(matchPath('/chapters/:chapterId', '/chapters/a/b')).toBeNull();

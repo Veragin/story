@@ -1,38 +1,29 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import { Alert, Button, IconButton, Tooltip } from '@mui/material';
+import { Alert, Button, IconButton, Tooltip, TextField } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { Column, Row, SmallText, spacingCss } from '@story/ui';
 import type { TLocationDto } from '@story/visualizer-protocol';
 import { ApiError } from '../../../api';
-import { TextField } from '../../../components/TextField';
 import {
     locationPatch,
     newLocalCharacterRow,
     toLocationDraft,
     type TLocationDraft,
     type TLocationPatch,
-    type TTextDraft,
 } from './draft';
+import { TextDraftField } from './TextDraftField';
+import { SourceField } from './SourceField';
 
 export type TLocationFormProps = {
-    /** The latest known DTO. When it changes under unsaved input, the form offers "reload / keep mine". */
     location: TLocationDto;
     readOnly?: boolean;
-    /** `PUT /entities/locations/:id` with only the changed fields; resolves with the new DTO. */
     onSave: (patch: TLocationPatch, version: string) => Promise<TLocationDto>;
     onSaved?: (dto: TLocationDto) => void;
     onCancel?: () => void;
 };
 
-/**
- * The location form (plan WP4 "Location modal"): id (read-only), name, description and the local
- * characters table. Shared: the Map page shows it in a modal, the Entities page (WP7) may embed it.
- *
- * `_('…')` values are edited as their text and stay translated; any other expression is edited as
- * TypeScript source.
- */
 export const LocationForm = ({
     location,
     readOnly,
@@ -107,8 +98,6 @@ export const LocationForm = ({
     const keepMine = () => {
         if (!conflict) return;
         const against = conflict;
-        // Rebase: fields the author did not touch take the disk's value, so only their own
-        // edits overwrite the other change.
         const mine = locationPatch(base, draft);
         const disk = toLocationDraft(against);
         const rebased: TLocationDraft = {
@@ -187,7 +176,7 @@ export const LocationForm = ({
                     )}
                 </SRow>
                 {chars.kind === 'code' ? (
-                    <CodeField
+                    <SourceField
                         label={_('Local characters (code)')}
                         value={chars.code}
                         readOnly={readOnly}
@@ -302,77 +291,6 @@ export const LocationForm = ({
     );
 };
 
-type TTextDraftFieldProps = {
-    label: string;
-    value: TTextDraft;
-    onChange: (value: TTextDraft) => void;
-    readOnly?: boolean;
-    multiline?: boolean;
-};
-
-/** A text field for a `TMaybeCode<string>` draft (plain, translated or code). */
-export const TextDraftField = ({
-    label,
-    value,
-    onChange,
-    readOnly,
-    multiline,
-}: TTextDraftFieldProps) => {
-    if (value.kind === 'code') {
-        return (
-            <CodeField
-                label={_('%s (code)', label)}
-                value={value.code}
-                readOnly={readOnly}
-                onChange={(code) => onChange({ kind: 'code', code })}
-            />
-        );
-    }
-    return (
-        <TextField
-            label={
-                value.kind === 'translated'
-                    ? _('%s (translated)', label)
-                    : label
-            }
-            value={value.text}
-            onChange={(e) =>
-                onChange({ kind: value.kind, text: e.target.value })
-            }
-            slotProps={{ input: { readOnly } }}
-            size="small"
-            fullWidth
-            multiline={multiline}
-            minRows={multiline ? 2 : undefined}
-            maxRows={multiline ? 8 : undefined}
-        />
-    );
-};
-
-const CodeField = ({
-    label,
-    value,
-    onChange,
-    readOnly,
-}: {
-    label: string;
-    value: string;
-    onChange: (code: string) => void;
-    readOnly?: boolean;
-}) => (
-    <SCode
-        label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        slotProps={{ input: { readOnly } }}
-        size="small"
-        fullWidth
-        multiline
-        minRows={1}
-        maxRows={12}
-    />
-);
-
 const SForm = styled.form`
     display: flex;
     flex-direction: column;
@@ -399,11 +317,4 @@ const SCharRow = styled(Row)`
 const SButtons = styled(Row)`
     justify-content: flex-end;
     gap: ${spacingCss(1)};
-`;
-
-const SCode = styled(TextField)`
-    & textarea {
-        font-family: monospace;
-        font-size: 13px;
-    }
 `;

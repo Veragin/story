@@ -18,10 +18,6 @@ import {
     type TUpdateStoryBody,
 } from '@story/visualizer-protocol';
 
-/**
- * A non-2xx answer of the Visualizer server. `status` is what `PasswordDialog` (`@story/ui`)
- * reads to tell a wrong password (401) from too many attempts (429).
- */
 export class ApiError extends Error {
     constructor(
         readonly status: number,
@@ -35,12 +31,10 @@ export class ApiError extends Error {
         return this.body.error;
     }
 
-    /** 401 — the story is locked (or its grant expired). */
     get isUnauthorized() {
         return this.status === 401;
     }
 
-    /** 409 — the id is taken (import) or the info changed under the edit (`stale`). */
     get isExists() {
         return this.body.error === 'exists';
     }
@@ -52,14 +46,11 @@ export class ApiError extends Error {
 
 export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
 
-/**
- * Everything the landing page asks the server: the global routes (list, create, import, auth) plus
- * a story's `/info`, which the Edit dialog reads and writes.
- */
+export const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
 export type TLandingApi = {
     listStories(): Promise<TStoryListItemDto[]>;
     createStory(body: TCreateStoryBody): Promise<TStoryDto>;
-    /** `POST /api/stories/import?id=<id>` with the raw zip. */
     importStory(zip: Blob, id: string): Promise<TStoryDto>;
     login(storyId: string, password: string): Promise<void>;
     getSession(): Promise<TSessionDto>;
@@ -68,7 +59,6 @@ export type TLandingApi = {
 };
 
 export type TLandingApiOptions = {
-    /** Prefix for every route; `''` = same origin, i.e. through the Vite `/api` proxy. */
     baseUrl?: string;
     fetch?: typeof fetch;
 };
@@ -86,30 +76,25 @@ const parseError = async (res: Response): Promise<TApiErrorBody> => {
     };
 };
 
-/**
- * One request, JSON or raw: throws `ApiError` on a non-2xx answer (status `0` when the network
- * failed), returns `undefined` for a 204.
- */
 const send = async <T>(fetchImpl: typeof fetch, url: string, init: RequestInit): Promise<T> => {
     let res: Response;
     try {
         res = await fetchImpl(url, init);
     } catch (e) {
-        throw new ApiError(0, { error: 'internal', message: `Network error: ${(e as Error).message}` });
+        throw new ApiError(0, { error: 'internal', message: `Network error: ${errorMessage(e)}` });
     }
     if (!res.ok) throw new ApiError(res.status, await parseError(res));
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
 };
 
-/** `content-type: application/json` on every mutation, bodyless ones included (the CSRF check). */
 const jsonInit = (method: string, body: unknown): RequestInit => ({
     method,
+    // on every mutation, bodyless ones included: the server's CSRF check requires it
     headers: method === 'GET' ? undefined : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-/** `TLandingApi` over HTTP, built on the protocol's route tables like the client's `httpApi`. */
 export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLandingApiOptions = {}): TLandingApi => {
     const request = <R extends TGlobalRouteName>(route: R, params: TRouteParams<R>, body?: TRouteBody<R>) =>
         send<TRouteResponse<R>>(

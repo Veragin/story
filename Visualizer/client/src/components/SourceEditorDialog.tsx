@@ -31,11 +31,10 @@ type TProps = {
     onClose: () => void;
 };
 
-/** `file:line:col message`, for diagnostics in other files. */
 const formatDiagnostic = (d: TDiagnosticDto) =>
     `${d.file}:${d.line}:${d.column} ${d.code ? `TS${d.code}: ` : ''}${d.message}`;
 
-/** Server diagnostics (1-based line / column) → CodeMirror's, at the start of the token. */
+// server positions are 1-based
 const toCodeMirror = (
     state: EditorState,
     diagnostics: TDiagnosticDto[]
@@ -56,13 +55,6 @@ const toCodeMirror = (
         };
     });
 
-/**
- * The in-app source editor (it replaced "open in editor"): the whole `.ts` file of a chapter or a
- * passage in CodeMirror. Save (or Ctrl+S) sends the whole text; the server formats it with
- * prettier, type-checks the story and refuses new errors (`422`), shown in the gutter beside
- * their lines. `409 stale` and a change on disk under unsaved input show "Changed on disk:
- * Reload / Keep mine", like the forms.
- */
 export const SourceEditorDialog = observer(
     ({ owner, id, api, events = apiEvents, onClose }: TProps) => {
         const [store] = useState(
@@ -75,8 +67,6 @@ export const SourceEditorDialog = observer(
             return () => store.destroy();
         }, [store]);
 
-        // The last save's diagnostics, beside their lines. CodeMirror maps them through later
-        // edits until the next save replaces them.
         const showDiagnostics = () => {
             const view = viewRef.current;
             if (!view) return;
@@ -123,7 +113,6 @@ export const SourceEditorDialog = observer(
                 onClose={() => void close()}
                 maxWidth="lg"
                 fullWidth
-                // Ctrl+S saves, in the editor or anywhere else in the dialog
                 onKeyDown={(e) => {
                     if (
                         (e.ctrlKey || e.metaKey) &&

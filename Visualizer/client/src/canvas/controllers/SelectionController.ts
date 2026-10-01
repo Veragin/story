@@ -4,15 +4,10 @@ import type { Shape } from '../shapes/Shape';
 import type { TPoint, TRect } from '../types';
 
 export type TSelectionOptions = {
-    /** Selection outline, width in screen px. Default `#4da3ff`, 2. */
     highlight?: { color: string; width: number };
-    /** Resize handle size in screen px. Default 8. */
     handleSize?: number;
-    /** How close (screen px) to a resizable edge a press grabs it. Default 6. */
     edgeGrab?: number;
-    /** Allow selecting while `scene.editable` is false. Default false. */
     selectInViewMode?: boolean;
-    /** Escape clears the selection. Default true. */
     escapeClears?: boolean;
     priority?: number;
 };
@@ -21,12 +16,6 @@ type TGesture =
     | { type: 'move'; shape: Shape; startWorld: TPoint; startOrigin: TPoint; changed: boolean }
     | { type: 'resize'; shape: RectShape; edge: TRectEdge; startWorld: TPoint; startRect: TRect; changed: boolean };
 
-/**
- * Click selects, click on empty space clears, the selection is outlined, and only the
- * selected shape can be dragged (when `draggable` and the scene is editable). Selected
- * `RectShape`s with `resizeEdges` get edge handles. Emits `select` and `change` on
- * `scene.events`.
- */
 export class SelectionController implements ISceneInteraction {
     readonly priority: number;
     private _selected: Shape | null = null;
@@ -75,15 +64,9 @@ export class SelectionController implements ISceneInteraction {
         this.scene.events.emit('select', { shape, previous });
     }
 
-    clear(): void {
-        this.select(null);
-    }
-
     destroy(): void {
         for (const d of this.disposers.splice(0)) d();
     }
-
-    // ---- interaction -------------------------------------------------------------------------
 
     onClick(e: TScenePointerEvent): boolean {
         if (!this.canSelect) return false;
@@ -195,7 +178,6 @@ export class SelectionController implements ISceneInteraction {
         ctx.restore();
     }
 
-    /** The resizable edge of the selected rect under the pointer, if any. */
     private edgeAt(e: TScenePointerEvent): TRectEdge | null {
         const s = this._selected;
         if (!(s instanceof RectShape) || s.resizeEdges.length === 0 || !s.visible) return null;
@@ -220,14 +202,14 @@ export class SelectionController implements ISceneInteraction {
     }
 }
 
-export function resizeRect(
+export const resizeRect = (
     r: TRect,
     edge: TRectEdge,
     dx: number,
     dy: number,
     minWidth: number,
     minHeight: number
-): TRect {
+): TRect => {
     const right = r.x + r.width;
     const bottom = r.y + r.height;
     switch (edge) {
@@ -244,9 +226,9 @@ export function resizeRect(
         case 'bottom':
             return { ...r, height: Math.max(minHeight, r.height + dy) };
     }
-}
+};
 
-function edgeMidpoint(r: TRect, edge: TRectEdge): TPoint {
+const edgeMidpoint = (r: TRect, edge: TRectEdge): TPoint => {
     switch (edge) {
         case 'left':
             return { x: r.x, y: r.y + r.height / 2 };
@@ -257,4 +239,4 @@ function edgeMidpoint(r: TRect, edge: TRectEdge): TPoint {
         case 'bottom':
             return { x: r.x + r.width / 2, y: r.y + r.height };
     }
-}
+};

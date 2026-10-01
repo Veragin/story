@@ -1,11 +1,5 @@
 import { isCode, type TLocalCharacterDto, type TLocationDto, type TMaybeCode } from '@story/visualizer-protocol';
 
-/**
- * Editable form of a `TMaybeCode<string>` field:
- *  - `text`: a plain string literal;
- *  - `translated`: `_('…')`, edited as its text and written back wrapped in `_()` again;
- *  - `code`: any other expression, edited verbatim as TypeScript.
- */
 export type TTextDraft =
     | { kind: 'text'; text: string }
     | { kind: 'translated'; text: string }
@@ -76,7 +70,6 @@ const fromDraftCharacters = (d: TLocationDraft['localCharacters']): TLocationDto
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-/** Only the fields that differ from `dto` (PUT bodies are partial, plan §6 WP1). */
 export const locationPatch = (dto: TLocationDto, draft: TLocationDraft): TLocationPatch => {
     const patch: TLocationPatch = {};
     const name = fromTextDraft(draft.name);

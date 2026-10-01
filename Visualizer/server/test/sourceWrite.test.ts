@@ -4,10 +4,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { changedFiles, snapshot, startSourceApp, storyProblems, tscTemp } from './sourceHelpers';
 
-/**
- * Writers and the registry (plan WP2 "Tests"). Every scenario runs on its own temp copy; after
- * each step the static story checks run, and each scenario ends with a real `tsc --noEmit`.
- */
 let t: Awaited<ReturnType<typeof startSourceApp>>;
 
 beforeEach(async () => {
@@ -34,7 +30,6 @@ describe('passages', () => {
     it('keeps a closure in a code field when a sibling literal changes', async () => {
         const forest = (await t.get('/api/stories/example/passages/village-thomas-forest')).body;
         const link = forest.body[0].links[0];
-        // 1. give the link a closure (a code field) …
         const closure = "() => {\n    // keep me\n    console.log('hunted');\n}";
         let res = await t.put('/api/stories/example/passages/village-thomas-forest', {
             version: forest.version,
@@ -45,7 +40,6 @@ describe('passages', () => {
         expect(text).toContain('// keep me');
         expect(text).toContain("console.log('hunted');");
 
-        // 2. … then edit only the sibling `text` literal, sending back what we read
         const after = res.body;
         const nextLink = { ...after.body[0].links[0], text: 'Lets hunt deer' };
         res = await t.put('/api/stories/example/passages/village-thomas-forest', {
@@ -57,7 +51,6 @@ describe('passages', () => {
         expect(text).toContain("text: 'Lets hunt deer'");
         expect(text).toContain('// keep me');
         expect(text).toContain("console.log('hunted');");
-        // the other code field (the conditional cost) is untouched too
         expect(text).toContain('cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),');
         expect(res.body.body[0].links[0].onFinish.code).toContain("console.log('hunted');");
         await expectHealthy();
@@ -77,35 +70,29 @@ describe('passages', () => {
             return res.body;
         };
 
-        // change the description: only the comment changes
         let dto = await put({ execute: { code, description: 'Heals Annie.' } });
         expect(dto.execute).toEqual({ code, description: 'Heals Annie.' });
         expect(await read(file)).toBe(
             original.replace('/** Annie gets healed when she is weak. */', '/** Heals Annie. */')
         );
 
-        // a `*/` in the text is escaped, and reads back as written
         dto = await put({ execute: { code, description: 'Heals */ Annie.' } });
         expect(dto.execute.description).toBe('Heals */ Annie.');
         expect(await read(file)).toContain('/** Heals *\\/ Annie. */');
 
-        // several lines become ` * ` lines
         dto = await put({ execute: { code, description: 'Heals Annie\nwhen she is weak.' } });
         expect(dto.execute).toEqual({ code, description: 'Heals Annie\nwhen she is weak.' });
         expect(await read(file)).toContain(
             '    /**\n     * Heals Annie\n     * when she is weak.\n     */\n    execute: () => {'
         );
 
-        // no description: the comment goes, the code stays
         dto = await put({ execute: { code } });
         expect(dto.execute).toEqual({ code });
         expect(await read(file)).toBe(original.replace('    /** Annie gets healed when she is weak. */\n', ''));
 
-        // set it again
         dto = await put({ execute: { code, description: 'Annie gets healed when she is weak.' } });
         expect(await read(file)).toBe(original);
 
-        // `null` removes execute together with its comment
         dto = await put({ execute: null });
         expect(dto.execute).toBeUndefined();
         let text = await read(file);
@@ -113,7 +100,6 @@ describe('passages', () => {
         expect(text).not.toContain('Annie gets healed');
         expect(text).toContain("    id: 'forest',\n\n    type: 'screen',");
 
-        // a description-only stub gets `() => {}` (D8), added after `id`
         dto = await put({ execute: { code: '', description: 'Something happens.' } });
         expect(dto.execute).toEqual({ code: '() => {}', description: 'Something happens.' });
         text = await read(file);
@@ -137,7 +123,6 @@ describe('passages', () => {
                     condition: { code: 's.time.s >= 0', description: 'Always, really.' },
                     links: [{ ...link, onFinish: { code: '', description: 'Nothing yet.' } }],
                 },
-                // a new item: generated as a whole, with the comment on its own line
                 { condition: { code: '', description: 'A stub condition.' }, text: 'More' },
             ],
         });
@@ -150,7 +135,6 @@ describe('passages', () => {
         expect(text).toContain('/** Nothing yet. */\n                    onFinish: () => {},');
         expect(text).toContain('/** A stub condition. */\n            condition: true,');
 
-        // removing the fields removes their comments
         res = await t.put(url, { version: res.body.version, body: [{ text: item.text, links: [link] }] });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         text = await read(file);
@@ -177,7 +161,6 @@ describe('passages', () => {
     it('answers 422 for invalid code and leaves the file unchanged', async () => {
         const before = await snapshot(t.project.root);
         const forest = (await t.get('/api/stories/example/passages/village-thomas-forest')).body;
-        // does not parse
         let res = await t.put('/api/stories/example/passages/village-thomas-forest', {
             version: forest.version,
             title: { code: '1 +' },
@@ -191,7 +174,6 @@ describe('passages', () => {
             title: { code: "'a', image: 'b'" },
         });
         expect(res.status).toBe(422);
-        // parses, but does not type-check (`title: string`)
         res = await t.put('/api/stories/example/passages/village-thomas-forest', {
             version: forest.version,
             title: { code: '42' },
@@ -202,7 +184,7 @@ describe('passages', () => {
             code: 2322,
         });
         expect(res.body.diagnostics[0].line).toBeGreaterThan(1);
-        // a link to a passage that does not exist is a type error too (the id union)
+        // not in the passage id union
         const link = forest.body[0].links[0];
         res = await t.put('/api/stories/example/passages/village-thomas-forest', {
             version: forest.version,
@@ -210,7 +192,6 @@ describe('passages', () => {
         });
         expect(res.status).toBe(422);
         expect(changedFiles(before, await snapshot(t.project.root))).toEqual([]);
-        // and the in-memory project was rolled back: a valid edit still works
         res = await t.put('/api/stories/example/passages/village-thomas-forest', {
             version: forest.version,
             title: 'Deep forest',
@@ -243,13 +224,11 @@ describe('passages', () => {
         expect(res.body.title).toBe('The start');
         expect(res.body.version).not.toBe(intro.version);
         expect((await t.get('/api/stories/example/passages/village-thomas-intro')).body.version).toBe(res.body.version);
-        // the old version is stale now
         res = await t.put('/api/stories/example/passages/village-thomas-intro', {
             version: intro.version,
             title: 'Again',
         });
         expect(res.status).toBe(409);
-        // a hand edit makes the version stale as well
         const file = path.join(t.project.root, 'data/chapters/village/thomas.passages/intro.ts');
         const current = (await t.get('/api/stories/example/passages/village-thomas-intro')).body;
         await writeFile(file, (await readFile(file, 'utf8')).replace(/image: '[^']*'/, "image: 'story'"));
@@ -276,37 +255,31 @@ describe('passages', () => {
             expect(await read('data/chapters/village/village.passages.ts')).toContain(`'${id}': ${localId}Passage`);
             await expectHealthy();
 
+            const screenItem = {
+                condition: { code: 's.time.s > 0' },
+                text: 'Hello',
+                links: [{ text: 'Back', passageId: 'village-thomas-intro', cost: { seconds: 120 } }],
+            };
+            const fixedScreenItem = { ...screenItem, condition: { code: 'true' } };
             const patch =
                 type === 'screen'
-                    ? {
-                          title: 'A new screen',
-                          image: 'A hunter at the edge of the forest',
-                          body: [
-                              {
-                                  condition: { code: 's.time.s > 0' },
-                                  text: 'Hello',
-                                  links: [{ text: 'Back', passageId: 'village-thomas-intro', cost: { seconds: 120 } }],
-                              },
-                          ],
-                      }
+                    ? { title: 'A new screen', image: 'A hunter at the edge of the forest', body: [screenItem] }
                     : type === 'linear'
                       ? { description: 'Walking', nextPassageId: 'village-thomas-intro' }
                       : { nextPassageId: 'kingdom-thomas-visit' };
             res = await t.put(`/api/stories/example/passages/${id}`, { version: res.body.version, ...patch });
             if (type === 'screen') {
-                // `s` is not a parameter of the generated passage: a type error, nothing written
+                // `s` is not a parameter of the generated passage
                 expect(res.status).toBe(422);
                 res = await t.get(`/api/stories/example/passages/${id}`);
                 res = await t.put(`/api/stories/example/passages/${id}`, {
                     version: res.body.version,
                     ...patch,
-                    body: [{ ...patch.body![0], condition: { code: 'true' } }],
+                    body: [fixedScreenItem],
                 });
             }
             expect(res.status, JSON.stringify(res.body)).toBe(200);
-            expect(res.body).toMatchObject(
-                type === 'screen' ? { ...patch, body: [{ ...patch.body![0], condition: { code: 'true' } }] } : patch
-            );
+            expect(res.body).toMatchObject(type === 'screen' ? { ...patch, body: [fixedScreenItem] } : patch);
             await expectHealthy();
 
             const listed = (await t.get('/api/stories/example/chapters/village/passages')).body;
@@ -419,7 +392,6 @@ describe('chapters', () => {
         expect(chapterText).toContain("import { weddingChapter } from '../wedding/wedding.chapter';");
         expect(chapterText).toContain('chapter: weddingChapter');
 
-        // a trigger in the new chapter (creates triggers.ts)
         res = await t.post('/api/stories/example/chapters/harbor/triggers', {
             triggerId: 'storm',
             name: 'Storm',
@@ -428,7 +400,6 @@ describe('chapters', () => {
         expect(res.status, JSON.stringify(res.body)).toBe(201);
         expect((await t.get('/api/stories/example/chapters/harbor')).body.triggerIds).toEqual(['storm']);
 
-        // the new chapter's characters
         res = await t.post('/api/stories/example/chapters/harbor/characters', {
             characterId: 'annie',
             startPassageLocalId: 'dock',
@@ -446,7 +417,6 @@ describe('chapters', () => {
         await expectHealthy();
         await expectTsc();
 
-        // a `redirect` is written like any other body field
         const palace = (await t.get('/api/stories/example/passages/kingdom-annie-palace')).body;
         res = await t.put('/api/stories/example/passages/kingdom-annie-palace', {
             version: palace.version,
@@ -455,7 +425,6 @@ describe('chapters', () => {
         expect(res.status).toBe(200);
         expect(res.body.body[0].redirect).toBe('kingdom-annie-intro');
 
-        // deleting the chapter is refused while something outside it points at its passages
         const annie = (await t.get('/api/stories/example/entities/characters/annie')).body;
         res = await t.put('/api/stories/example/entities/characters/annie', {
             version: annie.version,
@@ -498,7 +467,6 @@ describe('chapters', () => {
         expect(await read('data/chapters/kingdom/kingdom.chapter.ts')).toBe(
             before.replace("start: Time.fromString('2.1. 8:00')", "start: Time.fromString('3.1. 8:00')")
         );
-        // `TimeRange.fromString(a, b)` keeps its form
         const wedding = (await t.get('/api/stories/example/chapters/wedding')).body;
         const r2 = await t.put('/api/stories/example/chapters/wedding', {
             version: wedding.version,
@@ -508,7 +476,6 @@ describe('chapters', () => {
         expect(await read('data/chapters/wedding/wedding.chapter.ts')).toContain(
             "TimeRange.fromString('5.1. 10:00', '6.1. 8:00')"
         );
-        // bad bodies
         expect(
             (
                 await t.put('/api/stories/example/chapters/kingdom', {
@@ -555,7 +522,6 @@ describe('chapters', () => {
 
     it('adds and removes a character in village (409 while referenced from outside)', async () => {
         let village = (await t.get('/api/stories/example/chapters/village')).body;
-        // already in the chapter
         expect(
             (await t.post('/api/stories/example/chapters/village/characters', { characterId: 'thomas' })).status
         ).toBe(409);
@@ -577,14 +543,13 @@ describe('chapters', () => {
         expect(passagesText).toContain(
             'export type TVillagePassageId = TVillageThomasPassageId | TVillageAnniePassageId;'
         );
-        // both characters have an `intro`: the second import is aliased
+        // thomas has an `intro` too
         expect(passagesText).toContain("import { introPassage as annieIntroPassage } from './annie.passages/intro';");
         expect(passagesText).toContain("'village-annie-intro': annieIntroPassage,");
         expect(exists('data/chapters/village/annie.passages/intro.ts')).toBe(true);
         await expectHealthy();
         await expectTsc();
 
-        // a passage of her own, then a link to it from kingdom → removing her is refused
         res = await t.post('/api/stories/example/chapters/village/passages', {
             characterId: 'annie',
             localId: 'well',
@@ -617,7 +582,6 @@ describe('chapters', () => {
             }),
         ]);
         expect(changedFiles(before, await snapshot(t.project.root))).toEqual([]);
-        // stale version
         expect((await t.del('/api/stories/example/chapters/village/characters/annie', { version: 'x' })).status).toBe(
             409
         );
@@ -627,7 +591,6 @@ describe('chapters', () => {
             (await t.del('/api/stories/example/passages/kingdom-annie-leave', { version: leave.version })).status
         ).toBe(200);
 
-        // with a saved layout position for one of her passages, which must go too
         await writeFile(
             path.join(t.project.root, 'data/chapters/village/village.layout.json'),
             JSON.stringify({
@@ -649,7 +612,7 @@ describe('chapters', () => {
         await expectHealthy();
         await expectTsc();
 
-        // thomas starts in village: removing him is refused
+        // thomas's startPassageId is in village
         village = (await t.get('/api/stories/example/chapters/village')).body;
         res = await t.del('/api/stories/example/chapters/village/characters/thomas', { version: village.version });
         expect(res.status).toBe(409);
@@ -714,7 +677,7 @@ describe('triggers', () => {
             ).status
         ).toBe(422);
 
-        // the village trigger lives in another file: its version is independent
+        // lives in another file, so its version is independent
         const village = (await t.get('/api/stories/example/triggers/nobleHouseRobbery')).body;
         expect(
             (
@@ -760,7 +723,6 @@ describe('entities', () => {
         });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body.dataType).toEqual({ name: 'TBobCharacterData', code: '{ canBuild: boolean }' });
-        // an init that does not fit the type is a 422
         const bad = await t.put('/api/stories/example/entities/characters/bob', {
             version: res.body.version,
             init: { ...res.body.init, health: 'full' },
@@ -793,7 +755,6 @@ describe('entities', () => {
         await expectHealthy();
         await expectTsc();
 
-        // forest is referenced (village.sublocations): refused
         let forest = (await t.get('/api/stories/example/entities/locations/forest')).body;
         res = await t.del('/api/stories/example/entities/locations/forest', { version: forest.version });
         expect(res.status).toBe(409);
@@ -807,7 +768,7 @@ describe('entities', () => {
         expect(
             (await t.del('/api/stories/example/entities/locations/forest', { version: forest.version })).status
         ).toBe(200);
-        // the village location is used as `location: 'village'` all over the story: type-level references
+        // type-level references: `location: 'village'` all over the story
         const v = (await t.get('/api/stories/example/entities/locations/village')).body;
         res = await t.del('/api/stories/example/entities/locations/village', { version: v.version });
         expect(res.status).toBe(409);
@@ -871,7 +832,6 @@ describe('entities', () => {
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body.props).toEqual({ damage: 12, asd: { asd: 'asdas', time: false }, range: 30 });
 
-        // rope becomes a tool: it moves to toolInfo.ts
         const rope = (await t.get('/api/stories/example/entities/items/rope')).body;
         res = await t.put('/api/stories/example/entities/items/rope', { version: rope.version, type: 'tool' });
         expect(res.status, JSON.stringify(res.body)).toBe(200);

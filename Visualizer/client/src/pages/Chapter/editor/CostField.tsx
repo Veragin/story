@@ -16,12 +16,7 @@ import {
     type TLinkCostObjectDto,
     type TMaybeCode,
 } from '@story/visualizer-protocol';
-import {
-    CodeField,
-    CodeTextArea,
-    FieldDiagnostics,
-    type TOption,
-} from '../../../components/CodeField';
+import { CodeField, type TOption } from '../../../components/CodeField';
 import { quoteString } from '../../../components/codeLiterals';
 import { costToCode, deltaToCode, parseDelta } from './costCode';
 
@@ -30,11 +25,9 @@ type TProps = {
     onChange: (value: TMaybeCode<TLinkCostDto> | undefined) => void;
     items: TOption[];
     diag: (path: string) => TDiagnosticDto[];
-    /** Field path of the cost (`body.0.links.1.cost`). */
     path: string;
 };
 
-/** `cost`: a duration, or `{ time?, items?, tools? }`, or a code snippet. */
 export const CostField = ({ value, onChange, items, diag, path }: TProps) => (
     <CodeField<TLinkCostDto>
         label={_('Cost')}
@@ -284,27 +277,6 @@ const CostObject = ({
         </>
     );
 };
-
-/** A code-only snippet with its diagnostics (whole `body` / `links` when they are code). */
-export const CodeBlock = ({
-    code,
-    onChange,
-    diagnostics,
-}: {
-    code: string;
-    onChange: (code: string) => void;
-    diagnostics: TDiagnosticDto[];
-}) => (
-    <>
-        <CodeTextArea
-            value={code}
-            onChange={onChange}
-            hasError={diagnostics.length > 0}
-            minRows={3}
-        />
-        <FieldDiagnostics diagnostics={diagnostics} />
-    </>
-);
 
 const SCost = styled('div')`
     display: flex;

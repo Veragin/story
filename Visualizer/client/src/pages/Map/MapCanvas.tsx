@@ -14,12 +14,6 @@ type Props = {
     onOpenLocation: (locationId: string) => void;
 };
 
-/**
- * Two stacked canvases that follow one `Camera` (`store.camera`): the hex tiles (legacy mapMaker
- * renderer, `MapEditor/`) below and the Locations `Scene` (Canvas library) above. Only one of
- * them takes pointer input: the scene in `view` / `locations` mode, the tiles in `tiles` mode.
- * Keyboard panning (WASD / arrows) is always the scene's, and is paused while a modal is open.
- */
 export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
     const stageRef = useRef<HTMLDivElement>(null);
     const tilesRef = useRef<HTMLCanvasElement>(null);

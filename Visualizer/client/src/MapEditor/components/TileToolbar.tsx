@@ -11,11 +11,10 @@ import BrushIcon from '@mui/icons-material/Brush';
 import AdsClickIcon from '@mui/icons-material/AdsClick';
 import MapIcon from '@mui/icons-material/Map';
 import { Row, SmallText, spacingCss } from '@story/ui';
-import { MapStore } from '../MapStore';
+import type { MapStore } from '../MapStore';
 import { MAX_BRUSH_SIZE } from '../MapEngine/constants';
 import type { TTileTool } from '../types';
 
-/** The tooling row of the page's `tiles` mode (the mapMaker tools). */
 export const TileToolbar = observer(({ mapStore }: { mapStore: MapStore }) => {
     const hover = mapStore.hoverTile;
     void mapStore.revision;

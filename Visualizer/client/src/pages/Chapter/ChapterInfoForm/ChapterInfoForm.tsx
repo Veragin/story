@@ -27,13 +27,11 @@ import {
 import { quoteString } from '../../../components/codeLiterals';
 import type { TChapterInfoValue } from './chapterInfo';
 
-export type TChapterInfoFormProps = {
+type TChapterInfoFormProps = {
     value: TChapterInfoValue;
     onChange: (value: TChapterInfoValue) => void;
-    /** Pickers: `/project` locations and chapters. */
     locations: TOption[];
     chapters: TOption[];
-    /** 422 diagnostics by field path (`title`, `timeRange.start`, `children.0.condition`). */
     diagnostics?: (path: string) => TDiagnosticDto[];
     disabled?: boolean;
 };
@@ -44,13 +42,6 @@ const timeToCode = (t: string) => `Time.fromString(${quoteString(t)})`;
 const TIME_RE = /^Time\.fromString\(\s*(['"])(.*)\1\s*\)$/;
 const parseTime = (code: string) => TIME_RE.exec(code.trim())?.[2];
 
-/**
- * Controlled form for a chapter's info (plan WP6 "edit chapter info"): title, description,
- * location, time range and the child chapters with their condition. Every field follows the
- * code-field convention, so a value that is code in the source (`_('Wedding Chapter')`) stays
- * code. Reusable: the chapter view opens it in a modal (`ChapterInfoDialog`), the timeline can
- * embed it for "Add chapter".
- */
 export const ChapterInfoForm = ({
     value,
     onChange,

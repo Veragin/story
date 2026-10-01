@@ -8,7 +8,7 @@
     "exports": {
         ".": "./src/index.ts"
     },
-    "comment": "The wire contract between Visualizer/client and Visualizer/server (plan §1.1): route constants/builders and DTO types. Source-only, no build step. The one runtime dependency allowed is @story/shared; @story/types may be used type-only.",
+    "comment": "The only runtime dependency allowed is @story/shared.",
     "dependencies": {
         "@story/shared": "workspace:^"
     }

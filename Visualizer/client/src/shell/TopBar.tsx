@@ -12,7 +12,6 @@ type TTab = {
     value: string;
     label: () => string;
     route?: TRoute;
-    /** pages that highlight this tab */
     pages: TPage[];
 };
 
@@ -35,11 +34,10 @@ const TABS: TTab[] = [
         route: { page: 'entities' },
         pages: ['entities'],
     },
-    // future (docs/Visualizer.md "Structure"), out of scope for now
     { value: 'structure', label: () => _('Structure'), pages: [] },
 ];
 
-export const TOP_BAR_HEIGHT = 48;
+const TOP_BAR_HEIGHT = 48;
 
 export const TopBar = observer(() => {
     const active =
@@ -80,7 +78,7 @@ export const TopBar = observer(() => {
     );
 });
 
-/** Keeps the navy bar of `appTheme`; the rest of the app runs on the Visualizer's `darkTheme`. */
+// appTheme's navy on purpose; the rest of the app uses darkTheme
 const SBar = styled(Row)`
     flex: 0 0 ${TOP_BAR_HEIGHT}px;
     height: ${TOP_BAR_HEIGHT}px;

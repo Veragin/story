@@ -17,7 +17,7 @@ const setup = async (opts: { emptyMap?: boolean; persist?: boolean } = {}): Prom
     return { api, events, store, confirm };
 };
 
-/** Lets the mock's promises and its `setTimeout(0)` events run under fake timers. */
+// lets the mock's promises and `setTimeout(0)` events run under fake timers
 const settle = async (ms = 0) => {
     await vi.advanceTimersByTimeAsync(ms);
     for (let i = 0; i < 5; i++) await Promise.resolve();

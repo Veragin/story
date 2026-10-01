@@ -6,7 +6,7 @@ import {
     type TLinkDto,
     type TMaybeCode,
 } from '@story/visualizer-protocol';
-import { CodeBlock } from '../CostField';
+import { CodeBlock } from '../CodeBlock';
 import { ItemDiagnostics } from './ItemDiagnostics';
 import { LinkEditor } from './LinkEditor';
 import { linkHasDiagnostics } from './linkSummary';
@@ -22,11 +22,6 @@ type TProps = TOptionsProps & {
     diag: TDiag;
 };
 
-/**
- * A body item's links: a "+ Links" button when there are none, a code block, or the list. Each
- * link is a `LinkSummary` line, expanded to its `LinkEditor` on demand (local state keyed by
- * index); a new link starts expanded and a link with diagnostics is always expanded.
- */
 export const Links = ({
     value,
     onChange,
@@ -64,7 +59,7 @@ export const Links = ({
         );
     }
     const add = () => {
-        setOpen((o) => new Set(o).add(value.length)); // a new link starts expanded
+        setOpen((o) => new Set(o).add(value.length));
         onChange([
             ...value,
             { text: '', passageId: passageOptions[0]?.id ?? '' },

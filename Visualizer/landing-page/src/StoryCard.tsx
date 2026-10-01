@@ -31,11 +31,6 @@ type TProps = {
     onExport: () => void;
 };
 
-/**
- * One story: its name, the author in grey, a toggle for the description, and the buttons. Which
- * buttons ask for the password is the store's business (`StoriesStore.requireUnlocked`); the lock
- * icon only shows whether this browser has unlocked the story.
- */
 export const StoryCard = ({
     story,
     onEdit,

@@ -2,21 +2,6 @@ import { action, makeObservable, observable } from 'mobx';
 import type { TChapterId } from '@story/types';
 import { getUiState, setUiState } from '../ui-state';
 
-/**
- * A tiny typed hash router. The URL hash is the source of truth, so a reload keeps the page.
- *
- *   #/map
- *   #/timeline
- *   #/timeline/chapter/:chapterId
- *   #/entities
- *   #/entities/:kind
- *   #/entities/:kind/:id
- *   #/_canvas                 (dev playground, WP3)
- *
- * Anything else falls back to `DEFAULT_ROUTE`. When the page loads without a hash, the last
- * route of this browser tab (sessionStorage) is restored.
- */
-
 export const ENTITY_KINDS = ['characters', 'locations', 'npcs', 'items'] as const;
 export type TEntityKind = (typeof ENTITY_KINDS)[number];
 
@@ -33,7 +18,7 @@ export const DEFAULT_ROUTE: TRoute = { page: 'map' };
 
 const LAST_ROUTE_KEY = 'shell.lastRoute';
 
-const isEntityKind = (value: string): value is TEntityKind => (ENTITY_KINDS as readonly string[]).includes(value);
+const isEntityKind = (value: string): value is TEntityKind => ENTITY_KINDS.some((kind) => kind === value);
 
 const decode = (part: string) => {
     try {
@@ -43,7 +28,6 @@ const decode = (part: string) => {
     }
 };
 
-/** Parse a hash (`#/timeline/chapter/village`, with or without `#`). `null` when unknown. */
 export const parseHash = (hash: string): TRoute | null => {
     const path = hash.replace(/^#/, '').replace(/^\/+|\/+$/g, '');
     const parts = path === '' ? [] : path.split('/').map(decode);
@@ -70,7 +54,6 @@ export const parseHash = (hash: string): TRoute | null => {
     }
 };
 
-/** The hash for a route, including the leading `#`. */
 export const routeToHash = (route: TRoute): string => {
     const enc = encodeURIComponent;
     switch (route.page) {
@@ -104,7 +87,6 @@ export class Router {
         });
     }
 
-    /** Start listening to `hashchange`. Idempotent. Called by the shell. */
     start = () => {
         if (this.started) return;
         this.started = true;
@@ -122,7 +104,6 @@ export class Router {
         window.removeEventListener('hashchange', this.sync);
     };
 
-    /** Go to `route`. `replace` swaps the current history entry instead of pushing one. */
     navigate = (route: TRoute, options: { replace?: boolean } = {}) => {
         const hash = routeToHash(route);
         if (options.replace) {
@@ -134,13 +115,8 @@ export class Router {
         }
     };
 
-    /** An `href` for links (`<a href={router.href(route)}>`). */
     href = (route: TRoute) => routeToHash(route);
 
-    /** True when the current page is `page`. */
-    is = (page: TPage) => this.route.page === page;
-
-    /** Reads the hash into `route`; unknown hashes are rewritten to the default route. */
     sync = () => {
         const parsed = parseHash(window.location.hash);
         if (parsed === null) {
@@ -159,5 +135,4 @@ export class Router {
     };
 }
 
-/** The app-wide router. Import it anywhere, including from non-React stores. */
 export const router = new Router();

@@ -9,10 +9,6 @@ import {
     updateChapter,
 } from '../project/writers/chapters';
 
-/**
- * Chapters and a chapter's characters: `/chapters`, `/chapters/:chapterId[/characters[/:characterId]]`
- * (`project/readers/chapters.ts`, `project/writers/chapters.ts`).
- */
 export const registerChapterRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);
     const w = { sp, bus };

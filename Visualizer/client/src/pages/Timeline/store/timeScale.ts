@@ -1,24 +1,15 @@
 import { DAY_S, HOUR_S, MIN_S, MONTH_S, START_YEAR, Time, YEAR_S, type TTimeRenderFormat } from '@story/shared';
 import { isCode, type TMaybeCode, type TTimeRangeDto, type TTimeString } from '@story/visualizer-protocol';
 
-/**
- * Time ↔ world-x mapping of the timeline. World x is `seconds × pxPerSecond`: the camera's zoom
- * stays at 1 (boxes keep their height), and "zooming" the timeline changes `pxPerSecond` instead.
- */
-
-/** A week across 1200 px, like the old default zoom level. */
 export const DEFAULT_PX_PER_SECOND = 1200 / (7 * DAY_S);
-/** Two years across 1200 px. */
-export const MIN_PX_PER_SECOND = 1200 / (2 * YEAR_S);
-/** Six hours across 1200 px. */
-export const MAX_PX_PER_SECOND = 1200 / (6 * HOUR_S);
+const MIN_PX_PER_SECOND = 1200 / (2 * YEAR_S);
+const MAX_PX_PER_SECOND = 1200 / (6 * HOUR_S);
 
 export const clampPxPerSecond = (pps: number) => Math.max(MIN_PX_PER_SECOND, Math.min(MAX_PX_PER_SECOND, pps));
 
 export const timeToX = (seconds: number, pps: number) => seconds * pps;
 export const xToTime = (x: number, pps: number) => x / pps;
 
-/** Time steps a drag snaps to; the finest one that is still at least 3 px wide wins. */
 const SNAP_STEPS = [5 * MIN_S, 15 * MIN_S, HOUR_S, 6 * HOUR_S, DAY_S];
 
 export const snapStep = (pps: number) => SNAP_STEPS.find((s) => s * pps >= 3) ?? DAY_S;
@@ -28,10 +19,9 @@ export const snapTime = (seconds: number, pps: number) => {
     return Math.round(seconds / step) * step;
 };
 
-/** Strip labels: the finest step whose labels are at least `LABEL_SPACING_PX` apart. */
-export const LABEL_SPACING_PX = 120;
+const LABEL_SPACING_PX = 120;
 
-export const LABEL_STEPS: { step: number; format: TTimeRenderFormat }[] = [
+const LABEL_STEPS: { step: number; format: TTimeRenderFormat }[] = [
     { step: HOUR_S, format: 'dateTime' },
     { step: 4 * HOUR_S, format: 'dateTime' },
     { step: 12 * HOUR_S, format: 'dateTime' },
@@ -46,7 +36,6 @@ export const LABEL_STEPS: { step: number; format: TTimeRenderFormat }[] = [
 export const labelStep = (pps: number) =>
     LABEL_STEPS.find((s) => s.step * pps >= LABEL_SPACING_PX) ?? LABEL_STEPS[LABEL_STEPS.length - 1];
 
-/** `Time.fromString` for a DTO time string; `null` for code or anything unparsable. */
 export const parseTime = (value: TMaybeCode<TTimeString> | undefined): number | null => {
     if (value === undefined || isCode(value) || typeof value !== 'string') return null;
     try {
@@ -65,10 +54,7 @@ export const parseRange = (range: TMaybeCode<TTimeRangeDto>): { start: number; e
     return { start, end: Math.max(start, end) };
 };
 
-/**
- * The inverse of `Time.fromString`, in the form the story files use: `'2.1. 8:00'` in the first
- * year, `'2.1.1621 8:00'` after it. Seconds are dropped (drags snap to 5 minutes or more).
- */
+// the inverse of `Time.fromString`, minus seconds: drags snap to 5 minutes or more
 export const formatTime = (seconds: number): TTimeString => {
     const s = Math.max(0, Math.round(seconds));
     const year = Math.floor(s / YEAR_S);

@@ -8,7 +8,6 @@ import {
     ToggleButton,
     ToggleButtonGroup,
     Tooltip,
-    Typography,
 } from '@mui/material';
 import CodeIcon from '@mui/icons-material/Code';
 import NotesIcon from '@mui/icons-material/Notes';
@@ -16,46 +15,28 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import type { TDiagnosticDto, TFunctionDto } from '@story/visualizer-protocol';
 import { CodeTextArea, FieldDiagnostics } from './CodeField';
+import { FieldLabel } from './FieldLabel';
+import { SAddRow, SField, SSpacer } from './fieldLayout';
 
 type TProps = {
     label: string;
     value: TFunctionDto | undefined;
     onChange: (value: TFunctionDto | undefined) => void;
-    /** The field may be absent: "+ label" when it is, a remove button when it is not. */
     optional?: boolean;
-    /** Code of a newly added value: `() => {}` for `execute` / `onFinish`, `true` for a condition. */
     emptyCode?: string;
-    /** Placeholder of the description. */
     placeholder?: string;
-    /** Diagnostics of the field. They are about the code, and show in both views. */
     diagnostics?: TDiagnosticDto[];
     disabled?: boolean;
 };
 
 type TView = 'code' | 'description';
 
-/** Sets or (for an empty string) removes the description. */
 const withDescription = (
     value: TFunctionDto,
     description: string
 ): TFunctionDto =>
     description === '' ? { code: value.code } : { ...value, description };
 
-/**
- * A described function (protocol `TFunctionDto`, plan D1/D6/D7): passage `execute`, link
- * `onFinish`, a body item `condition`. The header has the label and a **Code ⇄ Description**
- * toggle; the code view edits the whole initializer (`() => { … }`, `s.x > 0`) verbatim, the
- * description view the JSDoc text above the property. Both values are kept while switching.
- *
- * - Starts in the description view when there is a description, else in the code view (D7).
- *   The view is local state.
- * - A dot on the other view's toggle button marks it as empty (no description yet, or no code:
- *   a description-only stub, which the server writes with a default initializer, D8).
- * - Clearing the description removes the key, so the JSDoc comment goes away on Save.
- * - The diagnostics always come from the code; they show in both views.
- *
- *     <FunctionInput label={_('Execute')} value={p.execute} onChange={…} optional emptyCode="() => {}" />
- */
 export const FunctionInput = ({
     label,
     value,
@@ -96,12 +77,7 @@ export const FunctionInput = ({
     return (
         <SField data-view={view}>
             <SHeader>
-                <Typography
-                    variant="caption"
-                    color={hasError ? 'error' : 'text.secondary'}
-                >
-                    {label}
-                </Typography>
+                <FieldLabel hasError={hasError}>{label}</FieldLabel>
                 <SSpacer />
                 <SToggle
                     size="small"
@@ -199,28 +175,11 @@ export const FunctionInput = ({
     );
 };
 
-const SField = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-`;
-
 const SHeader = styled('div')`
     display: flex;
     align-items: center;
     gap: 4px;
     min-height: 28px;
-`;
-
-const SAddRow = styled('div')`
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-`;
-
-const SSpacer = styled('span')`
-    flex: 1;
 `;
 
 const SToggle = styled(ToggleButtonGroup)`

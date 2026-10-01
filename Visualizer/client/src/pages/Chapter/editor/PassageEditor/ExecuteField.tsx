@@ -3,12 +3,6 @@ import { Typography } from '@mui/material';
 import { FunctionInput } from '../../../../components/FunctionInput';
 import type { TFieldsProps } from './types';
 
-/**
- * The passage's `execute` (plan D3): runs once when the passage is entered, after its fields
- * were evaluated. Screen passages show it above Body, linear and transition passages at the
- * top of their fields. While the passage function still has statements before its `return`
- * (`preamble`, read-only), a note says they are kept.
- */
 export const ExecuteField = observer(
     ({
         draft,

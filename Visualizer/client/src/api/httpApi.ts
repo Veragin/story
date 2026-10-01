@@ -19,34 +19,15 @@ import { STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
 export type THttpApiOptions = {
-    /** Prefix for every route; `''` = same origin, i.e. through the Vite `/api` proxy. */
     baseUrl?: string;
-    /** The story whose routes (`/api/stories/<id>/…`) story-scoped calls go to. */
     storyId?: string;
     fetch?: typeof fetch;
-    /**
-     * Called with the `version` of every resource a mutation returns — wire it to
-     * `apiEvents.markSaved` so the client does not refetch its own saves (plan §3 point 3).
-     */
     onSaved?: (version: string) => void;
-    /**
-     * Called when a mutation is sent; the returned function is called once its response has been
-     * handled (after `onSaved`). Wire it to `apiEvents.hold`: the server emits a save's event
-     * before it answers, and the echo must wait for `onSaved` to be recognised as an own save.
-     */
     onMutation?: () => () => void;
-    /**
-     * Called on a `401` (no grant for the story; `login` itself excepted). Resolve once logged
-     * in, and the request is sent once more; reject to fail it with the 401 (`AuthStore`).
-     */
     onUnauthorized?: (error: ApiError) => Promise<void>;
 };
 
-/**
- * Mutations whose returned `version` is not marked as an own save. A source save rewrites a whole
- * chapter or passage file behind the forms' back, so the pages must get its change event like a
- * hand edit's (refetch, or "Changed on disk" over unsaved input).
- */
+// a source save rewrites whole files behind the forms' back, so its echo must reach the pages
 const NOT_MARKED_SAVED: readonly TRouteName[] = ['updateSource'];
 
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
@@ -65,7 +46,6 @@ const parseError = async (res: Response): Promise<TApiErrorBody> => {
 const isGlobalRoute = (route: TRouteName): route is TGlobalRouteName =>
     Object.prototype.hasOwnProperty.call(GLOBAL_ROUTES, route);
 
-/** Method and URL of a route: a global route as it is, a story route under the story's prefix. */
 const endpoint = <R extends TRouteName>(storyId: string, route: R, params: TRouteParams<R>) =>
     isGlobalRoute(route)
         ? { method: GLOBAL_ROUTES[route].method, path: buildGlobalPath(route, params as TRouteParams<typeof route>) }
@@ -74,12 +54,6 @@ const endpoint = <R extends TRouteName>(storyId: string, route: R, params: TRout
               path: buildPath(storyId, route as TStoryRouteName, params as TRouteParams<TStoryRouteName>),
           };
 
-/**
- * Low-level typed request for any protocol route:
- *
- *     await request('getChapter', { chapterId: 'village' });
- *     await request('updateChapter', { chapterId }, { version, title: 'Village' });
- */
 export const createRequest = ({
     baseUrl = '',
     storyId = STORY_ID,
@@ -103,7 +77,11 @@ export const createRequest = ({
                     body: body === undefined ? undefined : JSON.stringify(body),
                 });
             } catch (e) {
-                throw new ApiError(0, { error: 'internal', message: `Network error: ${(e as Error).message}` }, route);
+                throw new ApiError(
+                    0,
+                    { error: 'internal', message: `Network error: ${e instanceof Error ? e.message : String(e)}` },
+                    route
+                );
             }
         };
         const hold = () => (method !== 'GET' && onMutation ? onMutation() : () => {});
@@ -113,7 +91,6 @@ export const createRequest = ({
             if (res.status === 401 && route !== 'login' && onUnauthorized) {
                 // events are not held while the password prompt is open
                 release();
-                // log in (the password prompt), then retry once; a cancel fails with this 401
                 await onUnauthorized(new ApiError(res.status, await parseError(res), route));
                 release = hold();
                 res = await send();
@@ -134,7 +111,6 @@ export const createRequest = ({
     };
 };
 
-/** `TVisualizerApi` over HTTP. */
 export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => {
     const request = createRequest(options);
     return {

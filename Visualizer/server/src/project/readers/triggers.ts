@@ -5,7 +5,6 @@ import type { SourceProject } from '../SourceProject';
 import { findTrigger, type TTriggerSource } from '../story';
 import { readFields, S, type TField } from '../values';
 
-/** Editable fields of a `TTimeTrigger` (`types/TTimeTrigger.ts`). */
 export const TRIGGER_FIELDS: Record<string, TField> = {
     name: { schema: S.string },
     description: { schema: S.string },
@@ -24,7 +23,6 @@ export const readTriggerSource = (sp: SourceProject, t: TTriggerSource): TTrigge
         file: sp.root.rel(t.sf.getFilePath()),
         line: lineOf(decl),
         exportName: t.exportName,
-        // until a trigger has a `name`, its id stands in (protocol `dto/trigger.ts`)
         name: (fields.name ?? t.triggerId) as TMaybeCode<string>,
         description: (fields.description ?? '') as TMaybeCode<string>,
         time: (fields.time ?? { code: '' }) as TMaybeCode<string>,

@@ -158,11 +158,7 @@ describe('ApiEvents.hold', () => {
 });
 
 describe('two tabs on one story', () => {
-    /**
-     * A fake server holding one passage: a versioned PUT (409 `stale` with `current`) whose
-     * change event is fanned out to every open stream, as the real `/events` does — and, like the
-     * real server (`bus.transaction` emits on commit), before it answers the PUT.
-     */
+    // like the real server, a save's event fans out to every stream before the PUT is answered
     const startServer = () => {
         const streams: ((e: TChangeEvent) => void)[] = [];
         let passage = { id: 'village-thomas-intro', title: 'Intro', version: 'v1' };
@@ -191,7 +187,6 @@ describe('two tabs on one story', () => {
                 : passage;
             return new Response(JSON.stringify(dto), { status: 200 });
         });
-        /** A tab: its own `ApiEvents` (its own stream) and its own http api wired to its `markSaved`. */
         const openTab = () => {
             const events = new ApiEvents({
                 createEventSource: () => {

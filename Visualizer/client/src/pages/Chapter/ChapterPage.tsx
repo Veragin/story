@@ -25,17 +25,16 @@ import { ResizableSplitter } from '../../components/ResizableSplitter';
 import { openSourceEditor } from '../../components/openSourceEditor';
 import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { ChapterGraphStore } from './ChapterGraphStore';
-import { openChapterInfoDialog } from './ChapterInfoForm';
+import { openChapterInfoDialog } from './ChapterInfoForm/openChapterInfoDialog';
 import {
     confirmDeletePassage,
-    confirmRemoveCharacter,
     openAddCharacter,
     openAddPassage,
     openRemoveCharacter,
 } from './dialogs';
-import { PassageEditor } from './editor/PassageEditor';
+import { PassageEditor } from './editor/PassageEditor/PassageEditor';
 import { ChapterGraphCanvas } from './graph/ChapterGraphCanvas';
-import { characterColor } from './graph/colors';
+import { ChapterOverview } from './ChapterOverview';
 
 type TProps = {
     chapterId: string;
@@ -43,10 +42,6 @@ type TProps = {
     events?: ApiEvents;
 };
 
-/**
- * Chapter view (`#/timeline/chapter/:chapterId`, plan WP6): the Twine-like passage graph on the
- * left, the passage editor (or a chapter overview) on the right, the toolbar in the top bar.
- */
 export const ChapterPage = observer(
     ({ chapterId, api = defaultApi, events = apiEvents }: TProps) => {
         const [store] = useState(
@@ -70,7 +65,6 @@ export const ChapterPage = observer(
             return true;
         });
 
-        /** The source editor on a passage's file, else the selected one's, else the chapter's. */
         const editSource = (passageId?: string) => {
             const { owner, id } = store.sourceTarget(passageId);
             openSourceEditor(owner, id, api, events);
@@ -240,88 +234,6 @@ const SaveStatus = observer(({ store }: { store: ChapterGraphStore }) => {
     );
 });
 
-/** The right panel while no passage is open: characters, counts and how to use the view. */
-const ChapterOverview = observer(({ store }: { store: ChapterGraphStore }) => (
-    <SOverview>
-        <Typography variant="h6">{store.chapterTitle}</Typography>
-        <Typography variant="caption" color="text.secondary">
-            {store.chapter?.file}
-        </Typography>
-        <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            {_('Characters')}
-        </Typography>
-        {store.chapterCharacters.length === 0 ? (
-            <Alert
-                severity="info"
-                action={
-                    <Button
-                        color="inherit"
-                        size="small"
-                        onClick={() => openAddCharacter(store)}
-                    >
-                        {_('Add character')}
-                    </Button>
-                }
-            >
-                {_('No character has passages in this chapter yet.')}
-            </Alert>
-        ) : (
-            store.chapterCharacters.map((c) => (
-                <SCharacter key={c.id}>
-                    <SSwatch style={{ borderColor: characterColor(c.id) }} />
-                    <span>
-                        {c.name} —{' '}
-                        {c.passageCount === 1
-                            ? _('1 passage')
-                            : _('%d passages', c.passageCount)}
-                    </span>
-                    <Tooltip title={_('Remove %s from this chapter', c.name)}>
-                        <IconButton
-                            size="small"
-                            aria-label={_('Remove character')}
-                            onClick={() =>
-                                void confirmRemoveCharacter(store, c.id)
-                            }
-                        >
-                            <PersonRemoveIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </SCharacter>
-            ))
-        )}
-        <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            {_('How to')}
-        </Typography>
-        <SHelp>
-            <li>
-                {_(
-                    'Drag a box to move it; positions are saved to the chapter layout file.'
-                )}
-            </li>
-            <li>
-                {_(
-                    'Double-click a box (or select it and press Enter) to edit the passage.'
-                )}
-            </li>
-            <li>
-                {_(
-                    'Delete removes the selected passage (after a confirmation).'
-                )}
-            </li>
-            <li>
-                {_(
-                    'Drag the background, or use WASD / arrows, to move; scroll to zoom.'
-                )}
-            </li>
-            <li>
-                {_(
-                    'Dashed arrows are conditional links; red ones point to passages that do not exist.'
-                )}
-            </li>
-        </SHelp>
-    </SOverview>
-));
-
 const STitle = styled(Typography)`
     margin-right: 8px;
     max-width: 220px;
@@ -350,33 +262,4 @@ const SSide = styled('div')`
     overflow-y: auto;
     background: #1a1a1a;
     color: #fff;
-`;
-
-const SOverview = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-`;
-
-const SCharacter = styled('div')`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-`;
-
-const SSwatch = styled('span')`
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid;
-    border-radius: 3px;
-`;
-
-const SHelp = styled('ul')`
-    margin: 0;
-    padding-left: 18px;
-    font-size: 13px;
-    opacity: 0.8;
 `;

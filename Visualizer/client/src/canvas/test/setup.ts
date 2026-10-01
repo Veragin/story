@@ -1,13 +1,7 @@
-/**
- * Vitest setup for the `visualizer-client` jsdom project.
- *
- * jsdom has no 2D canvas: `getContext('2d')` returns null (and logs "not implemented"). The
- * scene works without a context, but stubbing one lets tests exercise the draw path too. The
- * stub records every method call in `ctx.__calls` and accepts any property write.
- */
+// jsdom has no 2D canvas; this stub lets tests exercise the draw path
 type TMockContext = CanvasRenderingContext2D & { __calls: { name: string; args: unknown[] }[] };
 
-function createMockContext(canvas: HTMLCanvasElement): TMockContext {
+const createMockContext = (canvas: HTMLCanvasElement): TMockContext => {
     const calls: { name: string; args: unknown[] }[] = [];
     const props: Record<string | symbol, unknown> = { canvas, __calls: calls, lineWidth: 1, font: '10px sans-serif' };
     return new Proxy(props, {
@@ -27,7 +21,7 @@ function createMockContext(canvas: HTMLCanvasElement): TMockContext {
             return true;
         },
     }) as unknown as TMockContext;
-}
+};
 
 const contexts = new WeakMap<HTMLCanvasElement, TMockContext>();
 

@@ -5,16 +5,12 @@ import {
     type TChapterDto,
     type TChapterLayoutDto,
     type TChapterPassagesDto,
-    type TCharacterDto,
     type TEntityDto,
     type TEntityDtoByKind,
     type TEntityKind,
     type TImageDto,
     type TImageOwner,
-    type TItemDto,
-    type TLocationDto,
     type TMapDto,
-    type TNpcDto,
     type TPassageDto,
     type TPassageEdgeDto,
     type TProjectDto,
@@ -32,22 +28,13 @@ import { createMockSeed, type TMockSeed } from './mockData';
 import type { TVisualizerApi } from './types';
 
 export type TMockApiOptions = {
-    /** Defaults to a fresh copy of the sample story (`mockData.ts`). */
     seed?: TMockSeed;
-    /** Where the mock sends its change events (normally the app's `apiEvents`). */
     events?: ApiEvents;
-    /** Artificial delay per call, to see loading states. */
     latencyMs?: number;
 };
 
 export type TMockApi = TVisualizerApi & {
-    /**
-     * Pretend the author edited a resource by hand: bumps its version and emits the change event
-     * the server's watcher would, *without* marking it as an own save — so live refresh can be
-     * exercised against the mock.
-     */
     simulateExternalChange(kind: TChangeEvent['kind'], id: string): void;
-    /** Restore the seed. */
     reset(): void;
 };
 
@@ -58,7 +45,6 @@ const fail = (status: number, body: TApiErrorBody): never => {
 };
 const notFound = (what: string) => fail(404, { error: 'not_found', message: `No ${what}` });
 const clone = <T>(value: T): T => structuredClone(value);
-/** The story the mock pretends to edit; it ignores `STORY_ID` (there is only this one). */
 const MOCK_STORY: TStoryInfoDto = {
     id: 'example',
     name: 'Example (mock)',
@@ -69,7 +55,6 @@ const MOCK_STORY: TStoryInfoDto = {
     version: 'mock-story',
 };
 
-/** Display text of a maybe-code string field: the literal, or the argument of `_('…')`. */
 export const displayText = (value: TValue | undefined, fallback: string): string => {
     if (typeof value === 'string') return value || fallback;
     if (isCode(value)) {
@@ -79,7 +64,6 @@ export const displayText = (value: TValue | undefined, fallback: string): string
     return fallback;
 };
 
-/** The static edge extraction the server does on the AST, done on DTOs (plan §1.1). */
 export const extractEdges = (
     passages: TPassageDto[],
     known: ReadonlySet<string> = new Set(passages.map((p) => p.passageId))
@@ -117,14 +101,6 @@ export const extractEdges = (
     return edges;
 };
 
-/**
- * An in-memory `TVisualizerApi` with the server's semantics: versions on every resource, `409
- * stale` on a mismatched version, `409 exists` / `404` / `409 referenced` where the server
- * would answer them, and one change event per mutation.
- *
- * It is not a source writer: code fields are stored as given, and the derived parts (chapter
- * characters, edges, the project summary) are recomputed from the in-memory DTOs.
- */
 export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions = {}): TMockApi => {
     let counter = 0;
     const nextVersion = (): TVersion => `mock-${++counter}`;
@@ -136,21 +112,19 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
     let maps = new Map<string, TMapDto>();
     let timelineLayout: TTimelineLayoutDto;
     let chapterLayouts = new Map<string, TChapterLayoutDto>();
-    /** Uploaded images by `<owner>/<id>`; the seed has none (the mock never reads `data/`). */
     let images = new Map<string, TImageDto>();
-    /** Source texts saved through `updateSource`, by `<owner>/<id>`. */
     let sources = new Map<string, TSourceDto>();
 
     const load = (s: TMockSeed) => {
         const withVersion = <T>(x: T) => ({ ...clone(x), version: nextVersion() });
-        chapters = new Map(s.chapters.map((c) => [c.chapterId, withVersion(c) as TChapterDto]));
-        passages = new Map(s.passages.map((p) => [p.passageId, withVersion(p) as TPassageDto]));
-        triggers = new Map(s.triggers.map((t) => [t.triggerId, withVersion(t) as TTriggerDto]));
+        chapters = new Map(s.chapters.map((c) => [c.chapterId, withVersion(c)]));
+        passages = new Map(s.passages.map((p) => [p.passageId, withVersion(p)]));
+        triggers = new Map(s.triggers.map((t) => [t.triggerId, withVersion(t)]));
         entities = {
-            characters: new Map(s.characters.map((e) => [e.id, withVersion(e) as TCharacterDto])),
-            npcs: new Map(s.npcs.map((e) => [e.id, withVersion(e) as TNpcDto])),
-            locations: new Map(s.locations.map((e) => [e.id, withVersion(e) as TLocationDto])),
-            items: new Map(s.items.map((e) => [e.id, withVersion(e) as TItemDto])),
+            characters: new Map(s.characters.map((e) => [e.id, withVersion(e)])),
+            npcs: new Map(s.npcs.map((e) => [e.id, withVersion(e)])),
+            locations: new Map(s.locations.map((e) => [e.id, withVersion(e)])),
+            items: new Map(s.items.map((e) => [e.id, withVersion(e)])),
         };
         maps = new Map(s.maps.map((m) => [m.mapId, withVersion(m)]));
         timelineLayout = s.timelineLayout ? withVersion(s.timelineLayout) : { chapters: {}, triggers: {}, version: '' };
@@ -162,7 +136,6 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         refreshDerived();
     };
 
-    /** Recompute `TChapterDto.characters` from the passages, like the server does from folders. */
     const refreshDerived = () => {
         for (const chapter of chapters.values()) {
             const byCharacter = new Map<string, string[]>(chapter.characters.map((c) => [c.characterId, []]));
@@ -176,17 +149,16 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         }
     };
 
-    /** `markSaved: false` for a source save, which the pages must see (like `httpApi`). */
     const emit = (event: TChangeEvent, { markSaved = true } = {}) => {
         if (!events) return;
-        if (event.version && markSaved) events.markSaved(event.version); // own save: its echo is ignored
+        if (event.version && markSaved) events.markSaved(event.version);
         setTimeout(() => events.dispatch(event), 0);
     };
 
     const delay = async () => {
         if (latencyMs > 0) await new Promise((r) => setTimeout(r, latencyMs));
     };
-    /** Every method goes through here: latency, then a deep copy so callers never alias state. */
+    // deep copy so callers never alias state
     const reply = async <T>(fn: () => T): Promise<T> => {
         await delay();
         return clone(fn());
@@ -202,10 +174,12 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
     const references = (passageIds: Set<string>, exceptFolder?: (p: TPassageDto) => boolean) =>
         extractEdges([...passages.values()])
             .filter((e) => passageIds.has(e.to) && !passageIds.has(e.from))
-            .filter((e) => !exceptFolder || !exceptFolder(passages.get(e.from) as TPassageDto))
+            .filter((e) => {
+                const from = passages.get(e.from);
+                return !exceptFolder || !from || !exceptFolder(from);
+            })
             .map((e) => ({ file: passages.get(e.from)?.file ?? '', line: 1, passageId: e.from }));
 
-    /** An owner's image, or an empty one at its sibling `.png` (404 when the owner does not exist). */
     const imageOf = (owner: TImageOwner, id: string): TImageDto => {
         const found =
             images.get(`${owner}/${id}`) ??
@@ -216,10 +190,6 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         return { owner, id, file: found.file.replace(/\.ts$/, '.png'), version: '', url: null };
     };
 
-    /**
-     * A file's text. The mock has no files, so until one is saved it is the DTO printed as a
-     * TypeScript constant: enough to try the source editor, not the real source.
-     */
     const sourceOf = (owner: TSourceOwner, id: string): TSourceDto => {
         const saved = sources.get(`${owner}/${id}`);
         if (saved) return saved;

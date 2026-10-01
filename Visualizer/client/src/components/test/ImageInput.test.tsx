@@ -1,14 +1,11 @@
 import '@story/shared'; // installs the global `_`
+import { $, typeInto } from './dom';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TImageDto, TMaybeCode } from '@story/visualizer-protocol';
 import type { TVisualizerApi } from '../../api';
 import { ImageInput } from '../ImageInput';
-
-(
-    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true;
 
 const image = (url: string | null): TImageDto => ({
     owner: 'characters',
@@ -18,7 +15,6 @@ const image = (url: string | null): TImageDto => ({
     url,
 });
 
-/** Only the two image calls; the rest of the api is never reached. */
 const fakeApi = (dto: TImageDto) =>
     ({
         getImage: vi.fn(() => Promise.resolve(dto)),
@@ -43,7 +39,6 @@ describe('ImageInput', () => {
             document.createElement('div')
         );
         root = createRoot(container);
-        // async act: flushes the `getImage` promise and the render after it
         await act(() =>
             Promise.resolve(
                 root!.render(
@@ -60,22 +55,8 @@ describe('ImageInput', () => {
         return onDescriptionChange;
     };
 
-    const $ = <T extends Element = HTMLElement>(selector: string) =>
-        document.querySelector<T & HTMLElement>(selector);
     const textarea = () =>
         $<HTMLTextAreaElement>('[data-field="image-description"]');
-
-    /** Type into a React-controlled textarea: set the value natively, then fire `input`. */
-    const type = (el: HTMLTextAreaElement, value: string) => {
-        const setter = Object.getOwnPropertyDescriptor(
-            Object.getPrototypeOf(el),
-            'value'
-        )!.set!;
-        act(() => {
-            setter.call(el, value);
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-    };
 
     it('shows only the image when there is one, with the overlay buttons', async () => {
         await render(image('data:image/png;base64,AAAA'), 'Annie at the well');
@@ -117,7 +98,7 @@ describe('ImageInput', () => {
 
     it('reports a description change', async () => {
         const onChange = await render(image(null), 'old');
-        type(textarea()!, 'A portrait of Annie');
+        typeInto(textarea()!, 'A portrait of Annie');
         expect(onChange).toHaveBeenCalledWith('A portrait of Annie');
     });
 

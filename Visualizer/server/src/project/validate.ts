@@ -3,16 +3,7 @@ import { type Diagnostic, Node, type SourceFile, ts } from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import type { SourceProject } from './SourceProject';
 
-/**
- * In-memory validation before anything is written (plan WP2 "Rules", `validate.ts`).
- *
- * `diagnoseProject` type-checks every story file (`data/` + `types/`) of the long-lived ts-morph
- * program. That is cheap after the first run (the program is reused and only the edited files are
- * re-parsed), and it has to be the whole story: a change to `register.ts` or `TWorldState.ts`
- * re-types every file through `@story/types`. A commit is refused only for diagnostics that are
- * *new* compared with the files on disk, so a story that is already broken by a hand edit can
- * still be edited elsewhere.
- */
+// The whole story: a change to `register.ts` or `TWorldState.ts` re-types every file.
 export const diagnoseProject = (sp: SourceProject): TDiagnosticDto[] => {
     const out: TDiagnosticDto[] = [];
     for (const sf of sp.storyFiles()) {
@@ -37,12 +28,7 @@ const toDto = (sp: SourceProject, d: Diagnostic): TDiagnosticDto => {
     };
 };
 
-/**
- * The dotted DTO path of the source position `pos` (`body.0.links.1.cost`, `init.health`): the
- * property names and array indexes of the object / array literals around it, up to the
- * resource's top-level object (a variable initializer or a `return`ed object).
- */
-export const fieldPathAt = (sf: SourceFile, pos: number): string | undefined => {
+const fieldPathAt = (sf: SourceFile, pos: number): string | undefined => {
     let node: Node | undefined = sf.getDescendantAtPos(pos);
     const segments: string[] = [];
     while (node) {
@@ -66,7 +52,6 @@ export const fieldPathAt = (sf: SourceFile, pos: number): string | undefined => 
     return segments.length > 0 ? segments.join('.') : undefined;
 };
 
-/** Fill in `field` for the diagnostics that sit in `file`, through `map` (return undefined to drop it). */
 export const withFields = (
     sp: SourceProject,
     diagnostics: TDiagnosticDto[],
@@ -87,7 +72,7 @@ export const withFields = (
 
 const keyOf = (d: TDiagnosticDto) => `${d.file}|${d.code ?? ''}|${d.message}`;
 
-/** Diagnostics in `after` that `before` does not have (compared as a multiset, ignoring positions). */
+// Multiset, ignoring positions: a story already broken by a hand edit stays editable.
 export const newDiagnostics = (before: TDiagnosticDto[], after: TDiagnosticDto[]): TDiagnosticDto[] => {
     const counts = new Map<string, number>();
     for (const d of before) counts.set(keyOf(d), (counts.get(keyOf(d)) ?? 0) + 1);
@@ -110,16 +95,14 @@ export const syntaxDiagnostic = (file: string, message: string, field?: string):
 
 type TParsed = ts.SourceFile & { parseDiagnostics?: ts.Diagnostic[] };
 
-const parse = (text: string): TParsed =>
-    ts.createSourceFile('snippet.ts', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS) as TParsed;
+// `parseDiagnostics` is internal to TypeScript, hence the cast.
+export const parseSource = (text: string, fileName = 'snippet.ts'): TParsed =>
+    ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS) as TParsed;
 
-/**
- * A `{ code }` field must be exactly one expression: `1 +` (does not parse) or `1, x: 2` (would
- * smuggle a sibling property into an object literal) are refused with a 422 naming the field.
- */
+// Exactly one expression: `1, x: 2` would smuggle a sibling property into an object literal.
 export const assertExpression = (code: string, field: string, file = '') => {
     const prefix = 'const __snippet = (\n';
-    const sf = parse(`${prefix}${code}\n);`);
+    const sf = parseSource(`${prefix}${code}\n);`);
     const errors = sf.parseDiagnostics ?? [];
     let ok = errors.length === 0 && sf.statements.length === 1 && code.trim() !== '';
     if (ok) {
@@ -143,9 +126,8 @@ export const assertExpression = (code: string, field: string, file = '') => {
     }
 };
 
-/** A type's right-hand side (`dataType.code`) must parse as exactly one type. */
 export const assertType = (code: string, field: string, file = '') => {
-    const sf = parse(`type __Snippet = ${code};`);
+    const sf = parseSource(`type __Snippet = ${code};`);
     const errors = sf.parseDiagnostics ?? [];
     if (errors.length > 0 || sf.statements.length !== 1 || code.trim() === '') {
         const message = errors[0] ? ts.flattenDiagnosticMessageText(errors[0].messageText, '\n') : 'Expected one type';

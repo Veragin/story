@@ -1,15 +1,10 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PNG_SIGNATURE } from '@story/visualizer-protocol';
 import { startSourceApp } from './sourceHelpers';
 
-/**
- * Story art (`project/images.ts`): the image of a passage / character / npc is the `.png` next to
- * its `.ts` file. Every scenario runs on its own temp copy.
- */
 let t: Awaited<ReturnType<typeof startSourceApp>>;
 
 beforeEach(async () => {
@@ -21,14 +16,11 @@ afterEach(async () => {
 
 const abs = (rel: string) => path.join(t.project.root, rel);
 
-/** A PNG signature plus a few bytes — enough for the server, which only checks the signature. */
+/** The server only checks the signature. */
 const fakePng = (tail: number) => Buffer.from([...PNG_SIGNATURE, 0, 0, 0, tail]);
 
-/** A raw GET (the `/png` route answers bytes, not JSON). */
-const fetchFile = (url: string, headers: Record<string, string> = {}) => {
-    const { port } = t.app.server.address() as AddressInfo;
-    return fetch(`http://127.0.0.1:${port}${url}`, { headers: { cookie: t.cookie, ...headers } });
-};
+const fetchFile = (url: string, headers: Record<string, string> = {}) =>
+    fetch(t.base + url, { headers: { cookie: t.cookie, ...headers } });
 
 describe('images', () => {
     it('finds a passage image next to its file and serves it with a cache-busted url', async () => {
@@ -49,7 +41,9 @@ describe('images', () => {
         expect(file.headers.get('content-type')).toBe('image/png');
         const bytes = Buffer.from(await file.arrayBuffer());
         expect(bytes.equals(await readFile(abs('data/chapters/village/thomas.passages/intro.png')))).toBe(true);
-        const again = await fetchFile(res.body.url, { 'if-none-match': file.headers.get('etag')! });
+        const etag = file.headers.get('etag') ?? '';
+        expect(etag).not.toBe('');
+        const again = await fetchFile(res.body.url, { 'if-none-match': etag });
         expect(again.status).toBe(304);
     });
 
@@ -61,7 +55,6 @@ describe('images', () => {
             url: null,
         });
         expect((await fetchFile('/api/stories/example/images/passages/kingdom-annie-palace/png')).status).toBe(404);
-        // suffixed passage files keep their whole basename
         res = await t.get('/api/stories/example/images/passages/kingdom-thomas-visit');
         expect(res.body.file).toBe('data/chapters/kingdom/thomas.passages/visit.screen.png');
         expect((await t.get('/api/stories/example/images/passages/kingdom-annie-nope')).status).toBe(404);
@@ -80,7 +73,6 @@ describe('images', () => {
         expect((await readFile(abs('data/characters/thomas.png'))).equals(fakePng(1))).toBe(true);
         expect(res.body.url).toContain(`?v=${res.body.version}`);
 
-        // npc files are named after the export
         res = await t.put('/api/stories/example/images/npcs/franta', {
             version: '',
             data: fakePng(2).toString('base64'),
@@ -143,7 +135,6 @@ describe('image descriptions', () => {
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         npc = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(npc.image).toBe('An old man with a cane');
-        // added next to the description, not after `init`
         expect(await readFile(abs('data/npcs/Franta.ts'), 'utf8')).toContain(
             "description: 'Franta is a very old',\n    image: 'An old man with a cane',"
         );

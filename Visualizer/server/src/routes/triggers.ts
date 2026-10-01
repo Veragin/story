@@ -3,10 +3,6 @@ import { readTrigger } from '../project/readers/triggers';
 import { SourceProject } from '../project/SourceProject';
 import { createTrigger, deleteTrigger, updateTrigger } from '../project/writers/triggers';
 
-/**
- * Time triggers: `/chapters/:chapterId/triggers`, `/triggers/:triggerId`
- * (`data/chapters/<ch>/triggers.ts`, listed in the chapter's `triggers: [...]`).
- */
 export const registerTriggerRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);
     const w = { sp, bus };

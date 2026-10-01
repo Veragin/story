@@ -11,14 +11,11 @@ import type { TStoryFormErrors, TStoryFormValue } from './storyForm';
 type TProps = {
     value: TStoryFormValue;
     onChange: (value: TStoryFormValue) => void;
-    /** Shown under their fields; the dialogs pass them once the user has tried to submit. */
     errors: TStoryFormErrors;
-    /** Edit: the password may stay empty, and the map size is read-only (plan D6). */
     mode: 'create' | 'edit';
     disabled?: boolean;
 };
 
-/** The fields of `CreateStoryDialog` and `EditStoryDialog`. */
 export const StoryFormFields = ({
     value,
     onChange,
@@ -39,7 +36,6 @@ export const StoryFormFields = ({
             error={errors[key] !== undefined}
             helperText={errors[key] ?? props.helperText}
             disabled={disabled || props.disabled}
-            // `data-field` lets a test find a field without a DOM testing library
             inputProps={{ 'data-field': key }}
         />
     );

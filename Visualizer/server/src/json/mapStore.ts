@@ -1,41 +1,3 @@
-/**
- * `data/locations/map.json` — the map store behind `GET/PUT /maps/:mapId` (plan §1, WP2/WP4).
- *
- * The API speaks `TMapDto` (protocol `dto/map.ts`: `data[i][j]` is row `i` of `height`, column `j`
- * of `width`, every tile an object). The file on disk is a compact, diff-friendly encoding of the
- * same document, written by `encodeMapFile` and read back by `decodeMapFile`:
- *
- *     {
- *         "format": 1,
- *         "mapId": "global",
- *         "title": "World",
- *         "width": 12,                          // columns per row
- *         "height": 8,                          // rows
- *         "palette": {                          // in the author's order (it is the palette's UI order)
- *             "none": { "name": "None", "color": "#000000" },
- *             "grass": { "name": "Grass", "color": "#D3E671" }
- *         },
- *         "tiles": [                            // one string per row, `height` of them, top to bottom
- *             "water*12",                       // run-length encoded: `<colorId>` or `<colorId>*<count>`,
- *             "grass*3 city grass*8"            //   space separated, `width` tiles per row
- *         ],
- *         "tileText": {                         // sparse: only tiles with a label / description,
- *             "1,3": { "label": "Village", "description": "A few houses." }   // "<row>,<col>", sorted
- *         },
- *         "locations": {                        // sorted by location id
- *             "village": { "polygon": [{ "x": 100, "y": 180 }, …], "fill": "…" }
- *         },
- *         "maps": [{ "i": 2, "j": 5, "mapId": "cave" }]
- *     }
- *
- * So painting one tile is a one-line diff (its row), moving a polygon vertex is one line, and a
- * label edit is one line of `tileText`. The JSON is prettier-clean (`format.ts`).
- *
- * Rules the encoding needs: colour ids (palette keys and `tile` values) contain no whitespace and
- * no `*`; a PUT breaking that is a 400. An empty `label` / `description` is dropped. When reading,
- * `format` may be absent and a file may carry the DTO's `data` (array of rows of tile objects)
- * instead of `tiles` + `tileText`, so a hand-written map in the API shape loads too.
- */
 import {
     GLOBAL_MAP_ID,
     type TMapDto,
@@ -51,6 +13,7 @@ import type { ProjectRoot } from '../project/ProjectRoot';
 import { readTextOrNull } from './atomicWrite';
 import { formatJson, sortKeys } from './format';
 import {
+    brokenJsonFileError,
     expectArray,
     expectInteger,
     expectPoint,
@@ -58,13 +21,14 @@ import {
     expectString,
     onlyKeys,
     optionalString,
+    parseRequestBody,
     ShapeError,
 } from './shape';
 
-export const MAP_FORMAT = 1;
+const MAP_FORMAT = 1;
 
-/** The palette of a new map — the same one as the client's `MapEditor/createDefaultMapData.ts`. */
-export const DEFAULT_PALETTE: TMapFile['palette'] = {
+// keep in sync with the client's MapEditor/createDefaultMapData.ts
+const DEFAULT_PALETTE: TMapFile['palette'] = {
     none: { name: 'None', color: '#000000' },
     grass: { name: 'Grass', color: '#D3E671' },
     water: { name: 'Water', color: '#9EC6F3' },
@@ -77,12 +41,7 @@ export const DEFAULT_PALETTE: TMapFile['palette'] = {
     road: { name: 'Road', color: '#BF9264' },
 };
 
-/**
- * What `GET` answers while `map.json` does not exist (with `version: ''`): the client's
- * `createDefaultMapData(id, 'Untitled', 100, 100)`, but with `height` rows of `width` tiles
- * (`data[i][j]`, row `i`), which is how `Draw.ts` reads it; the client builds it transposed
- * (a WP4 bug, plan §2 — harmless for the square default).
- */
+// row-major (height rows of width tiles) as Draw.ts reads it; the client's builder is transposed
 export const createDefaultMap = (
     mapId: string = GLOBAL_MAP_ID,
     { title = 'Untitled', width = 100, height = 100 }: { title?: string; width?: number; height?: number } = {}
@@ -97,14 +56,10 @@ export const createDefaultMap = (
     maps: [],
 });
 
-/** The file behind a map id, or 404 (only `global` exists, plan §1.1). */
-export const mapPath = (project: ProjectRoot, mapId: string): string => {
+const mapPath = (project: ProjectRoot, mapId: string): string => {
     if (mapId !== GLOBAL_MAP_ID) throw HttpError.notFound(`No map "${mapId}" (only "${GLOBAL_MAP_ID}" exists)`);
     return project.paths.map;
 };
-
-// ---------------------------------------------------------------------------------------------
-// validation of the API shape (PUT body)
 
 const COLOR_ID = /^[^\s*]+$/;
 
@@ -127,7 +82,7 @@ const parsePalette = (v: unknown, at: string): TMapFile['palette'] => {
     return palette;
 };
 
-const parseTileText = (o: Record<string, unknown>, at: string): Omit<TMapTileDto, 'tile'> => {
+const parseTileText = (o: { label?: unknown; description?: unknown }, at: string): Omit<TMapTileDto, 'tile'> => {
     const out: Omit<TMapTileDto, 'tile'> = {};
     const label = optionalString(o.label, `${at}.label`);
     const description = optionalString(o.description, `${at}.description`);
@@ -182,8 +137,7 @@ const parseRows = (v: unknown, at: string, width: number, height: number): TMapT
 
 const MAP_KEYS = ['mapId', 'title', 'width', 'height', 'data', 'palette', 'locations', 'maps'] as const;
 
-/** Check and normalise a map in the API shape (`TMapFile`, i.e. a PUT body without `version`). */
-export const parseMapDocument = (value: unknown): TMapFile => {
+const parseMapDocument = (value: unknown): TMapFile => {
     const o = expectRecord(value, '');
     onlyKeys(o, '', MAP_KEYS);
     const width = expectInteger(o.width, 'width', 1);
@@ -199,9 +153,6 @@ export const parseMapDocument = (value: unknown): TMapFile => {
         maps: parseSubMaps(o.maps ?? [], 'maps'),
     };
 };
-
-// ---------------------------------------------------------------------------------------------
-// the on-disk encoding
 
 const encodeRow = (row: TMapTileDto[]): string => {
     const tokens: string[] = [];
@@ -233,12 +184,11 @@ const decodeRow = (text: string, at: string, width: number): string[] => {
 
 const tileKey = (i: number, j: number) => `${i},${j}`;
 
-/** The file text for a (valid) map document. */
 export const encodeMapFile = (map: TMapFile): Promise<string> => {
     const tileText: Record<string, Omit<TMapTileDto, 'tile'>> = {};
     map.data.forEach((row, i) =>
         row.forEach((cell, j) => {
-            const text = parseTileText(cell as Record<string, unknown>, `data[${i}][${j}]`);
+            const text = parseTileText(cell, `data[${i}][${j}]`);
             if (text.label !== undefined || text.description !== undefined) tileText[tileKey(i, j)] = text;
         })
     );
@@ -250,17 +200,15 @@ export const encodeMapFile = (map: TMapFile): Promise<string> => {
         height: map.height,
         palette: map.palette,
         tiles: map.data.map(encodeRow),
-        tileText, // row-major order already
+        tileText,
         locations: sortKeys(map.locations),
         maps: map.maps,
     });
 };
 
-/** Parse the parsed JSON of a `map.json` back into the API shape. Throws `ShapeError`. */
 export const decodeMapFile = (value: unknown): TMapFile => {
     const o = expectRecord(value, '');
     if (o.tiles === undefined && o.data !== undefined) {
-        // a hand-written file in the API shape
         const rest = { ...o };
         delete rest.format;
         return parseMapDocument(rest);
@@ -310,36 +258,19 @@ export const decodeMapFile = (value: unknown): TMapFile => {
     };
 };
 
-// ---------------------------------------------------------------------------------------------
-// store
-
-const brokenFile = (project: ProjectRoot, file: string, e: unknown): HttpError => {
-    const message = e instanceof ShapeError ? e.message : `Not valid JSON: ${(e as Error).message}`;
-    return HttpError.invalid(
-        [{ file: project.rel(file), line: 1, column: 1, message }],
-        `${project.rel(file)}: ${message}`
-    );
-};
-
-/** The map file as it is on disk: its document (or `null` when missing) and version. */
 const load = async (project: ProjectRoot, file: string): Promise<{ map: TMapFile | null; version: TVersion }> => {
     const text = await readTextOrNull(file);
     if (text === null) return { map: null, version: version(null) };
     try {
         return { map: decodeMapFile(JSON.parse(text)), version: version(text) };
     } catch (e) {
-        throw brokenFile(project, file, e);
+        throw brokenJsonFileError(project, file, e);
     }
 };
 
-/** The global map's document, or `null` when `map.json` does not exist (422 when it is broken). */
 export const readMapFile = async (project: ProjectRoot): Promise<TMapFile | null> =>
     (await load(project, project.paths.map)).map;
 
-/**
- * `GET /maps/:mapId`: the map, or an empty map with `version: ''` while there is no file. The
- * empty map has `size` when given (the story's `mapSize`), else `createDefaultMap`'s default.
- */
 export const readMap = async (
     project: ProjectRoot,
     mapId: string,
@@ -349,28 +280,20 @@ export const readMap = async (
     return { ...(map ?? createDefaultMap(mapId, size)), version };
 };
 
-/** Write the global map inside a transaction (no event); returns the new version. */
 export const writeMapFile = async (tx: TTransaction, map: TMapFile): Promise<TVersion> => {
     const text = await encodeMapFile(map);
     await tx.writeFile(tx.project.paths.map, text);
     return version(text);
 };
 
-/** `PUT /maps/:mapId`: validated whole-document replace, 409 `stale` on a version mismatch. */
 export const updateMap = async (
     { project, bus }: Pick<TServerContext, 'project' | 'bus'>,
     mapId: string,
     body: unknown
 ): Promise<TMapDto> => {
     const file = mapPath(project, mapId);
-    const { version: expected, ...document } = expectRecord(body, '') as Record<string, unknown>;
-    let map: TMapFile;
-    try {
-        map = parseMapDocument(document);
-    } catch (e) {
-        if (e instanceof ShapeError) throw HttpError.badRequest(e.message);
-        throw e;
-    }
+    const { version: expected, ...document } = expectRecord(body, '');
+    const map = parseRequestBody(parseMapDocument, document);
     if (map.mapId !== mapId) throw HttpError.badRequest(`mapId: expected "${mapId}" (the URL's), got "${map.mapId}"`);
 
     return await bus.transaction(async (tx) => {

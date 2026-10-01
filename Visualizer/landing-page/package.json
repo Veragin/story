@@ -8,7 +8,7 @@
         "build": "vite build",
         "preview": "vite preview"
     },
-    "comment:dependencies": "The story list in front of the Visualizer and SingleEngine (multiple stories, phase 6). It talks to `Visualizer/server` only through `@story/visualizer-protocol` (the global routes plus a story's `/info`), and imports no story at all: no `@story/data`, `@story/core` or `@story/types`. `@emotion/react` is the required peer of `@emotion/styled` and `@mui/material`, declared here as in the client.",
+    "comment:dependencies": "@emotion/react is the required peer of @emotion/styled and @mui/material.",
     "dependencies": {
         "@emotion/react": "^11.13.3",
         "@emotion/styled": "^11.13.0",

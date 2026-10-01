@@ -19,7 +19,6 @@ type TProps = TOptionsProps & {
     diag: TDiag;
 };
 
-/** One body item: condition, redirect, text and its links. */
 export const BodyItemEditor = ({
     item,
     index,

@@ -5,7 +5,6 @@ import { BodyItemEditor } from './BodyItemEditor';
 import { replaceAt } from './listUtils';
 import type { TListProps } from './types';
 
-/** A screen passage's body items and the "Add body item" button. */
 export const BodyItems = ({
     items,
     onChange,

@@ -5,33 +5,22 @@ import { applyStroke, type Shape } from '../shapes/Shape';
 import type { TPoint, TStroke } from '../types';
 
 export type TLineToolOptions = {
-    /** Anchor an end to the shape under the click instead of a free point. Default true. */
     snap?: boolean;
-    /** Which shapes may be anchored to. Default: any shape that is not a line. */
     snapFilter?: (shape: Shape) => boolean;
-    /** Default `border`. */
     anchor?: 'border' | 'center';
     arrow?: TArrow;
     stroke?: TStroke;
-    /** Layer new lines go to. Default `default`. */
     layer?: string;
-    /** Stay active after a line is placed. Default false. */
     continuous?: boolean;
-    /** Build the line yourself (e.g. to attach `data`); return null to cancel. */
+    // null cancels the placement
     create?: (from: TLineEnd, to: TLineEnd) => LineShape | null;
     priority?: number;
 };
 
 export type TLineToolEvents = {
-    /** Tool turned on/off, or the first point was placed/cleared. */
     state: { active: boolean; placing: boolean };
 };
 
-/**
- * Two-click line placement. `activate()`, click the start, click the end; the new
- * `LineShape` is added to the scene and announced as `create` (`tool: 'line'`). Escape or
- * right-click cancels. Does nothing while the scene is not editable.
- */
 export class LineTool implements ISceneInteraction {
     readonly priority: number;
     readonly events = new Emitter<TLineToolEvents>();
@@ -102,7 +91,7 @@ export class LineTool implements ISceneInteraction {
     }
 
     onPointerDown(e: TScenePointerEvent): boolean {
-        // Swallow presses on shapes so the selection cannot drag them; empty space still pans.
+        // swallow presses on shapes so the selection cannot drag them; empty space still pans
         return this.on && e.hit !== null;
     }
 
@@ -181,7 +170,7 @@ export class LineTool implements ISceneInteraction {
     }
 }
 
-function sameEnd(a: TLineEnd, b: TLineEnd): boolean {
+const sameEnd = (a: TLineEnd, b: TLineEnd): boolean => {
     if (isAnchor(a) || isAnchor(b)) return isAnchor(a) && isAnchor(b) && a.shape === b.shape;
     return a.x === b.x && a.y === b.y;
-}
+};

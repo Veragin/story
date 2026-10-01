@@ -1,17 +1,10 @@
 import type { TPoint } from '@story/shared';
 import type { TVersioned, TVersionedBody } from './common';
 
-/** Only one map exists for now (plan §1.1), stored in `data/locations/map.json`. */
 export const GLOBAL_MAP_ID = 'global';
 
-/** A palette colour id (`'grass'`, `'water'`, `'none'`, …). */
 export type TColorId = string;
 
-/**
- * One hex tile. `tile` picks the palette colour, `label` is the short text drawn on the tile, and
- * `description` is free text about the environment (plan §1.1 "Tile descriptions") — neither is
- * tied to an entity.
- */
 export type TMapTileDto = {
     tile: TColorId;
     label?: string;
@@ -20,11 +13,7 @@ export type TMapTileDto = {
 
 export type TPaletteEntryDto = { name: string; color: string };
 
-/**
- * A location's polygon on the map, keyed by `locationId` in `TMapDto.locations` (plan §1).
- * Points are in map world coordinates — the space of the hex renderer at zoom 1
- * (`MapEditor/MapEngine/utils.ts#computeTilePos`) — so both canvases can share one camera.
- */
+/** Points are in map world coordinates (the hex renderer at zoom 1), shared by both canvases. */
 export type TLocationShapeDto = {
     polygon: TPoint[];
     /** CSS colour; the page picks a default when absent. */
@@ -32,14 +21,10 @@ export type TLocationShapeDto = {
     stroke?: string;
 };
 
-/** A link to a sub-map anchored on a tile. Kept in the data, not shown in the UI (plan §1.1). */
+/** Kept in the data, not shown in the UI. */
 export type TSubMapRefDto = { i: number; j: number; mapId: string };
 
-/**
- * `map.json`. `data[i][j]` is row `i` (`0 … height-1`), column `j` (`0 … width-1`) — the indexing
- * `MapEngine/Draw.ts` uses. (`createDefaultMapData` builds it transposed; that is one of the WP4
- * bugs, see plan §2.)
- */
+/** `data[i][j]` is row `i`, column `j`. */
 export type TMapDto = TVersioned & {
     mapId: string;
     title: string;
@@ -47,16 +32,13 @@ export type TMapDto = TVersioned & {
     height: number;
     data: TMapTileDto[][];
     palette: Record<TColorId, TPaletteEntryDto>;
+    /** Keyed by location id. */
     locations: Record<string, TLocationShapeDto>;
     maps: TSubMapRefDto[];
 };
 
-/**
- * The map document without `version` (the version is the hash of the file text). On disk,
- * `map.json` stores it in a compact encoding (run-length tile rows, sparse `tileText`); see
- * `Visualizer/server/src/json/mapStore.ts`. The API always speaks this shape.
- */
+/** The API shape; `map.json` stores it compactly encoded. */
 export type TMapFile = Omit<TMapDto, 'version'>;
 
-/** `PUT /maps/:mapId` — a whole-document replace. `version: ''` creates the file. */
+/** Whole-document replace; `version: ''` creates the file. */
 export type TUpdateMapBody = TVersionedBody & TMapFile;

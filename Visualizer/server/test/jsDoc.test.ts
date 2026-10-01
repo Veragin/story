@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { formatJsDoc, getProp, parseJsDoc, readJsDoc } from '../src/project/ast';
 import { applyPartial, readFields, S, type TField } from '../src/project/values';
 
-/** JSDoc descriptions of `S.fn` fields (plan D1, D8), on an in-memory file. */
 const FIELDS: Record<string, TField> = {
     execute: { schema: S.fn(), after: ['id'] },
     items: { schema: S.array(S.object({ condition: S.fn('true'), text: S.string })) },
@@ -39,7 +38,11 @@ describe('JSDoc helpers', () => {
             `const x = {\n    /** doc */\n    a: 1,\n    /* plain */\n    b: 2,\n    /** far */\n    // between\n    c: 3, d: 4, /** inline */ e: 5,\n};\n`
         );
         const obj = sf.getFirstDescendantByKindOrThrow(SyntaxKind.ObjectLiteralExpression);
-        const doc = (k: string) => readJsDoc(getProp(obj, k)!);
+        const doc = (k: string) => {
+            const prop = getProp(obj, k);
+            if (!prop) throw new Error(`no property ${k}`);
+            return readJsDoc(prop);
+        };
         expect([doc('a'), doc('b'), doc('c'), doc('d'), doc('e')]).toEqual([
             'doc',
             undefined,

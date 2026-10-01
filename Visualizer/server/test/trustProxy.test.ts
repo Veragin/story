@@ -2,10 +2,6 @@ import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from 'vitest';
 import { clientAddress, trustProxyFromEnv } from '../src/auth/LoginLimiter';
 
-/**
- * `TRUST_PROXY` (multiple stories, phase 11): behind the production Caddy the login limiter keys on
- * the last `X-Forwarded-For` hop, the one the proxy wrote, never on a hop the client could send.
- */
 const request = (remoteAddress: string, xff?: string | string[]) =>
     ({
         headers: xff === undefined ? {} : { 'x-forwarded-for': xff },
@@ -19,7 +15,6 @@ describe('clientAddress', () => {
 
     it('is the last X-Forwarded-For hop with TRUST_PROXY', () => {
         expect(clientAddress(request('10.0.0.2', '203.0.113.7'), true)).toBe('203.0.113.7');
-        // a client-sent first hop does not pick the key
         expect(clientAddress(request('10.0.0.2', '1.2.3.4, 203.0.113.7'), true)).toBe('203.0.113.7');
         expect(clientAddress(request('10.0.0.2', ['1.2.3.4', ' 203.0.113.7 ']), true)).toBe('203.0.113.7');
     });

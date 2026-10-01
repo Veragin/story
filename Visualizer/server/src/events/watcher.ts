@@ -2,11 +2,7 @@ import chokidar, { type FSWatcher } from 'chokidar';
 import { isTempFile } from '../json/atomicWrite';
 import type { EventBus } from './EventBus';
 
-/**
- * Watch the author's two folders and feed every file change into the bus, which batches them into
- * resource events (plan §3 "Live refresh", point 2). Resolves once the initial scan is done, so a
- * change made after `await startWatcher(...)` is always seen.
- */
+// resolves after the initial scan, so any later change is seen
 export const startWatcher = async (bus: EventBus): Promise<FSWatcher> => {
     const { dataDir, typesDir } = bus.project;
     const watcher = chokidar.watch([dataDir, typesDir], {

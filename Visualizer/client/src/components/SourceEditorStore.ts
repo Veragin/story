@@ -2,16 +2,6 @@ import { action, computed, makeObservable, observable, runInAction } from 'mobx'
 import type { TDiagnosticDto, TSourceDto, TSourceOwner } from '@story/visualizer-protocol';
 import { ApiError, type ApiEvents, type TVisualizerApi } from '../api';
 
-/**
- * The state of `SourceEditorDialog`: the whole `.ts` file of a chapter or passage
- * (`GET/PUT /source/:owner/:id`), the author's unsaved text, the 422 diagnostics of the last
- * save, and the "changed on disk" conflict.
- *
- *  - `save()` sends the whole text with the version it is based on. `422` keeps the text and
- *    shows the diagnostics; `409 stale` opens the conflict ("Reload" / "Keep mine").
- *  - A change event for the owner (a hand edit, a form save, another tab) refetches the file:
- *    it replaces a clean text, and opens the conflict over unsaved input.
- */
 export class SourceEditorStore {
     base: TSourceDto | null = null;
     text = '';
@@ -19,7 +9,7 @@ export class SourceEditorStore {
     error: string | null = null;
     saving = false;
     diagnostics: TDiagnosticDto[] = [];
-    /** Set on `409 stale`, or when the file changed on disk under unsaved input. `null` current = deleted. */
+    // `current: null` means deleted on disk
     conflict: { current: TSourceDto | null } | null = null;
     private disposers: (() => void)[] = [];
 
@@ -50,12 +40,10 @@ export class SourceEditorStore {
         return this.base !== null && this.text !== this.base.text;
     }
 
-    /** Diagnostics in this file (shown beside their lines). */
     get fileDiagnostics() {
         return this.diagnostics.filter((d) => d.file === this.base?.file);
     }
 
-    /** Diagnostics the edit causes in other files (listed above the editor). */
     get otherDiagnostics() {
         return this.diagnostics.filter((d) => d.file !== this.base?.file);
     }
@@ -79,7 +67,7 @@ export class SourceEditorStore {
             const source = await this.api.getSource(this.owner, this.id);
             this.take(source);
         } catch (e) {
-            runInAction(() => (this.loadError = (e as Error).message));
+            runInAction(() => (this.loadError = e instanceof Error ? e.message : String(e)));
         }
     }
 
@@ -87,7 +75,6 @@ export class SourceEditorStore {
         this.text = text;
     }
 
-    /** Resolves `true` when everything is on disk. */
     async save(): Promise<boolean> {
         if (!this.base || this.saving || this.conflict) return false;
         if (!this.dirty) return true;
@@ -110,7 +97,7 @@ export class SourceEditorStore {
                 } else if (e instanceof ApiError && e.isStale) {
                     this.conflict = { current: (e.current as TSourceDto | null) ?? null };
                 } else {
-                    this.error = (e as Error).message;
+                    this.error = e instanceof Error ? e.message : String(e);
                 }
             });
             return false;
@@ -119,14 +106,12 @@ export class SourceEditorStore {
         }
     }
 
-    /** "Reload": take the file on disk, drop my text. */
     reloadFromDisk() {
         const current = this.conflict?.current;
         if (!current) return;
         this.take(current);
     }
 
-    /** "Keep mine": save my text over the file on disk. */
     async keepMine() {
         const current = this.conflict?.current;
         if (!current) return;
@@ -137,9 +122,8 @@ export class SourceEditorStore {
         await this.save();
     }
 
-    /** The file may have changed on disk: refetch, and replace or conflict. */
     async onExternal() {
-        // a save in flight knows better (and this may be its own echo)
+        // a save in flight wins; this may be its own echo
         if (this.saving || !this.base) return;
         let current: TSourceDto | null;
         try {

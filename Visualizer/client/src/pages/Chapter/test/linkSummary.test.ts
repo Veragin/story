@@ -3,7 +3,6 @@ import type { TDiagnosticDto, TLinkDto } from '@story/visualizer-protocol';
 import { formatDelta } from '../editor/costCode';
 import { linkHasDiagnostics, linkSummary, type TSummaryPart } from '../editor/PassageEditor/linkSummary';
 
-/** The line as it reads, with `ƒ` for code-valued parts. */
 const plain = (parts: TSummaryPart[]) => parts.map((p) => ('code' in p ? 'ƒ' : p.text)).join('');
 
 const items = [

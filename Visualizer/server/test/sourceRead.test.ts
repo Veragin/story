@@ -1,10 +1,7 @@
+import { readFile, writeFile } from 'node:fs/promises';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { changedFiles, snapshot, startSourceApp, storyProblems, tscTemp } from './sourceHelpers';
 
-/**
- * Readers (plan WP2): what the server makes of the committed story, and the round-trip rule —
- * reading a resource and writing it back unchanged leaves every file byte-identical.
- */
 let t: Awaited<ReturnType<typeof startSourceApp>>;
 
 beforeAll(async () => {
@@ -32,7 +29,7 @@ describe('readers', () => {
             characterIds: ['annie', 'thomas'],
             childIds: ['village'],
         });
-        expect(body.chapters[2].name).toBe('Wedding Chapter'); // from `_('Wedding Chapter')`
+        expect(body.chapters[2].name).toBe('Wedding Chapter');
         expect(body.triggers).toEqual([{ id: 'nobleHouseRobbery', chapterId: 'village', name: 'Noble house robbery' }]);
         expect(body.items.map((i: { id: string }) => i.id).sort()).toEqual(['axe', 'berries', 'bow', 'gold', 'wood']);
         expect(body.locations.find((l: { id: string }) => l.id === 'kingdom').name).toBe('kingdom');
@@ -121,8 +118,7 @@ describe('readers', () => {
     });
 
     it('finds edges inside code fields, marked conditional', async () => {
-        // a conditional link target, written by hand (the watcher is off: the next request re-syncs)
-        const { writeFile, readFile } = await import('node:fs/promises');
+        // the watcher is off: the next request re-syncs
         const file = `${t.project.root}/data/chapters/village/thomas.passages/intro.ts`;
         const before = await readFile(file, 'utf8');
         await writeFile(

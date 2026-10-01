@@ -8,27 +8,17 @@ import {
     type TImageOwner,
     type TUploadImageBody,
 } from '@story/visualizer-protocol';
-import { assertVersion, version } from '../events/version';
+import { version } from '../events/version';
 import { HttpError } from '../http/HttpError';
+import { isMissingFileError } from '../json/atomicWrite';
 import { findEntitySource } from './readers/entities';
 import type { SourceProject } from './SourceProject';
 import { findPassageFile } from './story';
-import { asBody, type TWriter } from './writers/common';
+import { asBody, assertCurrentVersion, type TWriter } from './writers/common';
 
-/**
- * Story art (protocol `dto/image.ts`): the image of a passage, character or npc is the `.png`
- * next to its `.ts` file, with the same basename (`annie.passages/palace.ts` →
- * `annie.passages/palace.png`, `npcs/Franta.ts` → `npcs/Franta.png`). The owner's file is found
- * the way every other route finds it (passage folder + `id`, `register.ts` entry), so the image
- * follows the file wherever the author keeps it. Only PNG is accepted and nothing is converted:
- * the server has no image library, and the story's apps load the file as it is.
- */
-
-/** `…/palace.ts` → `…/palace.png`. */
 export const siblingPng = (tsFile: string) => tsFile.replace(/\.ts$/, '.png');
 
-/** Absolute path of an owner's image (which need not exist). 404 when the owner does not. */
-export const imageFile = (sp: SourceProject, owner: TImageOwner, id: string): string => {
+const imageFile = (sp: SourceProject, owner: TImageOwner, id: string): string => {
     const tsFile =
         owner === 'passages' ? findPassageFile(sp, id).getFilePath() : findEntitySource(sp, owner, id).sf.getFilePath();
     return siblingPng(tsFile);
@@ -38,7 +28,7 @@ const readBytesOrNull = async (file: string): Promise<Buffer | null> => {
     try {
         return await readFile(file);
     } catch (e) {
-        if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+        if (isMissingFileError(e)) return null;
         throw e;
     }
 };
@@ -54,14 +44,12 @@ const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, b
     };
 };
 
-/** `GET /images/:owner/:id` */
 export const readImage = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<TImageDto> => {
         const abs = imageFile(sp, owner, id);
         return toDto(sp, owner, id, abs, await readBytesOrNull(abs));
     });
 
-/** `GET /images/:owner/:id/png` — the bytes and their version; 404 when there is no image. */
 export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<{ bytes: Buffer; version: string }> => {
         const abs = imageFile(sp, owner, id);
@@ -73,7 +61,6 @@ export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string)
 const isPng = (bytes: Uint8Array) =>
     bytes.length > PNG_SIGNATURE.length && PNG_SIGNATURE.every((b, i) => bytes[i] === b);
 
-/** `PUT /images/:owner/:id` — write the owner's sibling `.png` (create or replace). */
 export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string, rawBody: TUploadImageBody) =>
     sp.run(async (): Promise<TImageDto> => {
         const body = asBody(rawBody);
@@ -88,9 +75,8 @@ export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string
 
         const abs = imageFile(sp, owner, id);
         const current = toDto(sp, owner, id, abs, await readBytesOrNull(abs));
-        await assertVersion(body.version as string, current.version, () => current);
-        // no change event: an image is not a resource of `dto/events.ts`, and the owner's own
-        // version (the hash of its `.ts`) does not change
+        assertCurrentVersion(body, current);
+        // no change event: images are not event resources and the owner's version is unchanged
         await bus.transaction((tx) => tx.writeFile(abs, bytes));
         return toDto(sp, owner, id, abs, bytes);
     });

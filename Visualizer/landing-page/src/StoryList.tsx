@@ -5,7 +5,6 @@ import { EditStoryDialog } from './EditStoryDialog';
 import type { StoriesStore } from './StoriesStore';
 import { StoryCard } from './StoryCard';
 
-/** Every story, one `StoryCard` each, and the Edit dialog of the one being edited. */
 export const StoryList = observer(({ store }: { store: StoriesStore }) => {
     const [editing, setEditing] = useState<string | null>(null);
     const closeEdit = useCallback(() => setEditing(null), []);

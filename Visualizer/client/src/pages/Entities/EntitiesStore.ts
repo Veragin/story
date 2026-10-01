@@ -13,48 +13,27 @@ import { ApiError, type ApiEvents, type TVisualizerApi } from '../../api';
 import { getUiState, setUiState } from '../../ui-state';
 import { deepEqual, diffEditable, editableOf } from './entityFields';
 
-/**
- * State of the Entities page (plan WP7): the list of each kind, the selected entity, its form
- * draft, and the save / stale / delete flow.
- *
- *  - `base` is the server copy the draft started from; `draft` is what the form shows. A save
- *    sends only the fields that differ (`diffEditable`) with `base.version`.
- *  - 409 `stale` (on save, or an external change while the form is dirty) sets `stale`: the UI
- *    offers `reload()` (take theirs) or `keepMine()` (re-send my changes on their version).
- *  - 422 fills `diagnostics`, 409 `referenced` on delete fills `references`.
- *  - Live refresh: `start()` subscribes to `entity` and `project` events. A clean form is
- *    refetched in place; a dirty one keeps its input and gets the stale notice instead.
- *  - The selection (kind, last id per kind) and unsaved drafts live in `ui-state`, so a reload
- *    of the page restores them.
- *
- * Router-free on purpose (the page syncs `#/entities/:kind/:id` with `show()`), so it can be
- * tested against `createMockApi`.
- */
-
-export type TStale = {
-    /** The version on disk now, or `null` when the entity was deleted there. */
+type TStale = {
     current: TEntityDto | null;
 };
 
 type TSavedDraft = { baseVersion: TVersion; draft: TEntityDto };
 
-export type TEntitiesStoreOptions = {
+type TEntitiesStoreOptions = {
     api: TVisualizerApi;
     events?: ApiEvents;
-    /** Mirror the selection and unsaved drafts into `sessionStorage` (default true). */
     persist?: boolean;
 };
 
 const SELECTION_KEY = 'entities.selection';
 const DRAFTS_KEY = 'entities.drafts';
 
-export type TEntitiesSelection = {
+type TEntitiesSelection = {
     kind: TEntityKind;
-    /** Last selected id per kind, so switching kinds comes back to it. */
     ids: Partial<Record<TEntityKind, string>>;
 };
 
-export const entityKey = (kind: TEntityKind, id: string) => `${kind}/${id}`;
+const entityKey = (kind: TEntityKind, id: string) => `${kind}/${id}`;
 
 const errorMessage = (e: unknown): string => {
     if (e instanceof ApiError) {
@@ -84,7 +63,6 @@ export class EntitiesStore {
     references: TReferenceDto[] | null = null;
     error: string | null = null;
 
-    /** Unsaved input per `kind/id`, including entities that are not selected right now. */
     drafts: Record<string, TSavedDraft> = {};
     lastIds: Partial<Record<TEntityKind, string>> = {};
 
@@ -130,13 +108,10 @@ export class EntitiesStore {
         );
     }
 
-    /* ------------------------------------------------------------ derived */
-
     get list(): TEntityDto[] {
         return this.lists[this.kind] ?? [];
     }
 
-    /** The editable fields the form changed, i.e. the next PUT body without `version`. */
     get changes(): Record<string, unknown> {
         if (!this.base || !this.draft) return {};
         return diffEditable(this.base, this.draft);
@@ -148,23 +123,16 @@ export class EntitiesStore {
         return Object.keys(this.changes).length > 0;
     }
 
-    /** Whether `kind/id` has unsaved input (for the list's dot). */
     hasDraft = (kind: TEntityKind, id: string) => entityKey(kind, id) in this.drafts;
 
-    /** Diagnostics of one top-level field (`init`, `name`, …); `field` may be a dotted path. */
     fieldDiagnostics = (field: string) =>
         this.diagnostics.filter((d) => d.field === field || d.field?.startsWith(`${field}.`));
 
-    /** Ids of the entities of `kind` known so far (list, else the project summary). */
     idsOf = (kind: TEntityKind): string[] =>
         this.lists[kind]?.map((e) => e.id) ?? this.project?.[kind].map((e) => e.id) ?? [];
 
-    /** The last selected id of `kind` (for switching kinds from the menu). */
     lastIdOf = (kind: TEntityKind): string | undefined => this.lastIds[kind];
 
-    /* ------------------------------------------------------------ lifecycle */
-
-    /** Subscribe to live refresh. Returns `dispose`. Idempotent. */
     start() {
         if (this.offs.length > 0 || !this.events) return this.dispose;
         this.offs.push(
@@ -180,13 +148,6 @@ export class EntitiesStore {
         this.offs.splice(0).forEach((off) => off());
     }
 
-    /* ------------------------------------------------------------ navigation */
-
-    /**
-     * Show `kind` and (optionally) the entity `id`. Loads the list the first time a kind is
-     * shown and the entity whenever the selection changes. Unsaved input of the previous entity
-     * stays in `drafts`.
-     */
     async show(kind: TEntityKind, id?: string | null) {
         const nextId = id ?? null;
         const kindChanged = kind !== this.kind || !this.lists[kind];
@@ -205,23 +166,18 @@ export class EntitiesStore {
         await Promise.all(tasks);
     }
 
-    /** Forget the selection of `kind` (after a delete). */
     forget(kind: TEntityKind, id: string) {
         if (this.lastIds[kind] === id) delete this.lastIds[kind];
         this.dropDraft(kind, id);
         this.saveSelection();
     }
 
-    /* ------------------------------------------------------------ editing */
-
-    /** Replace one top-level field of the draft. */
     setField(key: string, value: unknown) {
         if (!this.draft) return;
         this.draft = { ...this.draft, [key]: value } as TEntityDto;
         this.afterEdit();
     }
 
-    /** Drop the unsaved input (back to `base`). */
     discard() {
         if (!this.base) return;
         this.draft = this.base;
@@ -235,7 +191,6 @@ export class EntitiesStore {
         return this.put(this.base.version);
     }
 
-    /** "Changed on disk → reload": take the version on disk, drop my input. */
     reload() {
         const stale = this.stale;
         if (!stale) {
@@ -257,7 +212,6 @@ export class EntitiesStore {
         this.afterEdit();
     }
 
-    /** "Changed on disk → keep mine": re-send my changes on top of the version on disk. */
     keepMine(): Promise<boolean> {
         const stale = this.stale;
         if (!stale || !this.draft || this.saving) return Promise.resolve(false);
@@ -265,7 +219,6 @@ export class EntitiesStore {
         return this.put(stale.current.version);
     }
 
-    /** Create an entity of `kind`. Throws `ApiError` (409 exists, 422, …) for the dialog. */
     async create(kind: TEntityKind, body: TCreateEntityBody): Promise<TEntityDto> {
         const created = (await this.api.createEntity(kind, body as never)) as TEntityDto;
         runInAction(() => {
@@ -277,10 +230,6 @@ export class EntitiesStore {
         return created;
     }
 
-    /**
-     * Delete the selected entity. Resolves `true` when it is gone. A 409 `referenced` fills
-     * `references` (nothing is deleted), a 409 `stale` sets `stale`.
-     */
     async remove(): Promise<boolean> {
         const base = this.base;
         if (!base) return false;
@@ -317,8 +266,6 @@ export class EntitiesStore {
         this.error = null;
     }
 
-    /* ------------------------------------------------------------ loading */
-
     async loadList(kind: TEntityKind) {
         const token = (this.listTokens[kind] ?? 0) + 1;
         this.listTokens[kind] = token;
@@ -352,23 +299,18 @@ export class EntitiesStore {
         }
     }
 
-    /** Full passage ids of `characterId` in every chapter (options of `startPassageId`). */
     async passageIdsOf(characterId: string): Promise<string[]> {
         const chapters = (this.project?.chapters ?? []).filter((c) => c.characterIds.includes(characterId));
         const results = await Promise.all(chapters.map((c) => this.api.getChapter(c.id).catch(() => null)));
         return results.flatMap((ch) => ch?.characters.find((c) => c.characterId === characterId)?.passageIds ?? []);
     }
 
-    /** Refetch everything on screen (after a reconnect: events may have been missed). */
+    // after a reconnect events may have been missed
     async refreshAll() {
         const kinds = Object.keys(this.lists) as TEntityKind[];
         await Promise.all([...kinds.map((k) => this.loadList(k)), this.refreshSelected(), this.loadProject()]);
     }
 
-    /**
-     * Refetch the selected entity in place. A clean form takes the new version; a dirty one
-     * keeps the input and gets the stale notice (unless the version did not change).
-     */
     async refreshSelected(force = false) {
         const kind = this.kind;
         const id = this.selectedId;
@@ -430,7 +372,6 @@ export class EntitiesStore {
         }
     }
 
-    /** Take a freshly loaded entity, restoring the unsaved draft kept for it (if any). */
     private adopt(dto: TEntityDto) {
         const saved = this.drafts[entityKey(dto.kind, dto.id)];
         this.base = dto;
@@ -444,8 +385,6 @@ export class EntitiesStore {
         // The draft was based on an older version: its input survives, but say so.
         if (saved.baseVersion !== dto.version) this.stale = { current: dto };
     }
-
-    /* ------------------------------------------------------------ writes */
 
     private async put(version: TVersion): Promise<boolean> {
         const base = this.base;
@@ -485,7 +424,6 @@ export class EntitiesStore {
         }
     }
 
-    /** "Keep mine" after the entity was deleted on disk: create it again from the draft. */
     private async recreate(): Promise<boolean> {
         const draft = this.draft;
         if (!draft) return false;
@@ -516,8 +454,6 @@ export class EntitiesStore {
         }
     }
 
-    /* ------------------------------------------------------------ events */
-
     private onEntityEvent(event: TChangeEvent) {
         const slash = event.id.indexOf('/');
         const kind = (slash === -1 ? event.id : event.id.slice(0, slash)) as TEntityKind;
@@ -534,8 +470,6 @@ export class EntitiesStore {
         if (this.lists[this.kind]) void this.loadList(this.kind);
     }
 
-    /* ------------------------------------------------------------ internals */
-
     private clearForm() {
         this.base = null;
         this.draft = null;
@@ -551,7 +485,6 @@ export class EntitiesStore {
         if (list) this.lists = { ...this.lists, [entity.kind]: list.map((e) => (e.id === entity.id ? entity : e)) };
     }
 
-    /** Keep `drafts` in step with the form after any change of `base` / `draft`. */
     private afterEdit() {
         if (!this.base || !this.draft) return;
         const key = entityKey(this.base.kind, this.base.id);

@@ -1,15 +1,11 @@
 import { appendFile, rm, writeFile } from 'node:fs/promises';
-import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { TChangeEvent } from '@story/visualizer-protocol';
 import { createApp, type TApp } from '../src/app';
 import type { TServerContext } from '../src/context';
 import { version } from '../src/events/version';
 import { readTextOrNull } from '../src/json/atomicWrite';
-import { login, makeTempProject, sleep } from './helpers';
-
-/** Long enough for chokidar to report and a 50 ms batch to flush, with margin for a slow CI box. */
-const QUIET_MS = 700;
+import { listenLocal, login, makeTempProject, openEventStream, QUIET_MS, sleep, waitFor } from './helpers';
 
 let app: TApp;
 let story: TServerContext;
@@ -29,14 +25,6 @@ afterEach(async () => {
     await app.close();
     await cleanup();
 });
-
-const waitFor = async (predicate: () => boolean, timeoutMs = 5000) => {
-    const start = Date.now();
-    while (!predicate()) {
-        if (Date.now() - start > timeoutMs) throw new Error('timed out');
-        await sleep(20);
-    }
-};
 
 describe('event bus: hand edits', () => {
     it('turns an edit of a passage file into one passage event carrying the content hash', async () => {
@@ -58,7 +46,8 @@ describe('event bus: hand edits', () => {
 
     it("names a passage event after the file's id literal, not its file name", async () => {
         const file = story.project.abs('data/chapters/village/thomas.passages/intro.ts');
-        const source = (await readTextOrNull(file))!;
+        const source = (await readTextOrNull(file)) ?? '';
+        expect(source).toContain("id: 'intro'");
         await writeFile(file, source.replace("id: 'intro'", "id: 'introRenamed'"));
         await waitFor(() => events.length > 0);
         await sleep(QUIET_MS);
@@ -166,32 +155,16 @@ describe('event bus: transactions', () => {
 
 describe('GET /api/stories/:storyId/events', () => {
     it('streams hello, then one change event per edit', async () => {
-        const port = await app.listen(0, '127.0.0.1');
-        const received: { event: string; data: unknown }[] = [];
-        const cookie = await login(`http://127.0.0.1:${port}`);
-        const req = http.get(`http://127.0.0.1:${port}/api/stories/example/events`, { headers: { cookie } });
-        const response = await new Promise<http.IncomingMessage>((resolve) => req.on('response', resolve));
+        const base = await listenLocal(app);
+        const cookie = await login(base);
+        const { response, frames, close } = await openEventStream(`${base}/api/stories/example/events`, { cookie });
         expect(response.statusCode).toBe(200);
         expect(response.headers['content-type']).toContain('text/event-stream');
-        let buffer = '';
-        response.setEncoding('utf8');
-        response.on('data', (chunk: string) => {
-            buffer += chunk;
-            let end;
-            while ((end = buffer.indexOf('\n\n')) >= 0) {
-                const frame = buffer.slice(0, end);
-                buffer = buffer.slice(end + 2);
-                const event = /^event: (.*)$/m.exec(frame)?.[1];
-                const data = /^data: (.*)$/m.exec(frame)?.[1];
-                if (event && data) received.push({ event, data: JSON.parse(data) });
-            }
-        });
-        await waitFor(() => received.length === 1);
-        expect(received[0].event).toBe('hello');
+        expect(frames[0].event).toBe('hello');
 
         await appendFile(story.project.abs('data/locations/village.location.ts'), '// x\n');
-        await waitFor(() => received.length === 2);
-        expect(received[1]).toMatchObject({ event: 'change', data: { kind: 'entity', id: 'locations/village' } });
-        req.destroy();
+        await waitFor(() => frames.length === 2);
+        expect(frames[1]).toMatchObject({ event: 'change', data: { kind: 'entity', id: 'locations/village' } });
+        close();
     });
 });

@@ -1,25 +1,17 @@
 import type { TDeltaTimeDto, TFunctionDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
 
-/**
- * A passage — `data/chapters/<ch>/<character>.passages/<local>[.<suffix>].ts`, one exported
- * function `(s?, e?) => TPassage<…>` per file (`types/TPassage.ts`). The reader finds the object
- * literal the function returns (arrow expression body *or* the `return` of a block body) and
- * reads its properties; everything outside that object (the statements before `return`, the
- * parameters) is preserved by writers and exposed read-only as `preamble`.
- */
 export type TPassageType = 'screen' | 'linear' | 'transition';
 
 type TPassageBaseDto = TVersioned &
     TSourceRef & {
-        /** Full id, `<chapterId>-<characterId>-<localId>` — the key in `<ch>.passages.ts`. */
+        /** `<chapterId>-<characterId>-<localId>`. */
         passageId: string;
         chapterId: string;
         characterId: string;
-        /** The passage's own `id` field (`'intro'`). */
         localId: string;
-        /** Parameters the passage function declares, e.g. `['s']` or `['s', 'e']`. */
+        /** Parameters the passage function declares, e.g. `['s', 'e']`. */
         params: string[];
-        /** Statements before the `return` of a block-bodied passage function, verbatim. */
+        /** Statements before the `return` of a block-bodied passage function, verbatim; read-only. */
         preamble?: string;
         execute?: TFunctionDto;
     };
@@ -27,10 +19,7 @@ type TPassageBaseDto = TVersioned &
 export type TScreenPassageDto = TPassageBaseDto & {
     type: 'screen';
     title: TMaybeCode<string>;
-    /**
-     * A text description of the passage's art (`''` for none). The picture is found by
-     * convention, as the passage file's sibling `.png` (`dto/image.ts`, `getImage`).
-     */
+    /** A text description of the art (`''` for none); the picture is the sibling `.png`. */
     image: TMaybeCode<string>;
     body: TMaybeCode<TBodyItemDto[]>;
 };
@@ -43,14 +32,14 @@ export type TLinearPassageDto = TPassageBaseDto & {
 
 export type TTransitionPassageDto = TPassageBaseDto & {
     type: 'transition';
-    /** A full passage id in *another* chapter, for the same character. */
+    /** A full passage id in another chapter, for the same character. */
     nextPassageId: TMaybeCode<string>;
 };
 
 export type TPassageDto = TScreenPassageDto | TLinearPassageDto | TTransitionPassageDto;
 
 export type TBodyItemDto = {
-    /** An expression (`s.x > 0`), not a function; a literal `true` reads as `{ code: 'true' }`. */
+    /** An expression, not a function; a literal `true` reads as `{ code: 'true' }`. */
     condition?: TFunctionDto;
     /** Full passage id. */
     redirect?: TMaybeCode<string>;
@@ -65,11 +54,10 @@ export type TLinkDto = {
     /** Spelled as in `types/TPassage.ts` (sic). */
     autoPriortiy?: TMaybeCode<number>;
     cost?: TMaybeCode<TLinkCostDto>;
-    /** A function, always code. */
     onFinish?: TFunctionDto;
 };
 
-/** `TLinkCost = DeltaTime | { time?, items?, tools? }` — tell them apart with `isDeltaTime`. */
+/** Tell the variants apart with `isDeltaTime`. */
 export type TLinkCostDto = TDeltaTimeDto | TLinkCostObjectDto;
 
 export type TLinkCostObjectDto = {
@@ -79,36 +67,28 @@ export type TLinkCostObjectDto = {
     tools?: TMaybeCode<string[]>;
 };
 
-/**
- * A statically extracted edge of the passage graph (plan §1.1 "Source of truth"): every string
- * literal in a `passageId`, `redirect` or `nextPassageId` position, *including* ones inside code
- * fields (conditional links still show up, with `conditional: true`).
- */
+/** Every string literal in a `passageId`, `redirect` or `nextPassageId` position, code fields included. */
 export type TPassageEdgeDto = {
     from: string;
     to: string;
     kind: 'link' | 'redirect' | 'next';
-    /** True when the target was found inside a code expression rather than a plain literal. */
+    /** Found inside a code expression rather than a plain literal. */
     conditional: boolean;
-    /** Whether `to` is a passage that exists (a dangling link is still reported). */
+    /** `to` exists; dangling links are still reported. */
     resolved: boolean;
 };
 
-/** `GET /chapters/:chapterId/passages` */
 export type TChapterPassagesDto = {
     chapterId: string;
-    /** Every passage of every character folder in the chapter. */
     passages: TPassageDto[];
     edges: TPassageEdgeDto[];
 };
 
-/** Editable fields per passage type (ids, type and source ref are read-only in v1). */
 export type TPassageEditable =
     | Partial<Pick<TScreenPassageDto, 'execute' | 'title' | 'image' | 'body'>>
     | Partial<Pick<TLinearPassageDto, 'execute' | 'description' | 'nextPassageId'>>
     | Partial<Pick<TTransitionPassageDto, 'execute' | 'nextPassageId'>>;
 
-/** `POST /chapters/:chapterId/passages` */
 export type TCreatePassageBody = {
     characterId: string;
     localId: string;
@@ -116,8 +96,7 @@ export type TCreatePassageBody = {
     title?: string;
 };
 
-/** `PUT /passages/:passageId` — omitted fields are left untouched. */
+/** Omitted fields are left untouched. */
 export type TUpdatePassageBody = TVersionedBody & TPassageEditable;
 
-/** `DELETE /passages/:passageId` */
 export type TDeletePassageBody = TVersionedBody;

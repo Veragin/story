@@ -16,7 +16,7 @@ import {
     xToTime,
 } from '../store/timeScale';
 
-const VILLAGE_START = parseTime('2.1. 8:00') as number; // 1 day 8 h
+const VILLAGE_START = parseTime('2.1. 8:00') as number;
 const VILLAGE_END = parseTime('5.1. 8:00') as number;
 
 describe('timeScale', () => {
@@ -269,7 +269,7 @@ describe('TimelineView', () => {
         const at: [number, number] = [r.x + 40, r.y + 20];
         click(canvas, ...at);
         expect(s.store.selected).toEqual({ kind: 'chapter', id: 'village' });
-        const dx = 14 * HOUR_S * s.store.pps; // 14 hours to the right
+        const dx = 14 * HOUR_S * s.store.pps;
         drag(canvas, at, [at[0] + dx, at[1]]);
         await vi.waitFor(async () =>
             expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 22:00', end: '5.1. 22:00' })

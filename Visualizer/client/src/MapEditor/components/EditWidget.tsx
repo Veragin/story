@@ -1,21 +1,17 @@
 import { observer } from 'mobx-react-lite';
 import styled from '@emotion/styled';
 import { Column, Row, SmallText, spacingCss } from '@story/ui';
-import { MapStore } from '../MapStore';
+import type { MapStore } from '../MapStore';
 import {
     WIDGET_BORDER_COLOR,
     WIDGET_BORDER_WIDTH,
 } from '../MapEngine/constants';
-import { TextField } from '../../components/TextField';
+import { TextField } from '@mui/material';
 
 type Props = {
     mapStore: MapStore;
 };
 
-/**
- * Tile tooling of the select tool: the selected tile's label (drawn on the tile) and its free-text
- * description of the environment (drawn under the label when zoomed in far enough).
- */
 export const EditWidget = observer(({ mapStore }: Props) => {
     const selectedTile = mapStore.selectedTile;
     // re-render on every edit and on live refresh: the document itself is not observable

@@ -1,5 +1,13 @@
 import { pointInRect } from '../geometry';
-import { drawTextBlock, measureTextWidth, wrapText } from '../text';
+import {
+    alignOffset,
+    drawTextBlock,
+    lineHeightFor,
+    measureTextWidth,
+    wrapText,
+    type TAlign,
+    type TVerticalAlign,
+} from '../text';
 import type { TPoint, TRect } from '../types';
 import { Shape, type TShapeProps } from './Shape';
 
@@ -7,19 +15,14 @@ export type TTextProps<TData = unknown> = TShapeProps<TData> & {
     x: number;
     y: number;
     text: string;
-    /** In world units. Default 14. */
     fontSize?: number;
     fontFamily?: string;
     fontWeight?: string | number;
-    /** Text color. Default `#fff`. (`fill`, if set, paints a background box.) */
+    // `fill` paints a background box
     color?: string;
-    /** Horizontal anchor of `x`. Default `left`. */
-    align?: 'left' | 'center' | 'right';
-    /** Vertical anchor of `y`. Default `top`. */
-    verticalAlign?: 'top' | 'middle' | 'bottom';
-    /** Wrap width in world units. */
+    align?: TAlign;
+    verticalAlign?: TVerticalAlign;
     maxWidth?: number;
-    /** Background box padding in world units. Default 2. */
     padding?: number;
 };
 
@@ -32,8 +35,8 @@ export class TextShape<TData = unknown> extends Shape<TData> {
     fontFamily?: string;
     fontWeight?: string | number;
     color: string;
-    align: 'left' | 'center' | 'right';
-    verticalAlign: 'top' | 'middle' | 'bottom';
+    align: TAlign;
+    verticalAlign: TVerticalAlign;
     maxWidth?: number;
     padding: number;
 
@@ -61,22 +64,19 @@ export class TextShape<TData = unknown> extends Shape<TData> {
     }
 
     private get lineHeight(): number {
-        return this.fontSize * 1.25;
+        return lineHeightFor(this.fontSize);
     }
 
-    /** The text box without padding. */
     private textRect(): TRect {
         const lines = wrapText(this.text, this.maxWidth, this.font);
         const width = Math.max(0, ...lines.map((l) => measureTextWidth(l, this.font)));
         const height = lines.length * this.lineHeight;
-        const x = this.align === 'center' ? this.x - width / 2 : this.align === 'right' ? this.x - width : this.x;
-        const y =
-            this.verticalAlign === 'middle'
-                ? this.y - height / 2
-                : this.verticalAlign === 'bottom'
-                  ? this.y - height
-                  : this.y;
-        return { x, y, width, height };
+        return {
+            x: this.x - alignOffset(this.align, width),
+            y: this.y - alignOffset(this.verticalAlign, height),
+            width,
+            height,
+        };
     }
 
     getBounds(): TRect {
@@ -108,7 +108,7 @@ export class TextShape<TData = unknown> extends Shape<TData> {
         const r = this.textRect();
         drawTextBlock(ctx, this.text, {
             ...this.font,
-            x: this.align === 'center' ? r.x + r.width / 2 : this.align === 'right' ? r.x + r.width : r.x,
+            x: r.x + alignOffset(this.align, r.width),
             y: r.y,
             align: this.align,
             verticalAlign: 'top',

@@ -9,11 +9,6 @@ type TProps = {
     onClose: () => void;
 };
 
-/**
- * The banners under the header: "changed / deleted on disk", the save error and the diagnostics
- * that have no field to show them next to. (The note about statements before the return is
- * shown with `ExecuteField`.)
- */
 export const PassageAlerts = observer(({ store, onClose }: TProps) => {
     const { conflict, error, diagnosticIndex } = store;
     return (

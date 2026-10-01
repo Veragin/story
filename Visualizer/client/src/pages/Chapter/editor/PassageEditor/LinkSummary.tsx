@@ -12,7 +12,6 @@ type TProps = {
     expanded: boolean;
     onToggle: () => void;
     onRemove: () => void;
-    /** The link has diagnostics: it stays expanded and the line is marked. */
     hasError: boolean;
 };
 
@@ -27,11 +26,6 @@ const Parts = ({ parts }: { parts: TSummaryPart[] }) =>
         )
     );
 
-/**
- * A link's collapsed line (plan D10): its text, then `passageId (time) (items) [tools]` in gray
- * as SingleEngine shows it, code-valued parts as `ƒ` with the code as tooltip. Then the expand
- * toggle and the delete button.
- */
 export const LinkSummary = ({
     link,
     itemOptions,

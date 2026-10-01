@@ -5,7 +5,7 @@ import type {
     TPassageEdgeDto,
     TPassageType,
 } from '@story/visualizer-protocol';
-import { Node, type SourceFile, SyntaxKind } from 'ts-morph';
+import { Node, type NoSubstitutionTemplateLiteral, type SourceFile, type StringLiteral, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
 import { propertyKey, stringProp, unwrap } from '../ast';
 import type { SourceProject } from '../SourceProject';
@@ -35,10 +35,8 @@ const BODY_ITEM = S.object({
     links: S.array(LINK),
 });
 
-/** `execute?: () => void` of every passage type; a new one goes after `id`, before `type`. */
 const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
 
-/** Editable fields per passage type (`types/TPassage.ts`). */
 export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
     screen: {
         execute: EXECUTE,
@@ -57,7 +55,6 @@ export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
     },
 };
 
-/** Optional fields a PUT may remove with `null`. */
 export const PASSAGE_OPTIONAL: Record<TPassageType, string[]> = {
     screen: ['execute'],
     linear: ['execute', 'nextPassageId'],
@@ -69,13 +66,11 @@ export const passageType = (src: TPassageSource): TPassageType | undefined => {
     return t === 'screen' || t === 'linear' || t === 'transition' ? t : undefined;
 };
 
-/** `data/chapters/<ch>/<char>.passages/<file>` → chapter and character ids. */
-export const passageOwner = (sp: SourceProject, sf: SourceFile) => {
+const passageOwner = (sp: SourceProject, sf: SourceFile) => {
     const m = /^data\/chapters\/([^/]+)\/([^/]+)\.passages\/[^/]+\.ts$/.exec(sp.root.rel(sf.getFilePath()));
     return m ? { chapterId: m[1], characterId: m[2] } : undefined;
 };
 
-/** Full id of the passage in a passage file (from its folder and `id`), or undefined. */
 export const passageIdOfFile = (sp: SourceProject, sf: SourceFile): string | undefined => {
     const owner = passageOwner(sp, sf);
     if (!owner) return undefined;
@@ -132,12 +127,8 @@ const EDGE_KIND: Record<string, TPassageEdgeDto['kind']> = {
     nextPassageId: 'next',
 };
 
-/**
- * Static edges of a passage (plan §1.1): every string literal inside the initializer of a
- * `passageId` / `redirect` / `nextPassageId` property anywhere in the file — so a target inside
- * a condition (`cond ? 'a' : 'b'`) still shows up, marked `conditional`.
- */
-export const passageEdges = (sf: SourceFile, from: string, known: Set<string>): TPassageEdgeDto[] => {
+// Any literal inside the initializer counts, so `cond ? 'a' : 'b'` yields conditional edges.
+const passageEdges = (sf: SourceFile, from: string, known: Set<string>): TPassageEdgeDto[] => {
     const edges: TPassageEdgeDto[] = [];
     const seen = new Set<string>();
     for (const prop of sf.getDescendantsOfKind(SyntaxKind.PropertyAssignment)) {
@@ -147,14 +138,14 @@ export const passageEdges = (sf: SourceFile, from: string, known: Set<string>): 
         if (!init) continue;
         const direct = unwrap(init);
         const plain = Node.isStringLiteral(direct) || Node.isNoSubstitutionTemplateLiteral(direct);
-        const literals = plain
+        const literals: (StringLiteral | NoSubstitutionTemplateLiteral)[] = plain
             ? [direct]
             : [
                   ...init.getDescendantsOfKind(SyntaxKind.StringLiteral),
                   ...init.getDescendantsOfKind(SyntaxKind.NoSubstitutionTemplateLiteral),
               ];
         for (const lit of literals) {
-            const to = (lit as import('ts-morph').StringLiteral).getLiteralText();
+            const to = lit.getLiteralText();
             if (!to.includes('-')) continue;
             const key = `${kind}|${to}|${plain}`;
             if (seen.has(key)) continue;
@@ -166,7 +157,7 @@ export const passageEdges = (sf: SourceFile, from: string, known: Set<string>): 
 };
 
 export const readChapterPassages = (sp: SourceProject, chapterId: string): TChapterPassagesDto => {
-    chapterFile(sp, chapterId); // 404 for an unknown chapter
+    chapterFile(sp, chapterId);
     const known = registeredPassageIds(sp);
     const passages: TPassageDto[] = [];
     const edges: TPassageEdgeDto[] = [];

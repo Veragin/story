@@ -1,20 +1,12 @@
 import { isImageOwner, type TImageOwner } from '@story/visualizer-protocol';
 import type { TServerContext } from '../context';
-import { HttpError } from '../http/HttpError';
+import { pathParam } from '../http/params';
 import { RAW_RESPONSE } from '../http/router';
 import { readImage, readImageFile, uploadImage } from '../project/images';
 import { SourceProject } from '../project/SourceProject';
 
-const ownerOf = (owner: string): TImageOwner => {
-    if (!isImageOwner(owner)) throw HttpError.notFound(`No image owner "${owner}"`);
-    return owner;
-};
+const ownerOf = (owner: string): TImageOwner => pathParam(owner, isImageOwner, 'image owner');
 
-/**
- * Story art: `/images/:owner/:id[/png]` (`project/images.ts`). The JSON route says whether
- * there is an image and gives a cache-busted `url` for the `/png` route, which serves the bytes
- * with an `ETag`, so an `<img>` revalidates cheaply and a new upload gets a new URL.
- */
 export const registerImageRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);
     router

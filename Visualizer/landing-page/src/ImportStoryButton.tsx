@@ -11,10 +11,9 @@ import {
 import { FileUpload } from '@mui/icons-material';
 import { isStoryId, STORY_ZIP_CONTENT_TYPE } from '@story/visualizer-protocol';
 import { showToast } from '@story/ui';
-import { isApiError } from './api';
+import { errorMessage, isApiError } from './api';
 import type { StoriesStore } from './StoriesStore';
 
-/** A story id from a zip's file name: `My Story (2).zip` → `my-story-2`. */
 const storyIdFromFileName = (fileName: string) =>
     fileName
         .replace(/\.zip$/i, '')
@@ -26,11 +25,6 @@ const storyIdFromFileName = (fileName: string) =>
 
 type TPending = { file: File; id: string; error: string };
 
-/**
- * "Import": pick a zip (as made by Export) and POST it under an id made from its file name. When
- * that fails — the id is taken (`409 exists`), or the zip is refused — a dialog shows why, with
- * the id to change and a retry. The imported story keeps the zip's password.
- */
 export const ImportStoryButton = ({ store }: { store: StoriesStore }) => {
     const input = useRef<HTMLInputElement>(null);
     const [pending, setPending] = useState<TPending | null>(null);
@@ -49,7 +43,7 @@ export const ImportStoryButton = ({ store }: { store: StoriesStore }) => {
                           'A story "%s" already exists. Import it under another id.',
                           id
                       )
-                    : (e as Error).message;
+                    : errorMessage(e);
             setPending({ file, id, error });
         } finally {
             setBusy(false);

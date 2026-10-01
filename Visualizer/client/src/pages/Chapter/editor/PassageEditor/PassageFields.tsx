@@ -4,7 +4,6 @@ import { ScreenFields } from './ScreenFields';
 import { TransitionFields } from './TransitionFields';
 import type { TFieldsProps } from './types';
 
-/** The draft's fields, by passage type. */
 export const PassageFields = observer(({ draft, ...rest }: TFieldsProps) => {
     if (draft.type === 'transition') {
         return <TransitionFields draft={draft} {...rest} />;

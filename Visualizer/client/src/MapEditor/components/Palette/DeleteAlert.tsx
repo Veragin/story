@@ -1,6 +1,6 @@
 import { Button, Tooltip } from '@mui/material';
 import { Row, spacingCss } from '@story/ui';
-import { MapStore } from '../../MapStore';
+import type { MapStore } from '../../MapStore';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { List } from './List';

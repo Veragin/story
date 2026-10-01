@@ -7,13 +7,12 @@ import {
 } from '@story/visualizer-protocol';
 import { quoteString } from '../../../components/codeLiterals';
 
-/** `DeltaTime.fromMin(10)` / `DeltaTime.fromS(90)` — the forms the server's writer emits too. */
+// same forms the server's writer emits
 export const deltaToCode = ({ seconds }: TDeltaTimeDto) =>
     seconds % 60 === 0 ? `DeltaTime.fromMin(${seconds / 60})` : `DeltaTime.fromS(${seconds})`;
 
 const maybe = <T>(value: TMaybeCode<T>, literal: (v: T) => string) => (isCode(value) ? value.code : literal(value));
 
-/** A literal `TLinkCost` as TS source, for switching the cost to code. */
 export const costToCode = (cost: TLinkCostDto): string => {
     if (isDeltaTime(cost)) return deltaToCode(cost);
     const parts: string[] = [];
@@ -31,7 +30,6 @@ export const costToCode = (cost: TLinkCostDto): string => {
 
 const DELTA_RE = /^DeltaTime\.from(Min|S|Hour)\(\s*(\d+(?:\.\d+)?)\s*\)$/;
 
-/** `DeltaTime.fromMin(10)` → `{ seconds: 600 }`; anything else stays code. */
 export const parseDelta = (code: string): TDeltaTimeDto | undefined => {
     const m = DELTA_RE.exec(code.trim());
     if (!m) return undefined;
@@ -39,10 +37,6 @@ export const parseDelta = (code: string): TDeltaTimeDto | undefined => {
     return { seconds: Number(m[2]) * factor };
 };
 
-/**
- * A duration for display: `1 min`, `2 h 5 min`, `1 d 3 h`, `1 min 30 s` (zero parts are left out,
- * `0 min` for none).
- */
 export const formatDelta = (seconds: number): string => {
     const units: [number, string][] = [
         [86400, 'd'],

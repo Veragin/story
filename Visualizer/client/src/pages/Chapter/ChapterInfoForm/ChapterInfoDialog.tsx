@@ -26,7 +26,6 @@ type TProps = {
     onClose: () => void;
 };
 
-/** The "edit chapter info" modal: `ChapterInfoForm` over `GET/PUT /chapters/:id`. */
 export const ChapterInfoDialog = observer(
     ({ chapterId, api, events = apiEvents, onClose }: TProps) => {
         const [store] = useState(
@@ -43,6 +42,9 @@ export const ChapterInfoDialog = observer(
         const close = () => {
             store.discard();
             onClose();
+        };
+        const save = async () => {
+            if (await store.save()) onClose();
         };
         const project = store.project;
         const title = store.chapter
@@ -129,9 +131,7 @@ export const ChapterInfoDialog = observer(
                             store.saving ||
                             store.conflict !== null
                         }
-                        onClick={() =>
-                            void store.save().then((ok) => ok && onClose())
-                        }
+                        onClick={() => void save()}
                     >
                         {store.saving ? _('Saving…') : _('Save')}
                     </Button>

@@ -1,7 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-// Central Material-UI theme definition
-const appTheme = createTheme({
+export const appTheme = createTheme({
     palette: {
         primary: {
             main: '#003566',
@@ -51,5 +50,3 @@ const appTheme = createTheme({
         },
     },
 });
-
-export default appTheme;

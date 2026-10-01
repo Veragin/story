@@ -15,7 +15,7 @@ const setup = (chapterId = 'village', saveDelayMs = 500) => {
     return { api, events, store };
 };
 
-/** Let the mock's `setTimeout(0)` event dispatch and the refetches it triggers settle. */
+// lets the mock's setTimeout(0) event dispatch and its refetches settle
 const settle = async () => {
     for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
 };

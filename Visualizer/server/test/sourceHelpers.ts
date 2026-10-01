@@ -9,42 +9,29 @@ import { readChapterPassages } from '../src/project/readers/passages';
 import { entitySources } from '../src/project/readers/entities';
 import { SourceProject } from '../src/project/SourceProject';
 import { chapterIds, registeredPassageIds } from '../src/project/story';
-import { login, makeTempProject } from './helpers';
+import { listenLocal, login, makeTempProject, requestJson } from './helpers';
 
 const run = promisify(execFile);
 
-// Response bodies in tests are poked at freely; the DTO types are checked by the server code.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TAny = any;
-
-export type TResponse<T = TAny> = { status: number; body: T };
-
-/** A server over a temp copy of the example story (`STORIES_ROOT` holding just `example`), plus small HTTP helpers. */
 export const startSourceApp = async () => {
     const { storiesRoot, project, cleanup } = await makeTempProject();
     const app: TApp = await createApp({ storiesRoot, watch: false });
-    const port = await app.listen(0, '127.0.0.1');
-    const cookie = await login(`http://127.0.0.1:${port}`);
+    const base = await listenLocal(app);
+    const cookie = await login(base);
     const events: TChangeEvent[] = [];
     (await app.story('example')).bus.subscribe((e) => events.push(e));
-    const call = async <T = TAny>(method: string, url: string, body?: unknown): Promise<TResponse<T>> => {
-        const res = await fetch(`http://127.0.0.1:${port}${url}`, {
-            method,
-            headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
-            body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        return { status: res.status, body: (await res.json()) as T };
-    };
+    const call = (method: string, url: string, body?: unknown) =>
+        requestJson(base + url, method, { body, headers: { cookie } });
     return {
         project,
         app,
+        base,
         events,
-        /** The `cookie` header value holding the example story's grant. */
         cookie,
-        get: <T = TAny>(url: string) => call<T>('GET', url),
-        post: <T = TAny>(url: string, body: unknown) => call<T>('POST', url, body),
-        put: <T = TAny>(url: string, body: unknown) => call<T>('PUT', url, body),
-        del: <T = TAny>(url: string, body: unknown) => call<T>('DELETE', url, body),
+        get: (url: string) => call('GET', url),
+        post: (url: string, body: unknown) => call('POST', url, body),
+        put: (url: string, body: unknown) => call('PUT', url, body),
+        del: (url: string, body: unknown) => call('DELETE', url, body),
         close: async () => {
             await app.close();
             await cleanup();
@@ -52,7 +39,7 @@ export const startSourceApp = async () => {
     };
 };
 
-/** Every file under `data/` and `types/` of a root → its content (for byte-identity checks). */
+/** Every file under `data/` and `types/` → its content. */
 export const snapshot = async (root: string): Promise<Map<string, string>> => {
     const out = new Map<string, string>();
     const walk = async (dir: string) => {
@@ -67,17 +54,12 @@ export const snapshot = async (root: string): Promise<Map<string, string>> => {
     return out;
 };
 
-/** The files whose content differs between two snapshots (added / removed / changed). */
 export const changedFiles = (a: Map<string, string>, b: Map<string, string>): string[] => {
     const keys = new Set([...a.keys(), ...b.keys()]);
     return [...keys].filter((k) => a.get(k) !== b.get(k)).sort();
 };
 
-/**
- * `tsc --noEmit` over the temp copy — the same check as the root `yarn typecheck`, with
- * `@story/shared` / `@story/core` resolved from the repo and `@story/types` / `@story/data` from
- * the copy. `data/test` (vitest) and `data/assets` (the favicon) are left out: neither is touched.
- */
+/** The root `yarn typecheck`, with `@story/types` / `@story/data` resolved from the copy. */
 export const tscTemp = async (root: string): Promise<{ ok: boolean; output: string }> => {
     const tsconfig = {
         extends: path.join(REPO_ROOT, 'tsconfig.base.json'),
@@ -111,18 +93,10 @@ export const tscTemp = async (root: string): Promise<{ ok: boolean; output: stri
     }
 };
 
-/** The dangling reference `data/test/story.test.ts` already knows about (`KNOWN_DANGLING_REFERENCES`). */
-export const KNOWN_DANGLING = ['village-thomas-cool -> village-thomas-'];
+/** Mirrors `KNOWN_DANGLING_REFERENCES` of `data/test/story.test.ts`. */
+const KNOWN_DANGLING = ['village-thomas-cool -> village-thomas-'];
 
-/**
- * `data/test/story.test.ts`-style reference checks, done statically on the files of a root (a
- * fresh `SourceProject` straight from disk, so it sees exactly what was written):
- *  - every passage file of every chapter is registered in its `<ch>.passages.ts` Record, and
- *    every Record key has a file;
- *  - every link / redirect / next target is a registered passage (except the known dangling one);
- *  - every character's `startPassageId` is registered.
- * Returns the list of problems (empty = fine).
- */
+/** `data/test/story.test.ts`'s reference checks, statically on a fresh `SourceProject` from disk. */
 export const storyProblems = async (root: string): Promise<string[]> => {
     const sp = new SourceProject(new ProjectRoot(root));
     await sp.sync();
