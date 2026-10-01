@@ -29,7 +29,7 @@ const storyTsconfig = (storyDir: string): Promise<string> => {
             },
         },
         include: ['data', 'types'],
-        exclude: ['data/test', 'data/assets', 'node_modules'],
+        exclude: ['data/__tests__', 'data/assets', 'node_modules'],
     };
     return formatJson(config);
 };

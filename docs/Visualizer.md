@@ -72,7 +72,7 @@ sp.run(async () => {
 Invariants to keep:
 
 - **Edit nodes, never rewrite files.** Only the fields in the (partial) body are touched, and only the smallest node that changed is replaced. Comments, other statements and properties the reader does not understand are kept. An unchanged write must leave the file byte-identical.
-    - The one intended exception is the source editor (`PUT /source/:owner/:id`, `project/writers/source.ts`): the author edits a chapter or passage file as text, so the whole text is replaced. It still goes through `session()` → `commit()` (prettier, the type check with `422` diagnostics by line, atomic write, one event: `chapter` or `passage`, `409 stale`). Its file is found by owner and id only (`chapterFile` / `findPassageFile` in `project/story.ts`) and must be a `.ts` under `data/` (not `data/test/` or `data/assets/`); a syntax error is answered with its own line and column before prettier runs.
+    - The one intended exception is the source editor (`PUT /source/:owner/:id`, `project/writers/source.ts`): the author edits a chapter or passage file as text, so the whole text is replaced. It still goes through `session()` → `commit()` (prettier, the type check with `422` diagnostics by line, atomic write, one event: `chapter` or `passage`, `409 stale`). Its file is found by owner and id only (`chapterFile` / `findPassageFile` in `project/story.ts`) and must be a `.ts` under `data/` (not `data/__tests__/` or `data/assets/`); a syntax error is answered with its own line and column before prettier runs.
 - **Code fields.** An initializer that is not a plain literal (`_('…')`, expressions, closures) is read as `TCode = { code: string }` and written back verbatim. Described functions (passage `execute`, link `onFinish`, body item `condition`, trigger `condition`/`action`) are always code and read as `TFunctionDto = { code, description? }` (schema `S.fn` in `values.ts`): `code` is the whole initializer, `description` the `/** … */` JSDoc directly above the property. Writers edit the comment as text (`jsDocEdit` / `applyTextEdits` in `ast.ts`, queued until the end of `applyPartial` because a text edit forgets the file's nodes); `*/` is escaped, several lines become ` * ` lines, and a description with empty code gets a default (`() => {}`, `true` for a body condition). A `{code}` must be exactly one expression.
 - **Versions.** Every DTO carries `version`, a content hash of its backing files: a chapter is `<ch>.chapter.ts` + `<ch>.passages.ts`, and a trigger is its chapter's `triggers.ts`. So creating or deleting a passage or trigger changes the chapter's version too.
 - **Always write through `tx.writeFile`** (or `commit`), never `sourceFile.save()`. That way the watcher does not echo the server's own writes back as hand edits.
@@ -84,7 +84,7 @@ Invariants to keep:
     - trigger: `triggers.ts` and the chapter's `triggers: [...]`
     - delete reverses create. It is refused with `409 referenced` while anything still points at the id, including references that would only appear as type errors.
 - Hand edits are picked up on the next request: `SourceProject` stats the story files and re-parses only the changed ones.
-- Tests never touch the real `stories/`: `test/helpers.ts#makeTempStories(ids)` copies the example story (`data/`, `types/`, `story.json`, `tsconfig.json`) under each id into a temp `STORIES_ROOT` (`makeTempProject()` is the one-story shorthand), `createApp({ storiesRoot, watch: false })` runs on it, and `login(base, storyId)` returns the cookie of a grant (the example's password is `example`).
+- Tests never touch the real `stories/`: `__tests__/helpers.ts#makeTempStories(ids)` copies the example story (`data/`, `types/`, `story.json`, `tsconfig.json`) under each id into a temp `STORIES_ROOT` (`makeTempProject()` is the one-story shorthand), `createApp({ storiesRoot, watch: false })` runs on it, and `login(base, storyId)` returns the cookie of a grant (the example's password is `example`).
 
 ### Story file conventions the server relies on
 
@@ -93,7 +93,7 @@ Invariants to keep:
 - Trigger ids are global (unique across chapters).
 - Location geometry lives in `data/locations/map.json`, not in `*.location.ts`.
 - **Story art is found by convention**: the image of a passage, character or npc is the `.png` next to its `.ts` file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.png`, `npcs/Franta.ts` → `npcs/Franta.png`). The owner's `image` field is only a text description. `project/images.ts` resolves the owner's file the way every other route does; deleting a passage or entity deletes its `.png`. `data/assets/story.png` is only the apps' favicon.
-- `data/test/story.test.ts` flags unreachable passages and characters without a start passage. Passages and characters created from the UI trip it until the author wires them up. That is intended; the server does not refuse those writes.
+- `data/__tests__/story.test.ts` flags unreachable passages and characters without a start passage. Passages and characters created from the UI trip it until the author wires them up. That is intended; the server does not refuse those writes.
 
 ## Client (`Visualizer/client/src/`)
 
@@ -102,7 +102,7 @@ api/        the only way to reach story data: `api` (httpApi or mockApi), `apiEv
             `STORY_ID` (story.ts, from `?story=`), `auth` (auth.ts, the 401 → password prompt flow)
 canvas/     the Canvas library: Scene, Camera, shapes, controllers (playground at #/_canvas)
 shell/      TopBar with tabs, hash router, <ControlBar> slot, modal host, keyboard helper
-pages/      Map, Timeline, Chapter, Entities (each has a MobX store + components + test/)
+pages/      Map, Timeline, Chapter, Entities (each has a MobX store + components + __tests__/)
 MapEditor/  hex tile renderer ported from mapMaker, used by the Map page
 components/ shared CodeField (literal ⇄ code toggle), FunctionInput (described function: code ⇄
             description), PlainTextField (text without a code toggle), TextField, ResizableSplitter,
@@ -132,7 +132,7 @@ theme.ts    the single dark MUI theme
     - `VertexEditController`: drag vertices, double-click an edge to insert one, right-click a vertex to remove it (minimum 3).
     - `LineTool`: places a line between two points.
 - Double-click fires the shape's `action`. With `scene.editable = false` nothing can be edited or selected.
-- In tests, jsdom has no `PointerEvent`: dispatch `MouseEvent`s named `pointerdown` etc. (`canvas/test/helpers.ts`). `canvas/test/setup.ts` stubs `getContext`.
+- In tests, jsdom has no `PointerEvent`: dispatch `MouseEvent`s named `pointerdown` etc. (`canvas/__tests__/helpers.ts`). `canvas/__tests__/setup.ts` stubs `getContext`.
 
 ## Landing page (`Visualizer/landing-page/src/`)
 

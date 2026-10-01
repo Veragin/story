@@ -75,7 +75,7 @@ export const tscTemp = async (root: string): Promise<{ ok: boolean; output: stri
             },
         },
         include: ['data', 'types'],
-        exclude: ['data/test', 'data/assets', 'node_modules'],
+        exclude: ['data/__tests__', 'data/assets', 'node_modules'],
     };
     const file = path.join(root, 'tsconfig.json');
     await writeFile(file, JSON.stringify(tsconfig, null, 4));
@@ -93,10 +93,10 @@ export const tscTemp = async (root: string): Promise<{ ok: boolean; output: stri
     }
 };
 
-/** Mirrors `KNOWN_DANGLING_REFERENCES` of `data/test/story.test.ts`. */
+/** Mirrors `KNOWN_DANGLING_REFERENCES` of `data/__tests__/story.test.ts`. */
 const KNOWN_DANGLING = ['village-thomas-cool -> village-thomas-'];
 
-/** `data/test/story.test.ts`'s reference checks, statically on a fresh `SourceProject` from disk. */
+/** `data/__tests__/story.test.ts`'s reference checks, statically on a fresh `SourceProject` from disk. */
 export const storyProblems = async (root: string): Promise<string[]> => {
     const sp = new SourceProject(new ProjectRoot(root));
     await sp.sync();

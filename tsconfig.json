@@ -52,10 +52,10 @@
         /* The Visualizer's wire contract and its node server (plan WP1). Same trade-off as the
            MultiEngine server above: node-land checked under the browser libs here, and strictly
            (no DOM, node types) by `Visualizer/server/tsconfig.json`. The server's tests are
-           package source like `core/test`, so they are listed too. */
+           package source like `core/__tests__`, so they are listed too. */
         "Visualizer/protocol/src",
         "Visualizer/server/src",
-        "Visualizer/server/test"
+        "Visualizer/server/__tests__"
     ],
     "exclude": [
         "node_modules",

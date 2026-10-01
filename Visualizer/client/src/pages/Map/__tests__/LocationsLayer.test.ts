@@ -9,7 +9,7 @@ import {
     flushFrames,
     installFrames,
     uninstallFrames,
-} from '../../../canvas/test/helpers';
+} from '../../../canvas/__tests__/helpers';
 import { LocationsLayer } from '../LocationsLayer';
 import { MapPageStore } from '../MapPageStore';
 

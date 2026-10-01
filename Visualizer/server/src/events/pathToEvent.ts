@@ -24,7 +24,7 @@ export const pathToResource = (relPath: string): TResourceRef | null => {
     }
 
     const [, area] = parts;
-    if (area === 'test' || area === 'assets') return null;
+    if (area === '__tests__' || area === 'assets') return null;
 
     if (area === 'chapters') {
         if (parts.length === 3) {

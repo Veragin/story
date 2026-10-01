@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DAY_S, HOUR_S, TimeManager } from '@story/shared';
 import { ApiError, ApiEvents, createMockApi, type TMockApi } from '../../../api';
-import { click, createCanvas, drag, fire, installFrames, uninstallFrames } from '../../../canvas/test/helpers';
+import { click, createCanvas, drag, fire, installFrames, uninstallFrames } from '../../../canvas/__tests__/helpers';
 import { TimelineView } from '../canvas/TimelineView';
 import { STRIP_HEIGHT } from '../canvas/TimeStripShape';
 import { TimelineStore, type TTimelineDeps } from '../store/TimelineStore';

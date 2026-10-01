@@ -18,7 +18,7 @@
         }
     },
     "include": ["data", "types"],
-    /* `data/test` is the example's vitest suite (the root program checks it, with node types);
+    /* `data/__tests__` is the example's vitest suite (the root program checks it, with node types);
        `data/assets` is art. Neither is part of the story's type universe. */
-    "exclude": ["data/test", "data/assets", "node_modules"]
+    "exclude": ["data/__tests__", "data/assets", "node_modules"]
 }

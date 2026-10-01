@@ -13,7 +13,7 @@ import {
     installFrames,
     key,
     uninstallFrames,
-} from '../test/helpers';
+} from '../__tests__/helpers';
 import { LineTool } from './LineTool';
 import { SelectionController } from './SelectionController';
 import { VertexEditController } from './VertexEditController';

@@ -155,7 +155,7 @@ describe('Engine save/load', () => {
             // This is *not* a reason to run the `core` tests under jsdom — a DOM is not the
             // dependency, one browser storage API is. The fix is an injected save-store port
             // (same shape as `setToastHandler`); until then the test suite stubs the global
-            // in `core/test/setup.ts` and this test states the constraint out loud.
+            // in `core/__tests__/setup.ts` and this test states the constraint out loud.
             vi.unstubAllGlobals();
             expect('localStorage' in globalThis).toBe(false);
 

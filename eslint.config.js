@@ -138,7 +138,9 @@ const templateZones = [
             pkg('ui'),
             tree('stories'),
             ...services(SERVICES.filter((s) => s !== 'Visualizer')),
-            ...['client', 'protocol', 'landing-page', 'server/src', 'server/test'].map((p) => tree(`Visualizer/${p}`)),
+            ...['client', 'protocol', 'landing-page', 'server/src', 'server/__tests__'].map((p) =>
+                tree(`Visualizer/${p}`)
+            ),
         ],
         'The story template is a story: it may import only @story/shared, @story/core and its own types/ and data/ — no @story/ui, no service, no other story.'
     ),

@@ -8,7 +8,7 @@ import {
     installFrames,
     pendingFrames,
     uninstallFrames,
-} from '../../canvas/test/helpers';
+} from '../../canvas/__tests__/helpers';
 import { createDefaultMapData } from '../createDefaultMapData';
 import { MapStore, type IMapHost } from '../MapStore';
 import { computeTileIndex, computeTilePos, findNeighbor, mapWorldBounds } from '../MapEngine/utils';

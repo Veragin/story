@@ -131,7 +131,7 @@ export class SourceProject {
     }
 
     private excludedDirs() {
-        return [path.join(this.root.dataDir, 'test'), path.join(this.root.dataDir, 'assets')];
+        return [path.join(this.root.dataDir, '__tests__'), path.join(this.root.dataDir, 'assets')];
     }
 
     isStoryFile(abs: string) {

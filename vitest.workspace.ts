@@ -6,8 +6,8 @@ export default defineWorkspace([
             name: 'core',
             root: './core',
             environment: 'node',
-            include: ['test/**/*.test.ts'],
-            setupFiles: ['./test/setup.ts'],
+            include: ['__tests__/**/*.test.ts'],
+            setupFiles: ['./__tests__/setup.ts'],
         },
     },
     {
@@ -15,7 +15,7 @@ export default defineWorkspace([
             name: 'data',
             root: './stories/example/data',
             environment: 'node',
-            include: ['test/**/*.test.ts'],
+            include: ['__tests__/**/*.test.ts'],
         },
     },
     {
@@ -23,7 +23,7 @@ export default defineWorkspace([
             name: 'visualizer-server',
             root: './Visualizer/server',
             environment: 'node',
-            include: ['test/**/*.test.ts'],
+            include: ['__tests__/**/*.test.ts'],
         },
     },
     {
@@ -31,7 +31,7 @@ export default defineWorkspace([
             name: 'single-engine',
             root: './SingleEngine',
             environment: 'node',
-            include: ['vite/test/**/*.test.ts'],
+            include: ['vite/__tests__/**/*.test.ts'],
         },
     },
     {
@@ -40,7 +40,7 @@ export default defineWorkspace([
             root: './Visualizer/client',
             environment: 'jsdom',
             include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-            setupFiles: ['./src/canvas/test/setup.ts'],
+            setupFiles: ['./src/canvas/__tests__/setup.ts'],
         },
     },
     {
@@ -49,7 +49,7 @@ export default defineWorkspace([
             root: './Visualizer/landing-page',
             environment: 'jsdom',
             include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-            setupFiles: ['./src/test/setup.ts'],
+            setupFiles: ['./src/__tests__/setup.ts'],
         },
     },
 ]);

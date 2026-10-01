@@ -189,7 +189,7 @@ The page never reloads because the story changed. `data/` is not in Vite's modul
     - Arrays are edited element by element when the length is unchanged. Otherwise the common prefix is kept, so inserting in the middle rewrites the elements after it from the DTO, and comments inside those elements are lost.
     - A `body`, `links` or `timeRange` that is code in the source can be edited as code, but not turned back into a structured list.
     - Moving an item to another type file (for example value → food) is regenerated from the DTO. The Entities page does not offer it.
-    - A passage or character created from the UI is unreachable, or has no start passage, until the author wires it up, so `data/test/story.test.ts` flags it until then. That is intended.
+    - A passage or character created from the UI is unreachable, or has no start passage, until the author wires it up, so `data/__tests__/story.test.ts` flags it until then. That is intended.
     - `SourceProject` stats every story file per request. Switch it to the watcher's file list if the story grows large.
 - **UI**
     - No multi-select or box-select, and no undo.

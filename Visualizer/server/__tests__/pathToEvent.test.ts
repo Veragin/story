@@ -43,7 +43,7 @@ describe('pathToResource', () => {
     });
 
     it.each([
-        'data/test/story.test.ts',
+        'data/__tests__/story.test.ts',
         'data/assets/story.png',
         'data/chapters/village/thomas.passages/intro.png',
         'data/characters/thomas.png',
