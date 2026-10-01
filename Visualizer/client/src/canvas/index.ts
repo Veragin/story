@@ -1,8 +1,3 @@
-/**
- * Canvas library (Visualizer plan WP3): a scene of shapes over a pan/zoom camera, with
- * selection, dragging, rect resize, polygon vertex editing and a line tool. Framework-free;
- * React pages create a `Scene` in an effect and `destroy()` it on cleanup.
- */
 export * from './types';
 export * as geometry from './geometry';
 export { Camera, type TCameraListener, type TCameraOptions, type TCameraState } from './Camera';

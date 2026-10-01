@@ -5,10 +5,9 @@ import { itemInfo, register } from '@story/data';
 import { newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
 import { installLocalStorageStub } from './support/localStorage';
 
-/** The key `Engine` persists the whole world state under. Private to `Engine`, pinned here. */
+// private to `Engine`, pinned here
 const LOCAL_STORAGE_KEY = `worldState:${TEST_STORY_ID}`;
 
-/** Plays one turn so there is something worth saving. */
 const playOneTurn = async () => {
     const session = newSession();
     await session.e.processor.continue();
@@ -21,14 +20,6 @@ afterEach(() => {
     setToastHandler(() => {});
 });
 
-/**
- * Save/load is `Engine`'s only side channel to the outside world, and it is wired straight to
- * the browser's `localStorage` global — see `./support/localStorage.ts`. The point of this
- * file is to pin the *observable* behaviour of that channel (which key, what shape, what a new
- * session does with it, what it silently loses) so that the proper fix — injecting a save-store
- * port into `Engine`, the way `@story/shared`'s `setToastHandler` already does for toasts —
- * can be made without guessing at what used to happen.
- */
 describe('Engine save/load', () => {
     it('writes the whole world state under a single key', async () => {
         const { s, e } = await playOneTurn();
@@ -96,8 +87,7 @@ describe('Engine save/load', () => {
         first.e.saveStateToLocalStorage();
 
         const second = newSession();
-        // `Engine` loads the save *before* constructing `History`, which is what lets the
-        // resumed session pick up the saved turn instead of the character's start passage.
+        // the save is loaded before `History` is built, so the saved turn wins
         expect(second.e.history.data.thomas![0]).toMatchObject({ passageId: 'village-thomas-forest' });
 
         await second.e.handleAutoStart();
@@ -108,8 +98,7 @@ describe('Engine save/load', () => {
         const first = await playOneTurn();
         first.e.saveStateToLocalStorage();
 
-        // The apps hand `s` to a React context at boot and keep that reference forever; if
-        // loading replaced the object, every consumer would be looking at the old world.
+        // apps keep the `s` reference forever, so loading must not replace it
         const second = createWorldState(register, itemInfo, TEST_STORY_ID);
         expect(second.s.time.s).toBe(first.s.time.s);
 
@@ -143,17 +132,7 @@ describe('Engine save/load', () => {
 
     describe('known defect: a restored `ref` is dead data, not the register entry', () => {
         it('loses the callbacks on every ref it round-trips through JSON', async () => {
-            // `buildWorldState` sets `ref` to the live register object; `JSON.stringify` keeps
-            // its data and drops its functions, and `loadWorldState` has no way to reattach
-            // them. `Processor`'s constructor then snapshots `chapter.ref` out of the *loaded*
-            // state, so a resumed session holds triggers whose `condition`/`action` are
-            // `undefined` — and `Processor.continue` calls `trigger.condition()` as soon as a
-            // trigger's time falls inside a played turn. A resumed game therefore crashes
-            // where a fresh one does not, which is the worst possible place for it.
-            //
-            // The fix is to re-point `ref` at the register after loading (or to stop
-            // serialising it at all); both are `core` source changes and out of scope here.
-            // If this test goes red, the defect is fixed — delete the block.
+            // Pins a known defect: refs lose their callbacks through JSON, so resumed triggers crash; delete when fixed.
             const first = await playOneTurn();
             first.e.saveStateToLocalStorage();
 

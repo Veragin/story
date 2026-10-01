@@ -1,5 +1,5 @@
 import { parsePassageId } from '../parsePassageId';
-import { Time, TPassageId } from '@story/shared';
+import { assertNotNullish, keysOf, Time, TPassageId } from '@story/shared';
 import { TChapterCharacterPassageId, TChapterId, TCharacterId } from '@story/types';
 import type { TWorldState } from '@story/data';
 import type { Engine } from './Engine';
@@ -13,7 +13,7 @@ export class History {
         private s: TWorldState,
         private e: Engine
     ) {
-        this.characterList = Object.keys(this.e.storyModule.register.characters) as TCharacterId[];
+        this.characterList = keysOf(this.e.storyModule.register.characters);
         this.characterList.forEach((char) => {
             this.data[char] = [this.prepareHistory(char)];
         });
@@ -88,8 +88,9 @@ export class History {
     };
 
     private getLastHistoryItemOfCharacter = (char: TCharacterId) => {
-        const mainData = this.data[char]!; // initialized in constructor
-        return mainData[mainData.length - 1];
+        const items = this.data[char];
+        assertNotNullish(items, `No history for ${char}`);
+        return items[items.length - 1];
     };
 }
 
@@ -98,7 +99,7 @@ export type THistoryItem = THistoryTurnItem | THistoryEndItem;
 export type THistoryTurnItem = {
     passageId: TPassageId;
     time: Time;
-    onStart?: () => void; // called when passage is starts
+    onStart?: () => void;
 };
 
 type THistoryEndItem = {

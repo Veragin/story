@@ -4,12 +4,6 @@ import type { TPassageId } from '@story/shared';
 import { getWholePassageId, type TChapterId, type TChapterPassage } from '@story/types';
 import { itemInfo, register, type TWorldState } from '@story/data';
 
-/**
- * `parsePassageId` is the one place that knows a passage id is three dash-separated segments,
- * and `getWholePassageId` is the one place that builds one. They are inverses and nothing
- * checks that: `History`, `Story` and `Processor` all route on the parsed halves, so a change
- * to either side silently sends turns to the wrong character or chapter.
- */
 describe('parsePassageId', () => {
     it('splits a passage id into chapter, character and local id', () => {
         expect(parsePassageId('village-thomas-intro')).toEqual({
@@ -45,8 +39,7 @@ describe('parsePassageId', () => {
             >;
 
             for (const [key, passageFn] of Object.entries(passages)) {
-                // No passage reads the engine while it is being built — it is there for
-                // `onFinish` callbacks — so a marker stands in for it.
+                // no passage reads the engine while being built
                 const passage = passageFn(s, { __notAnEngine: true } as unknown as Engine);
                 expect(getWholePassageId(passage)).toBe(key);
                 expect(parsePassageId(key as TPassageId)).toEqual({

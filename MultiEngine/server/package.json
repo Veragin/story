@@ -3,12 +3,11 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
-    "comment:scripts": "No build step and no `dist/` (REFACTOR_PLAN §7): the internal packages are consumed as TypeScript source, so the server runs them through `tsx`. `tsx` is declared here as well as at the root because Yarn 4 only puts a workspace's *own* dependencies' binaries on a script's PATH — without it `yarn workspace @story/multi-engine-server dev` (and the root `yarn dev`) answers `command not found: tsx`. Same as `Visualizer/server`.",
+    "comment:scripts": "tsx is declared locally: Yarn 4 only puts a workspace's own dependencies' binaries on PATH.",
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "start": "tsx src/index.ts"
     },
-    "comment:dependencies": "Only what `src/index.ts` actually imports today. `@story/core` for `buildWorldState` and `@story/data` for the story register — the scaffold really does build this story's `TWorldState` at boot, which is the one piece of §3's \"server owns TWorldState\" that exists so far. Everything HTTP comes from `node:http`; there is deliberately no `ws` dependency (see the note in `src/index.ts`).",
     "dependencies": {
         "@story/core": "workspace:^",
         "@story/data": "workspace:^"

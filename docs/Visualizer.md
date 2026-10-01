@@ -257,7 +257,6 @@ The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/proto
 
 - A partial `PUT` cannot remove an optional field. The server already accepts `null` for a few fields (character `description`/`startPassageId`, location `sublocations`/`mapId`, linear `nextPassageId`), but the protocol types do not allow it yet.
 - `shell/router.ts` defines its own `ENTITY_KINDS`. Its order is the menu order, which differs from the protocol's.
-- `server/src/routes/stub.ts` (`notImplemented`) has no callers left.
 - `client/index.html` links its favicon from `stories/example/data/assets`.
 - Images are not resources of the event feed: an upload emits no event, and a `.png` added or changed by hand shows up the next time the form or panel is opened.
 - Uploads are PNG only (the file picker offers `image/png`, the server checks the signature). There is no conversion, since the server has no image library, and no "remove image".

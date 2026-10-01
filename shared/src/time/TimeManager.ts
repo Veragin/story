@@ -6,7 +6,6 @@ export class TimeManager {
 
     renderTime = (time: Time, format: TTimeRenderFormat) => {
         const { year, month, day, hour, min, sec } = this.parseTime(time);
-        const minText = String(min).length < 2 ? `0${min}` : min;
 
         const displayYear = year + this.startYear;
 
@@ -14,16 +13,15 @@ export class TimeManager {
             return `${MONTH_NAME[month]} ${displayYear}`;
         }
 
-        let res = `${hour}:${minText}`;
+        let res = `${hour}:${pad2(min)}`;
         if (format.startsWith('date')) {
             res = `${day + 1}.${month + 1}.${displayYear}`;
         }
         if (format === 'dateTime' || format === 'dateTimeSec') {
-            res = `${res} ${hour}:${minText}`;
+            res = `${res} ${hour}:${pad2(min)}`;
         }
         if (format === 'dateTimeSec' || format === 'timeSec') {
-            const secText = String(sec).length < 2 ? `0${sec}` : sec;
-            res += `:${secText}`;
+            res += `:${pad2(sec)}`;
         }
 
         return res;
@@ -31,9 +29,8 @@ export class TimeManager {
 
     renderDeltaTime = (time: DeltaTime, withSeconds?: boolean) => {
         const { month, day, hour, min, sec } = this.parseTime(time);
-        const minText = String(min).length < 2 ? `0${min}` : min;
 
-        let res = `${hour}:${minText}`;
+        let res = `${hour}:${pad2(min)}`;
         if (day > 0 || month > 0) {
             res = `${day} day${day === 1 ? '' : 's'} ${res}`;
         }
@@ -41,8 +38,7 @@ export class TimeManager {
             res = `${month} month${month === 1 ? '' : 's'} ${res}`;
         }
         if (withSeconds) {
-            const secText = String(sec).length < 2 ? `0${sec}` : sec;
-            res += `:${secText}`;
+            res += `:${pad2(sec)}`;
         }
 
         return res;
@@ -76,3 +72,5 @@ export class TimeManager {
 }
 
 export type TTimeRenderFormat = 'month' | 'date' | 'dateTime' | 'dateTimeSec' | 'time' | 'timeSec';
+
+const pad2 = (n: number) => String(n).padStart(2, '0');

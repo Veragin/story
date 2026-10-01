@@ -3,7 +3,7 @@
     "private": true,
     "version": "0.0.0",
     "type": "module",
-    "comment:workspaces": "The example story's two folders are still the `@story/data` / `@story/types` workspaces after the multiple-stories move to `stories/example/` (phase 2): the package names did not change, so `core`'s tests, MultiEngine and the engine typecheck keep building against the example. Other stories under `stories/` are deliberately NOT workspaces — they are created at runtime, and a workspace would need a `yarn install`; each resolves `@story/types` / `@story/data` through its own `stories/<id>/tsconfig.json` instead.",
+    "comment:workspaces": "Only the example story is a workspace; runtime-created stories resolve @story/* through their own tsconfig.json.",
     "workspaces": [
         "stories/example/types",
         "stories/example/data",
@@ -14,9 +14,8 @@
         "Visualizer/*",
         "MultiEngine/*"
     ],
-    "comment:scripts": "Every service is a workspace with its own config, so every service script here is a passthrough and the root has no Vite of its own (§7). `dev:multi-engine-server` has no `build` sibling on purpose: the node server runs its TypeScript directly under `tsx`, no build step and no `dist/` (§7). `test`/`test:watch` are Vitest and replace the mocha scripts Phase 0 deleted; the runner is at the root with one `vitest.workspace.ts` listing the packages that have tests (§7), so there is no per-workspace `test` passthrough to add.",
-    "comment:scripts:dev": "`dev` is Yarn 4's own `workspaces foreach` rather than `concurrently`: the root has no runtime deps and this keeps it that way (§7). `-A` selects every workspace and yarn skips the ones with no `dev` script (types, data, shared, ui, core, visualizer-protocol), which leaves exactly the six services; `-p` runs them at once, `-i` interleaves their output live instead of buffering it until exit (a dev server never exits, so without `-i` you would see nothing), `-v` prefixes every line with its workspace name, and `--jobs unlimited` lifts the default cap of ~half the core count so a small machine still starts all six. `--exclude story-root` is load-bearing: `-A` also selects this workspace, and this very script is its `dev`. Yarn does guard against that (it skips a workspace when the script it is about to run is the one already executing), but the guard keys off `npm_lifecycle_event`, so it holds for `yarn dev` and silently does not for anyone who pastes the foreach line into a shell — where it forks a second copy of all six services, each failing with `EADDRINUSE`. Naming the exclusion makes the invariant independent of how the command was reached. Deliberately NOT `-t/--topological`: that means \"wait for my dependencies to finish\", which deadlocks the day someone gives `core` or `data` a watch-mode `dev` script. Nothing in the run set depends on anything else in it today, so `-t` would be a no-op that only stores up that failure. Ctrl-C reaches the children because yarn runs them in its process group; SIGTERM to the yarn process tears them down too (both verified in Phase 11, no orphans).",
-    "comment:scripts:typecheck": "`typecheck` is the one-program check of the whole graph (`tsconfig.json`, which includes the example story through the `@story/*` paths), the node-side configs (`tsconfig.node.json`), and then every story on its own: `scripts/typecheck-stories.mjs` runs `tsc --noEmit -p stories/<id>/tsconfig.json` for each story folder, because each story has its own type universe and cannot share the root program's single `@story/types` binding.",
+    "comment:scripts:dev": "`--exclude story-root` stops a pasted foreach line from re-running this script (yarn's self-guard keys off npm_lifecycle_event). No `-t`: it would deadlock once a dependency gains a watch-mode dev script.",
+    "comment:scripts:typecheck": "Each story has its own @story/types universe, so stories are typechecked one by one.",
     "scripts": {
         "dev": "yarn workspaces foreach -Apvi --jobs unlimited --exclude story-root run dev",
         "dev:engine": "yarn workspace @story/single-engine dev",
@@ -34,7 +33,7 @@
         "pretty": "prettier . --write",
         "pretty:check": "prettier . --check"
     },
-    "comment:dependencies": "A real workspace root: tooling only (§7). Every runtime dependency now sits in the workspace that imports it. `react`/`react-dom` are not listed here — they are declared by the two apps at an exact version and pinned once through `resolutions` below, which is what keeps a single copy on disk (§10 risk 3). Deleted in Phase 8 rather than moved: `d3`, `@types/d3`, `jlouvain`, `ngraph.forcelayout`, `ngraph.graph` — zero imports anywhere in the repo, they predate the refactor; and `vite-tsconfig-paths`, whose last consumer was the deleted root Vite config. `vitest`/`@vitest/ui` are root-only by design — one runner over `vitest.workspace.ts`, no per-package copy (§7) — and they are the reason `jsdom`/`@types/jsdom` were kept back in Phase 0: Vitest uses jsdom as its DOM environment, for the React packages that will get tests later. `mocha`, `@types/mocha`, `sinon`, `@types/sinon` and `ts-node` are gone for good; doubles are `vi.fn`/`vi.spyOn` (§7).",
+    "comment:dependencies": "jsdom has no direct import: it is Vitest's DOM environment.",
     "devDependencies": {
         "@eslint/js": "^9.9.0",
         "@types/jsdom": "^21.1.7",
@@ -53,7 +52,7 @@
         "typescript-eslint": "^8.0.1",
         "vitest": "^3.2.4"
     },
-    "comment:resolutions": "`react`/`react-dom` are pinned per §10 risk 3 — two copies break hooks silently. `vite` is pinned for the same class of reason: Vitest declares `vite` as a plain dependency with a wide range (`^5 || ^6 || ^7`), so an unpinned install nests a second, newer Vite under `vitest/` and the test runner then transforms the source with a different Vite than the one that builds the apps. The repo is a Vite 5 repo (§7, every app on `vite@^5.4.9`); this keeps the runner on it.",
+    "comment:resolutions": "A second React copy breaks hooks; vite is pinned so Vitest does not nest a newer Vite than the apps build with.",
     "resolutions": {
         "react": "18.3.1",
         "react-dom": "18.3.1",

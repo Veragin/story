@@ -6,15 +6,11 @@ import type { TWorldState } from '@story/data';
 import type { TChapterId, TChapterPassage } from '@story/types';
 import { newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
 
-/** `Array.prototype.at` is ES2022; `tsconfig.base.json` targets ES2020 libs. */
+// `Array.prototype.at` is ES2022; the libs target ES2020
 const last = <T>(items: T[]): T => items[items.length - 1];
 
 type TPassageFn = (s: TWorldState, e: Engine) => TChapterPassage<TChapterId>;
 
-/**
- * A play session over the real story with extra passage functions registered in the village
- * chapter (keys like `village-thomas-probe`), so a test can author exactly the passage it needs.
- */
 const sessionWith = (extra: Record<string, TPassageFn>) => {
     const passages = {
         ...register.passages,
@@ -26,7 +22,6 @@ const sessionWith = (extra: Record<string, TPassageFn>) => {
     return createWorldState({ ...register, passages } as typeof register, itemInfo, TEST_STORY_ID);
 };
 
-/** A screen passage of Thomas in the village, with one link per `links` entry. */
 const screen = (
     id: string,
     fields: Partial<Extract<TChapterPassage<'village'>, { type: 'screen' }>>
@@ -41,21 +36,12 @@ const screen = (
     ...fields,
 });
 
-/**
- * Ends Annie's story and plays Thomas's first turn, so no NPC is ever auto-played. That keeps
- * the tests independent of how the chapters' time ranges interleave.
- */
+// keeps tests independent of how the chapters' time ranges interleave
 const soloThomas = async (e: Engine) => {
     e.history.addEnd('annie', 'NO_ACTIONS');
     await e.processor.continue();
 };
 
-/**
- * The turn loop: `History` decides *whose* turn is next, `Processor` resolves the passage and
- * applies its triggers, `Story` books the cost and the clock. Phases 7 and 8 verified
- * `village-thomas-intro → village-thomas-forest` by hand, in a browser, against the real
- * story. This is that walkthrough, automated.
- */
 describe('Engine turn loop', () => {
     it('starts every registered character on their startPassageId at their chapter start', () => {
         const { e } = newSession();
@@ -105,7 +91,6 @@ describe('Engine turn loop', () => {
         const forest = await waitForPassage(e, 'village-thomas-forest');
 
         expect(forest.title).toBe('Forest');
-        // The link costs 10 minutes, and the clock is only allowed to move by that much.
         expect(s.time.s).toBe(start + DeltaTime.fromMin(10).s);
         expect(s.time).toBeInstanceOf(Time);
     });
@@ -144,9 +129,7 @@ describe('Engine turn loop', () => {
         e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
         await waitForPassage(e, 'village-thomas-forest');
 
-        // Annie is not the main character: `Processor.autoProcess` picks a link for her and
-        // the loop only hands control back once she has caught up with Thomas's clock. Her
-        // passages never reach the store — only the main character's do.
+        // Annie is auto-played; only the main character's passages reach the store
         const annie = e.history.data.annie!;
         expect(annie.length).toBeGreaterThan(1);
         expect(annie.map((h) => ('passageId' in h ? h.passageId : h.reason))).toContain('kingdom-annie-palace');
@@ -166,21 +149,15 @@ describe('Engine turn loop', () => {
 
     it('fires a chapter trigger whose time falls inside the turn being played', async () => {
         const { s, e } = newSession();
-        // Not `register.chapters.village.triggers[0]`: `Engine`'s constructor runs
-        // `makeAutoObservable(s)`, and mobx's deep conversion *copies* every nested plain
-        // object — so `s.chapters.village.ref` is an observable clone of the authored chapter,
-        // and `Processor` snapshots its triggers from that clone, not from the register.
+        // `makeAutoObservable` deep-copies `s`, so `Processor` reads triggers from the clone
         const trigger = s.chapters.village.ref.triggers[0];
 
-        // Plain assignment rather than `vi.spyOn`: redefining a property on a mobx proxy
-        // tears its administration object off. Assigning through the proxy is a normal
-        // observable write and leaves the register untouched, since this is already a clone.
+        // `vi.spyOn` would tear the mobx proxy's administration off
         const action = vi.fn();
         const condition = vi.fn(() => true);
         trigger.action = action;
         trigger.condition = condition;
-        // The authored trigger is dated `1.12 0:0` — eleven months after the chapter closes,
-        // so it can never fire as written. Aim it inside the turn that is about to be played.
+        // the authored trigger can never fire; aim it inside the coming turn
         trigger.time = Time.fromS(s.time.s + DeltaTime.fromMin(5).s);
 
         await e.processor.continue();
@@ -326,10 +303,7 @@ describe('Engine turn loop', () => {
 
     describe('an auto-played turn', () => {
         it('starts the loop once, so the next passage and its callbacks run once per entry', async () => {
-            // Regression: `Processor.continue` used to end the non-main-character branch with
-            // `void this.continue()` on top of the one `autoProcess` → `Story.goToPassage`
-            // already starts. Every NPC turn spawned a second, parallel loop and the next
-            // passage (its `execute`, the link's `onFinish`) ran twice.
+            // Regression: every NPC turn used to start a second, parallel loop.
             const probeExecute = vi.fn();
             const restExecute = vi.fn();
             const onFinish = vi.fn();

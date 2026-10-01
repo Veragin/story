@@ -1,6 +1,6 @@
 import type { TWorldState } from '@story/data';
 import { Inventory } from './Inventory';
-import { TimeManager } from '@story/shared';
+import { keysOf, showToast, TimeManager } from '@story/shared';
 import { TChapterId, TChapterPassage } from '@story/types';
 import { createDummyPassage } from './const';
 import { History } from './History';
@@ -9,7 +9,6 @@ import { Story } from './Story';
 import { Store } from './Store';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { loadWorldState } from '../worldState/loadWorldState';
-import { showToast } from '@story/shared';
 import type { TStoryModule } from '../worldState/buildWorldState';
 
 export class Engine {
@@ -31,10 +30,7 @@ export class Engine {
 
         this.loadStateFromLocalStorage();
 
-        this.activePassage = createDummyPassage(
-            Object.keys(storyModule.register.chapters)[0] as TChapterId,
-            s.mainCharacterId
-        );
+        this.activePassage = createDummyPassage(keysOf(storyModule.register.chapters)[0], s.mainCharacterId);
 
         this.timeManager = new TimeManager();
         this.store = new Store(s);
@@ -68,16 +64,15 @@ export class Engine {
         }
     };
 
-    /** One save per story: `worldState:<storyId>`. */
     private get localStorageKey() {
         return `${LOCAL_STORAGE_KEY_PREFIX}:${this.storyId}`;
     }
 
     private setWorldState = (state: string) => {
         const worldState = loadWorldState(state);
-        // we have to keep the reference to the object
+        // assigned key by key: observers hold the original object
         runInAction(() => {
-            (Object.keys(worldState) as (keyof TWorldState)[]).forEach((key) => {
+            keysOf(worldState).forEach((key) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 this.s[key] = worldState[key] as any;
             });

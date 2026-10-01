@@ -3,14 +3,7 @@ import { DeltaTime } from '@story/shared';
 import { itemInfo } from '@story/data';
 import { newSession, waitForPassage } from './support/engine';
 
-/**
- * Inventory is the only place item *amounts* are written, and every write is silent: nothing
- * validates that an item exists, that an amount is positive, or that the character being
- * charged is the one the caller meant. The character defaults to
- * `engine.activePassage.characterId`, which before the first turn is the dummy passage's —
- * the main character, Thomas. These tests state that default explicitly so a change to
- * `createDummyPassage` shows up here rather than as items appearing in the wrong bag.
- */
+// before the first turn the default character is the dummy passage's: Thomas
 describe('Inventory', () => {
     it('reads the active character"s bag by default', () => {
         const { s, e } = newSession();
@@ -118,15 +111,7 @@ describe('Inventory', () => {
 
     describe('known defect: addItem ignores its charId when the item is new', () => {
         it('puts a brand-new item in the active character"s bag whoever was named', () => {
-            // `Inventory.addItem` looks the item up with the `charId` it was given, but pushes
-            // with `this.getInventory()` — no argument, so the *default* character. Stacking
-            // onto an item the named character already holds works; giving them a new one
-            // does not. Nothing in the story hits this today (every `addItem` call site uses
-            // the default), which is exactly why it would stay hidden.
-            //
-            // Pinned, not fixed: the fix is `this.getInventory(charId).push(...)` in
-            // `core/src/engine/Inventory.ts`, a source change outside this phase. If this test
-            // goes red, the defect is fixed — delete the block.
+            // Pins a known defect: a new item goes to the default character's bag; delete when fixed.
             const { s, e } = newSession();
 
             e.inventory.addItem({ id: 'axe' }, 'annie');

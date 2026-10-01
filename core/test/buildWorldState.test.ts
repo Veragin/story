@@ -4,15 +4,7 @@ import { itemInfo, register } from '@story/data';
 import { Time } from '@story/shared';
 import { TEST_STORY_ID } from './support/engine';
 
-/**
- * `buildWorldState` turns the authored register into the pristine world state. It is a loop
- * per register slice, which is exactly the shape that rots quietly: a slice whose loop is
- * simply absent fails nothing until a passage reads `s.<slice>.<id>`. The first test below is
- * the regression lock for that class of bug — it is driven off `register`'s own keys, so a
- * *new* slice that nobody wired up fails here too.
- */
 describe('buildWorldState', () => {
-    /** Every register slice that the world state is expected to mirror one-for-one. */
     const MIRRORED_SLICES = ['characters', 'npcs', 'chapters', 'locations'] as const;
 
     it('populates every register slice, key for key', () => {
@@ -48,9 +40,7 @@ describe('buildWorldState', () => {
     it('merges itemInfo into every starting inventory entry', () => {
         const s = buildWorldState(register, itemInfo);
 
-        // `init.inventory` is `TItemPartial` — `{ id, amount }` and nothing else. The static
-        // per-item data (name/type/damage) has to come from `itemInfo` or the UI renders a
-        // nameless item and `Story`'s "You have spent: …" toast prints `undefined`.
+        // static item data (name, …) must come from `itemInfo`
         expect(s.characters.thomas.inventory).toEqual([{ ...itemInfo.bow, id: 'bow', amount: 1 }]);
         expect(s.characters.annie.inventory).toEqual([{ ...itemInfo.berries, id: 'berries', amount: 10 }]);
 
@@ -86,8 +76,7 @@ describe('buildWorldState', () => {
     });
 
     it('builds a state with no Engine attached — no save is read, nothing is observable', () => {
-        // The Visualizer renders passage bodies against this state and must see the story as
-        // authored, not as the last player left it. Seed a save and prove it is ignored.
+        // the Visualizer must see the story as authored, so a seeded save is ignored
         localStorage.setItem(`worldState:${TEST_STORY_ID}`, JSON.stringify({ mainCharacterId: 'annie' }));
 
         const s = buildWorldState(register, itemInfo);
@@ -97,15 +86,7 @@ describe('buildWorldState', () => {
 
     describe('known defect: init is copied one level deep', () => {
         it('shares nested authored objects between the register and every built state', () => {
-            // `{ ...register.chapters[id].init }` is a shallow spread, so anything nested in
-            // `init` is the *same object* in the register, in a Visualizer preview state and
-            // in a live play session. Writing to it from one leaks into the others and, worse,
-            // mutates the authored story for the rest of the process.
-            //
-            // Pinned rather than fixed: the fix is a deep clone in `buildWorldState`, which is
-            // a `core` source change and out of scope for the Vitest phase. If this test ever
-            // goes red because the objects are no longer shared, the defect is fixed — delete
-            // this block rather than adapting it.
+            // Pins a known defect (shallow spread shares nested `init`); delete when fixed.
             const a = buildWorldState(register, itemInfo);
             const b = buildWorldState(register, itemInfo);
 
