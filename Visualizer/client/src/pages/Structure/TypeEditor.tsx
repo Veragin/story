@@ -1,6 +1,5 @@
-import { Alert, Button, styled } from '@mui/material';
+import { Alert, Button } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import type { TStructTypeDto } from '@story/visualizer-protocol';
 import { FormHeader } from '../../components/FormHeader';
 import {
     FormCenter,
@@ -17,13 +16,6 @@ import { usagesOf } from './structureText';
 
 type TProps = {
     editor: StructureEditorStore;
-};
-
-const ORIGIN_TEXT: Record<TStructTypeDto['origin'], () => string> = {
-    story: () => _('Story type'),
-    extendable: () =>
-        _('Engine type: its engine fields are locked, add your own below'),
-    engine: () => _('Engine type, read-only'),
 };
 
 export const TypeEditor = observer(({ editor }: TProps) => {
@@ -51,26 +43,6 @@ export const TypeEditor = observer(({ editor }: TProps) => {
                 </div>
                 {notices}
             </FormCenter>
-        );
-    }
-
-    const meta = (
-        <FormMeta>
-            <span>
-                <code>{base.file}</code>
-            </span>
-            <span data-meta="origin">{ORIGIN_TEXT[base.origin]()}</span>
-            <CatalogLink type={base} editor={editor} />
-        </FormMeta>
-    );
-
-    if (base.origin === 'engine') {
-        return (
-            <FormPage>
-                <STitle>{base.name}</STitle>
-                {meta}
-                <SCode>{base.code ?? ''}</SCode>
-            </FormPage>
         );
     }
 
@@ -107,7 +79,19 @@ export const TypeEditor = observer(({ editor }: TProps) => {
                 }
                 deleteTooltip={deleteBlocker}
             />
-            {meta}
+            <FormMeta>
+                <span>
+                    <code>{base.file}</code>
+                </span>
+                <span data-meta="origin">
+                    {base.origin === 'story'
+                        ? _('Story type')
+                        : _(
+                              'Engine type: its engine fields are locked, add your own below'
+                          )}
+                </span>
+                <CatalogLink type={base} editor={editor} />
+            </FormMeta>
             {notices}
             {editor.canResetIncompatible && (
                 <Alert
@@ -150,18 +134,3 @@ export const TypeEditor = observer(({ editor }: TProps) => {
         </FormPage>
     );
 });
-
-const STitle = styled('h2')`
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-`;
-
-const SCode = styled('pre')`
-    margin: 0;
-    padding: 12px;
-    overflow: auto;
-    font-size: 12px;
-    border-radius: 4px;
-    background: ${({ theme }) => theme.palette.action.hover};
-`;

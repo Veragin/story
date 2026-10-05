@@ -37,7 +37,7 @@ describe('StructureStore', () => {
         expect(store.literalsVisibleFrom('types/TCharacter.ts')).toEqual([]);
         expect(store.literalsVisibleFrom('data/items/itemInfo.ts').map((l) => l.name)).toEqual(['TItemType']);
         expect(store.extendableTypes.map((t) => t.name)).toContain('TItemInfo');
-        expect(store.engineTypes.map((t) => t.name)).toContain('TChapter');
+        expect(store.types.map((t) => t.origin)).not.toContain('engine');
         expect(store.storyTypes.map((t) => t.name)).toEqual(['TRace']);
         expect(store.refTypeNames).toEqual(['TLocation', 'TItem', 'TCharacter', 'TNpc', 'TChapter', 'TRace']);
         expect(store.userFieldsOf('TCharacter')).toEqual([]);

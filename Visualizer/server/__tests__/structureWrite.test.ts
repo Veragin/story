@@ -236,8 +236,7 @@ describe('structure writers', () => {
 
             const character = await typeNamed('TCharacter');
             expect((await t.del(`${API}/types/TCharacter`, { version: character.version })).status).toBe(403);
-            const chapter = await typeNamed('TChapter');
-            expect((await t.del(`${API}/types/TChapter`, { version: chapter.version })).status).toBe(403);
+            expect((await t.del(`${API}/types/TChapter`, { version: 'unknown' })).status).toBe(403);
             expect((await t.del(`${API}/types/TRace`, { version: 'old' })).status).toBe(409);
         }, 60_000);
 

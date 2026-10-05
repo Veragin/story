@@ -1,4 +1,5 @@
 import {
+    BUILT_IN_REF_TARGETS,
     fieldTypeNames,
     isValueRecord,
     refNameOfIdType,
@@ -163,7 +164,11 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
     };
 
     const assertKnownNames = (fields: readonly TFieldDesc[], file: string) => {
-        const known = new Set([...structure.types.map((t) => t.name), ...structure.literals.map((l) => l.name)]);
+        const known = new Set([
+            ...Object.keys(BUILT_IN_REF_TARGETS),
+            ...structure.types.map((t) => t.name),
+            ...structure.literals.map((l) => l.name),
+        ]);
         const unknown = fields.flatMap((field, i) =>
             fieldTypeNames([field])
                 .map((name) => refNameOfIdType(name) ?? name)
@@ -298,7 +303,6 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
                 ctx.reply(() => {
                     const type = typeOf(name);
                     ctx.checkVersion(type, version);
-                    if (type.origin === 'engine') forbidden(`${name} is an engine type`);
                     const next = [...type.fields.filter((f) => f.locked), ...fields.filter((f) => !f.locked)];
                     assertKnownNames(next, type.file);
                     const change = { oldFields: type.fields, fields: next, renames, resetIncompatible };

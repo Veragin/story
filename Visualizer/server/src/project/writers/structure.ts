@@ -221,8 +221,8 @@ export const updateType = ({ sp, bus }: TWriter, name: string, rawBody: TUpdateT
     sp.run(async (): Promise<TUpdateTypeDto> => {
         const body = asBody(rawBody);
         const type = findType(sp, name);
-        assertCurrentVersion(body, type);
         assertFieldsEditable(type);
+        assertCurrentVersion(body, type);
         const structure = readStructure(sp);
         const fields = parseFields(body.fields);
         const next = withLockedFields(type, fields);
@@ -293,8 +293,8 @@ export const deleteType = ({ sp, bus }: TWriter, name: string, rawBody: TDeleteT
     sp.run(async (): Promise<TOkDto> => {
         const body = asBody(rawBody);
         const type = findType(sp, name);
-        assertCurrentVersion(body, type);
         if (type.origin !== 'story') throw HttpError.forbidden(`${name} is an engine type and cannot be deleted`);
+        assertCurrentVersion(body, type);
         const refs = typeReferences(sp, type);
         if (refs.length > 0) throw HttpError.referenced(refs, `Type "${name}" is still used`);
         const abs = sp.root.abs(type.file);

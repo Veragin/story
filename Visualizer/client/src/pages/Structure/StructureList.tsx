@@ -86,11 +86,6 @@ export const StructureList = observer(({ editor }: TProps) => {
                 name: type.name,
             })),
         },
-        {
-            title: _('Engine types (read-only)'),
-            section: 'types',
-            entries: structure.engineTypes.map((type) => ({ name: type.name })),
-        },
     ];
 
     const isDirty = (section: TStructureSection) =>

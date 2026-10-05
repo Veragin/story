@@ -96,10 +96,6 @@ export class StructureStore implements IStructureContext {
         return this.types.filter((type) => type.origin === 'extendable');
     }
 
-    get engineTypes(): readonly TStructTypeDto[] {
-        return this.types.filter((type) => type.origin === 'engine');
-    }
-
     get refTypeNames(): readonly string[] {
         return [...Object.keys(BUILT_IN_REF_TARGETS), ...this.types.filter((type) => type.catalog).map((t) => t.name)];
     }

@@ -107,10 +107,4 @@ describe('TypeEditor', () => {
         expect(get('[data-key="name"]').dataset.locked).toBe('true');
         expect($('[data-action="delete"]')).toBeNull();
     });
-
-    it('shows an engine type read-only', async () => {
-        await render('TChapter');
-        expect($('[data-action="save"]')).toBeNull();
-        expect(get('pre').textContent).toContain('TChapter');
-    });
 });

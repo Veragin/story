@@ -65,6 +65,7 @@ export type TStructTypeDto = TVersioned &
 
 export type TStructureDto = TVersioned & {
     literals: TLiteralDto[];
+    /** Without `engine` types over the API: the client never shows them. */
     types: TStructTypeDto[];
     /** Problems of the structure itself, e.g. a literal name declared twice (the second is ignored). */
     diagnostics?: TDiagnosticDto[];

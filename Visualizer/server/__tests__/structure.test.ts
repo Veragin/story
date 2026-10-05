@@ -34,7 +34,7 @@ const edit = async (file: string, from: string, to: string) => {
 };
 
 describe('structure reader', () => {
-    it('reads the example: one local literal, the extendable types with locked fields, engine types as code', async () => {
+    it('reads the example: one local literal, the extendable types with locked fields, no engine types', async () => {
         const body = await structure();
         expect(body.version).toMatch(/^[0-9a-f]{16}$/);
         expect(body.diagnostics).toEqual([]);
@@ -58,14 +58,9 @@ describe('structure reader', () => {
             TNpcData: 'extendable',
             TLocation: 'extendable',
             TItemInfo: 'extendable',
-            TChapter: 'engine',
-            TItem: 'engine',
-            TInitInventory: 'engine',
-            TCharacterId: 'engine',
-            TTimeTrigger: 'engine',
-            TPassageScreen: 'engine',
         });
         expect(Object.values(origins)).not.toContain('story');
+        expect(Object.values(origins)).not.toContain('engine');
 
         expect(typeNamed(body, 'TCharacterData')).toMatchObject({
             file: 'types/TCharacter.ts',
@@ -109,9 +104,7 @@ describe('structure reader', () => {
                 { key: 'type', type: { t: 'literal', name: 'TItemType' }, optional: false, locked: true },
             ],
         });
-        const chapter = typeNamed(body, 'TChapter');
-        expect(chapter.fields).toEqual([]);
-        expect(chapter.code).toMatch(/^export type TChapter<E extends TChapterId> = \{/);
+        expect(typeNamed(body, 'TChapter')).toBeUndefined();
     }, 60_000);
 
     it('reads data types of entities and chapters as fields', async () => {

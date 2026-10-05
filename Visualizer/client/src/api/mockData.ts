@@ -50,16 +50,6 @@ const KNOWS_MAGIC: TFieldDesc[] = [field('knowsMagic', { t: 'boolean' })];
 
 const STRING: TTypeRef = { t: 'string' };
 
-const engineType = (name: string, file: string, code: string) => ({
-    version: 'mock',
-    file,
-    exportName: name,
-    name,
-    origin: 'engine' as const,
-    fields: [],
-    code,
-});
-
 const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
 
 const INVENTORY: TTypeRef = {
@@ -104,8 +94,6 @@ const createMockStructure = (): TStructureDto => ({
         },
     ],
     types: [
-        engineType('TChapterId', 'types/ids.ts', "export type TChapterId = keyof TWorldState['chapters'];"),
-        engineType('TChapter', 'types/TChapter.ts', 'export type TChapter<E extends TChapterId> = { … };'),
         extendableType('TCharacter', 'types/TCharacter.ts', [
             locked('id', { t: 'code', code: 'Ch' }),
             locked('name', STRING),
@@ -122,8 +110,6 @@ const createMockStructure = (): TStructureDto => ({
             locked('health', { t: 'number' }),
             locked('inventory', INVENTORY),
         ]),
-        engineType('TItemId', 'types/TItem.ts', 'export type TItemId = keyof typeof itemInfo;'),
-        engineType('TItem', 'types/TItem.ts', 'export type TItem<I extends TItemId> = { id: I; amount: number } & …;'),
         extendableType('TLocation', 'types/TLocation.ts', [
             locked('id', { t: 'code', code: 'L' }),
             locked('name', STRING),
@@ -148,7 +134,6 @@ const createMockStructure = (): TStructureDto => ({
             locked('inventory', INVENTORY),
             locked('isDead', { t: 'boolean' }),
         ]),
-        engineType('TTimeTrigger', 'types/TTimeTrigger.ts', 'export type TTimeTrigger = { … };'),
         extendableType('TItemInfo', 'data/items/itemInfo.ts', [
             locked('name', STRING),
             locked('type', { t: 'literal', name: 'TItemType' }),
