@@ -1,5 +1,5 @@
 import { isCode, isDeltaTime, type TLinkDto, type TMaybeCode } from '@story/visualizer-protocol';
-import type { TOption } from '../../../../components/CodeField';
+import type { TOption } from '../../../../components/inputs/inputTypes';
 import { formatDelta } from '../costCode';
 import type { TDiag } from './types';
 

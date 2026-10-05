@@ -7,6 +7,8 @@ export * from './dto/chapter';
 export * from './dto/passage';
 export * from './dto/trigger';
 export * from './dto/entity';
+export * from './dto/structure';
+export * from './dto/typeText';
 export * from './dto/image';
 export * from './dto/source';
 export * from './dto/map';

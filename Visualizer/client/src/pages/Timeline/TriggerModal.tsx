@@ -8,14 +8,12 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
-    TextField,
 } from '@mui/material';
-import { isCode, type TTriggerDto } from '@story/visualizer-protocol';
+import type { TMaybeCode } from '@story/visualizer-protocol';
 import { ApiError } from '../../api';
+import { FormStringInput } from '../../components/inputs/form/FormStringInput';
+import { deepEqual } from '../../deepEqual';
 import { errorMessage, type TimelineStore } from './store/TimelineStore';
-
-const asText = (value: TTriggerDto['name']) =>
-    isCode(value) ? value.code : value;
 
 type TTriggerProps = {
     store: TimelineStore;
@@ -27,9 +25,9 @@ export const TriggerModal = observer(
     ({ store, triggerId, close }: TTriggerProps) => {
         const dto = store.triggers.get(triggerId);
         const [base, setBase] = useState(dto);
-        const [name, setName] = useState(dto ? asText(dto.name) : '');
-        const [description, setDescription] = useState(
-            dto ? asText(dto.description) : ''
+        const [name, setName] = useState<TMaybeCode<string>>(dto?.name ?? '');
+        const [description, setDescription] = useState<TMaybeCode<string>>(
+            dto?.description ?? ''
         );
         const [error, setError] = useState<string | null>(null);
         const [busy, setBusy] = useState(false);
@@ -50,17 +48,15 @@ export const TriggerModal = observer(
             );
         }
 
-        const nameIsCode = isCode(base.name);
-        const descriptionIsCode = isCode(base.description);
-        const dirty =
-            name !== asText(base.name) ||
-            description !== asText(base.description);
+        const nameChanged = !deepEqual(name, base.name);
+        const descriptionChanged = !deepEqual(description, base.description);
+        const dirty = nameChanged || descriptionChanged;
         const changedOnDisk = dto.version !== base.version;
 
         const reload = () => {
             setBase(dto);
-            setName(asText(dto.name));
-            setDescription(asText(dto.description));
+            setName(dto.name);
+            setDescription(dto.description);
             setError(null);
         };
 
@@ -70,8 +66,8 @@ export const TriggerModal = observer(
             try {
                 await store.updateTrigger(triggerId, {
                     version,
-                    ...(nameIsCode ? {} : { name }),
-                    ...(descriptionIsCode ? {} : { description }),
+                    ...(nameChanged ? { name } : {}),
+                    ...(descriptionChanged ? { description } : {}),
                 });
                 close();
             } catch (e) {
@@ -90,35 +86,20 @@ export const TriggerModal = observer(
                 <DialogTitle>{_('Time trigger %s', triggerId)}</DialogTitle>
                 <DialogContent>
                     <Stack gap={2} pt={1}>
-                        <TextField
-                            size="small"
+                        <FormStringInput
                             label={_('Name')}
                             value={name}
-                            disabled={nameIsCode}
-                            helperText={
-                                nameIsCode
-                                    ? _(
-                                          'Code in the source; edit it in the editor'
-                                      )
-                                    : undefined
-                            }
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(next) => setName(next ?? '')}
+                            disabled={busy}
+                            dataField="name"
                         />
-                        <TextField
-                            size="small"
+                        <FormStringInput
                             label={_('Description')}
-                            value={description}
-                            disabled={descriptionIsCode}
-                            helperText={
-                                descriptionIsCode
-                                    ? _(
-                                          'Code in the source; edit it in the editor'
-                                      )
-                                    : undefined
-                            }
                             multiline
-                            minRows={3}
-                            onChange={(e) => setDescription(e.target.value)}
+                            value={description}
+                            onChange={(next) => setDescription(next ?? '')}
+                            disabled={busy}
+                            dataField="description"
                         />
                         {changedOnDisk && (
                             <Alert

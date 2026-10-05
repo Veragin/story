@@ -1,5 +1,6 @@
 import type { TGlobalContext, TServerContext } from '../context';
 import { registerAuthRoutes } from './auth';
+import { registerCatalogRoutes } from './catalogs';
 import { registerChapterRoutes } from './chapters';
 import { registerEntityRoutes } from './entities';
 import { registerEventRoutes } from './events';
@@ -12,6 +13,7 @@ import { registerProjectRoutes } from './project';
 import { registerSourceRoutes } from './source';
 import { registerStoryInfoRoutes } from './storyInfo';
 import { registerStoryRoutes } from './stories';
+import { registerStructureRoutes } from './structure';
 import { registerTriggerRoutes } from './triggers';
 
 export const registerRoutes = (ctx: TServerContext) => {
@@ -22,6 +24,8 @@ export const registerRoutes = (ctx: TServerContext) => {
     registerPassageRoutes(ctx);
     registerTriggerRoutes(ctx);
     registerEntityRoutes(ctx);
+    registerStructureRoutes(ctx);
+    registerCatalogRoutes(ctx);
     registerImageRoutes(ctx);
     registerMapRoutes(ctx);
     registerLayoutRoutes(ctx);

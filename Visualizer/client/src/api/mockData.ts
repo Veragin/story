@@ -1,4 +1,5 @@
 import type {
+    TCatalogEntryDto,
     TChapterDto,
     TChapterLayoutFile,
     TCharacterDto,
@@ -6,8 +7,11 @@ import type {
     TLocationDto,
     TMapFile,
     TNpcDto,
+    TFieldDesc,
     TPassageDto,
+    TStructureDto,
     TTimelineLayoutFile,
+    TTypeRef,
     TTriggerDto,
 } from '@story/visualizer-protocol';
 
@@ -26,10 +30,141 @@ export type TMockSeed = {
     maps: TMapFile[];
     timelineLayout: TTimelineLayoutFile | null;
     chapterLayouts: Record<string, TChapterLayoutFile>;
+    structure: TStructureDto;
+    catalogEntries: TSeed<TCatalogEntryDto>[];
 };
 
 const chapterFile = (ch: string) => `data/chapters/${ch}/${ch}.chapter.ts`;
 const passageFile = (ch: string, char: string, file: string) => `data/chapters/${ch}/${char}.passages/${file}`;
+
+const field = (key: string, type: TTypeRef, optional = false): TFieldDesc => ({ key, type, optional });
+
+const locked = (key: string, type: TTypeRef, optional = false): TFieldDesc => ({ key, type, optional, locked: true });
+
+const TIME_ASD: TTypeRef = {
+    t: 'object',
+    fields: [field('time', { t: 'number' }), field('asd', { t: 'string' })],
+};
+
+const KNOWS_MAGIC: TFieldDesc[] = [field('knowsMagic', { t: 'boolean' })];
+
+const STRING: TTypeRef = { t: 'string' };
+
+const engineType = (name: string, file: string, code: string) => ({
+    version: 'mock',
+    file,
+    exportName: name,
+    name,
+    origin: 'engine' as const,
+    fields: [],
+    code,
+});
+
+const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
+
+const INVENTORY: TTypeRef = {
+    t: 'array',
+    of: {
+        t: 'object',
+        fields: [field('id', { t: 'ref', name: 'TItem' }), field('amount', { t: 'number' }, true)],
+    },
+};
+
+const extendableType = (name: string, file: string, fields: TFieldDesc[]) => ({
+    version: 'mock',
+    file,
+    exportName: name,
+    name,
+    origin: 'extendable' as const,
+    fields,
+});
+
+const RACES_FILE = 'data/catalogs/races.ts';
+
+const raceEntry = (id: string, name: string, strength: number): TSeed<TCatalogEntryDto> => ({
+    kind: 'catalog',
+    catalog: 'races',
+    type: 'TRace',
+    id,
+    file: RACES_FILE,
+    exportName: 'races',
+    values: { name, strength },
+});
+
+const createMockStructure = (): TStructureDto => ({
+    version: 'mock',
+    literals: [
+        {
+            version: 'mock',
+            file: 'data/items/itemInfo.ts',
+            exportName: 'TItemType',
+            name: 'TItemType',
+            scope: 'local',
+            values: ['value', 'resource', 'tool', 'food', 'weapon'],
+        },
+    ],
+    types: [
+        engineType('TChapterId', 'types/ids.ts', "export type TChapterId = keyof TWorldState['chapters'];"),
+        engineType('TChapter', 'types/TChapter.ts', 'export type TChapter<E extends TChapterId> = { … };'),
+        extendableType('TCharacter', 'types/TCharacter.ts', [
+            locked('id', { t: 'code', code: 'Ch' }),
+            locked('name', STRING),
+            locked('description', STRING, true),
+            locked('image', STRING, true),
+            locked('startPassageId', { t: 'code', code: 'TCharacterPassageId<Ch>' }, true),
+            locked('init', {
+                t: 'code',
+                code: "Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory",
+            }),
+        ]),
+        extendableType('TCharacterData', 'types/TCharacter.ts', [
+            locked('location', LOCATION_REF, true),
+            locked('health', { t: 'number' }),
+            locked('inventory', INVENTORY),
+        ]),
+        engineType('TItemId', 'types/TItem.ts', 'export type TItemId = keyof typeof itemInfo;'),
+        engineType('TItem', 'types/TItem.ts', 'export type TItem<I extends TItemId> = { id: I; amount: number } & …;'),
+        extendableType('TLocation', 'types/TLocation.ts', [
+            locked('id', { t: 'code', code: 'L' }),
+            locked('name', STRING),
+            locked('description', STRING),
+            locked('localCharacters', {
+                t: 'array',
+                of: { t: 'object', fields: [field('name', STRING), field('description', STRING)] },
+            }),
+            locked('sublocations', { t: 'array', of: LOCATION_REF }, true),
+            locked('mapId', STRING, true),
+            locked('init', { t: 'code', code: "Partial<TWorldState['locations'][L]>" }),
+        ]),
+        extendableType('TNpc', 'types/TNpc.ts', [
+            locked('id', { t: 'code', code: 'Ch' }),
+            locked('name', STRING),
+            locked('description', STRING),
+            locked('image', STRING, true),
+            locked('init', { t: 'code', code: "Omit<TWorldState['npcs'][Ch], 'inventory' | 'ref'> & TInitInventory" }),
+        ]),
+        extendableType('TNpcData', 'types/TNpc.ts', [
+            locked('location', LOCATION_REF),
+            locked('inventory', INVENTORY),
+            locked('isDead', { t: 'boolean' }),
+        ]),
+        engineType('TTimeTrigger', 'types/TTimeTrigger.ts', 'export type TTimeTrigger = { … };'),
+        extendableType('TItemInfo', 'data/items/itemInfo.ts', [
+            locked('name', STRING),
+            locked('type', { t: 'literal', name: 'TItemType' }),
+        ]),
+        {
+            version: 'mock',
+            file: 'types/TRace.ts',
+            exportName: 'TRace',
+            name: 'TRace',
+            origin: 'story',
+            fields: [field('name', STRING), field('strength', { t: 'number' })],
+            catalog: { name: 'races', file: RACES_FILE, idType: 'TRaceId' },
+        },
+    ],
+    diagnostics: [],
+});
 
 export const createMockSeed = (): TMockSeed => ({
     chapters: [
@@ -47,6 +182,7 @@ export const createMockSeed = (): TMockSeed => ({
             dataType: {
                 name: 'TVillageChapterData',
                 code: '{\n    mojePromena: {\n        time: number;\n        asd: string;\n    };\n}',
+                fields: [field('mojePromena', TIME_ASD)],
             },
             characters: [
                 {
@@ -70,6 +206,7 @@ export const createMockSeed = (): TMockSeed => ({
             dataType: {
                 name: 'TKingdomChapterData',
                 code: '{\n    mojePromena: {\n        time: number;\n        asd: string;\n    };\n}',
+                fields: [field('mojePromena', TIME_ASD)],
             },
             characters: [
                 {
@@ -91,7 +228,7 @@ export const createMockSeed = (): TMockSeed => ({
             children: [],
             triggerIds: [],
             init: {},
-            dataType: { name: 'TWeddingChapterData', code: '{}' },
+            dataType: { name: 'TWeddingChapterData', code: '{}', fields: [] },
             characters: [],
         },
     ],
@@ -276,7 +413,7 @@ export const createMockSeed = (): TMockSeed => ({
                 inventory: [{ id: 'bow', amount: 1 }],
                 location: 'village',
             },
-            dataType: { name: 'TThomasCharacterData', code: '{\n    knowsMagic: boolean;\n}' },
+            dataType: { name: 'TThomasCharacterData', code: '{\n    knowsMagic: boolean;\n}', fields: KNOWS_MAGIC },
         },
         {
             kind: 'characters',
@@ -290,7 +427,7 @@ export const createMockSeed = (): TMockSeed => ({
                 inventory: [{ id: 'berries', amount: 10 }],
                 location: 'village',
             },
-            dataType: { name: 'TAnnieCharacterData', code: '{\n    knowsMagic: boolean;\n}' },
+            dataType: { name: 'TAnnieCharacterData', code: '{\n    knowsMagic: boolean;\n}', fields: KNOWS_MAGIC },
         },
     ],
 
@@ -306,6 +443,7 @@ export const createMockSeed = (): TMockSeed => ({
             dataType: {
                 name: 'TFrantaNpcData',
                 code: '{\n    asdasd: {\n        time: number;\n        asd: string;\n    };\n}',
+                fields: [field('asdasd', TIME_ASD)],
             },
         },
         {
@@ -319,6 +457,7 @@ export const createMockSeed = (): TMockSeed => ({
             dataType: {
                 name: 'TNobleManNpcData',
                 code: '{\n    asdasd: {\n        time: number;\n        asd: string;\n    };\n}',
+                fields: [field('asdasd', TIME_ASD)],
             },
         },
     ],
@@ -336,6 +475,7 @@ export const createMockSeed = (): TMockSeed => ({
             dataType: {
                 name: 'TVillageLocationData',
                 code: '{\n    mojePromena: {\n        time: number;\n        asd: string;\n    };\n}',
+                fields: [field('mojePromena', TIME_ASD)],
             },
         },
         {
@@ -347,7 +487,7 @@ export const createMockSeed = (): TMockSeed => ({
             description: '',
             localCharacters: [],
             init: {},
-            dataType: { name: 'TKingdomLocationData', code: '{}' },
+            dataType: { name: 'TKingdomLocationData', code: '{}', fields: [] },
         },
     ],
 
@@ -402,6 +542,8 @@ export const createMockSeed = (): TMockSeed => ({
     maps: [createSampleMap()],
     timelineLayout: null,
     chapterLayouts: {},
+    structure: createMockStructure(),
+    catalogEntries: [raceEntry('elf', 'Elf', 3), raceEntry('dwarf', 'Dwarf', 5)],
 });
 
 function createSampleMap(): TMapFile {

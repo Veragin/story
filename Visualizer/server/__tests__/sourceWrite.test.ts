@@ -722,7 +722,11 @@ describe('entities', () => {
             dataType: { name: 'TBobCharacterData', code: '{ canBuild: boolean }' },
         });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
-        expect(res.body.dataType).toEqual({ name: 'TBobCharacterData', code: '{ canBuild: boolean }' });
+        expect(res.body.dataType).toEqual({
+            name: 'TBobCharacterData',
+            code: '{ canBuild: boolean }',
+            fields: [{ key: 'canBuild', type: { t: 'boolean' }, optional: false }],
+        });
         const bad = await t.put('/api/stories/example/entities/characters/bob', {
             version: res.body.version,
             init: { ...res.body.init, health: 'full' },
@@ -755,26 +759,34 @@ describe('entities', () => {
         await expectHealthy();
         await expectTsc();
 
-        let forest = (await t.get('/api/stories/example/entities/locations/forest')).body;
+        // the sublocation (and its import) is cleared with the delete
+        const forest = (await t.get('/api/stories/example/entities/locations/forest')).body;
         res = await t.del('/api/stories/example/entities/locations/forest', { version: forest.version });
-        expect(res.status).toBe(409);
-        expect(res.body.references).toEqual([expect.objectContaining({ file: 'data/locations/village.location.ts' })]);
-        res = await t.put('/api/stories/example/entities/locations/village', {
-            version: (await t.get('/api/stories/example/entities/locations/village')).body.version,
-            sublocations: null,
-        });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
-        forest = (await t.get('/api/stories/example/entities/locations/forest')).body;
-        expect(
-            (await t.del('/api/stories/example/entities/locations/forest', { version: forest.version })).status
-        ).toBe(200);
-        // type-level references: `location: 'village'` all over the story
-        const v = (await t.get('/api/stories/example/entities/locations/village')).body;
-        res = await t.del('/api/stories/example/entities/locations/village', { version: v.version });
-        expect(res.status).toBe(409);
-        expect(res.body.references.map((r: { file: string }) => r.file)).toEqual(
-            expect.arrayContaining(['data/chapters/village/village.chapter.ts', 'data/characters/thomas.ts'])
+        expect(res.body.cleared).toEqual([
+            expect.objectContaining({
+                file: 'data/locations/village.location.ts',
+                resource: { kind: 'entity', id: 'locations/village' },
+                path: 'sublocations.0',
+                change: { op: 'removed' },
+            }),
+        ]);
+        expect(await read('data/locations/village.location.ts')).not.toMatch(/forest/i);
+        // `location: 'village'` all over the story: the preview names every value it would clear
+        res = await t.get('/api/stories/example/entities/locations/village/references');
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.blocking).toEqual([]);
+        expect(res.body.cleared).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ file: 'data/characters/thomas.ts', path: 'init.location' }),
+                expect.objectContaining({
+                    file: 'data/chapters/village/village.chapter.ts',
+                    path: 'location',
+                    change: { op: 'set', value: 'kingdom' },
+                }),
+            ])
         );
+        expect(exists('data/locations/village.location.ts')).toBe(true);
         // thomas has passage folders
         const thomas = (await t.get('/api/stories/example/entities/characters/thomas')).body;
         expect(
@@ -809,10 +821,6 @@ describe('entities', () => {
             file: 'data/items/foodInfo.ts',
             props: { hungerValue: 3 },
         });
-        // foodInfo's own type wants a hungerValue
-        expect(
-            (await t.post('/api/stories/example/entities/items', { id: 'pear', type: 'food', name: 'Pear' })).status
-        ).toBe(422);
         const bow0 = (await t.get('/api/stories/example/entities/items/bow')).body;
         const badBow = await t.put('/api/stories/example/entities/items/bow', {
             version: bow0.version,
@@ -839,11 +847,21 @@ describe('entities', () => {
         expect(await read('data/items/itemInfo.ts')).not.toContain('rope');
         await expectTsc();
 
-        // bow is in thomas's inventory
+        // bow is in thomas's inventory: the entry goes with it
         const bow2 = (await t.get('/api/stories/example/entities/items/bow')).body;
         res = await t.del('/api/stories/example/entities/items/bow', { version: bow2.version });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.cleared).toEqual([
+            expect.objectContaining({ file: 'data/characters/thomas.ts', path: 'init.inventory.0' }),
+        ]);
+        expect(await read('data/characters/thomas.ts')).toContain('inventory: []');
+        // a passage's link cost names the axe in code
+        const axe = (await t.get('/api/stories/example/entities/items/axe')).body;
+        res = await t.del('/api/stories/example/entities/items/axe', { version: axe.version });
         expect(res.status).toBe(409);
-        expect(res.body.references).toContainEqual(expect.objectContaining({ file: 'data/characters/thomas.ts' }));
+        expect(res.body.references).toContainEqual(
+            expect.objectContaining({ file: 'data/chapters/kingdom/annie.passages/palace.ts' })
+        );
         for (const id of ['apple', 'rope']) {
             const e = (await t.get(`/api/stories/example/entities/items/${id}`)).body;
             expect((await t.del(`/api/stories/example/entities/items/${id}`, { version: e.version })).status).toBe(200);

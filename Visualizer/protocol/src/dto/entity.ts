@@ -13,40 +13,46 @@ type TEntityBase<K extends TEntityKind> = TVersioned &
         id: string;
     };
 
+/** The fields the author added to `TCharacter` / `TNpc` / `TLocation`; set when the type has any. */
+type TUserFields = { userFields?: TValueRecord };
+
 export type TInventoryEntryDto = { id: string; amount?: number } & { [key: string]: TValue };
 
-export type TCharacterDto = TEntityBase<'characters'> & {
-    name: TMaybeCode<string>;
-    description?: TMaybeCode<string>;
-    /** A text description of the portrait; the picture is the sibling `.png`. */
-    image?: TMaybeCode<string>;
-    /** Full passage id. */
-    startPassageId?: TMaybeCode<string>;
-    /** `TCharacterData` fields plus the character's own data; `inventory` as `TInventoryEntryDto[]`. */
-    init: TMaybeCode<TValueRecord>;
-    dataType?: TDataTypeDto;
-};
+export type TCharacterDto = TEntityBase<'characters'> &
+    TUserFields & {
+        name: TMaybeCode<string>;
+        description?: TMaybeCode<string>;
+        /** A text description of the portrait; the picture is the sibling `.png`. */
+        image?: TMaybeCode<string>;
+        /** Full passage id. */
+        startPassageId?: TMaybeCode<string>;
+        /** `TCharacterData` fields plus the character's own data; `inventory` as `TInventoryEntryDto[]`. */
+        init: TMaybeCode<TValueRecord>;
+        dataType?: TDataTypeDto;
+    };
 
-export type TNpcDto = TEntityBase<'npcs'> & {
-    name: TMaybeCode<string>;
-    description: TMaybeCode<string>;
-    /** A text description of the portrait; the picture is the sibling `.png`. */
-    image?: TMaybeCode<string>;
-    init: TMaybeCode<TValueRecord>;
-    dataType?: TDataTypeDto;
-};
+export type TNpcDto = TEntityBase<'npcs'> &
+    TUserFields & {
+        name: TMaybeCode<string>;
+        description: TMaybeCode<string>;
+        /** A text description of the portrait; the picture is the sibling `.png`. */
+        image?: TMaybeCode<string>;
+        init: TMaybeCode<TValueRecord>;
+        dataType?: TDataTypeDto;
+    };
 
 /** Its polygon lives in `TMapDto.locations`, not here. */
-export type TLocationDto = TEntityBase<'locations'> & {
-    name: TMaybeCode<string>;
-    description: TMaybeCode<string>;
-    localCharacters: TMaybeCode<TLocalCharacterDto[]>;
-    /** Location ids. */
-    sublocations?: TMaybeCode<string[]>;
-    mapId?: TMaybeCode<string>;
-    init: TMaybeCode<TValueRecord>;
-    dataType?: TDataTypeDto;
-};
+export type TLocationDto = TEntityBase<'locations'> &
+    TUserFields & {
+        name: TMaybeCode<string>;
+        description: TMaybeCode<string>;
+        localCharacters: TMaybeCode<TLocalCharacterDto[]>;
+        /** Location ids. */
+        sublocations?: TMaybeCode<string[]>;
+        mapId?: TMaybeCode<string>;
+        init: TMaybeCode<TValueRecord>;
+        dataType?: TDataTypeDto;
+    };
 
 export type TLocalCharacterDto = {
     name: TMaybeCode<string>;

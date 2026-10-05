@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { TLocationDto } from '@story/visualizer-protocol';
 import { createDefaultMapData } from '../../../MapEditor/createDefaultMapData';
 import { mergeMaps } from '../mergeMap';
-import { fromTextDraft, locationPatch, toLocationDraft, toTextDraft } from '../LocationForm/draft';
+import { locationPatch, rebaseDraft, toLocalCharacters, toLocationDraft } from '../LocationForm/draft';
 
 const clone = <T>(v: T): T => structuredClone(v);
 
@@ -70,29 +70,40 @@ describe('location form draft', () => {
         init: {},
     };
 
-    it('edits _() values as text and writes them back translated', () => {
-        expect(toTextDraft({ code: "_('It\\'s here')" })).toEqual({ kind: 'translated', text: "It's here" });
-        expect(fromTextDraft({ kind: 'translated', text: "It's\nhere" })).toEqual({ code: "_('It\\'s\\nhere')" });
-        expect(toTextDraft({ code: 'a + b' })).toEqual({ kind: 'code', code: 'a + b' });
-        expect(toTextDraft(undefined)).toEqual({ kind: 'text', text: '' });
-    });
-
     it('patches only the fields that changed', () => {
         const draft = toLocationDraft(dto);
         expect(locationPatch(dto, draft)).toEqual({});
-        draft.description = { kind: 'text', text: 'Bigger' };
-        expect(locationPatch(dto, draft)).toEqual({ description: 'Bigger' });
-        if (draft.localCharacters.kind !== 'list') throw new Error('list expected');
-        draft.localCharacters.rows.push({
-            key: 99,
-            name: { kind: 'text', text: 'Jan' },
-            description: { kind: 'text', text: '' },
+        const edited = {
+            ...draft,
+            description: 'Bigger',
+            localCharacters: toLocalCharacters([
+                { name: 'Pepa', description: { code: 'describe()' } },
+                { name: 'Jan', description: '' },
+            ]),
+        };
+        expect(locationPatch(dto, edited)).toEqual({
+            description: 'Bigger',
+            localCharacters: [
+                { name: 'Pepa', description: { code: 'describe()' } },
+                { name: 'Jan', description: '' },
+            ],
         });
-        expect(locationPatch(dto, draft).localCharacters).toEqual([
-            { name: 'Pepa', description: { code: 'describe()' } },
-            { name: 'Jan', description: '' },
-        ]);
-        expect(locationPatch(dto, draft).name).toBeUndefined();
+    });
+
+    it('turns the list into code when an item is no longer a local character', () => {
+        expect(toLocalCharacters([{ name: 'Pepa', description: 'x' }, { code: 'extra()' }])).toEqual({
+            code: "[{ name: 'Pepa', description: 'x' }, extra()]",
+        });
+    });
+
+    it('keeps the edited fields and takes the rest from disk on Keep mine', () => {
+        const draft = { ...toLocationDraft(dto), description: 'Mine' };
+        const disk: TLocationDto = { ...dto, version: 'v2', name: 'Kingdom', description: 'Theirs' };
+        expect(rebaseDraft(dto, draft, disk)).toEqual({
+            name: 'Kingdom',
+            description: 'Mine',
+            localCharacters: dto.localCharacters,
+        });
     });
 });
 

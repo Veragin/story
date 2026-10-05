@@ -4,7 +4,17 @@ import type { TVersion } from './common';
  * One SSE `change` message per server operation (a whole multi-file write); hand edits are batched
  * and deduplicated per resource.
  */
-export const RESOURCE_KINDS = ['chapter', 'passage', 'trigger', 'entity', 'map', 'layout', 'project'] as const;
+export const RESOURCE_KINDS = [
+    'chapter',
+    'passage',
+    'trigger',
+    'entity',
+    'map',
+    'layout',
+    'project',
+    'structure',
+    'catalog',
+] as const;
 export type TResourceKind = (typeof RESOURCE_KINDS)[number];
 
 export const SSE_EVENT = {
@@ -23,6 +33,8 @@ export const SSE_EVENT = {
  *  - `map`      — map id (`global`)
  *  - `layout`   — `timeline` or `chapters/<chapterId>`
  *  - `project`  — `project`: `register.ts`, `TWorldState.ts` or anything under `types/`
+ *  - `structure` — `structure`: the literals and types (`types/`, `data/items/`, `data/catalogs/`)
+ *  - `catalog`  — `<catalog>/<id>` (`races/elf`), or `<catalog>/*` for an edit of a catalog file
  *
  * An id ending in `*` is a wildcard: refetch everything of that kind (in `chapterId`, if given).
  */
@@ -44,5 +56,7 @@ export const eventIds = {
     chapterLayout: (chapterId: string) => `chapters/${chapterId}`,
     timelineLayout: 'timeline',
     project: 'project',
+    structure: 'structure',
+    catalog: (catalog: string, id: string) => `${catalog}/${id}`,
     wildcard: '*',
 } as const;

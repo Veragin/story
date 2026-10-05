@@ -32,9 +32,14 @@ const TABS: TTab[] = [
         value: 'entities',
         label: () => _('Entities'),
         route: { page: 'entities' },
-        pages: ['entities'],
+        pages: ['entities', 'catalog'],
     },
-    { value: 'structure', label: () => _('Structure'), pages: [] },
+    {
+        value: 'structure',
+        label: () => _('Structure'),
+        route: { page: 'structure' },
+        pages: ['structure'],
+    },
 ];
 
 const TOP_BAR_HEIGHT = 48;

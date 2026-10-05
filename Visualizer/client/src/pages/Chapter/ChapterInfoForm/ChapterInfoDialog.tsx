@@ -15,6 +15,9 @@ import {
     type ApiEvents,
     type TVisualizerApi,
 } from '../../../api';
+import { StructureContext } from '../../../components/inputs/structureContext';
+import type { EntityStore } from '../../../stores/EntityStore';
+import type { StructureStore } from '../../../stores/StructureStore';
 import { formatDiagnostic } from '../editor/diagnostics';
 import { ChapterInfoEditorStore } from './ChapterInfoEditorStore';
 import { ChapterInfoForm } from './ChapterInfoForm';
@@ -22,12 +25,21 @@ import { ChapterInfoForm } from './ChapterInfoForm';
 type TProps = {
     chapterId: string;
     api: TVisualizerApi;
+    structure: StructureStore;
+    entities: EntityStore;
     events?: ApiEvents;
     onClose: () => void;
 };
 
 export const ChapterInfoDialog = observer(
-    ({ chapterId, api, events = apiEvents, onClose }: TProps) => {
+    ({
+        chapterId,
+        api,
+        structure,
+        entities,
+        events = apiEvents,
+        onClose,
+    }: TProps) => {
         const [store] = useState(
             () => new ChapterInfoEditorStore(chapterId, api)
         );
@@ -38,6 +50,14 @@ export const ChapterInfoDialog = observer(
                 () => void store.onExternal()
             );
         }, [store, events, chapterId]);
+        useEffect(() => {
+            const releaseEntities = entities.start();
+            const releaseStructure = structure.start();
+            return () => {
+                releaseStructure();
+                releaseEntities();
+            };
+        }, [entities, structure]);
 
         const close = () => {
             store.discard();
@@ -46,7 +66,6 @@ export const ChapterInfoDialog = observer(
         const save = async () => {
             if (await store.save()) onClose();
         };
-        const project = store.project;
         const title = store.chapter
             ? displayText(store.chapter.title, chapterId)
             : chapterId;
@@ -102,20 +121,17 @@ export const ChapterInfoDialog = observer(
                             ))}
                         </Alert>
                     )}
-                    {store.draft ? (
-                        <ChapterInfoForm
-                            value={store.draft}
-                            onChange={(v) => store.setDraft(v)}
-                            locations={(project?.locations ?? []).map((l) => ({
-                                id: l.id,
-                                label: l.name,
-                            }))}
-                            chapters={(project?.chapters ?? [])
-                                .filter((c) => c.id !== chapterId)
-                                .map((c) => ({ id: c.id, label: c.name }))}
-                            diagnostics={store.diagnosticsFor}
-                            disabled={store.saving}
-                        />
+                    {store.draft && store.chapter ? (
+                        <StructureContext.Provider value={structure}>
+                            <ChapterInfoForm
+                                chapterId={chapterId}
+                                file={store.chapter.file}
+                                value={store.draft}
+                                onChange={(v) => store.setDraft(v)}
+                                diagnostics={store.diagnosticsFor}
+                                disabled={store.saving}
+                            />
+                        </StructureContext.Provider>
                     ) : (
                         !store.error && <CircularProgress size={24} />
                     )}

@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { TLinearPassageDto } from '@story/visualizer-protocol';
-import { IdCodeField } from '../../../../components/CodeField';
-import { PlainTextField } from '../../../../components/PlainTextField';
+import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
+import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
@@ -20,16 +20,19 @@ export const LinearFields = observer(
                 diag={diag}
                 preamble={preamble}
             />
-            <PlainTextField
+            <FormStringInput
                 label={_('Description')}
                 multiline
                 value={draft.description}
                 onChange={(v) =>
-                    edit((d) => d.type === 'linear' && (d.description = v))
+                    edit(
+                        (d) => d.type === 'linear' && (d.description = v ?? '')
+                    )
                 }
                 diagnostics={diag('description')}
+                dataField="description"
             />
-            <IdCodeField
+            <FormTypeInput
                 label={_('Next passage')}
                 value={draft.nextPassageId}
                 onChange={(v) =>
@@ -41,9 +44,10 @@ export const LinearFields = observer(
                     )
                 }
                 options={passageOptions}
-                optional
-                removable={false}
+                // can be added but not removed again
+                optional={draft.nextPassageId === undefined}
                 diagnostics={diag('nextPassageId')}
+                dataField="nextPassageId"
             />
         </>
     )

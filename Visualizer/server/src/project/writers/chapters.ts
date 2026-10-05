@@ -59,7 +59,7 @@ export const updateChapter = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
         s.apply(() => {
             const sf = s.edit(sp.root.paths.chapterFile(chapterId));
             applyPartial(chapterObject(sf).obj, body, chapterFields(sp), sf, { skip: CHAPTER_DERIVED });
-            applyDataType(sf, body.dataType, 'ChapterData', current.file);
+            applyDataType(sp, sf, body.dataType, 'ChapterData', current.file);
         });
         await s.commit(
             bus,

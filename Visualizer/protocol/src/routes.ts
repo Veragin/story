@@ -33,6 +33,26 @@ import type { TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
 import type {
+    TAddLiteralValueBody,
+    TCatalogEntryDto,
+    TCatalogListDto,
+    TClearedReferencesDto,
+    TCreateCatalogEntryBody,
+    TCreateLiteralBody,
+    TCreateTypeBody,
+    TDeleteCatalogEntryBody,
+    TDeleteLiteralBody,
+    TDeleteReferencesDto,
+    TDeleteTypeBody,
+    TLiteralDto,
+    TStructTypeDto,
+    TStructureDto,
+    TUpdateCatalogEntryBody,
+    TUpdateLiteralBody,
+    TUpdateTypeBody,
+    TUpdateTypeDto,
+} from './dto/structure';
+import type {
     TCreateStoryBody,
     TLoginBody,
     TSessionDto,
@@ -88,6 +108,23 @@ export const STORY_ROUTES = {
     getEntity: { method: 'GET', path: '/entities/:kind/:id' },
     updateEntity: { method: 'PUT', path: '/entities/:kind/:id' },
     deleteEntity: { method: 'DELETE', path: '/entities/:kind/:id' },
+    getEntityReferences: { method: 'GET', path: '/entities/:kind/:id/references' },
+
+    listCatalogEntries: { method: 'GET', path: '/catalogs/:name' },
+    createCatalogEntry: { method: 'POST', path: '/catalogs/:name' },
+    getCatalogEntry: { method: 'GET', path: '/catalogs/:name/:id' },
+    updateCatalogEntry: { method: 'PUT', path: '/catalogs/:name/:id' },
+    deleteCatalogEntry: { method: 'DELETE', path: '/catalogs/:name/:id' },
+    getCatalogEntryReferences: { method: 'GET', path: '/catalogs/:name/:id/references' },
+
+    getStructure: { method: 'GET', path: '/structure' },
+    createType: { method: 'POST', path: '/structure/types' },
+    updateType: { method: 'PUT', path: '/structure/types/:name' },
+    deleteType: { method: 'DELETE', path: '/structure/types/:name' },
+    createLiteral: { method: 'POST', path: '/structure/literals' },
+    updateLiteral: { method: 'PUT', path: '/structure/literals/:name' },
+    addLiteralValue: { method: 'POST', path: '/structure/literals/:name/values' },
+    deleteLiteral: { method: 'DELETE', path: '/structure/literals/:name' },
 
     getSource: { method: 'GET', path: '/source/:owner/:id' },
     updateSource: { method: 'PUT', path: '/source/:owner/:id' },
@@ -197,7 +234,36 @@ export type TApiSpec = {
     createEntity: { body: TCreateEntityBody; response: TEntityDto };
     getEntity: { body: undefined; response: TEntityDto };
     updateEntity: { body: TUpdateEntityBody; response: TEntityDto };
-    deleteEntity: { body: TDeleteEntityBody; response: TOkDto };
+    /** Clears the value references to it (see `TClearedReferenceDto`); `409 referenced` while code still uses it. */
+    deleteEntity: { body: TDeleteEntityBody; response: TClearedReferencesDto };
+    /** A dry run of `deleteEntity`: nothing is written. */
+    getEntityReferences: { body: undefined; response: TDeleteReferencesDto };
+
+    /** The entries of `data/catalogs/<name>.ts`, in file order. */
+    listCatalogEntries: { body: undefined; response: TCatalogListDto };
+    createCatalogEntry: { body: TCreateCatalogEntryBody; response: TCatalogEntryDto };
+    getCatalogEntry: { body: undefined; response: TCatalogEntryDto };
+    /** `values` replaces every value: a key left out is removed. */
+    updateCatalogEntry: { body: TUpdateCatalogEntryBody; response: TCatalogEntryDto };
+    /** Clears the value references to it, as `deleteEntity` does. */
+    deleteCatalogEntry: { body: TDeleteCatalogEntryBody; response: TClearedReferencesDto };
+    /** A dry run of `deleteCatalogEntry`: nothing is written. */
+    getCatalogEntryReferences: { body: undefined; response: TDeleteReferencesDto };
+
+    /** The story's literals and types. */
+    getStructure: { body: undefined; response: TStructureDto };
+    /** `types/<name>.ts` plus its barrel line; with `catalog`, also `data/catalogs/<catalog.name>.ts`. */
+    createType: { body: TCreateTypeBody; response: TStructTypeDto };
+    /** Also rewrites every instance (renames, removals, defaults); `touchedFiles` lists them. */
+    updateType: { body: TUpdateTypeBody; response: TUpdateTypeDto };
+    /** Story types only; `409 referenced` while used or while its catalog has entries. */
+    deleteType: { body: TDeleteTypeBody; response: TOkDto };
+    createLiteral: { body: TCreateLiteralBody; response: TLiteralDto };
+    /** Renames rewrite the values typed by the literal; removing a used value is `409 referenced`. */
+    updateLiteral: { body: TUpdateLiteralBody; response: TLiteralDto };
+    /** `409 exists` when the value is already a member. */
+    addLiteralValue: { body: TAddLiteralValueBody; response: TLiteralDto };
+    deleteLiteral: { body: TDeleteLiteralBody; response: TOkDto };
 
     getSource: { body: undefined; response: TSourceDto };
     updateSource: { body: TUpdateSourceBody; response: TSourceDto };
@@ -302,4 +368,7 @@ export const CREATED_ROUTES: readonly TRouteName[] = [
     'createPassage',
     'createTrigger',
     'createEntity',
+    'createCatalogEntry',
+    'createType',
+    'createLiteral',
 ];

@@ -1,5 +1,5 @@
 import type { TDiagnosticDto, TPassageDto } from '@story/visualizer-protocol';
-import type { TOption } from '../../../../components/CodeField';
+import type { TOption } from '../../../../components/inputs/inputTypes';
 import type { TVisualizerApi } from '../../../../api';
 
 export type TDiag = (path: string) => TDiagnosticDto[];
@@ -13,6 +13,7 @@ export type TOptionsProps = {
 
 export type TFieldsProps<D extends TPassageDto = TPassageDto> = TOptionsProps & {
     draft: D;
+    transitionOptions: TOption[];
     edit: TEditFn;
     diag: TDiag;
     api?: TVisualizerApi;

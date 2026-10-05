@@ -147,6 +147,23 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         updateEntity: async <K extends TEntityKind>(kind: K, id: string, body: TRouteBody<'updateEntity'>) =>
             (await request('updateEntity', { kind, id }, body)) as TEntityDtoByKind[K],
         deleteEntity: (kind, id, body) => request('deleteEntity', { kind, id }, body),
+        getEntityReferences: (kind, id) => request('getEntityReferences', { kind, id }),
+
+        getStructure: () => request('getStructure', {}),
+        createType: (body) => request('createType', {}, body),
+        updateType: (name, body) => request('updateType', { name }, body),
+        deleteType: (name, body) => request('deleteType', { name }, body),
+        createLiteral: (body) => request('createLiteral', {}, body),
+        updateLiteral: (name, body) => request('updateLiteral', { name }, body),
+        addLiteralValue: (name, body) => request('addLiteralValue', { name }, body),
+        deleteLiteral: (name, body) => request('deleteLiteral', { name }, body),
+
+        listCatalogEntries: (name) => request('listCatalogEntries', { name }),
+        createCatalogEntry: (name, body) => request('createCatalogEntry', { name }, body),
+        getCatalogEntry: (name, id) => request('getCatalogEntry', { name, id }),
+        updateCatalogEntry: (name, id, body) => request('updateCatalogEntry', { name, id }, body),
+        deleteCatalogEntry: (name, id, body) => request('deleteCatalogEntry', { name, id }, body),
+        getCatalogEntryReferences: (name, id) => request('getCatalogEntryReferences', { name, id }),
 
         getSource: (owner, id) => request('getSource', { owner, id }),
         updateSource: (owner, id, body) => request('updateSource', { owner, id }, body),

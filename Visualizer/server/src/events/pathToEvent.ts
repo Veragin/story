@@ -8,9 +8,15 @@ const idFromEntityFile = (base: string) => base.charAt(0).toLowerCase() + base.s
 
 export const localIdFromPassageFile = (file: string) => file.split('.')[0];
 
+const STRUCTURE: TResourceRef = { kind: 'structure', id: eventIds.structure, primary: false };
+
+const declaresStructure = (parts: string[]) =>
+    parts[parts.length - 1].endsWith('.ts') &&
+    (parts[0] === 'types' ||
+        (parts[0] === 'data' && parts.length === 3 && (parts[1] === 'items' || parts[1] === 'catalogs')));
+
 // a file holding several resources maps to a wildcard: telling which one changed would need a parse
-export const pathToResource = (relPath: string): TResourceRef | null => {
-    if (isTempFile(relPath)) return null;
+const pathToResource = (relPath: string): TResourceRef | null => {
     const parts = relPath.split('/');
     const file = parts[parts.length - 1];
 
@@ -75,12 +81,23 @@ export const pathToResource = (relPath: string): TResourceRef | null => {
             ? { kind: 'entity', id: eventIds.entity(area, idFromEntityFile(file.slice(0, -3))), primary: true }
             : null;
     }
+    if (area === 'catalogs') {
+        return file.endsWith('.ts')
+            ? { kind: 'catalog', id: eventIds.catalog(file.slice(0, -'.ts'.length), eventIds.wildcard), primary: false }
+            : null;
+    }
     if (area === 'items') {
         return file.endsWith('.ts')
             ? { kind: 'entity', id: eventIds.entity('items', eventIds.wildcard), primary: false }
             : null;
     }
     return null;
+};
+
+export const pathToResources = (relPath: string): TResourceRef[] => {
+    if (isTempFile(relPath)) return [];
+    const ref = pathToResource(relPath);
+    return [...(ref ? [ref] : []), ...(declaresStructure(relPath.split('/')) ? [STRUCTURE] : [])];
 };
 
 export const resourceKey = (r: TResourceRef) => `${r.kind}:${r.id}:${r.chapterId ?? ''}`;

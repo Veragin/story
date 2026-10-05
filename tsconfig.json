@@ -54,6 +54,7 @@
            (no DOM, node types) by `Visualizer/server/tsconfig.json`. The server's tests are
            package source like `core/__tests__`, so they are listed too. */
         "Visualizer/protocol/src",
+        "Visualizer/protocol/__tests__",
         "Visualizer/server/src",
         "Visualizer/server/__tests__"
     ],

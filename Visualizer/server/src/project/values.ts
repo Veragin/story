@@ -1,5 +1,5 @@
 import { DeltaTime } from '@story/shared';
-import { isCode, type TCode, type TFunctionDto, type TValue } from '@story/visualizer-protocol';
+import { isCode, type TCode, type TFunctionDto, type TTypeRef, type TValue } from '@story/visualizer-protocol';
 import {
     type ArrayLiteralExpression,
     type Expression,
@@ -83,6 +83,29 @@ export const S = {
         ),
     }),
     ref: (ref: TRefResolver): TSchema => ({ t: 'ref', ref }),
+};
+
+/** How a value of a structure field is read and written. */
+export const schemaOf = (ref: TTypeRef): TSchema => {
+    switch (ref.t) {
+        // an id is stored as its string (`race: 'elf'`), not as an imported object
+        case 'ref':
+        case 'string':
+        case 'literal':
+            return S.string;
+        case 'number':
+            return S.number;
+        case 'boolean':
+            return S.boolean;
+        case 'array':
+            return S.array(schemaOf(ref.of));
+        case 'object':
+            return S.object(Object.fromEntries(ref.fields.map((field) => [field.key, schemaOf(field.type)])));
+        case 'function':
+            return S.fn();
+        case 'code':
+            return S.value;
+    }
 };
 
 const codeOf = (expr: Expression): TCode => ({ code: expr.getText() });

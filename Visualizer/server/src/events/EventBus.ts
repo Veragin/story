@@ -4,7 +4,7 @@ import type { TChangeEvent } from '@story/visualizer-protocol';
 import { atomicWrite } from '../json/atomicWrite';
 import type { ProjectRoot } from '../project/ProjectRoot';
 import { passageLocalIdOf } from './passageLocalId';
-import { localIdFromPassageFile, pathToResource, resourceKey, type TResourceRef } from './pathToEvent';
+import { localIdFromPassageFile, pathToResources, resourceKey, type TResourceRef } from './pathToEvent';
 import { version } from './version';
 
 type TChangeListener = (event: TChangeEvent) => void;
@@ -167,12 +167,11 @@ export class EventBus {
             const suppression = this.suppressed.get(abs);
             if (suppression && suppression.hash === hash) continue;
 
-            let ref = pathToResource(this.project.rel(abs));
-            if (!ref) continue;
-            if (ref.kind === 'passage') ref = this.passageRef(abs, ref, contents);
-            const key = resourceKey(ref);
-            if (events.has(key)) continue;
-            events.set(key, toEvent(ref, hash, change));
+            for (const found of pathToResources(this.project.rel(abs))) {
+                const ref = found.kind === 'passage' ? this.passageRef(abs, found, contents) : found;
+                const key = resourceKey(ref);
+                if (!events.has(key)) events.set(key, toEvent(ref, hash, change));
+            }
         }
         for (const event of events.values()) this.emit(event);
     }

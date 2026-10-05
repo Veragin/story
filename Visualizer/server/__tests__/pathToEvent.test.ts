@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { pathToResource } from '../src/events/pathToEvent';
+import { pathToResources } from '../src/events/pathToEvent';
 
-describe('pathToResource', () => {
+const STRUCTURE = { kind: 'structure', id: 'structure', primary: false };
+
+describe('pathToResources', () => {
     it.each([
         [
             'data/chapters/village/village.chapter.ts',
@@ -34,12 +36,19 @@ describe('pathToResource', () => {
         ['data/characters/thomas.ts', { kind: 'entity', id: 'characters/thomas', primary: true }],
         ['data/npcs/Franta.ts', { kind: 'entity', id: 'npcs/franta', primary: true }],
         ['data/npcs/NobleMan.ts', { kind: 'entity', id: 'npcs/nobleMan', primary: true }],
-        ['data/items/foodInfo.ts', { kind: 'entity', id: 'items/*', primary: false }],
         ['data/register.ts', { kind: 'project', id: 'project', primary: false }],
         ['data/TWorldState.ts', { kind: 'project', id: 'project', primary: false }],
-        ['types/TChapter.ts', { kind: 'project', id: 'project', primary: false }],
     ])('%s', (file, expected) => {
-        expect(pathToResource(file)).toEqual(expected);
+        expect(pathToResources(file)).toEqual([expected]);
+    });
+
+    it.each([
+        ['data/items/foodInfo.ts', { kind: 'entity', id: 'items/*', primary: false }],
+        ['data/catalogs/races.ts', { kind: 'catalog', id: 'races/*', primary: false }],
+        ['types/TChapter.ts', { kind: 'project', id: 'project', primary: false }],
+        ['types/literals.ts', { kind: 'project', id: 'project', primary: false }],
+    ])('%s also declares structure', (file, expected) => {
+        expect(pathToResources(file)).toEqual([expected, STRUCTURE]);
     });
 
     it.each([
@@ -55,7 +64,8 @@ describe('pathToResource', () => {
         'types/package.json',
         'core/src/index.ts',
         'Visualizer/server/src/index.ts',
+        'data/catalogs/readme.md',
     ])('%s maps to nothing', (file) => {
-        expect(pathToResource(file)).toBeNull();
+        expect(pathToResources(file)).toEqual([]);
     });
 });

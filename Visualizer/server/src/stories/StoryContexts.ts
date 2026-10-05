@@ -4,7 +4,9 @@ import type { TServerContext } from '../context';
 import { EventBus } from '../events/EventBus';
 import { startWatcher } from '../events/watcher';
 import { Router } from '../http/router';
+import { migrateStructureLayout } from '../project/migrations/structureLayout';
 import { ProjectRoot } from '../project/ProjectRoot';
+import { SourceProject } from '../project/SourceProject';
 import { registerRoutes } from '../routes';
 import type { StoryStore } from './StoryStore';
 
@@ -150,6 +152,8 @@ export class StoryContexts {
             router,
             watching: () => loaded.watcher !== null,
         };
+        const sp = SourceProject.for(project);
+        sp.onFirstRun(() => migrateStructureLayout(sp, bus));
         registerRoutes(ctx);
         router.assertComplete();
         if (this.watch) loaded.watcher = await startWatcher(bus);

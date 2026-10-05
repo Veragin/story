@@ -10,11 +10,18 @@ import { MapPage } from '../pages/Map';
 import { TimelinePage } from '../pages/Timeline';
 import { ChapterPage } from '../pages/Chapter/ChapterPage';
 import { EntitiesPage } from '../pages/Entities';
+import { StructurePage } from '../pages/Structure/StructurePage';
+import { StructureContext } from '../components/inputs/structureContext';
+import { structureStore } from '../context';
 
 // dev-only, kept out of the main bundle
 const CanvasPlayground = lazy(async () => ({
     default: (await import('../canvas/playground/CanvasPlayground'))
         .CanvasPlayground,
+}));
+const InputsPlayground = lazy(async () => ({
+    default: (await import('../components/inputs/playground/InputsPlayground'))
+        .InputsPlayground,
 }));
 
 const renderPage = (route: TRoute) => {
@@ -32,8 +39,14 @@ const renderPage = (route: TRoute) => {
             );
         case 'entities':
             return <EntitiesPage kind={route.kind} id={route.id} />;
+        case 'catalog':
+            return <EntitiesPage catalog={route.catalog} id={route.id} />;
+        case 'structure':
+            return <StructurePage section={route.section} name={route.name} />;
         case 'canvas':
             return <CanvasPlayground />;
+        case 'inputs':
+            return <InputsPlayground />;
     }
 };
 
@@ -46,12 +59,14 @@ export const Shell = observer(() => {
     return (
         <SRoot>
             <TopBar />
-            <SPage>
-                <Suspense fallback={<CircularProgress />}>
-                    {renderPage(router.route)}
-                </Suspense>
-            </SPage>
-            <ModalHost />
+            <StructureContext.Provider value={structureStore}>
+                <SPage>
+                    <Suspense fallback={<CircularProgress />}>
+                        {renderPage(router.route)}
+                    </Suspense>
+                </SPage>
+                <ModalHost />
+            </StructureContext.Provider>
             <LoginPrompt />
         </SRoot>
     );

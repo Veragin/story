@@ -10,12 +10,16 @@
 /* TCharacterId, TNpcId, TChapterId,
    TChapterPassageId, TCharacterPassageId, TChapterCharacterPassageId */
 export * from './ids';
+/* literals shared across files */
+export * from './literals';
 
 /* TChapter */
 export * from './TChapter';
-/* TCharacter, TCharacterData, TNpc, TNpcData */
+/* TCharacter, TCharacterData */
 export * from './TCharacter';
-/* TItemId, TItem, TItemPartial */
+/* TNpc, TNpcData */
+export * from './TNpc';
+/* TItemId, TItem, TItemPartial, TInitInventory */
 export * from './TItem';
 /* TLocation, TLocationId */
 export * from './TLocation';

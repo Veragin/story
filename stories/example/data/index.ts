@@ -30,7 +30,7 @@
 export * from './register';
 /* TWorldState — the shape of this story's world state (type-only: see note 1 above) */
 export type * from './TWorldState';
-/* itemInfo, TItemType — the static per-item data the inventory merges in */
+/* itemInfo, TItemType, TItemInfo — the static per-item data the inventory merges in */
 export * from './items/itemInfo';
 
 /* No art here: an image is the `.png` next to the passage / character / npc file it belongs

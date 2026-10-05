@@ -9,7 +9,14 @@ describe('router hash parsing', () => {
         ['#/entities', { page: 'entities' }],
         ['#/entities/characters', { page: 'entities', kind: 'characters' }],
         ['#/entities/items/a%20b', { page: 'entities', kind: 'items', id: 'a b' }],
+        ['#/entities/catalogs/races', { page: 'catalog', catalog: 'races' }],
+        ['#/entities/catalogs/races/elf', { page: 'catalog', catalog: 'races', id: 'elf' }],
+        ['#/structure', { page: 'structure' }],
+        ['#/structure/types', { page: 'structure', section: 'types' }],
+        ['#/structure/types/TRace', { page: 'structure', section: 'types', name: 'TRace' }],
+        ['#/structure/literals/TItemType', { page: 'structure', section: 'literals', name: 'TItemType' }],
         ['#/_canvas', { page: 'canvas' }],
+        ['#/_inputs', { page: 'inputs' }],
     ];
 
     it.each(cases)('parses %s and round-trips it', (hash, route) => {
@@ -21,10 +28,19 @@ describe('router hash parsing', () => {
         expect(parseHash('/timeline/')).toEqual({ page: 'timeline' });
     });
 
-    it.each(['', '#', '#/', '#/nope', '#/map/extra', '#/timeline/chapter', '#/entities/dragons'])(
-        'returns null for %j',
-        (hash) => {
-            expect(parseHash(hash)).toBeNull();
-        }
-    );
+    it.each([
+        '',
+        '#',
+        '#/',
+        '#/nope',
+        '#/map/extra',
+        '#/timeline/chapter',
+        '#/entities/dragons',
+        '#/entities/catalogs',
+        '#/entities/catalogs/races/elf/x',
+        '#/structure/enums',
+        '#/structure/types/TRace/x',
+    ])('returns null for %j', (hash) => {
+        expect(parseHash(hash)).toBeNull();
+    });
 });

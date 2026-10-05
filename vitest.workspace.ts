@@ -28,6 +28,14 @@ export default defineWorkspace([
     },
     {
         test: {
+            name: 'visualizer-protocol',
+            root: './Visualizer/protocol',
+            environment: 'node',
+            include: ['__tests__/**/*.test.ts'],
+        },
+    },
+    {
+        test: {
             name: 'single-engine',
             root: './SingleEngine',
             environment: 'node',

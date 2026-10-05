@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
 import { Divider, Typography } from '@mui/material';
 import { isCode, type TScreenPassageDto } from '@story/visualizer-protocol';
-import { ImageInput } from '../../../../components/ImageInput';
-import { PlainTextField } from '../../../../components/PlainTextField';
+import { FormImageInput } from '../../../../components/inputs/form/FormImageInput';
+import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
 import { CodeBlock } from '../CodeBlock';
 import { BodyItems } from './BodyItems';
 import { ExecuteField } from './ExecuteField';
@@ -19,15 +19,16 @@ export const ScreenFields = observer(
         preamble,
     }: TFieldsProps<TScreenPassageDto>) => (
         <>
-            <PlainTextField
+            <FormStringInput
                 label={_('Title')}
                 value={draft.title}
                 onChange={(v) =>
-                    edit((d) => d.type === 'screen' && (d.title = v))
+                    edit((d) => d.type === 'screen' && (d.title = v ?? ''))
                 }
                 diagnostics={diag('title')}
+                dataField="title"
             />
-            <ImageInput
+            <FormImageInput
                 api={api}
                 owner="passages"
                 id={draft.passageId}

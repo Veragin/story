@@ -356,3 +356,14 @@ describe('passage editor', () => {
         await store.destroy();
     });
 });
+
+describe('transition targets', () => {
+    it('lists the passages of the same character in the other chapters', async () => {
+        const { store } = setup('village');
+        await store.load();
+        store.openEditor('village-thomas-cool');
+        await settle();
+        expect(store.transitionOptions).toEqual([{ id: 'kingdom-thomas-visit', label: 'Kingdom Chapter' }]);
+        await store.destroy();
+    });
+});

@@ -1,16 +1,20 @@
 import {
     isCode,
-    type TApiErrorBody,
+    isValueRecord,
     type TChangeEvent,
     type TChapterDto,
     type TChapterLayoutDto,
     type TChapterPassagesDto,
+    type TCharacterDto,
     type TEntityDto,
     type TEntityDtoByKind,
     type TEntityKind,
     type TImageDto,
     type TImageOwner,
+    type TItemDto,
+    type TLocationDto,
     type TMapDto,
+    type TNpcDto,
     type TPassageDto,
     type TPassageEdgeDto,
     type TProjectDto,
@@ -20,11 +24,14 @@ import {
     type TTimelineLayoutDto,
     type TTriggerDto,
     type TValue,
+    type TValueRecord,
     type TVersion,
 } from '@story/visualizer-protocol';
-import { ApiError } from './ApiError';
+import { clone, fail, notFound } from './mockHelpers';
 import type { ApiEvents } from './events';
 import { createMockSeed, type TMockSeed } from './mockData';
+import { type TMockHolder } from './mockInstances';
+import { createMockStructureApi } from './mockStructureApi';
 import type { TVisualizerApi } from './types';
 
 export type TMockApiOptions = {
@@ -38,13 +45,15 @@ export type TMockApi = TVisualizerApi & {
     reset(): void;
 };
 
+const ENTITY_REF_NAMES: Record<TEntityKind, string> = {
+    characters: 'TCharacter',
+    npcs: 'TNpc',
+    locations: 'TLocation',
+    items: 'TItem',
+};
+
 const PASSAGE_ID_RE = /['"`]([A-Za-z0-9_]+-[A-Za-z0-9_]+-[A-Za-z0-9_]*)['"`]/g;
 
-const fail = (status: number, body: TApiErrorBody): never => {
-    throw new ApiError(status, body);
-};
-const notFound = (what: string) => fail(404, { error: 'not_found', message: `No ${what}` });
-const clone = <T>(value: T): T => structuredClone(value);
 const MOCK_STORY: TStoryInfoDto = {
     id: 'example',
     name: 'Example (mock)',
@@ -133,6 +142,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         );
         images = new Map();
         sources = new Map();
+        structureApi.load(s);
         refreshDerived();
     };
 
@@ -197,6 +207,100 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         const name = `${owner === 'chapter' ? id : id.split('-').pop()}${owner === 'chapter' ? 'Chapter' : 'Passage'}`;
         const text = `// mock api: this is the ${owner} as JSON, not its real source\nexport const ${name} = ${JSON.stringify(dto, null, 4)};\n`;
         return { file: dto.file, text, version: `src-${version}` };
+    };
+
+    const writeEntity = (kind: TEntityKind, id: string, patch: Record<string, unknown>) => {
+        const map = entities[kind] as Map<string, TEntityDto>;
+        const current = map.get(id);
+        if (!current) return;
+        const next = { ...current, ...patch, version: nextVersion() } as TEntityDto;
+        map.set(id, next);
+        emit({ kind: 'entity', id: `${kind}/${id}`, version: next.version, op: 'updated' }, { markSaved: false });
+    };
+
+    const entityHolder = (
+        e: TEntityDto,
+        typeName: string,
+        path: string,
+        values: TValueRecord,
+        write: (values: TValueRecord) => Record<string, unknown>,
+        openProps = false
+    ): TMockHolder => ({
+        typeName,
+        file: e.file,
+        resource: { kind: 'entity', id: `${e.kind}/${e.id}` },
+        path,
+        values,
+        openProps,
+        write: (next) => writeEntity(e.kind, e.id, write(next)),
+    });
+
+    const initHolder = (e: TCharacterDto | TNpcDto, typeName: string): TMockHolder[] =>
+        isValueRecord(e.init) ? [entityHolder(e, typeName, 'init', e.init, (init) => ({ init }))] : [];
+
+    const userFieldsHolder = (e: TEntityDto, typeName: string): TMockHolder =>
+        entityHolder(e, typeName, '', ('userFields' in e && e.userFields) || {}, (userFields) => ({ userFields }));
+
+    const locationHolder = (e: TLocationDto): TMockHolder =>
+        entityHolder(
+            e,
+            'TLocation',
+            '',
+            { ...e.userFields, ...(Array.isArray(e.sublocations) ? { sublocations: e.sublocations } : {}) },
+            ({ sublocations, ...userFields }) => ({ userFields, sublocations })
+        );
+
+    const itemHolder = (e: TItemDto): TMockHolder =>
+        entityHolder(
+            e,
+            'TItemInfo',
+            '',
+            { name: e.name, type: e.type, ...e.props },
+            ({ name, type, ...props }) => ({ name, type, props }),
+            true
+        );
+
+    const chapterHolder = (c: TChapterDto): TMockHolder => ({
+        typeName: 'TChapter',
+        file: c.file,
+        resource: { kind: 'chapter', id: c.chapterId },
+        path: '',
+        values: typeof c.location === 'string' ? { location: c.location } : {},
+        write: ({ location }) => {
+            if (typeof location !== 'string') return;
+            const next = { ...c, location, version: nextVersion() };
+            chapters.set(c.chapterId, next);
+            emit(
+                { kind: 'chapter', id: c.chapterId, version: next.version, op: 'updated', chapterId: c.chapterId },
+                { markSaved: false }
+            );
+        },
+    });
+
+    const holders = (): TMockHolder[] => [
+        ...[...entities.characters.values()].flatMap((e) => [
+            userFieldsHolder(e, 'TCharacter'),
+            ...initHolder(e, 'TCharacterData'),
+        ]),
+        ...[...entities.npcs.values()].flatMap((e) => [userFieldsHolder(e, 'TNpc'), ...initHolder(e, 'TNpcData')]),
+        ...[...entities.locations.values()].map(locationHolder),
+        ...[...entities.items.values()].map(itemHolder),
+        ...[...chapters.values()].map(chapterHolder),
+    ];
+
+    const structureApi = createMockStructureApi({
+        nextVersion,
+        emit: (event, own) => emit(event, { markSaved: own }),
+        reply,
+        checkVersion,
+        holders,
+        builtInIds: (target) =>
+            target.source === 'chapters' ? [...chapters.keys()] : [...entities[target.kind].keys()],
+    });
+
+    const deletePlan = (kind: TEntityKind, id: string) => {
+        const remaining = [...entities[kind].keys()].filter((key) => key !== id);
+        return structureApi.referencesTo(ENTITY_REF_NAMES[kind], id, remaining, `${kind}/${id}`);
     };
 
     load(seed ?? createMockSeed());
@@ -421,6 +525,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 return { ok: true as const };
             }),
 
+        ...structureApi.routes,
+
         getSource: (owner, id) => reply(() => sourceOf(owner, id)),
         updateSource: (owner, id, { version, text }) =>
             reply(() => {
@@ -500,9 +606,20 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                         init: { inventory: [], location: undefined, isDead: false },
                     },
                     locations: { name: body.id, description: '', localCharacters: [], init: {} },
-                    items: { name: body.id, type: 'value', source: 'itemInfo', props: {} },
+                    items: { name: body.id, type: 'value', source: 'itemInfo' },
                 };
-                const entity = { ...defaults[kind], ...body, ...base } as unknown as TEntityDtoByKind[K];
+                const given = (value: unknown) => (isValueRecord(value) ? value : {});
+                // as on the server: defaults for the author's required fields
+                const own =
+                    kind === 'items'
+                        ? { props: { ...structureApi.userDefaults('TItemInfo'), ...given(body.props) } }
+                        : {
+                              userFields: {
+                                  ...structureApi.userDefaults(ENTITY_REF_NAMES[kind]),
+                                  ...given(body.userFields),
+                              },
+                          };
+                const entity = { ...defaults[kind], ...body, ...own, ...base } as unknown as TEntityDtoByKind[K];
                 map.set(body.id, entity);
                 emit({ kind: 'entity', id: `${kind}/${body.id}`, version: entity.version, op: 'created' });
                 return entity;
@@ -515,6 +632,15 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 const current = get(map, id, `${kind}/${id}`);
                 checkVersion(current, version);
                 const next = { ...current, ...patch, version: nextVersion() } as TEntityDtoByKind[K];
+                // as on the server: `null` removes an optional field, user fields are merged per key
+                const record = next as Record<string, unknown>;
+                for (const [key, value] of Object.entries(patch)) {
+                    if (value === null) delete record[key];
+                }
+                if ('userFields' in patch && typeof patch.userFields === 'object' && patch.userFields) {
+                    const merged = { ...(current as { userFields?: object }).userFields, ...patch.userFields };
+                    record.userFields = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== null));
+                }
                 map.set(id, next);
                 emit({ kind: 'entity', id: `${kind}/${id}`, version: next.version, op: 'updated' });
                 return next;
@@ -524,9 +650,18 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 const map = entities[kind] as Map<string, TEntityDto>;
                 const current = get(map, id, `${kind}/${id}`);
                 checkVersion(current, version);
+                const plan = deletePlan(kind, id);
+                if (plan.blocking.length > 0) fail(409, { error: 'referenced', references: plan.blocking });
                 map.delete(id);
                 emit({ kind: 'entity', id: `${kind}/${id}`, version: null, op: 'deleted' });
-                return { ok: true as const };
+                plan.apply();
+                return { ok: true as const, cleared: plan.cleared };
+            }),
+        getEntityReferences: (kind, id) =>
+            reply(() => {
+                get(entities[kind] as Map<string, TEntityDto>, id, `${kind}/${id}`);
+                const { cleared, blocking } = deletePlan(kind, id);
+                return { cleared, blocking };
             }),
 
         getImage: (owner, id) => reply(() => imageOf(owner, id)),

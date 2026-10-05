@@ -9,6 +9,8 @@ export const itemInfo = {
     },
     ...foodInfo,
     ...toolInfo,
-} as const;
+} as const satisfies Record<string, TItemInfo & Record<string, unknown>>;
 
 export type TItemType = 'value' | 'resource' | 'tool' | 'food' | 'weapon';
+
+export type TItemInfo = { name: string; type: TItemType };

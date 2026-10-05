@@ -3,7 +3,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type { TLinkDto } from '@story/visualizer-protocol';
-import type { TOption } from '../../../../components/CodeField';
+import type { TOption } from '../../../../components/inputs/inputTypes';
 import { linkSummary, type TSummaryPart } from './linkSummary';
 
 type TProps = {

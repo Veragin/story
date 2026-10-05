@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import { Alert, Button, IconButton, Tooltip, TextField } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import { Column, Row, SmallText, spacingCss } from '@story/ui';
+import { Alert, Button, TextField } from '@mui/material';
+import { Row, SmallText, spacingCss } from '@story/ui';
 import type { TLocationDto } from '@story/visualizer-protocol';
 import { ApiError } from '../../../api';
+import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
+import { FormStringInput } from '../../../components/inputs/form/FormStringInput';
+import { LOCAL_CHARACTER_TYPE } from '../../../typeRefs';
 import {
     locationPatch,
-    newLocalCharacterRow,
+    rebaseDraft,
+    toLocalCharacters,
     toLocationDraft,
     type TLocationDraft,
     type TLocationPatch,
 } from './draft';
-import { TextDraftField } from './TextDraftField';
-import { SourceField } from './SourceField';
 
 export type TLocationFormProps = {
     location: TLocationDto;
@@ -98,17 +98,7 @@ export const LocationForm = ({
     const keepMine = () => {
         if (!conflict) return;
         const against = conflict;
-        const mine = locationPatch(base, draft);
-        const disk = toLocationDraft(against);
-        const rebased: TLocationDraft = {
-            name: 'name' in mine ? draft.name : disk.name,
-            description:
-                'description' in mine ? draft.description : disk.description,
-            localCharacters:
-                'localCharacters' in mine
-                    ? draft.localCharacters
-                    : disk.localCharacters,
-        };
+        const rebased = rebaseDraft(base, draft, against);
         setBase(against);
         setDraft(rebased);
         setConflict(null);
@@ -117,7 +107,6 @@ export const LocationForm = ({
 
     const set = (p: Partial<TLocationDraft>) =>
         setDraft((d) => ({ ...d, ...p }));
-    const chars = draft.localCharacters;
 
     return (
         <SForm
@@ -135,110 +124,31 @@ export const LocationForm = ({
                 fullWidth
             />
             <SmallText>{location.file}</SmallText>
-            <TextDraftField
+            <FormStringInput
                 label={_('Name')}
                 value={draft.name}
-                readOnly={readOnly}
-                onChange={(name) => set({ name })}
+                onChange={(name = '') => set({ name })}
+                disabled={readOnly}
+                dataField="name"
             />
-            <TextDraftField
+            <FormStringInput
                 label={_('Description')}
-                value={draft.description}
-                readOnly={readOnly}
                 multiline
-                onChange={(description) => set({ description })}
+                value={draft.description}
+                onChange={(description = '') => set({ description })}
+                disabled={readOnly}
+                dataField="description"
             />
-
-            <SSection>
-                <SRow>
-                    <SmallText>{_('Local characters')}</SmallText>
-                    {!readOnly && chars.kind === 'list' && (
-                        <Tooltip title={_('Add character')}>
-                            <IconButton
-                                size="small"
-                                color="inherit"
-                                aria-label={_('Add character')}
-                                onClick={() =>
-                                    set({
-                                        localCharacters: {
-                                            kind: 'list',
-                                            rows: [
-                                                ...chars.rows,
-                                                newLocalCharacterRow(),
-                                            ],
-                                        },
-                                    })
-                                }
-                            >
-                                <AddRoundedIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                </SRow>
-                {chars.kind === 'code' ? (
-                    <SourceField
-                        label={_('Local characters (code)')}
-                        value={chars.code}
-                        readOnly={readOnly}
-                        onChange={(code) =>
-                            set({ localCharacters: { kind: 'code', code } })
-                        }
-                    />
-                ) : chars.rows.length === 0 ? (
-                    <SmallText>{_('No local characters.')}</SmallText>
-                ) : (
-                    chars.rows.map((row, index) => (
-                        <SCharRow key={row.key}>
-                            <TextDraftField
-                                label={_('Name')}
-                                value={row.name}
-                                readOnly={readOnly}
-                                onChange={(name) => {
-                                    const rows = [...chars.rows];
-                                    rows[index] = { ...row, name };
-                                    set({
-                                        localCharacters: { kind: 'list', rows },
-                                    });
-                                }}
-                            />
-                            <TextDraftField
-                                label={_('Description')}
-                                value={row.description}
-                                readOnly={readOnly}
-                                multiline
-                                onChange={(description) => {
-                                    const rows = [...chars.rows];
-                                    rows[index] = { ...row, description };
-                                    set({
-                                        localCharacters: { kind: 'list', rows },
-                                    });
-                                }}
-                            />
-                            {!readOnly && (
-                                <Tooltip title={_('Remove character')}>
-                                    <IconButton
-                                        size="small"
-                                        color="error"
-                                        aria-label={_('Remove character')}
-                                        onClick={() =>
-                                            set({
-                                                localCharacters: {
-                                                    kind: 'list',
-                                                    rows: chars.rows.filter(
-                                                        (r) => r.key !== row.key
-                                                    ),
-                                                },
-                                            })
-                                        }
-                                    >
-                                        <DeleteRoundedIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                        </SCharRow>
-                    ))
-                )}
-            </SSection>
+            <FormArrayInput
+                label={_('Local characters')}
+                itemType={LOCAL_CHARACTER_TYPE}
+                value={draft.localCharacters}
+                onChange={(items = []) =>
+                    set({ localCharacters: toLocalCharacters(items) })
+                }
+                disabled={readOnly}
+                dataField="localCharacters"
+            />
 
             {conflict && (
                 <Alert
@@ -297,21 +207,6 @@ const SForm = styled.form`
     gap: ${spacingCss(1.5)};
     color: #fff;
     padding-top: ${spacingCss(1)};
-`;
-
-const SSection = styled(Column)`
-    gap: ${spacingCss(1)};
-    align-items: stretch;
-`;
-
-const SRow = styled(Row)`
-    align-items: center;
-    gap: ${spacingCss(1)};
-`;
-
-const SCharRow = styled(Row)`
-    gap: ${spacingCss(1)};
-    align-items: flex-start;
 `;
 
 const SButtons = styled(Row)`

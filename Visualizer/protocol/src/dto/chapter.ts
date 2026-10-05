@@ -1,4 +1,5 @@
 import type { TMaybeCode, TSourceRef, TTimeRangeDto, TValueRecord, TVersioned, TVersionedBody } from './common';
+import type { TFieldDesc } from './structure';
 
 export type TChapterDto = TVersioned &
     TSourceRef & {
@@ -33,8 +34,13 @@ export type TChapterCharacterDto = {
 /** An exported type alias next to an entity (`export type TThomasCharacterData = { … }`). */
 export type TDataTypeDto = {
     name: string;
-    /** The right-hand side, verbatim. */
+    /** The right-hand side, verbatim. In a body it is written as is, unless `fields` is given. */
     code: string;
+    /**
+     * When the right-hand side is an object type. In a body it takes precedence over `code`: the server writes the
+     * text and adds `import type` for the literals and ids it names.
+     */
+    fields?: TFieldDesc[];
 };
 
 export type TChapterEditable = Pick<

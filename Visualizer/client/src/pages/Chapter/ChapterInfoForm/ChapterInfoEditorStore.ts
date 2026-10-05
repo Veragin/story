@@ -1,26 +1,15 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
-import type { TChapterDto, TDiagnosticDto, TProjectDto, TUpdateChapterBody } from '@story/visualizer-protocol';
+import type { TChapterDto, TDiagnosticDto, TUpdateChapterBody } from '@story/visualizer-protocol';
 import { ApiError, type TVisualizerApi } from '../../../api';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics } from '../editor/diagnostics';
-import { CHAPTER_INFO_FIELDS, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
+import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
 
 const draftKey = (chapterId: string) => `chapter-info-draft:${chapterId}`;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-const fieldPathsOf = (v: TChapterInfoValue | null) => {
-    const fields = new Set<string>(CHAPTER_INFO_FIELDS);
-    fields.add('timeRange.start').add('timeRange.end');
-    const children = v?.children;
-    if (Array.isArray(children)) {
-        children.forEach((_c, i) => fields.add(`children.${i}.chapterId`).add(`children.${i}.condition`));
-    }
-    return fields;
-};
-
 export class ChapterInfoEditorStore {
     chapter: TChapterDto | null = null;
-    project: TProjectDto | null = null;
     draft: TChapterInfoValue | null = null;
     saving = false;
     error: string | null = null;
@@ -34,7 +23,6 @@ export class ChapterInfoEditorStore {
     ) {
         makeObservable(this, {
             chapter: observable.ref,
-            project: observable.ref,
             draft: observable.ref,
             saving: observable,
             error: observable,
@@ -63,7 +51,7 @@ export class ChapterInfoEditorStore {
     }
 
     private get diagnosticIndex() {
-        return mapDiagnostics(this.diagnostics, fieldPathsOf(this.draft));
+        return mapDiagnostics(this.diagnostics, chapterFieldPaths(this.draft));
     }
 
     diagnosticsFor = (path: string) => this.diagnosticIndex.byField.get(path) ?? [];
@@ -74,18 +62,15 @@ export class ChapterInfoEditorStore {
 
     async load() {
         try {
-            const [chapter, project] = await Promise.all([
-                this.api.getChapter(this.chapterId),
-                this.api.getProject().catch(() => null),
-            ]);
+            const chapter = await this.api.getChapter(this.chapterId);
             runInAction(() => {
                 this.chapter = chapter;
-                this.project = project;
                 const saved = getUiState<{ version: string; draft: TChapterInfoValue } | null>(
                     draftKey(this.chapterId),
                     null
                 );
-                this.draft = saved?.draft ?? chapterInfoOf(chapter);
+                // a draft saved before a field was editable lacks it
+                this.draft = { ...chapterInfoOf(chapter), ...saved?.draft };
                 if (saved && saved.version !== chapter.version && this.dirty) this.conflict = { current: chapter };
             });
         } catch (e) {
@@ -106,7 +91,7 @@ export class ChapterInfoEditorStore {
             this.error = null;
         });
         try {
-            const body = { version: this.chapter.version, ...this.patch } as TUpdateChapterBody;
+            const body: TUpdateChapterBody = { version: this.chapter.version, ...this.patch };
             const saved = await this.api.updateChapter(this.chapterId, body);
             runInAction(() => {
                 this.chapter = saved;

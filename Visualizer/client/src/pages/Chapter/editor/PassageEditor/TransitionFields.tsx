@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import type { TTransitionPassageDto } from '@story/visualizer-protocol';
-import { IdCodeField } from '../../../../components/CodeField';
+import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
@@ -9,7 +9,7 @@ export const TransitionFields = observer(
         draft,
         edit,
         diag,
-        passageOptions,
+        transitionOptions,
         preamble,
     }: TFieldsProps<TTransitionPassageDto>) => (
         <>
@@ -19,7 +19,7 @@ export const TransitionFields = observer(
                 diag={diag}
                 preamble={preamble}
             />
-            <IdCodeField
+            <FormTypeInput
                 label={_('Next passage (another chapter)')}
                 value={draft.nextPassageId}
                 onChange={(v) =>
@@ -30,9 +30,10 @@ export const TransitionFields = observer(
                             (d.nextPassageId = v)
                     )
                 }
-                options={passageOptions}
+                options={transitionOptions}
                 placeholder="<chapter>-<character>-<local>"
                 diagnostics={diag('nextPassageId')}
+                dataField="nextPassageId"
             />
         </>
     )

@@ -5,12 +5,18 @@ import { getUiState, setUiState } from '../ui-state';
 export const ENTITY_KINDS = ['characters', 'locations', 'npcs', 'items'] as const;
 export type TEntityKind = (typeof ENTITY_KINDS)[number];
 
+export const STRUCTURE_SECTIONS = ['types', 'literals'] as const;
+export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
+
 export type TRoute =
     | { page: 'map' }
     | { page: 'timeline' }
     | { page: 'chapter'; chapterId: TChapterId }
     | { page: 'entities'; kind?: TEntityKind; id?: string }
-    | { page: 'canvas' };
+    | { page: 'catalog'; catalog: string; id?: string }
+    | { page: 'structure'; section?: TStructureSection; name?: string }
+    | { page: 'canvas' }
+    | { page: 'inputs' };
 
 export type TPage = TRoute['page'];
 
@@ -19,6 +25,9 @@ export const DEFAULT_ROUTE: TRoute = { page: 'map' };
 const LAST_ROUTE_KEY = 'shell.lastRoute';
 
 const isEntityKind = (value: string): value is TEntityKind => ENTITY_KINDS.some((kind) => kind === value);
+
+const isStructureSection = (value: string): value is TStructureSection =>
+    STRUCTURE_SECTIONS.some((section) => section === value);
 
 const decode = (part: string) => {
     try {
@@ -43,12 +52,26 @@ export const parseHash = (hash: string): TRoute | null => {
             return null;
         case 'entities': {
             if (parts.length === 1) return { page: 'entities' };
+            if (parts[1] === 'catalogs') {
+                if (!parts[2] || parts.length > 4) return null;
+                return parts[3]
+                    ? { page: 'catalog', catalog: parts[2], id: parts[3] }
+                    : { page: 'catalog', catalog: parts[2] };
+            }
             const kind = parts[1];
             if (!isEntityKind(kind) || parts.length > 3) return null;
             return parts[2] ? { page: 'entities', kind, id: parts[2] } : { page: 'entities', kind };
         }
+        case 'structure': {
+            if (parts.length === 1) return { page: 'structure' };
+            const section = parts[1];
+            if (!isStructureSection(section) || parts.length > 3) return null;
+            return parts[2] ? { page: 'structure', section, name: parts[2] } : { page: 'structure', section };
+        }
         case '_canvas':
             return parts.length === 1 ? { page: 'canvas' } : null;
+        case '_inputs':
+            return parts.length === 1 ? { page: 'inputs' } : null;
         default:
             return null;
     }
@@ -66,8 +89,17 @@ export const routeToHash = (route: TRoute): string => {
         case 'entities':
             if (!route.kind) return '#/entities';
             return route.id ? `#/entities/${route.kind}/${enc(route.id)}` : `#/entities/${route.kind}`;
+        case 'catalog':
+            return route.id
+                ? `#/entities/catalogs/${enc(route.catalog)}/${enc(route.id)}`
+                : `#/entities/catalogs/${enc(route.catalog)}`;
+        case 'structure':
+            if (!route.section) return '#/structure';
+            return route.name ? `#/structure/${route.section}/${enc(route.name)}` : `#/structure/${route.section}`;
         case 'canvas':
             return '#/_canvas';
+        case 'inputs':
+            return '#/_inputs';
     }
 };
 

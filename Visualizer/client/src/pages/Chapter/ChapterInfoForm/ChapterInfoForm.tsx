@@ -1,285 +1,174 @@
+import { capitalize } from '@story/shared';
+import { styled } from '@mui/material';
+import { observer } from 'mobx-react-lite';
+import { spacingCss } from '@story/ui';
+import type { TDataTypeDto, TTypeRef } from '@story/visualizer-protocol';
+import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
+import { FormDataTypeInput } from '../../../components/inputs/form/FormDataTypeInput';
+import { FormObjectInput } from '../../../components/inputs/form/FormObjectInput';
+import { FormStringInput } from '../../../components/inputs/form/FormStringInput';
+import { FormTypeInput } from '../../../components/inputs/form/FormTypeInput';
 import {
-    Button,
-    IconButton,
-    Paper,
-    styled,
-    TextField,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+    NO_DIAGNOSTICS,
+    nestedDiagnostics,
+    type TDiagnosticsOf,
+} from '../../../components/inputs/inputTypes';
 import {
-    isCode,
-    type TChapterChildDto,
-    type TDiagnosticDto,
-    type TMaybeCode,
-    type TTimeRangeDto,
-} from '@story/visualizer-protocol';
+    StructureContext,
+    typeContextOf,
+    useStructureContext,
+    withoutRefOption,
+} from '../../../components/inputs/structureContext';
 import {
-    CodeField,
-    CodeTextArea,
-    FieldDiagnostics,
-    IdCodeField,
-    StringCodeField,
-    type TOption,
-} from '../../../components/CodeField';
-import { quoteString } from '../../../components/codeLiterals';
-import type { TChapterInfoValue } from './chapterInfo';
+    isArrayOf,
+    isTextRecord,
+    toMaybeCode,
+} from '../../../components/inputs/valueSource';
+import { migrateInit, type TChapterInfoValue } from './chapterInfo';
+import { TimeRangeInput } from './TimeRangeInput';
 
 type TChapterInfoFormProps = {
+    chapterId: string;
+    file: string;
     value: TChapterInfoValue;
     onChange: (value: TChapterInfoValue) => void;
-    locations: TOption[];
-    chapters: TOption[];
-    diagnostics?: (path: string) => TDiagnosticDto[];
+    diagnostics?: TDiagnosticsOf;
     disabled?: boolean;
 };
 
-const noDiagnostics = () => [];
+const CHAPTER_REF = 'TChapter';
 
-const timeToCode = (t: string) => `Time.fromString(${quoteString(t)})`;
-const TIME_RE = /^Time\.fromString\(\s*(['"])(.*)\1\s*\)$/;
-const parseTime = (code: string) => TIME_RE.exec(code.trim())?.[2];
-
-export const ChapterInfoForm = ({
-    value,
-    onChange,
-    locations,
-    chapters,
-    diagnostics = noDiagnostics,
-    disabled,
-}: TChapterInfoFormProps) => {
-    const set = <K extends keyof TChapterInfoValue>(
-        key: K,
-        v: TChapterInfoValue[K] | undefined
-    ) => {
-        if (v !== undefined) onChange({ ...value, [key]: v });
-    };
-
-    return (
-        <SForm>
-            <StringCodeField
-                label={_('Title')}
-                value={value.title}
-                onChange={(v) => set('title', v)}
-                diagnostics={diagnostics('title')}
-                disabled={disabled}
-            />
-            <StringCodeField
-                label={_('Description')}
-                multiline
-                value={value.description}
-                onChange={(v) => set('description', v)}
-                diagnostics={diagnostics('description')}
-                disabled={disabled}
-            />
-            <IdCodeField
-                label={_('Location')}
-                value={value.location}
-                onChange={(v) => set('location', v)}
-                options={locations}
-                diagnostics={diagnostics('location')}
-                disabled={disabled}
-            />
-            <TimeRangeField
-                value={value.timeRange}
-                onChange={(v) => set('timeRange', v)}
-                diagnostics={diagnostics}
-                disabled={disabled}
-            />
-            <ChildrenField
-                value={value.children}
-                onChange={(v) => set('children', v)}
-                chapters={chapters}
-                diagnostics={diagnostics}
-                disabled={disabled}
-            />
-        </SForm>
-    );
+const CHILD_TYPE: TTypeRef = {
+    t: 'object',
+    fields: [
+        {
+            key: 'chapterId',
+            type: { t: 'ref', name: CHAPTER_REF },
+            optional: false,
+        },
+        { key: 'condition', type: { t: 'string' }, optional: false },
+    ],
 };
 
-const TimeRangeField = ({
-    value,
-    onChange,
-    diagnostics,
-    disabled,
-}: {
-    value: TMaybeCode<TTimeRangeDto>;
-    onChange: (v: TMaybeCode<TTimeRangeDto>) => void;
-    diagnostics: (path: string) => TDiagnosticDto[];
-    disabled?: boolean;
-}) => {
-    if (isCode(value)) {
+const isChildren = isArrayOf(isTextRecord(['chapterId', 'condition']));
+
+export const ChapterInfoForm = observer(
+    ({
+        chapterId,
+        file,
+        value,
+        onChange,
+        diagnostics = NO_DIAGNOSTICS,
+        disabled,
+    }: TChapterInfoFormProps) => {
+        const structure = useStructureContext();
+        const set = <K extends keyof TChapterInfoValue>(
+            key: K,
+            next: TChapterInfoValue[K] | undefined
+        ) => {
+            if (next !== undefined) onChange({ ...value, [key]: next });
+        };
+        const setDataType = (
+            dataType: TDataTypeDto,
+            renames: Record<string, string>
+        ) =>
+            onChange({
+                ...value,
+                dataType,
+                init: dataType.fields
+                    ? migrateInit(
+                          value.init,
+                          value.dataType?.fields ?? [],
+                          dataType.fields,
+                          renames,
+                          typeContextOf(structure)
+                      )
+                    : value.init,
+            });
+        const fields = value.dataType?.fields;
+
         return (
-            <div>
-                <Typography variant="caption" color="text.secondary">
-                    {_('Time range (code)')}
-                </Typography>
-                <CodeTextArea
-                    value={value.code}
-                    onChange={(code) => onChange({ code })}
+            <SForm>
+                <FormStringInput
+                    label={_('Title')}
+                    value={value.title}
+                    onChange={(next) => set('title', next)}
+                    diagnostics={diagnostics('title')}
+                    disabled={disabled}
+                    dataField="title"
+                />
+                <FormStringInput
+                    label={_('Description')}
+                    multiline
+                    value={value.description}
+                    onChange={(next) => set('description', next)}
+                    diagnostics={diagnostics('description')}
+                    disabled={disabled}
+                    dataField="description"
+                />
+                <FormTypeInput
+                    label={_('Location')}
+                    value={value.location}
+                    onChange={(next) => set('location', next)}
+                    options={structure.refOptions('TLocation')}
+                    diagnostics={diagnostics('location')}
+                    disabled={disabled}
+                    dataField="location"
+                />
+                <TimeRangeInput
+                    value={value.timeRange}
+                    onChange={(next) => set('timeRange', next)}
+                    diagnostics={diagnostics}
                     disabled={disabled}
                 />
-                <FieldDiagnostics diagnostics={diagnostics('timeRange')} />
-            </div>
-        );
-    }
-    const end = (key: 'start' | 'end', label: string) => (
-        <CodeField<string>
-            label={label}
-            value={value[key]}
-            onChange={(v) =>
-                v !== undefined && onChange({ ...value, [key]: v })
-            }
-            emptyLiteral=""
-            toCode={timeToCode}
-            fromCode={parseTime}
-            diagnostics={diagnostics(`timeRange.${key}`)}
-            disabled={disabled}
-            literal={(t, change, hasError) => (
-                <TextField
-                    size="small"
-                    value={t}
-                    error={hasError}
-                    placeholder="2.1. 8:00"
-                    disabled={disabled}
-                    onChange={(e) => change(e.target.value)}
-                />
-            )}
-        />
-    );
-    return (
-        <div>
-            <Typography variant="caption" color="text.secondary">
-                {_('Time range (day.month. hour:minute)')}
-            </Typography>
-            <SRow>
-                {end('start', _('Start'))}
-                {end('end', _('End'))}
-            </SRow>
-            <FieldDiagnostics diagnostics={diagnostics('timeRange')} />
-        </div>
-    );
-};
-
-const ChildrenField = ({
-    value,
-    onChange,
-    chapters,
-    diagnostics,
-    disabled,
-}: {
-    value: TMaybeCode<TChapterChildDto[]>;
-    onChange: (v: TMaybeCode<TChapterChildDto[]>) => void;
-    chapters: TOption[];
-    diagnostics: (path: string) => TDiagnosticDto[];
-    disabled?: boolean;
-}) => {
-    if (isCode(value)) {
-        return (
-            <div>
-                <Typography variant="caption" color="text.secondary">
-                    {_('Child chapters (code)')}
-                </Typography>
-                <CodeTextArea
-                    value={value.code}
-                    onChange={(code) => onChange({ code })}
-                    disabled={disabled}
-                />
-                <FieldDiagnostics diagnostics={diagnostics('children')} />
-            </div>
-        );
-    }
-    const setChild = (i: number, child: TChapterChildDto) =>
-        onChange(value.map((c, j) => (j === i ? child : c)));
-    return (
-        <SChildren>
-            <Typography variant="caption" color="text.secondary">
-                {_('Child chapters')}
-            </Typography>
-            <FieldDiagnostics diagnostics={diagnostics('children')} />
-            {value.map((child, i) => (
-                <SChild key={i} variant="outlined">
-                    <SRow>
-                        <IdCodeField
-                            label={_('Chapter')}
-                            value={child.chapterId}
-                            onChange={(v) =>
-                                v !== undefined &&
-                                setChild(i, { ...child, chapterId: v })
-                            }
-                            options={chapters}
-                            diagnostics={diagnostics(`children.${i}.chapterId`)}
-                            disabled={disabled}
-                        />
-                        <Tooltip title={_('Remove child chapter')}>
-                            <IconButton
-                                size="small"
-                                aria-label={_('Remove child chapter')}
-                                disabled={disabled}
-                                onClick={() =>
-                                    onChange(value.filter((_c, j) => j !== i))
-                                }
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </SRow>
-                    <StringCodeField
-                        label={_('Condition')}
-                        value={child.condition}
-                        onChange={(v) =>
-                            v !== undefined &&
-                            setChild(i, { ...child, condition: v })
+                <StructureContext.Provider
+                    value={withoutRefOption(structure, CHAPTER_REF, chapterId)}
+                >
+                    <FormArrayInput
+                        label={_('Child chapters')}
+                        itemType={CHILD_TYPE}
+                        value={value.children}
+                        onChange={(next = []) =>
+                            set('children', toMaybeCode(next, isChildren))
                         }
-                        diagnostics={diagnostics(`children.${i}.condition`)}
+                        diagnostics={diagnostics('children')}
+                        diagnosticsOf={nestedDiagnostics(
+                            diagnostics,
+                            'children'
+                        )}
                         disabled={disabled}
+                        dataField="children"
                     />
-                </SChild>
-            ))}
-            <Button
-                size="small"
-                color="inherit"
-                startIcon={<AddIcon fontSize="small" />}
-                disabled={disabled}
-                sx={{ alignSelf: 'flex-start' }}
-                onClick={() =>
-                    onChange([
-                        ...value,
-                        { condition: '', chapterId: chapters[0]?.id ?? '' },
-                    ])
-                }
-            >
-                {_('Add child chapter')}
-            </Button>
-        </SChildren>
-    );
-};
+                </StructureContext.Provider>
+                <FormObjectInput
+                    label={_('Init')}
+                    value={value.init}
+                    onChange={(next = {}) => set('init', next)}
+                    fields={fields}
+                    // without a known data type the keys are free, typed by their values
+                    allowCustomFields={!fields}
+                    diagnostics={diagnostics('init')}
+                    diagnosticsOf={nestedDiagnostics(diagnostics, 'init')}
+                    disabled={disabled}
+                    dataField="init"
+                />
+                <FormDataTypeInput
+                    value={value.dataType}
+                    onChange={setDataType}
+                    newName={`T${capitalize(chapterId)}ChapterData`}
+                    file={file}
+                    diagnostics={diagnostics('dataType')}
+                    disabled={disabled}
+                    dataField="dataType"
+                />
+            </SForm>
+        );
+    }
+);
 
 const SForm = styled('div')`
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: ${spacingCss(1.5)};
     min-width: 0;
-`;
-
-const SRow = styled('div')`
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-`;
-
-const SChildren = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-`;
-
-const SChild = styled(Paper)`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.03);
 `;

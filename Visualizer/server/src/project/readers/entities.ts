@@ -1,5 +1,6 @@
 import type {
     TCharacterDto,
+    TFieldDesc,
     TEntityDto,
     TEntityKind,
     TItemDto,
@@ -7,6 +8,7 @@ import type {
     TLocationDto,
     TMaybeCode,
     TNpcDto,
+    TValue,
     TValueRecord,
 } from '@story/visualizer-protocol';
 import { Node, type ObjectLiteralExpression, type PropertyAssignment, type SourceFile } from 'ts-morph';
@@ -15,17 +17,19 @@ import { HttpError } from '../../http/HttpError';
 import {
     asObject,
     findExportedObject,
+    getPropInit,
     lineOf,
-    propertyKey,
     resolveIdentifierFile,
     stringLiteral,
     stringProp,
     unwrap,
 } from '../ast';
+import { findObjectEntry, objectEntries, readEntryValues } from '../objectCatalog';
 import type { SourceProject } from '../SourceProject';
 import { locationRef, registerEntries, type TRegisterEntry } from '../story';
-import { readFields, readValue, S, type TField } from '../values';
+import { readFields, S, schemaOf, type TField } from '../values';
 import { readDataType } from './chapters';
+import { readType, readTypeNames, type TTypeNames, userFieldsOf } from './structure';
 
 type TSourceKind = Exclude<TEntityKind, 'items'>;
 
@@ -41,7 +45,29 @@ export const DATA_TYPE_SUFFIX: Record<TSourceKind, string> = {
     locations: 'LocationData',
 };
 
-export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => {
+/** The extendable types behind an entity kind: the entity object's, and its `init`'s. */
+export const ENTITY_TYPES: Record<TSourceKind, { entity: string; data?: string }> = {
+    characters: { entity: 'TCharacter', data: 'TCharacterData' },
+    npcs: { entity: 'TNpc', data: 'TNpcData' },
+    locations: { entity: 'TLocation' },
+};
+
+const entityUserFields = (sp: SourceProject, kind: TSourceKind, names?: TTypeNames): TFieldDesc[] =>
+    userFieldsOf(readType(sp, ENTITY_TYPES[kind].entity, names));
+
+export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => ({
+    ...builtInEntityFields(sp, kind),
+    ...Object.fromEntries(entityUserFields(sp, kind).map((field) => [field.key, { schema: schemaOf(field.type) }])),
+});
+
+export const entityOptional = (sp: SourceProject, kind: TSourceKind): string[] => [
+    ...ENTITY_OPTIONAL[kind],
+    ...entityUserFields(sp, kind)
+        .filter((field) => field.optional)
+        .map((field) => field.key),
+];
+
+const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => {
     switch (kind) {
         case 'characters':
             return {
@@ -70,7 +96,7 @@ export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
     }
 };
 
-export const ENTITY_OPTIONAL: Record<TSourceKind, string[]> = {
+const ENTITY_OPTIONAL: Record<TSourceKind, string[]> = {
     characters: ['description', 'image', 'startPassageId'],
     npcs: ['image'],
     locations: ['sublocations', 'mapId'],
@@ -115,7 +141,17 @@ export const findEntitySource = (sp: SourceProject, kind: TSourceKind, id: strin
     return found;
 };
 
+const readUserFields = (fields: Record<string, unknown>, userFields: TFieldDesc[]): TValueRecord => {
+    const out: TValueRecord = {};
+    for (const { key } of userFields) {
+        if (fields[key] !== undefined) out[key] = fields[key] as TValue;
+    }
+    return out;
+};
+
 export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharacterDto | TNpcDto | TLocationDto => {
+    const names = readTypeNames(sp);
+    const userFields = entityUserFields(sp, src.kind, names);
     const fields = readFields(src.obj, entityFields(sp, src.kind));
     const base = {
         id: src.id,
@@ -125,7 +161,8 @@ export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharac
         exportName: src.exportName,
         name: (fields.name ?? src.id) as TMaybeCode<string>,
         init: (fields.init ?? {}) as TMaybeCode<TValueRecord>,
-        dataType: readDataType(src.sf, DATA_TYPE_SUFFIX[src.kind]),
+        dataType: readDataType(src.sf, DATA_TYPE_SUFFIX[src.kind], names),
+        ...(userFields.length > 0 ? { userFields: readUserFields(fields, userFields) } : {}),
     };
     const opt = <K extends string>(key: K) =>
         (fields[key] !== undefined ? { [key]: fields[key] } : {}) as Partial<Record<K, never>>;
@@ -163,7 +200,7 @@ export type TItemSourceNode = TItemContainer & { id: string; prop: PropertyAssig
 
 const itemInfoFile = (sp: SourceProject) => sp.file(sp.root.abs('data/items/itemInfo.ts'));
 
-const itemContainers = (sp: SourceProject): TItemContainer[] => {
+export const itemContainers = (sp: SourceProject): TItemContainer[] => {
     const sf = itemInfoFile(sp);
     const decl = sf?.getVariableDeclaration('itemInfo');
     const obj = asObject(decl?.getInitializer());
@@ -182,19 +219,10 @@ const itemContainers = (sp: SourceProject): TItemContainer[] => {
 
 export const itemNodes = (sp: SourceProject): TItemSourceNode[] =>
     itemContainers(sp).flatMap((c) =>
-        c.obj.getProperties().flatMap((p) => {
-            if (!Node.isPropertyAssignment(p)) return [];
-            const id = propertyKey(p);
-            const item = asObject(p.getInitializer());
-            return id && item ? [{ ...c, id, prop: p, item }] : [];
-        })
+        objectEntries(c.obj).map(({ id, prop, value }) => ({ ...c, id, prop, item: value }))
     );
 
-export const findItem = (sp: SourceProject, id: string): TItemSourceNode => {
-    const found = itemNodes(sp).find((i) => i.id === id);
-    if (!found) throw HttpError.notFound(`No item "${id}"`);
-    return found;
-};
+export const findItem = (sp: SourceProject, id: string): TItemSourceNode => findObjectEntry(itemNodes(sp), id, 'item');
 
 export const containerForType = (sp: SourceProject, type: string): TItemContainer | undefined => {
     const all = itemContainers(sp);
@@ -202,19 +230,11 @@ export const containerForType = (sp: SourceProject, type: string): TItemContaine
     return all.find((c) => c.source === wanted) ?? all.find((c) => c.source === 'itemInfo');
 };
 
+const ITEM_INFO_KEYS = ['name', 'type'];
+
 export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto => {
-    const props: TValueRecord = {};
-    let name: TMaybeCode<string> = node.id;
-    let type = '';
-    for (const p of node.item.getProperties()) {
-        const key = propertyKey(p);
-        if (!key) continue;
-        const init = Node.isPropertyAssignment(p) ? p.getInitializerOrThrow() : undefined;
-        if (key === 'name' && init) name = readValue(init, S.string) as TMaybeCode<string>;
-        else if (key === 'type' && init) type = stringLiteral(init) ?? init.getText();
-        else if (init) props[key] = readValue(init, S.value) as TValueRecord[string];
-        else props[key] = { code: p.getText() };
-    }
+    const values = readEntryValues(node.item, (key) => (key === 'name' ? S.string : S.value));
+    const typeInit = getPropInit(node.item, 'type');
     return {
         kind: 'items',
         id: node.id,
@@ -223,9 +243,9 @@ export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto
         file: sp.root.rel(node.sf.getFilePath()),
         line: lineOf(node.prop),
         exportName: node.source,
-        name,
-        type,
-        props,
+        name: (values.name ?? node.id) as TMaybeCode<string>,
+        type: stringLiteral(typeInit) ?? typeInit?.getText() ?? '',
+        props: Object.fromEntries(Object.entries(values).filter(([key]) => !ITEM_INFO_KEYS.includes(key))),
     };
 };
 

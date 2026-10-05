@@ -12,6 +12,7 @@ import {
     type TSourceOwner,
 } from '@story/visualizer-protocol';
 import { ApiError, displayText, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
+import type { TOption } from '../../components/inputs/inputTypes';
 import { getUiState, setUiState } from '../../ui-state';
 import { BOX, GAP, placeMissing } from './graph/autoLayout';
 import { buildGraph, type TGraph } from './graph/buildGraph';
@@ -85,6 +86,7 @@ export class ChapterGraphStore {
     rawEdges: TPassageEdgeDto[] = [];
     layout: TChapterLayoutDto | null = null;
     project: TProjectDto | null = null;
+    transitionOptions: TOption[] = [];
 
     autoPositions: Record<string, TPoint> = {};
 
@@ -115,6 +117,7 @@ export class ChapterGraphStore {
             rawEdges: observable.ref,
             layout: observable.ref,
             project: observable.ref,
+            transitionOptions: observable.ref,
             autoPositions: observable.ref,
             selectedId: observable,
             editor: observable.ref,
@@ -315,6 +318,23 @@ export class ChapterGraphStore {
         this.editor?.destroy();
         this.editor = new PassageEditorStore(passage, this.api, (saved) => this.onPassageSaved(saved));
         setUiState(uiKeys.editor(this.chapterId), passageId);
+        if (passage.type === 'transition') void this.loadTransitionOptions(passage.characterId);
+    }
+
+    async loadTransitionOptions(characterId: string): Promise<void> {
+        const chapters = (this.project?.chapters ?? []).filter(
+            (c) => c.id !== this.chapterId && c.characterIds.includes(characterId)
+        );
+        const loaded = await Promise.all(
+            chapters.map(async (entry) => ({ entry, chapter: await this.api.getChapter(entry.id).catch(() => null) }))
+        );
+        const options = loaded.flatMap(({ entry, chapter }) =>
+            (chapter?.characters.find((c) => c.characterId === characterId)?.passageIds ?? []).map((id) => ({
+                id,
+                label: entry.name,
+            }))
+        );
+        runInAction(() => (this.transitionOptions = options));
     }
 
     closeEditor() {

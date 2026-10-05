@@ -1,9 +1,9 @@
 import { IconButton, Tooltip, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { TBodyItemDto } from '@story/visualizer-protocol';
-import { IdCodeField } from '../../../../components/CodeField';
-import { FunctionInput } from '../../../../components/FunctionInput';
-import { PlainTextField } from '../../../../components/PlainTextField';
+import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
+import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
+import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
 import { ItemDiagnostics } from './ItemDiagnostics';
 import { Links } from './Links';
 import { setField } from './listUtils';
@@ -51,7 +51,7 @@ export const BodyItemEditor = ({
                 </Tooltip>
             </STitleRow>
             <ItemDiagnostics diagnostics={diag(path)} />
-            <FunctionInput
+            <FormFunctionInput
                 label={_('Condition')}
                 value={item.condition}
                 onChange={(v) => set('condition', v)}
@@ -59,22 +59,25 @@ export const BodyItemEditor = ({
                 emptyCode="true"
                 placeholder={_('When the item is shown')}
                 diagnostics={diag(`${path}.condition`)}
+                dataField={`${path}.condition`}
             />
-            <IdCodeField
+            <FormTypeInput
                 label={_('Redirect')}
                 value={item.redirect}
                 onChange={(v) => set('redirect', v)}
                 options={passageOptions}
                 optional
                 diagnostics={diag(`${path}.redirect`)}
+                dataField={`${path}.redirect`}
             />
-            <PlainTextField
+            <FormStringInput
                 label={_('Text')}
                 multiline
                 value={item.text}
                 // an empty text is left out of the source
                 onChange={(v) => set('text', v === '' ? undefined : v)}
                 diagnostics={diag(`${path}.text`)}
+                dataField={`${path}.text`}
             />
             <Links
                 value={item.links}

@@ -12,5 +12,5 @@
 export * from './register';
 /* TWorldState — the shape of this story's world state (type-only) */
 export type * from './TWorldState';
-/* itemInfo, TItemType — the static per-item data the inventory merges in */
+/* itemInfo, TItemType, TItemInfo — the static per-item data the inventory merges in */
 export * from './items/itemInfo';

@@ -23,6 +23,7 @@ import {
     triggerRef,
 } from '../story';
 import { readFields, readValue, S, type TField, type TSchema } from '../values';
+import { readTypeNames, type TTypeNames, typeLiteralFields } from './structure';
 
 export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
     title: { schema: S.string },
@@ -43,10 +44,12 @@ export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
 
 const triggerIdsSchema = (sp: SourceProject): TSchema => S.array(S.ref(triggerRef(sp)));
 
-export const readDataType = (sf: SourceFile, suffix: string): TDataTypeDto | undefined => {
+export const readDataType = (sf: SourceFile, suffix: string, names: TTypeNames): TDataTypeDto | undefined => {
     const alias = findTypeAlias(sf, (n) => n.startsWith('T') && n.endsWith(suffix));
     const node = alias?.getTypeNode();
-    return alias && node ? { name: alias.getName(), code: node.getText() } : undefined;
+    if (!alias || !node) return undefined;
+    const fields = typeLiteralFields(node, names);
+    return { name: alias.getName(), code: node.getText(), ...(fields ? { fields } : {}) };
 };
 
 export const chapterVersion = (sp: SourceProject, chapterId: string) =>
@@ -82,7 +85,7 @@ export const readChapter = (sp: SourceProject, chapterId: string): TChapterDto =
               ? [triggerIds as TMaybeCode<string>]
               : [],
         init: (fields.init ?? {}) as TMaybeCode<TValueRecord>,
-        dataType: readDataType(sf, 'ChapterData'),
+        dataType: readDataType(sf, 'ChapterData', readTypeNames(sp)),
         characters: readChapterCharacters(sp, chapterId),
     };
 };

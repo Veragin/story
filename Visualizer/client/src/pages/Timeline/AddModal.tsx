@@ -7,13 +7,13 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    MenuItem,
     Stack,
     TextField,
     ToggleButton,
     ToggleButtonGroup,
 } from '@mui/material';
 import { ApiError } from '../../api';
+import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
 import { errorMessage, type TimelineStore } from './store/TimelineStore';
 
 // ids end up in identifiers and passage ids (`<chapter>-<character>-<local>`)
@@ -111,33 +111,27 @@ export const AddModal = observer(({ store, time, close }: TAddProps) => {
                         helperText={idError ?? _('Cannot be changed later')}
                     />
                     {kind === 'chapter' ? (
-                        <TextField
-                            select
-                            size="small"
+                        <FormTypeInput
                             label={_('Location')}
                             value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                        >
-                            {locations.map((l) => (
-                                <MenuItem key={l.id} value={l.id}>
-                                    {l.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                            onChange={(next) => setLocation(next ?? '')}
+                            options={locations.map((l) => ({
+                                id: l.id,
+                                label: l.name,
+                            }))}
+                            dataField="location"
+                        />
                     ) : (
-                        <TextField
-                            select
-                            size="small"
+                        <FormTypeInput
                             label={_('Chapter')}
                             value={chapterId}
-                            onChange={(e) => setChapterId(e.target.value)}
-                        >
-                            {chapters.map((c) => (
-                                <MenuItem key={c} value={c}>
-                                    {store.chapterTitle(c)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                            onChange={(next) => setChapterId(next ?? '')}
+                            options={chapters.map((c) => ({
+                                id: c,
+                                label: store.chapterTitle(c),
+                            }))}
+                            dataField="chapterId"
+                        />
                     )}
                     {error && (
                         <Alert severity="error" sx={{ whiteSpace: 'pre-wrap' }}>

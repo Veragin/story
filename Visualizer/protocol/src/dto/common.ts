@@ -28,6 +28,9 @@ export type TValue = string | number | boolean | null | TCode | TValue[] | { [ke
 
 export type TValueRecord = { [key: string]: TValue };
 
+export const isValueRecord = (value: unknown): value is TValueRecord =>
+    typeof value === 'object' && value !== null && !Array.isArray(value) && !isCode(value);
+
 /**
  * Content hash of the file(s) backing a resource; compare for equality only. `''` means "no file
  * yet": a PUT carrying it succeeds only if the file does not exist.

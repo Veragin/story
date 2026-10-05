@@ -99,9 +99,10 @@ Visualizer/
     src/api/          typed client (httpApi), mockApi, ApiError, live events (events.ts), the story id (story.ts), login (auth.ts)
     src/canvas/       the Canvas library: Scene, Camera, shapes, selection / vertex / line controllers (#/_canvas playground)
     src/shell/        top bar, hash router, control-bar slot, modals, keyboard helper
-    src/pages/        Map, Timeline, Chapter, Entities
+    src/pages/        Map, Timeline, Chapter, Entities, Structure
+    src/stores/       shared stores: StructureStore (literals, types), EntityStore (entity and catalog lists), DraftResource
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
-    src/components/   shared fields, and SourceEditorDialog (CodeMirror 6, the in-app source editor)
+    src/components/   inputs/ (the value inputs and their form/ variants), Notices, FormHeader, SourceEditorDialog (CodeMirror 6)
   landing-page/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
     src/api.ts        typed client over GLOBAL_ROUTES (+ a story's /info)
     src/StoriesStore.ts  the list, the unlocked flags, requireUnlocked → the password prompt
@@ -126,7 +127,8 @@ Dependencies go one way: client → protocol ← server, and landing-page → pr
     - add character to chapter: the `<character>.passages/` folder with a start passage (default `intro`) and its id union; remove character is the reverse, including its positions in `<ch>.layout.json`
     - create entity: the entity file, `register.ts` and `TWorldState.ts`
     - delete a passage or an entity: its image (the sibling `.png`) goes too
-    - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors
+    - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors. Deleting an entity or a catalog entry clears the values that point at it instead (optional key removed, array element removed, required field set to the first remaining id) and is refused only by code references or a required field with no id left; `GET …/references` previews it
+    - create type: `types/<Name>.ts` and its line in `types/index.ts`; a catalog type also `data/catalogs/<plural>.ts` and `T<Name>Id`. Editing a type rewrites its instances in the same commit (renames, removed keys, defaults for new required fields)
 - **JSON stores** (`json/`): `data/locations/map.json` and the layouts `data/chapters/timeline.layout.json` and `data/chapters/<ch>/<ch>.layout.json`. They are validated whole-document replaces (400 on a bad shape). A missing file reads as the default with `version: ''` (for the map: an empty map of the story's `mapSize`), and a `PUT` with `version: ''` creates it.
 
 ### `map.json`
@@ -162,7 +164,7 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
 - `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
 
-In the client, `components/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
 The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`SingleEngine/vite/storiesPlugin.ts`, read by `SingleEngine/src/images.ts`), so there too a missing `.png` just means no picture.
 
@@ -179,23 +181,23 @@ The page never reloads because the story changed. `data/` is not in Vite's modul
 ## Known limitations
 
 - **Protocol**
-    - An optional top-level field cannot be removed with a partial `PUT` (omitted = untouched). The server already accepts `null` for `description`/`startPassageId` of a character, `sublocations`/`mapId` of a location and `nextPassageId` of a linear passage, but the protocol types do not allow `null` yet, so the UI offers no "remove".
+    - An omitted field in a partial `PUT` is untouched; `null` removes an optional one (any optional entity field, a key of `userFields`, a linear passage's `nextPassageId`). The Entities form uses it, but the protocol body types do not model `null` yet.
     - No rename: ids are read-only. Ids must match `/^[a-z][A-Za-z0-9_]*$/`.
     - The source editor exists only for chapters and passages (`/source/chapter/<id>`, `/source/passage/<id>`).
     - Trigger ids are global (unique across chapters).
-    - Hand edits of `triggers.ts` or an items file send a wildcard event (`*`, `items/*`), so the client refetches the whole scope.
+    - Hand edits of `triggers.ts`, an items file or a catalog file send a wildcard event (`*`, `items/*`, `races/*`), so the client refetches the whole scope.
 - **Source writer**
     - Read-only: passage `type`, `params` and `preamble` (statements before the `return`), `dataType.name`, and anything outside the resource object.
     - Arrays are edited element by element when the length is unchanged. Otherwise the common prefix is kept, so inserting in the middle rewrites the elements after it from the DTO, and comments inside those elements are lost.
     - A `body`, `links` or `timeRange` that is code in the source can be edited as code, but not turned back into a structured list.
-    - Moving an item to another type file (for example value → food) is regenerated from the DTO. The Entities page does not offer it.
+    - Moving an item to another type file (for example value → food, by changing its type) is regenerated from the DTO.
     - A passage or character created from the UI is unreachable, or has no start passage, until the author wires it up, so `data/__tests__/story.test.ts` flags it until then. That is intended.
     - `SourceProject` stats every story file per request. Switch it to the watcher's file list if the story grows large.
 - **UI**
     - No multi-select or box-select, and no undo.
     - The map cannot be resized or renamed from the UI, and sub-map links (`maps[]`) have no UI.
-    - Chapter view: automatic positions are only saved once a box is dragged. There is no reordering of body items or links, and `ChapterInfoForm` does not edit `init` or `triggerIds`.
+    - Chapter view: automatic positions are only saved once a box is dragged. There is no reordering of body items or links, and `ChapterInfoForm` does not edit `triggerIds`.
     - Timeline: the wheel zooms time (continuous; there is no slider). Chapters and triggers whose time is code are not drawn (a hint counts them). A stale drag is discarded, not re-applied.
     - Keyboard shortcuts are off while a modal is open.
-    - There are two `CodeField` components (`components/CodeField.tsx` and `pages/Entities/CodeField.tsx`) that could be merged.
-    - The Structure tab is future work.
+    - Structure tab: a type or literal draft is not kept across a reload, and switching the selection drops it without asking.
+    - A catalog type cannot reach its own ids through its fields (`TRace.kin: TRaceId[]`): tsc would turn `TRaceId` into `any`, so the server refuses it.

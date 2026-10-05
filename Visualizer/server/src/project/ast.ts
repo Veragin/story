@@ -257,6 +257,24 @@ export const ensureNamedImport = (
     return local;
 };
 
+// never joins a value import: a type-only import cannot become a runtime cycle (`types ⇄ data`)
+export const ensureTypeImport = (sf: SourceFile, name: string, module: string) => {
+    if (importedNames(sf).has(name)) return;
+    const decl = sf
+        .getImportDeclarations()
+        .find((d) => d.getModuleSpecifierValue() === module && d.isTypeOnly() && !d.getNamespaceImport());
+    if (decl) {
+        decl.addNamedImport(name);
+        return;
+    }
+    const imports = sf.getImportDeclarations();
+    sf.insertImportDeclaration(imports.length > 0 ? imports[imports.length - 1].getChildIndex() + 1 : 0, {
+        moduleSpecifier: module,
+        namedImports: [name],
+        isTypeOnly: true,
+    });
+};
+
 export const ensureDefaultImport = (sf: SourceFile, local: string, module: string): string => {
     const existing = sf
         .getImportDeclarations()

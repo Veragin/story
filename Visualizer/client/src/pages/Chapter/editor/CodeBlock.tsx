@@ -1,5 +1,6 @@
 import type { TDiagnosticDto } from '@story/visualizer-protocol';
-import { CodeTextArea, FieldDiagnostics } from '../../../components/CodeField';
+import { CodeTextArea } from '../../../components/inputs/CodeTextArea';
+import { InputDiagnostics } from '../../../components/inputs/InputDiagnostics';
 
 export const CodeBlock = ({
     code,
@@ -17,6 +18,6 @@ export const CodeBlock = ({
             hasError={diagnostics.length > 0}
             minRows={3}
         />
-        <FieldDiagnostics diagnostics={diagnostics} />
+        <InputDiagnostics diagnostics={diagnostics} />
     </>
 );

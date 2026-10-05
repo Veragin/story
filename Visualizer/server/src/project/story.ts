@@ -290,7 +290,7 @@ const identifierTarget = (expr: Expression) => {
     return resolveIdentifierFile(e.getSourceFile(), e.getText());
 };
 
-const referencedObjectId = (expr: Expression): string | undefined => {
+export const referencedObjectId = (expr: Expression): string | undefined => {
     const t = identifierTarget(expr);
     if (!t) return undefined;
     return stringProp(asObject(t.file.getVariableDeclaration(t.exportName)?.getInitializer()), 'id');

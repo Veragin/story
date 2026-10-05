@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { Typography } from '@mui/material';
-import { FunctionInput } from '../../../../components/FunctionInput';
+import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
 import type { TFieldsProps } from './types';
 
 export const ExecuteField = observer(
@@ -11,7 +11,7 @@ export const ExecuteField = observer(
         preamble,
     }: Pick<TFieldsProps, 'draft' | 'edit' | 'diag' | 'preamble'>) => (
         <>
-            <FunctionInput
+            <FormFunctionInput
                 label={_('Execute')}
                 value={draft.execute}
                 onChange={(v) =>
@@ -24,6 +24,7 @@ export const ExecuteField = observer(
                 emptyCode="() => {}"
                 placeholder={_('What happens when the passage is entered')}
                 diagnostics={diag('execute')}
+                dataField="execute"
             />
             {preamble && (
                 <Typography variant="caption" color="text.secondary">

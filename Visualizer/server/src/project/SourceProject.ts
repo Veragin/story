@@ -15,6 +15,7 @@ export class SourceProject {
     readonly ts: Project;
     private readonly stats = new Map<string, string>();
     private queue: Promise<unknown> = Promise.resolve();
+    private firstRun: (() => Promise<unknown>) | null = null;
 
     private static readonly instances = new WeakMap<ProjectRoot, SourceProject>();
 
@@ -41,9 +42,17 @@ export class SourceProject {
         });
     }
 
+    // a migration runs once, before the first task sees the files
+    onFirstRun(migrate: () => Promise<unknown>) {
+        this.firstRun = migrate;
+    }
+
     run<T>(fn: () => Promise<T> | T): Promise<T> {
         const task = async () => {
             await this.sync();
+            const migrate = this.firstRun;
+            this.firstRun = null;
+            if (migrate) await migrate();
             return fn();
         };
         // reads are serialised too, since a read may refresh files
@@ -239,7 +248,7 @@ export class EditSession {
     }
 
     // imports already unused before the session are the author's and stay
-    private pruneImports() {
+    pruneImports() {
         for (const [abs, names] of this.usedImports) {
             const sf = this.sp.file(abs);
             if (!sf) continue;
@@ -285,6 +294,27 @@ export class EditSession {
         if (this.done) return;
         this.done = true;
         this.sp.applyState(this.original);
+    }
+
+    // the commit's type check, on the unformatted state, which is then undone
+    check(): TDiagnosticDto[] {
+        if (this.done) throw new Error('EditSession already finished');
+        try {
+            this.apply(() => this.pruneImports());
+            return this.freshDiagnostics(new Map([...this.original.keys()].map((abs) => [abs, this.sp.text(abs)])));
+        } finally {
+            this.rollback();
+        }
+    }
+
+    // a story already broken by a hand edit stays editable: only errors the change adds count
+    private freshDiagnostics(next: Map<string, string | null>): TDiagnosticDto[] {
+        const after = diagnoseProject(this.sp);
+        if (after.length === 0) return [];
+        this.sp.applyState(this.original);
+        const baseline = diagnoseProject(this.sp);
+        this.sp.applyState(next);
+        return newDiagnostics(baseline, after);
     }
 
     apply<T>(fn: () => T): T {
@@ -342,16 +372,10 @@ export class EditSession {
                 return next;
             }
 
-            const after = diagnoseProject(this.sp);
-            if (after.length > 0) {
-                this.sp.applyState(this.original);
-                const baseline = diagnoseProject(this.sp);
-                this.sp.applyState(next);
-                const fresh = newDiagnostics(baseline, after);
-                if (fresh.length > 0) {
-                    if (asReferences) throw HttpError.referenced(asReferences(fresh));
-                    throw HttpError.invalid(fields ? withFields(this.sp, fresh, fields.file, fields.map) : fresh);
-                }
+            const fresh = this.freshDiagnostics(next);
+            if (fresh.length > 0) {
+                if (asReferences) throw HttpError.referenced(asReferences(fresh));
+                throw HttpError.invalid(fields ? withFields(this.sp, fresh, fields.file, fields.map) : fresh);
             }
 
             await bus.transaction(async (tx) => {

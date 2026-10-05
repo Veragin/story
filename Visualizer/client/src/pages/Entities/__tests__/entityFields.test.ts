@@ -1,14 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-    buildCreateBody,
-    diffEditable,
-    displayName,
-    itemSourceForType,
-    itemTypesForSource,
-    parseLiteral,
-    validateEntityId,
-    valueToSource,
-} from '../entityFields';
+import { buildCreateBody, diffEditable, displayName, itemSourceForType, validateEntityId } from '../entityFields';
 import type { TEntityDto } from '@story/visualizer-protocol';
 
 describe('entityFields', () => {
@@ -29,27 +20,16 @@ describe('entityFields', () => {
         expect(itemSourceForType('food')).toBe('foodInfo');
         expect(itemSourceForType('tool')).toBe('toolInfo');
         expect(itemSourceForType('weapon')).toBe('itemInfo');
-        expect(itemTypesForSource('itemInfo')).toEqual(['value', 'resource', 'weapon']);
+        expect(itemSourceForType('gem')).toBe('itemInfo');
         expect(buildCreateBody('items', { id: 'apple', name: '', description: '', type: 'food' })).toEqual({
             id: 'apple',
             name: 'apple',
             type: 'food',
             source: 'foodInfo',
-            props: { hungerValue: 0 },
         });
     });
 
-    it('renders values as source and parses literals back', () => {
-        expect(valueToSource({ asd: "it's", time: false })).toBe("{ asd: 'it\\'s', time: false }");
-        expect(valueToSource([{ id: 'bow', amount: 1 }])).toBe("[{ id: 'bow', amount: 1 }]");
-        expect(valueToSource({ code: 's.x > 1' })).toBe('s.x > 1');
-        expect(valueToSource(undefined)).toBe('undefined');
-        expect(parseLiteral("'Forest'")).toBe('Forest');
-        expect(parseLiteral("'it\\'s'")).toBe("it's");
-        expect(parseLiteral("'a' + 'b'")).toBeUndefined();
-        expect(parseLiteral('10')).toBe(10);
-        expect(parseLiteral('true')).toBe(true);
-        expect(parseLiteral("_('kingdom')")).toBeUndefined();
+    it('reads a translated name', () => {
         expect(displayName({ code: "_('kingdom')" }, 'x')).toBe('kingdom');
     });
 
@@ -59,5 +39,11 @@ describe('entityFields', () => {
         expect(diffEditable(a as unknown as TEntityDto, b as unknown as TEntityDto)).toEqual({});
         const c = { ...a, name: 'B' };
         expect(diffEditable(a as unknown as TEntityDto, c as unknown as TEntityDto)).toEqual({ name: 'B' });
+        const d = { ...a, mapId: 'global', userFields: { energy: 1, nickname: 'x' } };
+        const e = { ...a, userFields: { energy: 2 } };
+        expect(diffEditable(d as unknown as TEntityDto, e as unknown as TEntityDto)).toEqual({
+            mapId: null,
+            userFields: { energy: 2, nickname: null },
+        });
     });
 });

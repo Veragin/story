@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import type { TOption } from '../../../../components/CodeField';
+import type { TOption } from '../../../../components/inputs/inputTypes';
 import type { TVisualizerApi } from '../../../../api';
 import { useKey } from '../../../../shell';
 import type { PassageEditorStore } from '../PassageEditorStore';
@@ -12,6 +12,7 @@ import type { TDiag } from './types';
 type TProps = {
     store: PassageEditorStore;
     passageOptions: TOption[];
+    transitionOptions: TOption[];
     itemOptions: TOption[];
     onClose: () => void;
     onDelete: () => void;
@@ -23,6 +24,7 @@ export const PassageEditor = observer(
     ({
         store,
         passageOptions,
+        transitionOptions,
         itemOptions,
         onClose,
         onDelete,
@@ -52,6 +54,7 @@ export const PassageEditor = observer(
                         edit={(fn) => store.edit(fn)}
                         diag={diag}
                         passageOptions={passageOptions}
+                        transitionOptions={transitionOptions}
                         itemOptions={itemOptions}
                         api={api}
                         preamble={base.preamble}

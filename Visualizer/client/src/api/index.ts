@@ -6,6 +6,7 @@ import { goToLanding, STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
 export { ApiError } from './ApiError';
+export { errorMessage } from './errorMessage';
 export { ApiEvents } from './events';
 export { createMockApi, displayText, extractEdges, type TMockApi } from './mockApi';
 export { createMockSeed } from './mockData';
