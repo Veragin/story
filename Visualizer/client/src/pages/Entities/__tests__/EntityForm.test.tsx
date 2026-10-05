@@ -125,7 +125,7 @@ describe('EntityForm', () => {
 
     it('edits the data type as a structure and the init fields follow it', async () => {
         click(
-            '[data-form-field="data type TThomasCharacterData"] [data-action="add-structure-field"]'
+            '[data-form-section="dataType"] [data-action="add-structure-field"]'
         );
         const dataType = (store.draft as TCharacterDto).dataType;
         expect(dataType?.fields?.map((f) => f.key)).toEqual([

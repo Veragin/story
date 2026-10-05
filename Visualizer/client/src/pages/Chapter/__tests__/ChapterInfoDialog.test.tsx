@@ -69,8 +69,10 @@ describe('ChapterInfoDialog', () => {
                 'Time range',
                 'Child chapters',
                 'Init',
-                'data type TKingdomChapterData',
             ])
+        );
+        expect(get('[data-form-section="dataType"]').textContent).toContain(
+            'TKingdomChapterData'
         );
         expect(get<HTMLInputElement>('[data-field="title"]').value).toBe(
             'Kingdom Chapter'
@@ -105,7 +107,7 @@ describe('ChapterInfoDialog', () => {
     it('fills a new required data-type field into init and saves both', async () => {
         await open('wedding');
         click(
-            '[data-form-field="data type TWeddingChapterData"] [data-action="add-structure-field"]'
+            '[data-form-section="dataType"] [data-action="add-structure-field"]'
         );
         await flush();
         expect(

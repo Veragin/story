@@ -1,17 +1,18 @@
-import { Button } from '@mui/material';
+import { Button, styled, Typography } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import {
     objectTypeText,
     type TDataTypeDto,
     type TDiagnosticDto,
 } from '@story/visualizer-protocol';
 import { CodeTextArea } from '../CodeTextArea';
+import { InputDiagnostics } from '../InputDiagnostics';
+import { StructureInput } from '../StructureInput/StructureInput';
 import {
     rowFields,
     rowRenames,
     structureRows,
 } from '../StructureInput/structureRows';
-import { FormLabel } from './FormLabel';
-import { FormStructureInput } from './FormStructureInput';
 
 type TProps = {
     value: TDataTypeDto | undefined;
@@ -33,11 +34,12 @@ export const FormDataTypeInput = ({
     disabled,
     dataField,
 }: TProps) => {
-    const label = value ? _('data type %s', value.name) : _('data type');
+    const title = value?.name ?? _('Data type');
+    const hasError = diagnostics.length > 0;
 
-    if (!value) {
-        return (
-            <FormLabel label={label} diagnostics={diagnostics}>
+    const renderBody = () => {
+        if (!value) {
+            return (
                 <div>
                     <Button
                         size="small"
@@ -52,40 +54,77 @@ export const FormDataTypeInput = ({
                         {_('Add a data type')}
                     </Button>
                 </div>
-            </FormLabel>
-        );
-    }
-    if (!value.fields) {
-        // not an object type: only its text can be edited
-        return (
-            <FormLabel label={label} diagnostics={diagnostics}>
+            );
+        }
+        if (!value.fields) {
+            // not an object type: only its text can be edited
+            return (
                 <CodeTextArea
                     value={value.code}
                     onChange={(code) => onChange({ ...value, code }, {})}
-                    hasError={diagnostics.length > 0}
+                    hasError={hasError}
                     disabled={disabled}
-                    ariaLabel={label}
+                    ariaLabel={title}
                     dataField={dataField}
                 />
-            </FormLabel>
+            );
+        }
+        return (
+            <StructureInput
+                value={structureRows(value.fields)}
+                onChange={(rows) => {
+                    const fields = rowFields(rows);
+                    // the server writes the text from `fields`; `code` mirrors it for the draft
+                    onChange(
+                        { ...value, fields, code: objectTypeText(fields) },
+                        rowRenames(rows)
+                    );
+                }}
+                literals={{ file }}
+                hasError={hasError}
+                disabled={disabled}
+                ariaLabel={title}
+                dataField={dataField}
+            />
         );
-    }
+    };
+
     return (
-        <FormStructureInput
-            label={label}
-            value={structureRows(value.fields)}
-            onChange={(rows = []) => {
-                const fields = rowFields(rows);
-                // the server writes the text from `fields`; `code` mirrors it for the draft
-                onChange(
-                    { ...value, fields, code: objectTypeText(fields) },
-                    rowRenames(rows)
-                );
-            }}
-            literals={{ file }}
-            diagnostics={diagnostics}
-            disabled={disabled}
-            dataField={dataField}
-        />
+        <SSection data-form-section="dataType">
+            <SHeader>
+                <Typography variant="overline" color="text.secondary">
+                    {_('Data type')}
+                </Typography>
+                {value && (
+                    <Typography
+                        variant="subtitle1"
+                        color={hasError ? 'error' : 'text.primary'}
+                    >
+                        {value.name}
+                    </Typography>
+                )}
+            </SHeader>
+            {renderBody()}
+            <InputDiagnostics diagnostics={diagnostics} />
+        </SSection>
     );
 };
+
+const SSection = styled('section')`
+    display: flex;
+    flex-direction: column;
+    gap: ${spacingCss(1)};
+    margin-top: ${spacingCss(1)};
+    padding: ${spacingCss(1.5)};
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    border-radius: ${({ theme }) => theme.shape.borderRadius}px;
+    background: ${({ theme }) => theme.palette.background.default};
+    min-width: 0;
+`;
+
+const SHeader = styled('header')`
+    display: flex;
+    flex-direction: column;
+    padding-bottom: ${spacingCss(1)};
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+`;
