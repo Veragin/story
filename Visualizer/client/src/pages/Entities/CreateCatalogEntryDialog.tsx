@@ -18,7 +18,7 @@ import {
     type TStructTypeDto,
     type TValueRecord,
 } from '@story/visualizer-protocol';
-import { FormObjectInput } from '../../components/inputs/form/FormObjectInput';
+import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
 import { typeContextOf } from '../../components/inputs/structureContext';
 
 import type { EntityStore } from '../../stores/EntityStore';
@@ -115,11 +115,11 @@ export const CreateCatalogEntryDialog = observer(
                                     'aria-label': 'id',
                                 }}
                             />
-                            <FormObjectInput
-                                label={type.name}
+                            <ObjectInput
+                                ariaLabel={type.name}
                                 value={values}
                                 onChange={(next) => {
-                                    if (next && !isCode(next)) setValues(next);
+                                    if (!isCode(next)) setValues(next);
                                 }}
                                 fields={type.fields}
                                 hideViewToggle

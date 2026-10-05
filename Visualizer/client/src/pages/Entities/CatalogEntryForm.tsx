@@ -8,7 +8,7 @@ import {
     FormMeta,
     FormPage,
 } from '../../components/formLayout';
-import { FormObjectInput } from '../../components/inputs/form/FormObjectInput';
+import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
 import { Notices } from '../../components/Notices';
 import { router } from '../../shell';
 import type { CatalogFormStore } from './CatalogFormStore';
@@ -100,16 +100,13 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
             </FormMeta>
             {notices}
             <FormFields>
-                <FormObjectInput
-                    label={base.type}
+                <ObjectInput
+                    ariaLabel={base.type}
                     value={draft}
                     onChange={(next) => {
-                        if (next && !isCode(next)) store.setValues(next);
+                        if (!isCode(next)) store.setValues(next);
                     }}
                     fields={type?.fields}
-                    diagnostics={resource.diagnostics.filter(
-                        (d) => d.field === 'values'
-                    )}
                     diagnosticsOf={diagnosticsOf}
                     hideViewToggle
                     dataField="values"
