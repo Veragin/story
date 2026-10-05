@@ -7,7 +7,7 @@ import {
     FormMeta,
     FormPage,
 } from '../../components/formLayout';
-import { FormStructureInput } from '../../components/inputs/form/FormStructureInput';
+import { StructureInput } from '../../components/inputs/StructureInput/StructureInput';
 import { Notices } from '../../components/Notices';
 import { modals, router } from '../../shell';
 import { CatalogLink } from './CatalogLink';
@@ -115,18 +115,15 @@ export const TypeEditor = observer(({ editor }: TProps) => {
                 </Alert>
             )}
             <FormFields>
-                <FormStructureInput
-                    label={_('fields')}
+                <StructureInput
+                    ariaLabel={_('fields')}
                     value={draft.rows}
-                    onChange={(rows = []) => editor.setRows(rows)}
+                    onChange={(rows) => editor.setRows(rows)}
                     literals={{
                         file: base.file,
                         newLiterals: draft.newLiterals,
                         onNewLiteral: editor.addNewLiteral,
                     }}
-                    diagnostics={resource.diagnostics.filter((d) =>
-                        d.field?.startsWith('fields')
-                    )}
                     disabled={resource.saving}
                     dataField="fields"
                 />
