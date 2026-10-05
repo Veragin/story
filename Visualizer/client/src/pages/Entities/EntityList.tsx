@@ -33,17 +33,13 @@ export const EntityList = observer(({ store, structure }: TProps) => {
             onAdd={add}
             loading={store.entities.listLoading}
             error={store.entities.listError}
-            items={store.list.map((e) => {
-                const name = displayName(e.name, e.id);
-                return {
-                    id: e.id,
-                    primary: name,
-                    secondary: name !== e.id ? e.id : undefined,
-                    href: router.href({ page: 'entities', kind, id: e.id }),
-                    selected: store.selectedId === e.id,
-                    unsaved: store.hasDraft(kind, e.id),
-                };
-            })}
+            items={store.list.map((e) => ({
+                id: e.id,
+                primary: displayName(e.name, e.id),
+                href: router.href({ page: 'entities', kind, id: e.id }),
+                selected: store.selectedId === e.id,
+                unsaved: store.hasDraft(kind, e.id),
+            }))}
         />
     );
 });

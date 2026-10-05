@@ -98,7 +98,7 @@ describe('TypeInput', () => {
 
     const OPTIONS = [{ id: 'forest', label: 'Forest' }, { id: 'well' }];
 
-    it('shows "id — name" and picks an id', () => {
+    it('shows the name and picks an id', () => {
         const onChange = vi.fn();
         mount(
             <Controlled initial="forest" onChange={onChange}>
@@ -112,7 +112,7 @@ describe('TypeInput', () => {
                 )}
             </Controlled>
         );
-        expect(input().value).toBe('forest — Forest');
+        expect(input().value).toBe('Forest');
         typeInto(input(), 'we');
         expect(shownOptions()).toEqual(['well']);
         click('[data-option="well"]');

@@ -15,7 +15,6 @@ import { spacingCss } from '@story/ui';
 export type TResourceListItem = {
     id: string;
     primary: string;
-    secondary?: string;
     href: string;
     selected: boolean;
     unsaved?: boolean;
@@ -61,10 +60,7 @@ export const ResourceList = ({ items, onAdd, loading, error }: TProps) => (
                     selected={item.selected}
                     data-id={item.id}
                 >
-                    <ListItemText
-                        primary={item.primary}
-                        secondary={item.secondary}
-                    />
+                    <ListItemText primary={item.primary} />
                     {item.unsaved && (
                         <Tooltip title={_('Unsaved changes')}>
                             <FiberManualRecord

@@ -40,20 +40,16 @@ export const CatalogList = observer(
         return (
             <ResourceList
                 onAdd={add}
-                items={store.list.map((entry) => {
-                    const name = displayName(entry.values.name, entry.id);
-                    return {
+                items={store.list.map((entry) => ({
+                    id: entry.id,
+                    primary: displayName(entry.values.name, entry.id),
+                    href: router.href({
+                        page: 'catalog',
+                        catalog,
                         id: entry.id,
-                        primary: name,
-                        secondary: name !== entry.id ? entry.id : undefined,
-                        href: router.href({
-                            page: 'catalog',
-                            catalog,
-                            id: entry.id,
-                        }),
-                        selected: store.selectedId === entry.id,
-                    };
-                })}
+                    }),
+                    selected: store.selectedId === entry.id,
+                }))}
             />
         );
     }

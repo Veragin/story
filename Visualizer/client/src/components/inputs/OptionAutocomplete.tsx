@@ -38,10 +38,7 @@ export const OptionAutocomplete = ({
     const all = known ? ids : [...ids, value];
     const outside = !known && value !== '';
 
-    const textOf = (id: string) => {
-        const label = byId.get(id)?.label;
-        return label && label !== id ? `${id} — ${label}` : id;
-    };
+    const textOf = (id: string) => byId.get(id)?.label || id;
     const filter = createFilterOptions<string>({
         stringify: (id) => `${id} ${byId.get(id)?.label ?? ''}`,
     });
