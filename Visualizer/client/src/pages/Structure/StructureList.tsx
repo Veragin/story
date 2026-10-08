@@ -5,11 +5,14 @@ import {
     ListItemText,
     ListSubheader,
     styled,
+    Tab,
+    Tabs,
     Tooltip,
 } from '@mui/material';
 import Add from '@mui/icons-material/Add';
 import FiberManualRecord from '@mui/icons-material/FiberManualRecord';
 import { observer } from 'mobx-react-lite';
+import { useEffect, useState } from 'react';
 import { spacingCss } from '@story/ui';
 import { modals, router, type TStructureSection } from '../../shell';
 import { CreateLiteralDialog } from './CreateLiteralDialog';
@@ -31,6 +34,10 @@ type TGroup = {
 
 export const StructureList = observer(({ editor }: TProps) => {
     const { structure } = editor;
+    const [tab, setTab] = useState<TStructureSection>(editor.section);
+
+    useEffect(() => setTab(editor.section), [editor.section]);
+
     const select = (section: TStructureSection, name: string) =>
         router.navigate({ page: 'structure', section, name });
 
@@ -88,13 +95,23 @@ export const StructureList = observer(({ editor }: TProps) => {
         },
     ];
 
+    const visibleGroups = groups.filter((group) => group.section === tab);
+
     const isDirty = (section: TStructureSection) =>
         (section === 'types' ? editor.type : editor.literal).dirty;
 
     return (
         <SColumn>
+            <STabs
+                value={tab}
+                onChange={(_event, value: TStructureSection) => setTab(value)}
+                variant="fullWidth"
+            >
+                <Tab value="types" label={_('Types')} data-tab="types" />
+                <Tab value="literals" label={_('Literals')} data-tab="literals" />
+            </STabs>
             <SList dense>
-                {groups.map((group) => (
+                {visibleGroups.map((group) => (
                     <li key={group.title} data-group={group.title}>
                         <ul>
                             <SSubheader>
@@ -164,12 +181,20 @@ const SColumn = styled('div')`
     background: ${({ theme }) => theme.palette.background.paper};
 `;
 
+const STabs = styled(Tabs)`
+    flex: 0 0 auto;
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+`;
+
 const SList = styled(List)`
     flex: 1;
     overflow: auto;
     padding: 0;
     & ul {
         padding: 0;
+    }
+    & > li + li {
+        border-top: 1px solid ${({ theme }) => theme.palette.divider};
     }
 `;
 
