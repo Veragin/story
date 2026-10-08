@@ -80,8 +80,8 @@ describe('LiteralEditor', () => {
             get<HTMLInputElement>('[data-value="value"] input'),
             'valuable'
         );
-        click('[data-value="weapon"] [data-action="move-left"]');
-        click('[data-value="ruby"] [data-action="remove-value"]');
+        click('[data-value="weapon"] [data-action="move-up"]');
+        click('[data-value="ruby"] [data-action="remove-row"]');
         expect(values()).toEqual([
             'valuable',
             'resource',
@@ -111,7 +111,7 @@ describe('LiteralEditor', () => {
     });
 
     it('refuses removing a used value with the references', async () => {
-        click('[data-value="food"] [data-action="remove-value"]');
+        click('[data-value="food"] [data-action="remove-row"]');
         await act(async () => {
             click('[data-action="save"]');
             await settle();

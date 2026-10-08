@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import {
-    IconButton,
-    InputBase,
-    styled,
-    TextField,
-    Tooltip,
-} from '@mui/material';
-import ChevronLeft from '@mui/icons-material/ChevronLeft';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
+import { styled, TextField } from '@mui/material';
 import { spacingCss } from '@story/ui';
+import { InputDiagnostics } from '../../components/inputs/InputDiagnostics';
+import { RowActions } from '../../components/inputs/RowActions';
+import { StringInput } from '../../components/inputs/StringInput';
 import { useRowList } from '../../components/inputs/useRowList';
 import type { TLiteralValueRow } from './StructureEditorStore';
 
@@ -26,6 +20,11 @@ const valueProblem = (
 ): string | null => {
     if (value === '') return _('Empty value');
     return others.includes(value) ? _('Listed twice') : null;
+};
+
+const rowState = (row: TLiteralValueRow) => {
+    if (row.original === null) return 'new';
+    return row.original === row.value ? undefined : 'renamed';
 };
 
 export const LiteralValuesInput = ({
@@ -48,88 +47,59 @@ export const LiteralValuesInput = ({
     };
 
     return (
-        <SRoot role="list" aria-label={ariaLabel}>
+        <SList role="list" aria-label={ariaLabel}>
             {value.map((row, index) => {
+                const rowLabel = _('Value %d', index + 1);
                 const problem = valueProblem(
                     row.value,
                     values.filter((_v, i) => i !== index)
                 );
-                const renamed =
-                    row.original !== null && row.original !== row.value;
+                const state = rowState(row);
                 return (
-                    <Tooltip
+                    <SRow
                         key={rows.keys[index]}
-                        title={
-                            problem ??
-                            (renamed
-                                ? _('Renamed from "%s"', row.original ?? '')
-                                : row.original === null
-                                  ? _('New value')
-                                  : '')
-                        }
+                        role="listitem"
+                        data-value={row.value}
+                        data-error={problem ? 'true' : undefined}
+                        data-state={state}
                     >
-                        <SChip
-                            role="listitem"
-                            data-value={row.value}
-                            data-error={problem ? 'true' : undefined}
-                            data-state={
-                                renamed
-                                    ? 'renamed'
-                                    : row.original === null
-                                      ? 'new'
-                                      : undefined
-                            }
-                        >
-                            <IconButton
-                                size="small"
-                                disabled={disabled || index === 0}
-                                aria-label={_('Move %s left', row.value)}
-                                data-action="move-left"
-                                onClick={() => rows.move(index, index - 1)}
-                            >
-                                <ChevronLeft fontSize="inherit" />
-                            </IconButton>
-                            <SValue
+                        <SItem>
+                            <StringInput
                                 value={row.value}
-                                disabled={disabled}
-                                onChange={(e) =>
-                                    rows.set(index, {
-                                        ...row,
-                                        value: e.target.value,
-                                    })
+                                onChange={(next) =>
+                                    rows.set(index, { ...row, value: next })
                                 }
-                                inputProps={{
-                                    'aria-label': _('Value %d', index + 1),
-                                    'size': Math.max(row.value.length, 2),
-                                    'spellCheck': false,
-                                }}
+                                hasError={!!problem}
+                                disabled={disabled}
+                                ariaLabel={rowLabel}
                             />
-                            <IconButton
-                                size="small"
-                                disabled={
-                                    disabled || index === value.length - 1
-                                }
-                                aria-label={_('Move %s right', row.value)}
-                                data-action="move-right"
-                                onClick={() => rows.move(index, index + 1)}
-                            >
-                                <ChevronRight fontSize="inherit" />
-                            </IconButton>
-                            <IconButton
-                                size="small"
-                                disabled={disabled}
-                                aria-label={_('Remove %s', row.value)}
-                                data-action="remove-value"
-                                onClick={() => rows.remove(index)}
-                            >
-                                <Close fontSize="inherit" />
-                            </IconButton>
-                        </SChip>
-                    </Tooltip>
+                            {problem ? (
+                                <InputDiagnostics messages={[problem]} />
+                            ) : (
+                                state === 'renamed' && (
+                                    <SHint>
+                                        {_(
+                                            'Renamed from "%s"',
+                                            row.original ?? ''
+                                        )}
+                                    </SHint>
+                                )
+                            )}
+                        </SItem>
+                        <RowActions
+                            index={index}
+                            count={value.length}
+                            onMove={rows.move}
+                            onRemove={rows.remove}
+                            disabled={disabled}
+                            rowLabel={row.value}
+                        />
+                    </SRow>
                 );
             })}
             <TextField
                 size="small"
+                fullWidth
                 value={adding}
                 disabled={disabled}
                 placeholder={_('Add a value, then Enter')}
@@ -142,43 +112,39 @@ export const LiteralValuesInput = ({
                     add();
                 }}
                 onBlur={add}
-                inputProps={{
-                    'aria-label': _('New value'),
-                    'data-action': 'add-value',
-                    'spellCheck': false,
+                slotProps={{
+                    htmlInput: {
+                        'aria-label': _('New value'),
+                        'data-action': 'add-value',
+                        'spellCheck': false,
+                    },
                 }}
             />
-        </SRoot>
+        </SList>
     );
 };
 
-const SRoot = styled('div')`
+const SList = styled('div')`
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: ${spacingCss(1)};
+    flex-direction: column;
+    gap: ${spacingCss(0.5)};
+    min-width: 0;
+    width: 100%;
 `;
 
-const SChip = styled('div')`
-    display: inline-flex;
-    align-items: center;
-    padding: 0 ${spacingCss(0.25)};
-    border-radius: 16px;
-    border: 1px solid ${({ theme }) => theme.palette.divider};
-    background: ${({ theme }) => theme.palette.action.selected};
-    &[data-state='new'],
-    &[data-state='renamed'] {
-        border-color: ${({ theme }) => theme.palette.info.main};
-    }
-    &[data-error='true'] {
-        border-color: ${({ theme }) => theme.palette.error.main};
-    }
+const SRow = styled('div')`
+    display: flex;
+    align-items: flex-start;
+    gap: ${spacingCss(0.5)};
 `;
 
-const SValue = styled(InputBase)`
-    font-family: monospace;
-    font-size: 13px;
-    & input {
-        padding: 2px 0;
-    }
+const SItem = styled('div')`
+    flex: 1;
+    min-width: 0;
+`;
+
+const SHint = styled('div')`
+    margin-top: 2px;
+    font-size: 12px;
+    color: ${({ theme }) => theme.palette.text.secondary};
 `;
