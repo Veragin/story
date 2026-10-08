@@ -1,4 +1,4 @@
-import { Alert, styled } from '@mui/material';
+import { Alert, styled, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { spacingCss } from '@story/ui';
 import {
@@ -6,7 +6,8 @@ import {
     type TItemDto,
     type TValueRecord,
 } from '@story/visualizer-protocol';
-import { FormObjectInput } from '../../components/inputs/form/FormObjectInput';
+import { InputDiagnostics } from '../../components/inputs/InputDiagnostics';
+import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
 import type { TEntityFieldsProps } from './entityFormProps';
 import {
     ENTITY_TYPE_NAMES,
@@ -47,8 +48,8 @@ export const ItemFields = observer(
                         {structure.writeError}
                     </Alert>
                 )}
-                <FormObjectInput
-                    label={_('item')}
+                <ObjectInput
+                    ariaLabel={_('item')}
                     hideViewToggle
                     value={{
                         name: draft.name,
@@ -56,7 +57,7 @@ export const ItemFields = observer(
                         ...draft.props,
                     }}
                     onChange={(next) => {
-                        if (next && !isCode(next)) onChange(next);
+                        if (!isCode(next)) onChange(next);
                     }}
                     fields={
                         structure.loaded
@@ -64,24 +65,27 @@ export const ItemFields = observer(
                             : undefined
                     }
                     allowCustomFields
-                    diagnostics={store.exactDiagnostics('props')}
+                    hasError={store.exactDiagnostics('props').length > 0}
                     diagnosticsOf={(path) =>
                         isItemField(path.split('.')[0])
                             ? store.exactDiagnostics(path)
                             : store.exactDiagnostics(`props.${path}`)
                     }
-                    helperText={
-                        base && target !== base.source
-                            ? _(
-                                  'Saving moves the item from %s to %s.',
-                                  base.source,
-                                  target
-                              )
-                            : _(
-                                  'food goes to foodInfo, tool to toolInfo, the rest to itemInfo.'
-                              )
-                    }
                     dataField="item"
+                />
+                <Typography variant="caption" color="text.secondary">
+                    {base && target !== base.source
+                        ? _(
+                              'Saving moves the item from %s to %s.',
+                              base.source,
+                              target
+                          )
+                        : _(
+                              'food goes to foodInfo, tool to toolInfo, the rest to itemInfo.'
+                          )}
+                </Typography>
+                <InputDiagnostics
+                    diagnostics={store.exactDiagnostics('props')}
                 />
             </>
         );
