@@ -21,7 +21,7 @@ afterEach(async () => {
 const LAYOUT = '/api/stories/secret/layout/timeline';
 const JSON_TYPE = { 'content-type': 'application/json; charset=utf-8' };
 
-const send = (base: string, method: string, url: string, headers: Record<string, string>, body = '{}') =>
+const send = (base: string, method: string, url: string, headers: Record<string, string>, body = '{"version":"1"}') =>
     fetch(base + url, { method, headers, body });
 
 const tryLogin = (base: string, headers: Record<string, string>) =>
@@ -78,16 +78,20 @@ describe('CSRF: content type and origin of every mutation', () => {
         expect((await send(base, 'PUT', LAYOUT, JSON_TYPE)).status).toBe(401);
     });
 
-    it('wants the zip content type on importStory', async () => {
+    it('wants a multipart form on importStory', async () => {
         const base = await start();
-        const json = await send(base, 'POST', '/api/stories/import', JSON_TYPE);
-        expect([json.status, await json.json()]).toEqual([
-            400,
-            { error: 'bad_request', message: 'Expected content-type application/zip' },
-        ]);
-        expect((await send(base, 'POST', '/api/stories/import', { 'content-type': 'application/zip' })).status).toBe(
-            201
-        );
+        for (const type of ['application/json', 'application/zip']) {
+            const res = await send(base, 'POST', '/api/stories/import', { 'content-type': type });
+            expect([type, res.status, await res.json()]).toEqual([
+                type,
+                400,
+                { error: 'bad_request', message: 'Expected content-type multipart/form-data' },
+            ]);
+        }
+        const form = new FormData();
+        form.set('zip', new Blob([new Uint8Array([1, 2, 3])]), 'story.zip');
+        const res = await fetch(`${base}/api/stories/import`, { method: 'POST', body: form });
+        expect(res.status).toBe(201);
     });
 
     it('allows the dev ports by default, 8125 included', async () => {

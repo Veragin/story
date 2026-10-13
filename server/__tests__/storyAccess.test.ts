@@ -24,7 +24,7 @@ afterEach(async () => {
 const callRoute = (base: string, route: TStoryRouteName, storyId: string, cookie?: string) => {
     const { method } = routeDef(route);
     return requestJson(base + samplePath(route, storyId), method, {
-        body: method === 'GET' ? undefined : {},
+        body: method === 'GET' ? undefined : { version: '1' },
         headers: cookie ? { cookie } : {},
     });
 };

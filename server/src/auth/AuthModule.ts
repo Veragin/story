@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, RequestMethod, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { StoriesModule } from '../stories/StoriesModule';
@@ -8,6 +8,7 @@ import { CsrfGuard } from './CsrfGuard';
 import { LoginLimiter } from './LoginLimiter';
 import { SessionService } from './SessionService';
 import { StoryAccessGuard } from './StoryAccessGuard';
+import { UnmatchedStoryPathMiddleware } from './UnmatchedStoryPathMiddleware';
 
 @Module({
     imports: [StoriesModule],
@@ -22,4 +23,10 @@ import { StoryAccessGuard } from './StoryAccessGuard';
     ],
     exports: [AUTH_OPTIONS, SessionService],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+    configure(consumer: MiddlewareConsumer): void {
+        consumer
+            .apply(UnmatchedStoryPathMiddleware)
+            .forRoutes({ path: 'api/stories/*rest', method: RequestMethod.ALL });
+    }
+}

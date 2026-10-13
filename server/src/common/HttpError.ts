@@ -31,6 +31,10 @@ export class HttpError extends Error {
         return HttpError.of('forbidden', message);
     }
 
+    static storyLocked(storyId: string) {
+        return HttpError.unauthorized(`Story "${storyId}" is locked: log in with its password first`);
+    }
+
     static notFound(message: string) {
         return HttpError.of('not_found', message);
     }

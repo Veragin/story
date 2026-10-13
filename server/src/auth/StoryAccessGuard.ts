@@ -35,6 +35,6 @@ export class StoryAccessGuard implements CanActivate {
             return true;
         }
         if (access === 'read' && story.public) return true;
-        throw HttpError.unauthorized(`Story "${storyId}" is locked: log in with its password first`);
+        throw HttpError.storyLocked(storyId);
     }
 }

@@ -1,12 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { INestApplication, Type } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import type { TRouteName } from '@story/protocol';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/AppModule';
 import { AUTH_OPTIONS, GRANT_TTL_MS, type TAuthOptions } from '../../src/auth/authOptions';
 import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
+import { configureExpressApp, EXPRESS_APP_OPTIONS } from '../../src/common/expressApp';
 import { NOT_YET_PORTED_ROUTES } from '../../src/common/notYetPortedRoutes';
 import { NOT_YET_PORTED } from '../../src/common/ProtocolRouteCheck';
 import { EXAMPLE_STORY_ROOT } from '../../src/project/ProjectRoot';
@@ -43,7 +45,8 @@ export const createTestApp = async ({
         .overrideProvider(AUTH_OPTIONS)
         .useValue({ ...TEST_AUTH_OPTIONS, ...auth })
         .compile();
-    const app = moduleRef.createNestApplication({ logger: false });
+    const app = moduleRef.createNestApplication<NestExpressApplication>({ ...EXPRESS_APP_OPTIONS, logger: false });
+    configureExpressApp(app);
     await app.init();
     if (truncate) await truncateTables(app.get(DataSource));
     await app.listen(0, '127.0.0.1');

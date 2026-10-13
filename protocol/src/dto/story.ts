@@ -45,6 +45,11 @@ export const STORY_ZIP_CONTENT_TYPE = 'application/zip';
 
 export const MAX_STORY_ZIP_BYTES = 50 * 1024 * 1024;
 
+/** `importStory` on `@story/server`: a form with the zip in `STORY_IMPORT_ZIP_FIELD` (the CSRF check wants this type). */
+export const STORY_IMPORT_CONTENT_TYPE = 'multipart/form-data';
+
+export const STORY_IMPORT_ZIP_FIELD = 'zip';
+
 export type TLoginBody = { password: string };
 
 export type TSessionDto = { storyIds: string[] };

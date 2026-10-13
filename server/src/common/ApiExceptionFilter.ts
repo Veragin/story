@@ -9,11 +9,7 @@ import {
 import { ERROR_STATUS, type TApiErrorBody, type TApiErrorCode } from '@story/protocol';
 import type { Request, Response } from 'express';
 import { errorMessage, isHttpError } from './HttpError';
-
-const JSON_HEADERS = {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-};
+import { JSON_HEADERS, jsonText } from './jsonResponse';
 
 const HTTP_EXCEPTION_CODES: Partial<Record<number, TApiErrorCode>> = {
     400: 'bad_request',
@@ -43,7 +39,7 @@ const sendJson = (res: Response, status: number, body: TApiErrorBody) => {
         return;
     }
     res.writeHead(status, JSON_HEADERS);
-    res.end(JSON.stringify(body) + '\n');
+    res.end(jsonText(body));
 };
 
 @Catch()

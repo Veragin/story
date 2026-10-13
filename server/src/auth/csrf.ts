@@ -1,9 +1,8 @@
 import type { IncomingMessage } from 'node:http';
-import { STORY_ZIP_CONTENT_TYPE, type TRouteName } from '@story/protocol';
+import type { TRouteName } from '@story/protocol';
 import { HttpError } from '../common/HttpError';
+import { routeContentType } from '../common/routeBody';
 import { normalizeOrigin } from '../config/env';
-
-const MUTATION_CONTENT_TYPES: Partial<Record<TRouteName, string>> = { importStory: STORY_ZIP_CONTENT_TYPE };
 
 const DEV_PORTS = [8100, 8101, 8103, 8123, 8125];
 
@@ -23,7 +22,7 @@ export const assertSafeMutation = (
 ): void => {
     if (SAFE_METHODS.has(req.method ?? 'GET')) return;
 
-    const expected = MUTATION_CONTENT_TYPES[route] ?? 'application/json';
+    const expected = routeContentType(route);
     if (mediaType(req.headers['content-type']) !== expected) {
         throw HttpError.badRequest(`Expected content-type ${expected}`);
     }
