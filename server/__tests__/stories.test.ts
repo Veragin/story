@@ -1,7 +1,5 @@
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { TRouteName } from '@story/protocol';
-import { NOT_YET_PORTED_ROUTES } from '../src/common/notYetPortedRoutes';
 import type { ProjectRoot } from '../src/project/ProjectRoot';
 import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { login, QUIET_MS, requestJson, sleep, waitFor } from './helpers/http';
@@ -13,8 +11,6 @@ let base: string;
 let alpha: ProjectRoot;
 let beta: ProjectRoot;
 let cookie: string;
-
-const ported = (...routes: TRouteName[]) => routes.every((route) => !NOT_YET_PORTED_ROUTES.includes(route));
 
 const STALE_TSCONFIG = '{ "extends": "../../tsconfig.base.json", "include": ["data"] }\n';
 
@@ -44,28 +40,22 @@ const openStream = (storyId: string) => openEventStream(`${base}/api/stories/${s
 describe('two stories', () => {
     beforeEach(() => start());
 
-    it.runIf(ported('getTrigger', 'updateTrigger'))(
-        'keeps writes in their own story',
-        async () => {
-            const trigger = (await call('GET', '/api/stories/alpha/triggers/nobleHouseRobbery')).body;
-            const betaBefore = await readFile(beta.abs('data/chapters/village/triggers.ts'), 'utf8');
-            const res = await call('PUT', '/api/stories/alpha/triggers/nobleHouseRobbery', {
-                version: trigger.version,
-                description: 'Robbery in alpha',
-            });
-            expect(res.status).toBe(200);
-            expect(await readFile(alpha.abs('data/chapters/village/triggers.ts'), 'utf8')).toContain(
-                'Robbery in alpha'
-            );
-            expect(await readFile(beta.abs('data/chapters/village/triggers.ts'), 'utf8')).toBe(betaBefore);
+    it('keeps writes in their own story', async () => {
+        const trigger = (await call('GET', '/api/stories/alpha/triggers/nobleHouseRobbery')).body;
+        const betaBefore = await readFile(beta.abs('data/chapters/village/triggers.ts'), 'utf8');
+        const res = await call('PUT', '/api/stories/alpha/triggers/nobleHouseRobbery', {
+            version: trigger.version,
+            description: 'Robbery in alpha',
+        });
+        expect(res.status).toBe(200);
+        expect(await readFile(alpha.abs('data/chapters/village/triggers.ts'), 'utf8')).toContain('Robbery in alpha');
+        expect(await readFile(beta.abs('data/chapters/village/triggers.ts'), 'utf8')).toBe(betaBefore);
 
-            const inBeta = (await call('GET', '/api/stories/beta/triggers/nobleHouseRobbery')).body;
-            expect(inBeta.description).toBe('Noble house robbery');
-            expect(inBeta.version).toBe(trigger.version);
-            expect(app.contexts.loadedIds().sort()).toEqual(['alpha', 'beta']);
-        },
-        60_000
-    );
+        const inBeta = (await call('GET', '/api/stories/beta/triggers/nobleHouseRobbery')).body;
+        expect(inBeta.description).toBe('Noble house robbery');
+        expect(inBeta.version).toBe(trigger.version);
+        expect(app.contexts.loadedIds().sort()).toEqual(['alpha', 'beta']);
+    }, 60_000);
 
     it('keeps JSON store writes in their own story', async () => {
         const doc = { chapters: { village: { y: 1 } }, triggers: {} };
@@ -101,7 +91,7 @@ describe('two stories', () => {
         b.close();
     });
 
-    it.runIf(ported('getImage', 'getImageFile'))('puts the story id in image urls', async () => {
+    it('puts the story id in image urls', async () => {
         const res = await call('GET', '/api/stories/beta/images/passages/village-thomas-intro');
         expect(res.status).toBe(200);
         expect(res.body.url).toBe(`/api/stories/beta/images/passages/village-thomas-intro/png?v=${res.body.version}`);

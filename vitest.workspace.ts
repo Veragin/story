@@ -44,6 +44,9 @@ export default defineWorkspace([
             // the suites share one database and truncate it: one fork runs the files one after another
             pool: 'forks',
             poolOptions: { forks: { singleFork: true } },
+            // the story suites load and type-check whole projects, which is slow while other projects run alongside
+            testTimeout: 30_000,
+            hookTimeout: 30_000,
         },
     },
     {

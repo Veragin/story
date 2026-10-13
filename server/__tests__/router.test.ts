@@ -1,18 +1,17 @@
-import { Body, Controller } from '@nestjs/common';
-import type { TRouteName } from '@story/protocol';
+import { Body, Controller, Module } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HttpError } from '../src/common/HttpError';
 import { MAX_JSON_BODY_BYTES } from '../src/common/body';
 import { ProtocolRoute } from '../src/common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../src/common/RouteParams';
+import { TriggersModule } from '../src/editor/triggers/TriggersModule';
 import { ProjectRoot } from '../src/project/ProjectRoot';
 import { StoryRepository } from '../src/stories/StoryRepository';
 import { StoryVersionConflictError } from '../src/stories/StoryVersionConflictError';
 import { login, type TAny } from './helpers/http';
-import { stubbedApp } from './helpers/routeStubs';
-import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
+import { createTestApp, type TTestApp } from './helpers/testApp';
 
-// stands in for handlers of later phases, to exercise the error mapping and the body handling
+// takes the triggers' place, to exercise the error mapping and the body handling
 @Controller()
 class RouterProbe {
     @ProtocolRoute('getTrigger')
@@ -47,15 +46,14 @@ class RouterProbe {
         return { echo: body };
     }
 
-    @ProtocolRoute('deletePassage')
-    deletePassage(@Body() body: unknown) {
+    @ProtocolRoute('deleteTrigger')
+    deleteTrigger(@Body() body: unknown) {
         return { echo: body };
     }
 }
 
-const PROBED: readonly TRouteName[] = ['getTrigger', 'createTrigger', 'updateTrigger', 'deletePassage'];
-
-const stubs = stubbedApp(['getProject', 'getChapter']);
+@Module({ controllers: [RouterProbe] })
+class RouterProbeModule {}
 
 let app: TTestApp;
 let base: string;
@@ -63,12 +61,13 @@ let cookie: string;
 
 beforeAll(async () => {
     app = await createTestApp({
-        controllers: [RouterProbe, ...stubs.controllers],
-        notYetPorted: stubs.notYetPorted.filter((route) => !PROBED.includes(route)),
+        overrideModules: [{ replace: TriggersModule, with: RouterProbeModule }],
+        stories: [
+            { id: 'example', public: false },
+            { id: 'open', public: true },
+        ],
     });
     base = app.base;
-    await seedStory(app.app, 'example', { public: false });
-    await seedStory(app.app, 'open', { public: true });
     cookie = await login(base);
 });
 
@@ -98,6 +97,13 @@ describe('router: matching', () => {
         expect(unknown.json).toEqual({ error: 'not_found', message: 'No story "nope"' });
         expect((await call('GET', '/api/stories/..%2F..%2Fetc/project')).status).toBe(404);
         expect((await call('GET', '/api/stories/Example/project')).status).toBe(404);
+        expect(app.contexts.loadedIds()).toEqual([]);
+    });
+
+    it('answers the source routes', async () => {
+        const { status, json } = await call('GET', '/api/stories/example/chapters/village');
+        expect(status).toBe(200);
+        expect(json.chapterId).toBe('village');
     });
 
     it('answers 404 for unknown routes and wrong methods', async () => {
@@ -210,8 +216,8 @@ describe('router: bodies', () => {
         const ok = await call('PUT', '/api/stories/example/triggers/t', JSON.stringify({ version: 'abc', name: 'x' }));
         expect(ok.status).toBe(200);
         expect(ok.json.echo).toEqual({ version: 'abc', name: 'x' });
-        expect((await call('DELETE', '/api/stories/example/passages/a-b-c', '{}')).status).toBe(400);
-        const deleted = await call('DELETE', '/api/stories/example/passages/a-b-c', '{"version":"1"}');
+        expect((await call('DELETE', '/api/stories/example/triggers/a-b-c', '{}')).status).toBe(400);
+        const deleted = await call('DELETE', '/api/stories/example/triggers/a-b-c', '{"version":"1"}');
         expect(deleted).toMatchObject({ status: 200, json: { echo: { version: '1' } } });
     });
 

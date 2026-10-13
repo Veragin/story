@@ -7,11 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAX_STORY_ZIP_BYTES, STORY_LIMITS, storyImportForm, type TImportStoryBody } from '@story/protocol';
 import { REPO_ROOT } from '../src/config/env';
 import { createDefaultMap, decodeMapFile, encodeMapFile, MAP_FILE } from '../src/json/mapFile';
+import { ProjectRoot } from '../src/project/ProjectRoot';
+import { SourceProject } from '../src/project/SourceProject';
+import { diagnoseProject } from '../src/project/validate';
 import { STORY_FILE } from '../src/stories/storyFile';
 import { slugify } from '../src/stories/StoryFolders';
 import { StoryRepository } from '../src/stories/StoryRepository';
 import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { cookieOf, EXAMPLE_PASSWORD, login, requestJson, type TJsonResponse } from './helpers/http';
+import { storyProblems } from './helpers/sourceHelpers';
 import { copyExampleStory } from './helpers/storiesRoot';
 import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
 
@@ -118,11 +122,23 @@ describe('create', () => {
 
         expect((await call('GET', `/api/stories/${id}/info`, { cookie })).status).toBe(200);
         expect((await call('GET', `/api/stories/${id}/info`)).status).toBe(401);
+        const project = await call('GET', `/api/stories/${id}/project`, { cookie });
+        expect(project.body.chapters.map((c: { id: string }) => c.id)).toEqual(['start']);
+        expect((await call('GET', `/api/stories/${id}/project`)).status).toBe(401);
 
         const second = await create();
         expect(second.id).toBe('my-story-2');
         expect(await rootEntries()).toEqual(['example', 'my-story', 'my-story-2']);
     });
+
+    it('type-checks with no diagnostics in memory', async () => {
+        const { id } = await create();
+        const dir = path.join(storiesRoot, id);
+        const sp = new SourceProject(new ProjectRoot(dir, id));
+        await sp.run(() => undefined);
+        expect(diagnoseProject(sp)).toEqual([]);
+        expect(await storyProblems(dir)).toEqual([]);
+    }, 60_000);
 
     it('type-checks with tsc through its own tsconfig.json', async () => {
         const { id } = await create();

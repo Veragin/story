@@ -29,8 +29,11 @@ import { copyExampleStory, makeTempStoriesRoot } from './storiesRoot';
 
 export type TTestStory = string | ({ id: string } & Partial<TStoryFile>);
 
+export type TModuleOverride = { replace: Type; with: Type };
+
 export type TTestAppOptions = {
     controllers?: Type[];
+    overrideModules?: readonly TModuleOverride[];
     notYetPorted?: readonly TRouteName[];
     auth?: Partial<TAuthOptions>;
     truncate?: boolean;
@@ -77,6 +80,7 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // The story contexts do not watch the files unless `watch: true`.
 export const createTestApp = async ({
     controllers = [],
+    overrideModules = [],
     notYetPorted = NOT_YET_PORTED_ROUTES,
     auth = {},
     truncate = true,
@@ -92,7 +96,9 @@ export const createTestApp = async ({
             ? await makeTempStoriesRoot()
             : { root: storiesRoot, cleanup: () => Promise.resolve() };
     const contextsOptions: TStoryContextsOptions = { watch, batchMs, idleMs, sweepMs };
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule], controllers })
+    const builder = Test.createTestingModule({ imports: [AppModule], controllers });
+    for (const override of overrideModules) builder.overrideModule(override.replace).useModule(override.with);
+    const moduleRef = await builder
         .overrideProvider(NOT_YET_PORTED)
         .useValue(notYetPorted)
         .overrideProvider(AUTH_OPTIONS)

@@ -9,6 +9,15 @@ import { NOT_YET_PORTED_ROUTES } from './common/notYetPortedRoutes';
 import { ProtocolRoutesModule } from './common/ProtocolRoutesModule';
 import { AppConfigModule } from './config/AppConfigModule';
 import { DatabaseModule } from './database/DatabaseModule';
+import { ProjectInfoModule } from './editor/projectInfo/ProjectInfoModule';
+import { ChaptersModule } from './editor/chapters/ChaptersModule';
+import { PassagesModule } from './editor/passages/PassagesModule';
+import { TriggersModule } from './editor/triggers/TriggersModule';
+import { EntitiesModule } from './editor/entities/EntitiesModule';
+import { CatalogsModule } from './editor/catalogs/CatalogsModule';
+import { StructureModule } from './editor/structure/StructureModule';
+import { SourceModule } from './editor/source/SourceModule';
+import { ImagesModule } from './editor/images/ImagesModule';
 import { LayoutsModule } from './editor/layouts/LayoutsModule';
 import { MapsModule } from './editor/maps/MapsModule';
 import { EventsModule } from './events/EventsModule';
@@ -27,6 +36,15 @@ import { StoriesModule } from './stories/StoriesModule';
         AuthModule,
         StoryContextModule,
         EventsModule,
+        ProjectInfoModule,
+        ChaptersModule,
+        PassagesModule,
+        TriggersModule,
+        EntitiesModule,
+        CatalogsModule,
+        StructureModule,
+        SourceModule,
+        ImagesModule,
         MapsModule,
         LayoutsModule,
     ],
