@@ -2,7 +2,7 @@
 
 The author's editor for the story. It shows a hex map with location polygons, a timeline of chapters and time triggers, a Twine-like graph of each chapter's passages, and forms for the entities. It holds every story of the installation (`stories/<id>/`, see [`docs/README.md`](README.md#stories)), each behind its password, and **reads and writes the story's own source files** in its `data/` and `types/`, so every edit in the UI is an edit to TypeScript source that the author also edits by hand.
 
-How to run it, the env vars, the `map.json` format and the full list of known limitations are in [`clients/Visualizer/README.md`](../clients/Visualizer/README.md). This file covers what you need to understand and change the service.
+How to run it, the client env vars, the `map.json` format and the full list of known limitations are in [`clients/Visualizer/README.md`](../clients/Visualizer/README.md); the server in [`Server.md`](Server.md). This file covers what you need to understand and change the service.
 
 ## Architecture
 
@@ -22,12 +22,11 @@ Hard rules (enforced by `eslint.config.js`, check with `yarn lint`):
 - The **landing page imports only `@story/protocol`, `@story/ui` and `@story/shared`**: no story, no other Visualizer app. Its password prompt is `PasswordDialog` from `@story/ui`, shared with the client and SingleEngine.
 - `protocol` imports no service code. `data/` and `types/` never import any service.
 
-## Server (`Visualizer/server/src/`)
+## Server side (`server/src/`)
+
+The server (modules, request pipeline, auth, env, migrations, tests) is described in [`Server.md`](Server.md). The Visualizer's part of it is the editor: `editor/<feature>/` controllers (one-liners) over the framework-free `project/` library:
 
 ```
-index.ts, app.ts, context.ts   startup; TServerContext = { router, project, bus }
-http/        typed router (from TApiSpec), JSON body parsing, HttpError → status
-routes/      one file per resource; routes/index.ts registers them, app.ts asserts none is missing
 project/     ts-morph source layer
   ProjectRoot.ts     one story's dir (STORIES_ROOT/<id>) and `paths` of every well-known file
   SourceProject.ts   one long-lived ts-morph Project; run() serialises ops; session() → commit()
@@ -43,9 +42,7 @@ project/     ts-morph source layer
   migrations/        structureLayout.ts: moves an older story to the structure layout (types/literals.ts, TNpc.ts, TItemInfo), on its first load
 json/        map.json and *.layout.json stores (validated whole-document replace)
 events/      EventBus (transactions), chokidar watcher, pathToEvent, SSE, version hashing
-auth/        password.ts (scrypt), SessionStore (in-memory grants), cookie, csrf, LoginLimiter
-stories/     StoryStore (story.json), StoryContexts (loaded stories), access.ts (the grant check),
-             storyFolders.ts (create from the template, import), storyInput.ts (body checks), zip.ts
+storyContext/ StoryContexts: one TServerContext { project, sp, bus } per loaded story, leased per request
 ```
 
 `server/template/` is not server code: it is the story that "create story" copies (`data/` and `types/`; one chapter `start`, character `hero` with an `intro` passage, location `home`, npc `stranger`, item `gold`). It is the smallest story that type-checks: with no npc or no item, the id unions collapse to `never` and the engine's types break. It has its own `tsconfig.json`, and `yarn typecheck` checks it with the stories (`scripts/typecheck-stories.mjs`); `eslint.config.js` lints it with a story's zones. A new story gets its own `tsconfig.json`, written for its folder (`storyTsconfig`), because the engine paths in it are relative.
@@ -93,7 +90,7 @@ Invariants to keep:
 - **Structure writes** (`writers/structure.ts`, `writers/literals.ts`): `updateType` edits the type's members in place (the engine members of an extendable type stay byte-for-byte) and, in the same session, rewrites every instance (`typeInstances.ts`): renames, removed keys, `typeDefault` for a new required key, and with `resetIncompatible` the values of fields whose type changed. The response lists the `touchedFiles`. A literal value rename rewrites the values typed by that literal (found through the type checker); removing a used value, or deleting a used type or literal, is `409 referenced`. Extendable and engine types cannot be deleted (`403`). `addLiteralValue` is the one write an entity form makes outside its entity; it commits at once, so discarding the form keeps the value.
 - **Deleting a referenced instance** (`project/clearReferences.ts`, shared by `deleteEntity` and `deleteCatalogEntry`): in the same session as the delete, every value typed `ref` to it (entity fields, `init`, items, catalog entries, chapter `location` and `init`, `sublocations`, inventories) is cleared: an optional field loses its key, an array element (`sublocations`, an inventory entry `{ id }`) is removed, a required field gets the first remaining id, and a required field with no id left refuses the delete. Code references (imports, a character's chapter files, ids inside code) still refuse it with `409 referenced`. The answer lists the `cleared` values (`TClearedReferenceDto`: resource, path, `removed` or the new value), and each touched resource gets its own `updated` event. `GET …/references` is the same delete as a dry run (`s.check()` then rollback), for the confirmation dialog.
 - Hand edits are picked up on the next request: `SourceProject` stats the story files and re-parses only the changed ones.
-- Tests never touch the real `stories/`: `__tests__/helpers.ts#makeTempStories(ids)` copies the example story (`data/`, `types/`, `story.json`, `tsconfig.json`) under each id into a temp `STORIES_ROOT` (`makeTempProject()` is the one-story shorthand), `createApp({ storiesRoot, watch: false })` runs on it, and `login(base, storyId)` returns the cookie of a grant (the example's password is `example`).
+- Tests never touch the real `stories/`: `server/__tests__/helpers/testApp.ts#createTestApp({ stories: ['example'] })` copies the example story under each id into a temp `STORIES_ROOT` and seeds its row, and `login(base, storyId)` returns the cookie of a grant (the example's password is `example`). See [`Server.md`](Server.md#tests).
 
 ### Story file conventions the server relies on
 
@@ -163,7 +160,7 @@ The story list and the way into every story: http://localhost:8103 in dev, `/` i
 
 - `StoriesStore.ts`: the list (`GET /api/stories`, with each story's `unlocked` flag) and `requireUnlocked(id)`, which returns at once for an unlocked story and otherwise opens `PasswordDialog` and logs in.
 - `StoryList.tsx` / `StoryCard.tsx`: name, author in grey, a description toggle, and the buttons **Edit** (`EditStoryDialog`: name, author, description, public, an optional new password; the map size is read-only, plan D6), **Open** (`<VITE_VISUALIZER_URL>/?story=<id>#/map`), **Play as single** (`<VITE_ENGINE_URL>/?story=<id>`) and **Export** (navigates to `/api/stories/<id>/export`). Edit, Open and Export go through `requireUnlocked`; Play only when the story is not `public`. The target URLs are in `links.ts`.
-- `CreateStoryDialog.tsx` (name, author, password twice, description, map size, public; `storyForm.ts` checks the fields against `STORY_LIMITS`) and `ImportStoryButton.tsx` (a file picker; `409 exists` asks for another id).
+- `CreateStoryDialog.tsx` (name, author, password twice, description, map size, public; `storyForm.ts` checks the fields against `STORY_LIMITS`) `ImportStoryButton.tsx` (a file picker) and `ImportStoryDialog.tsx` (the New-story form without the map size; the id is a slug of the name, as for create).
 - It never runs a story, and it keeps no state of its own besides the list: the grant is the `story_session` cookie, which the other apps on the same host share.
 
 ## Pages
@@ -208,7 +205,7 @@ Behaviour that is settled (keep it unless the user asks otherwise):
 
 Besides the `.ts` source it edits, the Visualizer owns these JSON files. They are validated whole-document replaces: an unknown field is a 400. A missing file reads as the default with `version: ''`, and a `PUT` with `version: ''` creates it.
 
-- `data/locations/map.json`: tiles (one run-length-encoded string per row), palette, `tileText` keyed `"<row>,<col>"`, and location polygons keyed by location id in tile-renderer world coordinates. Format: [`clients/Visualizer/README.md`](../clients/Visualizer/README.md#mapjson). While it is missing, `GET` answers an empty map of the story's `mapSize` (`story.json`).
+- `data/locations/map.json`: tiles (one run-length-encoded string per row), palette, `tileText` keyed `"<row>,<col>"`, and location polygons keyed by location id in tile-renderer world coordinates. Format: [`clients/Visualizer/README.md`](../clients/Visualizer/README.md#mapjson). While it is missing, `GET` answers an empty map of the story's `mapSize` (from its database row).
 - `data/chapters/timeline.layout.json`: `{ chapters: { [id]: { y } }, triggers: { … } }`.
 - `data/chapters/<ch>/<ch>.layout.json`: `{ passages: { [passageId]: { x, y } } }`.
 
@@ -216,11 +213,11 @@ Besides the `.ts` source it edits, the Visualizer owns these JSON files. They ar
 
 The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `STORY_ROUTES` and `GLOBAL_ROUTES` hold the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath` (story routes) and `buildGlobalPath`.
 
-- The server holds every story under `STORIES_ROOT` (`stories/<id>/`). A story route acts on one story and lives under `/api/stories/:storyId` (`storyApiPrefix`); the table below gives its path relative to that prefix. Each story has its own project, change feed and watcher, loaded on its first request and unloaded when idle (`server/src/stories/StoryContexts.ts`). An unknown story answers `404`.
-- **Auth** (`server/src/auth/`, `server/src/stories/access.ts`): every story route needs a grant for its story in the `story_session` cookie (from `login`, 24 h, in memory), else `401`; SSE and image bytes included, and an `/events` stream is ended when its grant expires. `login` and `getStoryAccess` are global routes and need none; the images (`getImage`, `getImageFile`) of a `public` story need none either (`PUBLIC_STORY_READS`). Every mutation must send `content-type: application/json` (the import: `application/zip`), else `400`, and, if it has an `Origin`, one in `ALLOWED_ORIGINS` or matching its `Host` (CSRF). 10 wrong passwords per IP and story within 10 minutes answer `429`.
-- **Stories** (`server/src/routes/stories.ts`, `storyInfo.ts`, `server/src/stories/`): anyone may list, create or import a story (plan D5). Create copies the template, writes `story.json` (scrypt hash), a `tsconfig.json` and an empty `map.json` of `mapSize`, and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. A new or imported story is built in a `.create-*` / `.import-*` temp folder of `STORIES_ROOT` and renamed into place, so it appears whole or not at all. `GET/PUT /info` and `/export` are story routes (a grant). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
-- **Zips** (`server/src/stories/zip.ts`): a story zip holds `story.json`, `tsconfig.json`, `data/`, `types/` at its root. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes. Import takes the raw zip (`content-type: application/zip`, at most 50 MB) and refuses (`400`) an entry outside those names, with `..`, an absolute path or a backslash (zip-slip), a symlink, an encrypted or duplicate entry, a missing or invalid `story.json`, an unusable password hash, or more than 200 MB unpacked. It keeps the zip's `story.json` (password included) and writes a fresh `tsconfig.json`. A taken id is `409 exists` (plan D8); the importer is not logged in.
-- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `exportStory` (the zip) and the body of `importStory` (the zip).
+- The server holds every story under `STORIES_ROOT` (`stories/<id>/`). A story route acts on one story and lives under `/api/stories/:storyId` (`storyApiPrefix`); the table below gives its path relative to that prefix. Each story has its own project, change feed and watcher, loaded on its first request and unloaded when idle (`server/src/storyContext/StoryContexts.ts`). An unknown story answers `404`.
+- **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
+- **Stories** (`server/src/stories/`): anyone may list, create or import a story. Create copies the template, writes a `tsconfig.json` and an empty `map.json` of `mapSize`, inserts the story's row (scrypt hash) and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. Export and import (multipart: the zip + the metadata fields) are in [`Server.md`](Server.md#stories). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
+- **Zips** (`server/src/stories/zip.ts`): a story zip holds `tsconfig.json`, `data/`, `types/` at its root, no metadata. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes.
+- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `exportStory` (the zip) and the body of `importStory` (`multipart/form-data`).
 - A `PUT` or `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
 - `PUT` bodies are **partial** (`{ version, ...changedFields }`; an omitted field is left untouched). The map and the two layouts are the exception: their `PUT` replaces the whole document.
 - `create*` routes, `importStory` and `addChapterCharacter` answer `201`; everything else answers `200`.
@@ -232,14 +229,14 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | `health`                                    | `GET`            | `/api/health`                                     |
 | `listStories`                               | `GET`            | `/api/stories` (`TStoryListItemDto[]`)            |
 | `createStory`                               | `POST`           | `/api/stories` (201 + cookie)                     |
-| `importStory`                               | `POST`           | `/api/stories/import?id=<id>` (zip body, 201)     |
+| `importStory`                               | `POST`           | `/api/stories/import` (multipart, 201 + cookie)   |
 | `login`                                     | `POST`           | `/api/stories/:storyId/login` (204 + cookie)      |
 | `logout`                                    | `POST`           | `/api/logout` (204, cookie cleared)               |
 | `getSession`                                | `GET`            | `/api/session` (unlocked story ids)               |
 | `getStoryAccess`                            | `GET`            | `/api/stories/:storyId/access` (`canEdit/Play`)   |
 | `events`                                    | `GET`            | `/events` (SSE)                                   |
 | `getProject`                                | `GET`            | `/project` (id/title lists of everything)         |
-| `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (`story.json` without the password)       |
+| `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (the story's row without the password)    |
 | `exportStory`                               | `GET`            | `/export` (`<storyId>.zip`, an attachment)        |
 | `createChapter`                             | `POST`           | `/chapters`                                       |
 | `get/update/deleteChapter`                  | `GET/PUT/DELETE` | `/chapters/:chapterId`                            |
@@ -279,7 +276,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | 404    | `not_found`         | no such route or resource                                                          |
 | 409    | `stale`             | `version` is not the one on disk; `current` is the fresh DTO (or `null`)           |
 | 409    | `referenced`        | delete refused; `references` lists file, line and text of each reference           |
-| 409    | `exists`            | create or import refused, the id is taken                                          |
+| 409    | `exists`            | create refused, the id is taken (chapter, passage, entity, type, …)                |
 | 422    | `invalid`           | the edit does not type-check (`diagnostics`, with a `field` path); nothing written |
 | 429    | `too_many_requests` | too many wrong passwords                                                           |
 | 500    | `internal`          | bug                                                                                |
@@ -289,7 +286,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 ## Adding or changing a feature
 
 1. **New or changed route**: edit `protocol/src/routes.ts` (`STORY_ROUTES` or `GLOBAL_ROUTES`, + `TApiSpec`) and the DTOs in `protocol/src/dto/`. Then:
-    - add the handler in `server/src/routes/<resource>.ts` (with the reader or writer in `project/`)
+    - give it an `access` level, and add a `@ProtocolRoute('<name>')` handler in `server/src/editor/<feature>/` (with the reader or writer in `project/`); the boot check fails while a route has no handler ([`Server.md`](Server.md#adding-a-route))
     - add the method to `clients/Visualizer/src/api/types.ts`, `httpApi.ts` and `mockApi.ts`
     - update the API table above
 2. **New editable field**: extend the reader (source → DTO) and the writer's field list. Anything that is not a plain literal must stay `{code}`.

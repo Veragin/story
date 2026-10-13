@@ -33,8 +33,8 @@ tackled:
 
 `@story/core` runs under plain node — verified with `tsx`, not assumed — with one exception:
 `new Engine(s, storyModule, storyId)` throws `ReferenceError: localStorage is not defined` from
-`Engine.loadStateFromLocalStorage` (`clients/shared/core/src/engine/Engine.ts:72`, reached from the constructor
-at line 39). `buildWorldState` is unaffected, which is why the removed server scaffold could use it. The ambient
+`Engine.loadStateFromLocalStorage` (`clients/shared/core/src/engine/Engine.ts:60`, reached from the constructor
+at line 31). `buildWorldState` is unaffected, which is why the removed server scaffold could use it. The ambient
 global `_` is fine: core imports `@story/shared`, and evaluating its `translations.ts` installs it.
 
 Note the type system is blind to this: `@types/node` declares `var localStorage: Storage` as a

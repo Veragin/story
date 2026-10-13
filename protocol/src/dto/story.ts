@@ -20,7 +20,7 @@ export const STORY_LIMITS = {
     mapSizeMax: 500,
 } as const;
 
-/** `story.json` without its password hash. */
+/** A story's metadata (its database row) without the password hash. */
 export type TStoryDto = {
     id: string;
     name: string;
