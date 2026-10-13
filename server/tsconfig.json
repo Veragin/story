@@ -10,6 +10,8 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "useDefineForClassFields": false,
+        // TypeORM fills entity columns itself; the alternative is a `!` on every column
+        "strictPropertyInitialization": false,
         "noUnusedLocals": true,
         "noUnusedParameters": true
     },

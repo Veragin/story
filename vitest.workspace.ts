@@ -41,6 +41,9 @@ export default defineWorkspace([
             include: ['__tests__/**/*.test.ts'],
             setupFiles: ['reflect-metadata'],
             env: { DB_NAME: SERVER_TEST_DB },
+            // the suites share one database and truncate it: one fork runs the files one after another
+            pool: 'forks',
+            poolOptions: { forks: { singleFork: true } },
         },
     },
     {

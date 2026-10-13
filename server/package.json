@@ -12,7 +12,8 @@
         "migration:generate": "yarn orm migration:generate -d src/database/dataSource.ts",
         "migration:run": "yarn orm migration:run -d src/database/dataSource.ts",
         "migration:revert": "yarn orm migration:revert -d src/database/dataSource.ts",
-        "migration:show": "yarn orm migration:show -d src/database/dataSource.ts"
+        "migration:show": "yarn orm migration:show -d src/database/dataSource.ts",
+        "stories:import-files": "node --import @swc-node/register/esm-register scripts/importStoryFiles.ts"
     },
     "dependencies": {
         "@nestjs/common": "^12.1.3",
