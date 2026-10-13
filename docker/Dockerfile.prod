@@ -1,4 +1,4 @@
-# Production image (multiple stories, phase 11), used by `docker-compose.prod.yml`. Three targets:
+# Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
 #
 #   app    the repo with its dependencies installed: runs the Visualizer server (`tsx src/index.ts`)
 #          and, until the per-story engine build lands (plan D7), the SingleEngine Vite dev server

@@ -39,3 +39,6 @@ tsconfig.*.tsbuildinfo
 # under stories/ is created at runtime by the Visualizer and lives on a volume on the server.
 stories/*
 !stories/example
+
+# Secrets (docker/.env.example is the template)
+.env

@@ -1,5 +1,5 @@
 resume ?=
-COMPOSE = docker compose
+COMPOSE = docker compose -f docker/docker-compose.yml
 
 # Git author for commits made inside the container. Read from the host's git
 # config unless already set in the environment.
@@ -60,7 +60,7 @@ DEV_EXEC = $(COMPOSE) exec $(DEV_EXEC_FLAGS) story-template
 DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 
 # Where `make start` parks the output of the detached `yarn dev`. The dev servers are not
-# PID 1 (see the note in docker-compose.yml), so `docker compose logs` cannot show them.
+# PID 1 (the container's command is an idle `tail`), so `docker compose logs` cannot show them.
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
@@ -137,10 +137,11 @@ dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
 
 # Production (multiple stories, phase 11): Caddy on 80/443 in front of the Visualizer server and
-# SingleEngine, one origin (docker-compose.prod.yml). Run on the host, not inside the dev
-# container. SITE_ADDRESS is the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com`
-# (default localhost). `prod-down` keeps the volumes (the stories, Caddy's certificates).
-PROD_COMPOSE = $(COMPOSE) -f docker-compose.prod.yml
+# SingleEngine, one origin (docker/docker-compose.prod.yml). Run on the host, not inside the dev
+# container. Needs `docker/.env` (copy `docker/.env.example`, set the DB passwords). SITE_ADDRESS is
+# the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com` (default localhost).
+# `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).
+PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
 prod-up:
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans

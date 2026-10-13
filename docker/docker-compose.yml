@@ -1,0 +1,52 @@
+name: story-template
+
+services:
+  story-template:
+    platform: linux/amd64
+    image: story/template
+    ports:
+      - 8100:8100 # SingleEngine          (vite)
+      - 8101:8101 # Visualizer client     (vite)
+      - 8102:8102 # MultiEngine client    (vite)
+      - 8103:8103 # Landing page          (vite) — the story list, proxies /api to 8123
+      - 8123:8123 # Visualizer server     (node/tsx) — the client reaches it via its /api proxy
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    volumes:
+      - ..:/app
+      - ~/.gitconfig:/home/node/.gitconfig-host:ro
+    environment:
+      DB_HOST: mysql
+      DB_PORT: '3306'
+      DB_USER: story
+      DB_PASSWORD: story
+      DB_NAME: story
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: tail -f /dev/stdout
+    working_dir: /app
+    user: node
+    tty: true
+
+  # Not published: the app and the tests reach it from the dev container as `mysql:3306`.
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: story
+      MYSQL_USER: story
+      MYSQL_PASSWORD: story
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  mysql:

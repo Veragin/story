@@ -49,7 +49,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 | Landing page (vite)          | 8103 | implemented; proxies `/api` to 8123 |
 | Visualizer server (node/tsx) | 8123 | implemented                         |
 
-`docker-compose.yml` publishes all five. The Visualizer client and the landing page call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8100, 8101 and 8103 (SingleEngine proxies `/api` the same way, for the access check and the login). The landing page (the story list: create, edit, open, play, export, import) is the place to start.
+`docker/docker-compose.yml` publishes all five (plus a `mysql` service, reachable from the dev container as `mysql:3306`). The Visualizer client and the landing page call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8100, 8101 and 8103 (SingleEngine proxies `/api` the same way, for the access check and the login). The landing page (the story list: create, edit, open, play, export, import) is the place to start.
 
 ## Data structure
 

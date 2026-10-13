@@ -1,5 +1,5 @@
 # Production (multiple stories, phase 11): `make prod-up`, or
-#   SITE_ADDRESS=stories.example.com docker compose -f docker-compose.prod.yml up -d --build
+#   SITE_ADDRESS=stories.example.com docker compose -f docker/docker-compose.prod.yml up -d --build
 #
 # One public origin, served by Caddy (`docker/Caddyfile`) on 80/443:
 #   /  landing page · /visualizer/  Visualizer client · /play/  SingleEngine · /api/  Visualizer server
@@ -10,13 +10,16 @@
 # SITE_ADDRESS: the public host name (default `localhost`, with a certificate from Caddy's local
 # CA). The public origin, `https://<SITE_ADDRESS>`, is the server's `ALLOWED_ORIGINS`.
 #
-# Stories live in the `stories` volume (seeded with the example story when empty). Logins live in
-# the server's memory: a restart logs everyone out.
+# Secrets come from `.env` next to this file (`docker/.env`, copied from `.env.example`): `DB_PASSWORD`,
+# `MYSQL_ROOT_PASSWORD`. MySQL publishes no port; only the server reaches it.
+#
+# Stories live in the `stories` volume (seeded with the example story when empty), the database in
+# the `mysql` volume. Logins live in the server's memory: a restart logs everyone out.
 name: story-prod
 
 x-app: &app
   build:
-    context: .
+    context: ..
     dockerfile: docker/Dockerfile.prod
     target: app
   image: story-prod-app
@@ -37,6 +40,14 @@ services:
       COOKIE_SECURE: '1'
       ALLOWED_ORIGINS: https://${SITE_ADDRESS:-localhost}
       TRUST_PROXY: '1'
+      DB_HOST: mysql
+      DB_PORT: '3306'
+      DB_USER: ${DB_USER:-story}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in docker/.env}
+      DB_NAME: ${DB_NAME:-story}
+    depends_on:
+      mysql:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -64,9 +75,28 @@ services:
       server:
         condition: service_healthy
 
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in docker/.env}
+      MYSQL_DATABASE: ${DB_NAME:-story}
+      MYSQL_USER: ${DB_USER:-story}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in docker/.env}
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
   caddy:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.prod
       target: proxy
     image: story-prod-proxy
@@ -86,5 +116,6 @@ services:
 
 volumes:
   stories:
+  mysql:
   caddy_data:
   caddy_config:

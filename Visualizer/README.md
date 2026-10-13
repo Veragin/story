@@ -56,7 +56,7 @@ Tests: `yarn test` at the root runs the `visualizer-server` (node), `visualizer-
 
 ## Deploying (production)
 
-`docker-compose.prod.yml` runs everything behind one origin, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443:
+`docker/docker-compose.prod.yml` runs everything behind one origin, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443:
 
 | Path           | Served by                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------- |
@@ -66,12 +66,13 @@ Tests: `yarn test` at the root runs the `visualizer-server` (node), `visualizer-
 | `/api/`        | the Visualizer server (`tsx src/index.ts`), stories in the `stories` volume                  |
 
 ```bash
+cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD
 make prod-up SITE_ADDRESS=stories.example.com   # on the host; DNS must point at it for the certificate
 make prod-logs
-make prod-down                                  # keeps the volumes (stories, certificates)
+make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The server runs with `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>` and `TRUST_PROXY=1`; only Caddy publishes ports. A fresh `stories` volume is seeded with the example story (`docker/prod-entrypoint.sh`); back it up like any other volume. Logins are in memory, so a restart logs everyone out. The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain.
+`SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The server runs with `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>` and `TRUST_PROXY=1`; only Caddy publishes ports. MySQL (`mysql:8.4`, `mysql` volume) is reachable only by the server. A fresh `stories` volume is seeded with the example story (`docker/prod-entrypoint.sh`); back it up like any other volume. Logins are in memory, so a restart logs everyone out. The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain.
 
 | Env var                | Where        | Default | Meaning                                                                                                                                                                                                                                                                                                                          |
 | ---------------------- | ------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

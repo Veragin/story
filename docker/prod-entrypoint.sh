@@ -1,5 +1,5 @@
 #!/bin/sh
-# Entrypoint of the production `app` image (docker-compose.prod.yml): seed the `stories` volume with
+# Entrypoint of the production `app` image (docker/docker-compose.prod.yml): seed the `stories` volume with
 # the example story when it holds no story yet (a fresh volume, or every story deleted), then run
 # the service's command. Docker also copies the image's `stories/` into a *new* named volume, so
 # this matters mostly for a volume that was created empty or emptied later.
