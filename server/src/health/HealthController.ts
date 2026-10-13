@@ -1,12 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
-import { GLOBAL_ROUTES, type THealthDto } from '@story/protocol';
+import { Controller } from '@nestjs/common';
+import type { THealthDto } from '@story/protocol';
+import { ProtocolRoute } from '../common/ProtocolRoute';
 import { HealthService } from './HealthService';
 
 @Controller()
 export class HealthController {
     constructor(private readonly health: HealthService) {}
 
-    @Get(GLOBAL_ROUTES.health.path)
+    @ProtocolRoute('health')
     check(): Promise<THealthDto> {
         return this.health.check();
     }

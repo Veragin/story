@@ -1,3 +1,4 @@
+import { keysOf } from '@story/shared';
 import type {
     TAddChapterCharacterBody,
     TChapterDto,
@@ -77,92 +78,132 @@ export type THttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 export const storyApiPrefix = (storyId: string) => `${STORIES_PREFIX}/${encodeURIComponent(storyId)}`;
 
+/**
+ * Who may call a route (D3). `public`: anyone. `read`: a grant for the story, or the story is public.
+ * `write`: a grant for the story.
+ */
+export type TRouteAccess = 'public' | 'read' | 'write';
+
+export type TRouteDef = { readonly method: THttpMethod; readonly path: string; readonly access: TRouteAccess };
+
+type TStoryRouteDef =
+    | { method: 'GET'; path: `/${string}`; access: 'read' }
+    | { method: Exclude<THttpMethod, 'GET'>; path: `/${string}`; access: 'write' };
+
 export const STORY_ROUTES = {
-    events: { method: 'GET', path: '/events' },
-    getProject: { method: 'GET', path: '/project' },
+    events: { method: 'GET', path: '/events', access: 'read' },
+    getProject: { method: 'GET', path: '/project', access: 'read' },
 
-    getStoryInfo: { method: 'GET', path: '/info' },
-    updateStoryInfo: { method: 'PUT', path: '/info' },
-    exportStory: { method: 'GET', path: '/export' },
+    getStoryInfo: { method: 'GET', path: '/info', access: 'read' },
+    updateStoryInfo: { method: 'PUT', path: '/info', access: 'write' },
+    exportStory: { method: 'GET', path: '/export', access: 'read' },
 
-    createChapter: { method: 'POST', path: '/chapters' },
-    getChapter: { method: 'GET', path: '/chapters/:chapterId' },
-    updateChapter: { method: 'PUT', path: '/chapters/:chapterId' },
-    deleteChapter: { method: 'DELETE', path: '/chapters/:chapterId' },
-    addChapterCharacter: { method: 'POST', path: '/chapters/:chapterId/characters' },
-    removeChapterCharacter: { method: 'DELETE', path: '/chapters/:chapterId/characters/:characterId' },
+    createChapter: { method: 'POST', path: '/chapters', access: 'write' },
+    getChapter: { method: 'GET', path: '/chapters/:chapterId', access: 'read' },
+    updateChapter: { method: 'PUT', path: '/chapters/:chapterId', access: 'write' },
+    deleteChapter: { method: 'DELETE', path: '/chapters/:chapterId', access: 'write' },
+    addChapterCharacter: { method: 'POST', path: '/chapters/:chapterId/characters', access: 'write' },
+    removeChapterCharacter: { method: 'DELETE', path: '/chapters/:chapterId/characters/:characterId', access: 'write' },
 
-    listChapterPassages: { method: 'GET', path: '/chapters/:chapterId/passages' },
-    createPassage: { method: 'POST', path: '/chapters/:chapterId/passages' },
-    getPassage: { method: 'GET', path: '/passages/:passageId' },
-    updatePassage: { method: 'PUT', path: '/passages/:passageId' },
-    deletePassage: { method: 'DELETE', path: '/passages/:passageId' },
+    listChapterPassages: { method: 'GET', path: '/chapters/:chapterId/passages', access: 'read' },
+    createPassage: { method: 'POST', path: '/chapters/:chapterId/passages', access: 'write' },
+    getPassage: { method: 'GET', path: '/passages/:passageId', access: 'read' },
+    updatePassage: { method: 'PUT', path: '/passages/:passageId', access: 'write' },
+    deletePassage: { method: 'DELETE', path: '/passages/:passageId', access: 'write' },
 
-    createTrigger: { method: 'POST', path: '/chapters/:chapterId/triggers' },
-    getTrigger: { method: 'GET', path: '/triggers/:triggerId' },
-    updateTrigger: { method: 'PUT', path: '/triggers/:triggerId' },
-    deleteTrigger: { method: 'DELETE', path: '/triggers/:triggerId' },
+    createTrigger: { method: 'POST', path: '/chapters/:chapterId/triggers', access: 'write' },
+    getTrigger: { method: 'GET', path: '/triggers/:triggerId', access: 'read' },
+    updateTrigger: { method: 'PUT', path: '/triggers/:triggerId', access: 'write' },
+    deleteTrigger: { method: 'DELETE', path: '/triggers/:triggerId', access: 'write' },
 
-    listEntities: { method: 'GET', path: '/entities/:kind' },
-    createEntity: { method: 'POST', path: '/entities/:kind' },
-    getEntity: { method: 'GET', path: '/entities/:kind/:id' },
-    updateEntity: { method: 'PUT', path: '/entities/:kind/:id' },
-    deleteEntity: { method: 'DELETE', path: '/entities/:kind/:id' },
-    getEntityReferences: { method: 'GET', path: '/entities/:kind/:id/references' },
+    listEntities: { method: 'GET', path: '/entities/:kind', access: 'read' },
+    createEntity: { method: 'POST', path: '/entities/:kind', access: 'write' },
+    getEntity: { method: 'GET', path: '/entities/:kind/:id', access: 'read' },
+    updateEntity: { method: 'PUT', path: '/entities/:kind/:id', access: 'write' },
+    deleteEntity: { method: 'DELETE', path: '/entities/:kind/:id', access: 'write' },
+    getEntityReferences: { method: 'GET', path: '/entities/:kind/:id/references', access: 'read' },
 
-    listCatalogEntries: { method: 'GET', path: '/catalogs/:name' },
-    createCatalogEntry: { method: 'POST', path: '/catalogs/:name' },
-    getCatalogEntry: { method: 'GET', path: '/catalogs/:name/:id' },
-    updateCatalogEntry: { method: 'PUT', path: '/catalogs/:name/:id' },
-    deleteCatalogEntry: { method: 'DELETE', path: '/catalogs/:name/:id' },
-    getCatalogEntryReferences: { method: 'GET', path: '/catalogs/:name/:id/references' },
+    listCatalogEntries: { method: 'GET', path: '/catalogs/:name', access: 'read' },
+    createCatalogEntry: { method: 'POST', path: '/catalogs/:name', access: 'write' },
+    getCatalogEntry: { method: 'GET', path: '/catalogs/:name/:id', access: 'read' },
+    updateCatalogEntry: { method: 'PUT', path: '/catalogs/:name/:id', access: 'write' },
+    deleteCatalogEntry: { method: 'DELETE', path: '/catalogs/:name/:id', access: 'write' },
+    getCatalogEntryReferences: { method: 'GET', path: '/catalogs/:name/:id/references', access: 'read' },
 
-    getStructure: { method: 'GET', path: '/structure' },
-    createType: { method: 'POST', path: '/structure/types' },
-    updateType: { method: 'PUT', path: '/structure/types/:name' },
-    deleteType: { method: 'DELETE', path: '/structure/types/:name' },
-    createLiteral: { method: 'POST', path: '/structure/literals' },
-    updateLiteral: { method: 'PUT', path: '/structure/literals/:name' },
-    addLiteralValue: { method: 'POST', path: '/structure/literals/:name/values' },
-    deleteLiteral: { method: 'DELETE', path: '/structure/literals/:name' },
+    getStructure: { method: 'GET', path: '/structure', access: 'read' },
+    createType: { method: 'POST', path: '/structure/types', access: 'write' },
+    updateType: { method: 'PUT', path: '/structure/types/:name', access: 'write' },
+    deleteType: { method: 'DELETE', path: '/structure/types/:name', access: 'write' },
+    createLiteral: { method: 'POST', path: '/structure/literals', access: 'write' },
+    updateLiteral: { method: 'PUT', path: '/structure/literals/:name', access: 'write' },
+    addLiteralValue: { method: 'POST', path: '/structure/literals/:name/values', access: 'write' },
+    deleteLiteral: { method: 'DELETE', path: '/structure/literals/:name', access: 'write' },
 
-    getSource: { method: 'GET', path: '/source/:owner/:id' },
-    updateSource: { method: 'PUT', path: '/source/:owner/:id' },
+    getSource: { method: 'GET', path: '/source/:owner/:id', access: 'read' },
+    updateSource: { method: 'PUT', path: '/source/:owner/:id', access: 'write' },
 
-    getImage: { method: 'GET', path: '/images/:owner/:id' },
-    getImageFile: { method: 'GET', path: '/images/:owner/:id/png' },
-    uploadImage: { method: 'PUT', path: '/images/:owner/:id' },
+    getImage: { method: 'GET', path: '/images/:owner/:id', access: 'read' },
+    getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
+    uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
 
-    getMap: { method: 'GET', path: '/maps/:mapId' },
-    updateMap: { method: 'PUT', path: '/maps/:mapId' },
+    getMap: { method: 'GET', path: '/maps/:mapId', access: 'read' },
+    updateMap: { method: 'PUT', path: '/maps/:mapId', access: 'write' },
 
-    getTimelineLayout: { method: 'GET', path: '/layout/timeline' },
-    updateTimelineLayout: { method: 'PUT', path: '/layout/timeline' },
-    getChapterLayout: { method: 'GET', path: '/layout/chapters/:chapterId' },
-    updateChapterLayout: { method: 'PUT', path: '/layout/chapters/:chapterId' },
-} as const satisfies Record<string, { method: THttpMethod; path: `/${string}` }>;
+    getTimelineLayout: { method: 'GET', path: '/layout/timeline', access: 'read' },
+    updateTimelineLayout: { method: 'PUT', path: '/layout/timeline', access: 'write' },
+    getChapterLayout: { method: 'GET', path: '/layout/chapters/:chapterId', access: 'read' },
+    updateChapterLayout: { method: 'PUT', path: '/layout/chapters/:chapterId', access: 'write' },
+} as const satisfies Record<string, TStoryRouteDef>;
 
 export const GLOBAL_ROUTES = {
-    health: { method: 'GET', path: '/api/health' },
-    listStories: { method: 'GET', path: '/api/stories' },
-    createStory: { method: 'POST', path: '/api/stories' },
-    importStory: { method: 'POST', path: '/api/stories/import' },
+    health: { method: 'GET', path: '/api/health', access: 'public' },
+    listStories: { method: 'GET', path: '/api/stories', access: 'public' },
+    createStory: { method: 'POST', path: '/api/stories', access: 'public' },
+    importStory: { method: 'POST', path: '/api/stories/import', access: 'public' },
 
-    login: { method: 'POST', path: '/api/stories/:storyId/login' },
-    logout: { method: 'POST', path: '/api/logout' },
-    getSession: { method: 'GET', path: '/api/session' },
-    getStoryAccess: { method: 'GET', path: '/api/stories/:storyId/access' },
-} as const satisfies Record<string, { method: THttpMethod; path: `${typeof API_PREFIX}/${string}` }>;
+    login: { method: 'POST', path: '/api/stories/:storyId/login', access: 'public' },
+    logout: { method: 'POST', path: '/api/logout', access: 'public' },
+    getSession: { method: 'GET', path: '/api/session', access: 'public' },
+    getStoryAccess: { method: 'GET', path: '/api/stories/:storyId/access', access: 'public' },
+} as const satisfies Record<
+    string,
+    { method: THttpMethod; path: `${typeof API_PREFIX}/${string}`; access: TRouteAccess }
+>;
 
 export type TStoryRouteName = keyof typeof STORY_ROUTES;
 export type TGlobalRouteName = keyof typeof GLOBAL_ROUTES;
 export type TRouteName = TStoryRouteName | TGlobalRouteName;
 
-export type TRouteTable<N extends TRouteName = TRouteName> = {
-    readonly [K in N]: { readonly method: THttpMethod; readonly path: string };
-};
+export type TRouteTable<N extends TRouteName = TRouteName> = { readonly [K in N]: TRouteDef };
 
 type TAllRoutes = typeof STORY_ROUTES & typeof GLOBAL_ROUTES;
+
+export const STORY_ROUTE_NAMES: readonly TStoryRouteName[] = keysOf(STORY_ROUTES);
+export const GLOBAL_ROUTE_NAMES: readonly TGlobalRouteName[] = keysOf(GLOBAL_ROUTES);
+export const ROUTE_NAMES: readonly TRouteName[] = [...STORY_ROUTE_NAMES, ...GLOBAL_ROUTE_NAMES];
+
+export const isRouteName = (value: string): value is TRouteName =>
+    Object.prototype.hasOwnProperty.call(STORY_ROUTES, value) ||
+    Object.prototype.hasOwnProperty.call(GLOBAL_ROUTES, value);
+
+export const isStoryRouteName = (route: TRouteName): route is TStoryRouteName =>
+    Object.prototype.hasOwnProperty.call(STORY_ROUTES, route);
+
+export const routeDef = (route: TRouteName): TRouteDef =>
+    isStoryRouteName(route) ? STORY_ROUTES[route] : GLOBAL_ROUTES[route];
+
+/** The story id parameter of `routeTemplate` for `STORY_ROUTES`. */
+export const STORY_ID_PARAM = 'storyId';
+
+/** The absolute path with `:name` parameters; `STORY_ROUTES` get `/api/stories/:storyId` in front. */
+export const routeTemplate = (route: TRouteName): string =>
+    isStoryRouteName(route)
+        ? `${STORIES_PREFIX}/:${STORY_ID_PARAM}${STORY_ROUTES[route].path}`
+        : GLOBAL_ROUTES[route].path;
+
+/** The `:name` parameters of a path template, in order. */
+export const templateParams = (template: string): string[] =>
+    Array.from(template.matchAll(/:([A-Za-z]+)/g), (match) => match[1]);
 
 /** `'/chapters/:chapterId/characters/:characterId'` → `'chapterId' | 'characterId'` */
 type TParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
