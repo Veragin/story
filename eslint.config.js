@@ -8,8 +8,16 @@ import tseslint from 'typescript-eslint';
 // shared → types → { ui, core } → data → services. `types ⇄ data` and `core → data` are allowed
 // here because they are type-only (the latter enforced by `no-restricted-imports` below).
 const SERVER = 'Visualizer/server';
+const NEST_SERVER = 'server';
+const SERVERS = [SERVER, NEST_SERVER];
 const PROTOCOL = 'protocol';
-const SERVICES = ['clients/SingleEngine', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
+const SERVICES = [
+    'clients/SingleEngine',
+    'clients/Visualizer',
+    'clients/LandingPage',
+    'clients/MultiEngine',
+    ...SERVERS,
+];
 
 // globs only: a zone mixing globs and plain paths flags every import in its target
 const tree = (dir) => `./${dir}/**`;
@@ -101,10 +109,12 @@ const boundaryZones = [
         'clients/LandingPage may import only @story/protocol, @story/ui and @story/shared — it talks to the server over HTTP and never imports a story.'
     ),
     // the server reads the story as source text; importing it would run it
-    zone(
-        tree(SERVER),
-        [pkg('data'), pkg('core'), pkg('ui')],
-        `${SERVER} reads data/ as source and must not import @story/data, @story/core or @story/ui.`
+    ...SERVERS.map((server) =>
+        zone(
+            tree(server),
+            [pkg('data'), pkg('core'), pkg('ui')],
+            `${server} reads data/ as source and must not import @story/data, @story/core or @story/ui.`
+        )
     ),
 ];
 

@@ -64,10 +64,10 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
-# 8102 MultiEngine client, 8103 landing page, 8123 Visualizer server).
+# 8102 MultiEngine client, 8103 landing page, 8123 Visualizer server, 8125 NestJS server).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
 # server that dies cannot take `make ai` / `make bash` down with it.
 start: stop
@@ -78,6 +78,7 @@ start: stop
 	@echo "  SingleEngine        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
 	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/stories …)"
+	@echo "  Server (NestJS)     http://localhost:8125  (/api/health; needs MySQL; being ported)"
 	@echo "  MultiEngine client  http://localhost:8102"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-engine"
@@ -128,6 +129,10 @@ dev-visualizer:
 # The Visualizer's node server on :8123. The client (dev-visualizer) proxies /api to it.
 dev-visualizer-server:
 	$(DEV_EXEC) yarn dev:visualizer-server
+
+# The NestJS server on :8125 (needs the mysql service). Nothing proxies to it until the cut-over.
+dev-server:
+	$(DEV_EXEC) yarn dev:server
 
 # The landing page (story list) on :8103. Like the client, it proxies /api to the server.
 dev-landing-page:

@@ -10,6 +10,7 @@ services:
       - 8102:8102 # MultiEngine client    (vite)
       - 8103:8103 # Landing page          (vite) — the story list, proxies /api to 8123
       - 8123:8123 # Visualizer server     (node/tsx) — the client reaches it via its /api proxy
+      - 8125:8125 # Server                (NestJS) — being ported, takes over 8123 at the cut-over
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev

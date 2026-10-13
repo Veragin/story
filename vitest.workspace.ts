@@ -1,4 +1,8 @@
+import swc from 'unplugin-swc';
 import { defineWorkspace } from 'vitest/config';
+
+// tests never touch the dev database, whatever DB_NAME the shell or container sets
+const SERVER_TEST_DB = process.env.DB_TEST_NAME ?? 'story_test';
 
 export default defineWorkspace([
     {
@@ -24,6 +28,19 @@ export default defineWorkspace([
             root: './Visualizer/server',
             environment: 'node',
             include: ['__tests__/**/*.test.ts'],
+        },
+    },
+    {
+        // esbuild cannot emit decorator metadata, which Nest DI needs (plan R1)
+        esbuild: false,
+        plugins: [swc.vite({ tsconfigFile: './server/tsconfig.json' })],
+        test: {
+            name: 'server',
+            root: './server',
+            environment: 'node',
+            include: ['__tests__/**/*.test.ts'],
+            setupFiles: ['reflect-metadata'],
+            env: { DB_NAME: SERVER_TEST_DB },
         },
     },
     {

@@ -13,7 +13,8 @@
         "clients/SingleEngine",
         "clients/MultiEngine",
         "protocol",
-        "Visualizer/server"
+        "Visualizer/server",
+        "server"
     ],
     "comment:scripts:dev": "`--exclude story-root` stops a pasted foreach line from re-running this script (yarn's self-guard keys off npm_lifecycle_event). No `-t`: it would deadlock once a dependency gains a watch-mode dev script.",
     "comment:scripts:typecheck": "Each story has its own @story/types universe, so stories are typechecked one by one.",
@@ -22,9 +23,10 @@
         "dev:engine": "yarn workspace @story/single-engine dev",
         "dev:visualizer": "yarn workspace @story/visualizer-client dev",
         "dev:visualizer-server": "yarn workspace @story/visualizer-server dev",
+        "dev:server": "yarn workspace @story/server dev",
         "dev:landing-page": "yarn workspace @story/visualizer-landing-page dev",
         "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",
-        "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && node scripts/typecheck-stories.mjs",
+        "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p server/tsconfig.json && node scripts/typecheck-stories.mjs",
         "build": "yarn typecheck && yarn workspace @story/single-engine build && yarn workspace @story/visualizer-client build && yarn workspace @story/visualizer-landing-page build && yarn workspace @story/multi-engine-client build",
         "test": "vitest run",
         "test:watch": "vitest",
