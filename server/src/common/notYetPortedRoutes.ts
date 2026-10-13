@@ -2,11 +2,6 @@ import type { TRouteName } from '@story/protocol';
 
 // shrinks to empty as phases 6-9 port the handlers; phase 10 deletes this file and the allowance
 export const NOT_YET_PORTED_ROUTES: readonly TRouteName[] = [
-    'login',
-    'logout',
-    'getSession',
-    'getStoryAccess',
-
     'listStories',
     'createStory',
     'importStory',

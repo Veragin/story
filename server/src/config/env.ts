@@ -10,12 +10,9 @@ const optionalText = z.string().trim().optional();
 
 const flag = optionalText.transform((value) => value === '1');
 
-const originList = optionalText.transform((value) =>
-    (value ?? '')
-        .split(',')
-        .map((origin) => origin.trim().replace(/\/+$/, '').toLowerCase())
-        .filter(Boolean)
-);
+export const normalizeOrigin = (origin: string) => origin.trim().replace(/\/+$/, '').toLowerCase();
+
+const originList = optionalText.transform((value) => (value ?? '').split(',').map(normalizeOrigin).filter(Boolean));
 
 const port = z.coerce.number().int().min(1).max(65535);
 
