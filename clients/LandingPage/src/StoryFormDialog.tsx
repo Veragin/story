@@ -12,12 +12,13 @@ import { StoryFormFields } from './StoryFormFields';
 import {
     hasErrors,
     type TStoryFormErrors,
+    type TStoryFormMode,
     type TStoryFormValue,
 } from './storyForm';
 
 type TProps = {
     title: string;
-    mode: 'create' | 'edit';
+    mode: TStoryFormMode;
     value: TStoryFormValue | null;
     onChange: (value: TStoryFormValue) => void;
     errors: TStoryFormErrors;

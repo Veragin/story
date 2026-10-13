@@ -55,6 +55,7 @@ import type {
 } from './dto/structure';
 import type {
     TCreateStoryBody,
+    TImportStoryBody,
     TLoginBody,
     TSessionDto,
     TStoryAccessDto,
@@ -230,10 +231,11 @@ export type TApiSpec = {
     /** The creator gets a grant. The id is a slug of the name, suffixed `-2`, `-3`, … when taken. */
     createStory: { body: TCreateStoryBody; response: TStoryDto };
     /**
-     * Under the id in the `?id=` query; the body is the raw zip (`RAW_BODY_ROUTES`). Keeps the zip's
-     * password; the importer gets no grant.
+     * A `multipart/form-data` form (`STORY_IMPORT_CONTENT_TYPE`, build it with `storyImportForm`): the zip in
+     * `STORY_IMPORT_ZIP_FIELD` plus the `TImportStoryBody` fields. The map size comes from the zip's
+     * `data/locations/map.json`; a `story.json` in the zip is ignored. Id and grant as for `createStory`.
      */
-    importStory: { body: undefined; response: TStoryDto };
+    importStory: { body: TImportStoryBody; response: TStoryDto };
 
     /** Adds a 24 h grant to the session cookie. `429` after 10 wrong passwords per IP in 10 minutes. */
     login: { body: TLoginBody; response: undefined };
@@ -393,9 +395,6 @@ export const matchPath = (template: string, pathname: string): Record<string, st
 
 /** Mutations without a body; still sent as `application/json`: the CSRF check wants it on every mutation. */
 export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout'];
-
-/** Not JSON: `importStory` must send `content-type: application/zip` (the CSRF check wants it). */
-export const RAW_BODY_ROUTES: readonly TRouteName[] = ['importStory'];
 
 /** `204 No Content`. */
 export const NO_CONTENT_ROUTES: readonly TRouteName[] = ['login', 'logout'];

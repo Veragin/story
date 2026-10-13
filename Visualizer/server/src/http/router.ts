@@ -5,7 +5,6 @@ import {
     CREATED_ROUTES,
     matchRoute,
     NO_CONTENT_ROUTES,
-    RAW_BODY_ROUTES,
     type TApiErrorBody,
     type TRouteBody,
     type TRouteName,
@@ -17,6 +16,9 @@ import { errorMessage, HttpError, isHttpError } from './HttpError';
 import { isPlainObject, readJsonBody } from './body';
 
 export const RAW_RESPONSE = Symbol('raw-response');
+
+// this server still takes the raw zip; the protocol describes @story/server's multipart form
+const RAW_BODY_ROUTES: readonly TRouteName[] = ['importStory'];
 
 export type TRouteContext<R extends TRouteName> = {
     route: R;

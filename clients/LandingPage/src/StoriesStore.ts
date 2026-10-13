@@ -1,5 +1,12 @@
 import { action, makeObservable, observable, runInAction } from 'mobx';
-import type { TCreateStoryBody, TStoryDto, TStoryInfoDto, TStoryListItemDto, TUpdateStoryBody } from '@story/protocol';
+import type {
+    TCreateStoryBody,
+    TImportStoryBody,
+    TStoryDto,
+    TStoryInfoDto,
+    TStoryListItemDto,
+    TUpdateStoryBody,
+} from '@story/protocol';
 import { errorMessage, isApiError, type TLandingApi } from './api';
 import { engineUrl, exportUrl, visualizerUrl } from './links';
 
@@ -105,8 +112,8 @@ export class StoriesStore {
         return story;
     }
 
-    async importZip(zip: Blob, id: string): Promise<TStoryDto> {
-        const story = await this.api.importStory(zip, id);
+    async importZip(zip: Blob, body: TImportStoryBody): Promise<TStoryDto> {
+        const story = await this.api.importStory(zip, body);
         await this.load();
         return story;
     }

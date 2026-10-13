@@ -3,7 +3,7 @@ import { EXAMPLE_PASSWORD, login, requestJson } from './helpers/http';
 import { stubbedApp } from './helpers/routeStubs';
 import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
 
-const { controllers, notYetPorted } = stubbedApp(['updateTimelineLayout', 'getTimelineLayout', 'importStory']);
+const { controllers, notYetPorted } = stubbedApp(['updateTimelineLayout', 'getTimelineLayout']);
 
 let app: TTestApp | undefined;
 
@@ -91,7 +91,8 @@ describe('CSRF: content type and origin of every mutation', () => {
         const form = new FormData();
         form.set('zip', new Blob([new Uint8Array([1, 2, 3])]), 'story.zip');
         const res = await fetch(`${base}/api/stories/import`, { method: 'POST', body: form });
-        expect(res.status).toBe(201);
+        // past the CSRF check: the handler looks at the zip
+        expect([res.status, (await res.json()).message]).toEqual([400, expect.stringMatching(/^Not a valid zip/)]);
     });
 
     it('allows the dev ports by default, 8125 included', async () => {

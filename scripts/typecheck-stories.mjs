@@ -23,6 +23,7 @@ const stories = existsSync(storiesRoot)
 const folders = [
     ...stories.map((id) => `stories/${id}`),
     'Visualizer/server/template',
+    'server/template',
 ];
 
 const failed = [];

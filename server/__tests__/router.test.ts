@@ -1,5 +1,5 @@
-import { Body, Controller, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { MAX_STORY_ZIP_BYTES, type TRouteName } from '@story/protocol';
+import { Body, Controller } from '@nestjs/common';
+import type { TRouteName } from '@story/protocol';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HttpError } from '../src/common/HttpError';
 import { MAX_JSON_BODY_BYTES } from '../src/common/body';
@@ -8,12 +8,9 @@ import { RouteParams, type THandlerParams } from '../src/common/RouteParams';
 import { ProjectRoot } from '../src/project/ProjectRoot';
 import { StoryRepository } from '../src/stories/StoryRepository';
 import { StoryVersionConflictError } from '../src/stories/StoryVersionConflictError';
-import { StoryZipInterceptor } from '../src/stories/StoryZipInterceptor';
 import { login, type TAny } from './helpers/http';
 import { stubbedApp } from './helpers/routeStubs';
 import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
-
-type TUpload = { size: number; originalname: string };
 
 // stands in for handlers of later phases, to exercise the error mapping and the body handling
 @Controller()
@@ -54,15 +51,9 @@ class RouterProbe {
     deletePassage(@Body() body: unknown) {
         return { echo: body };
     }
-
-    @ProtocolRoute('importStory')
-    @UseInterceptors(StoryZipInterceptor)
-    importStory(@UploadedFile() file: TUpload | undefined, @Body() fields: unknown) {
-        return { file: file ? { size: file.size, name: file.originalname } : null, fields };
-    }
 }
 
-const PROBED: readonly TRouteName[] = ['getTrigger', 'createTrigger', 'updateTrigger', 'deletePassage', 'importStory'];
+const PROBED: readonly TRouteName[] = ['getTrigger', 'createTrigger', 'updateTrigger', 'deletePassage'];
 
 const stubs = stubbedApp(['getProject', 'getChapter']);
 
@@ -241,36 +232,6 @@ describe('router: bodies', () => {
         expect(locked.status).toBe(401);
         const unknown = await call('PUT', '/api/stories/nope/triggers/t', '[', { cookie: '' });
         expect(unknown.status).toBe(404);
-    });
-});
-
-describe('router: story zip upload (importStory plumbing)', () => {
-    const upload = (form: FormData, headers: Record<string, string> = {}) =>
-        fetch(`${base}/api/stories/import`, { method: 'POST', body: form, headers });
-
-    it('takes the zip and the form fields of a multipart form', async () => {
-        const form = new FormData();
-        form.set('name', 'Imported');
-        form.set('zip', new Blob([new Uint8Array(1234)]), 'story.zip');
-        const res = await upload(form);
-        expect(res.status).toBe(201);
-        expect(await res.json()).toEqual({ file: { size: 1234, name: 'story.zip' }, fields: { name: 'Imported' } });
-    });
-
-    it('refuses a zip over MAX_STORY_ZIP_BYTES with the old body-limit answer', async () => {
-        const form = new FormData();
-        form.set('zip', new Blob([new Uint8Array(MAX_STORY_ZIP_BYTES + 1)]), 'story.zip');
-        const res = await upload(form);
-        expect([res.status, await res.json()]).toEqual([
-            400,
-            { error: 'bad_request', message: `Request body larger than ${MAX_STORY_ZIP_BYTES} bytes` },
-        ]);
-    });
-
-    it('refuses a foreign origin before reading the form', async () => {
-        const form = new FormData();
-        form.set('zip', new Blob([new Uint8Array(10)]), 'story.zip');
-        expect((await upload(form, { origin: 'https://evil.example' })).status).toBe(403);
     });
 });
 

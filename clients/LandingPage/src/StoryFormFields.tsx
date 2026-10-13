@@ -6,13 +6,17 @@ import {
     type TextFieldProps,
 } from '@mui/material';
 import { STORY_LIMITS } from '@story/protocol';
-import type { TStoryFormErrors, TStoryFormValue } from './storyForm';
+import type {
+    TStoryFormErrors,
+    TStoryFormMode,
+    TStoryFormValue,
+} from './storyForm';
 
 type TProps = {
     value: TStoryFormValue;
     onChange: (value: TStoryFormValue) => void;
     errors: TStoryFormErrors;
-    mode: 'create' | 'edit';
+    mode: TStoryFormMode;
     disabled?: boolean;
 };
 
@@ -56,14 +60,14 @@ export const StoryFormFields = ({
                 {field('password', {
                     label: mode === 'edit' ? _('New password') : _('Password'),
                     type: 'password',
-                    required: mode === 'create',
+                    required: mode !== 'edit',
                     autoComplete: 'new-password',
                     helperText: passwordHint,
                 })}
                 {field('passwordConfirm', {
                     label: _('Confirm password'),
                     type: 'password',
-                    required: mode === 'create',
+                    required: mode !== 'edit',
                     autoComplete: 'new-password',
                 })}
             </Stack>
@@ -73,26 +77,28 @@ export const StoryFormFields = ({
                 minRows: 3,
                 maxRows: 10,
             })}
-            <Stack direction="row" spacing={2}>
-                {field('mapWidth', {
-                    label: _('Map width'),
-                    type: 'number',
-                    disabled: mode === 'edit',
-                    helperText:
-                        mode === 'edit'
-                            ? _('Set at creation')
-                            : _(
-                                  'Tiles, %d–%d',
-                                  STORY_LIMITS.mapSizeMin,
-                                  STORY_LIMITS.mapSizeMax
-                              ),
-                })}
-                {field('mapHeight', {
-                    label: _('Map height'),
-                    type: 'number',
-                    disabled: mode === 'edit',
-                })}
-            </Stack>
+            {mode !== 'import' && (
+                <Stack direction="row" spacing={2}>
+                    {field('mapWidth', {
+                        label: _('Map width'),
+                        type: 'number',
+                        disabled: mode === 'edit',
+                        helperText:
+                            mode === 'edit'
+                                ? _('Set at creation')
+                                : _(
+                                      'Tiles, %d–%d',
+                                      STORY_LIMITS.mapSizeMin,
+                                      STORY_LIMITS.mapSizeMax
+                                  ),
+                    })}
+                    {field('mapHeight', {
+                        label: _('Map height'),
+                        type: 'number',
+                        disabled: mode === 'edit',
+                    })}
+                </Stack>
+            )}
             <FormControlLabel
                 control={
                     <Switch

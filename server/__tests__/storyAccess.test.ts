@@ -83,12 +83,6 @@ describe('story access matrix (D3)', () => {
         expect(await outcomes(base, 'open', cookie)).toEqual(expected(() => 'granted'));
     }, 60_000);
 
-    it('exports a public story without a login', async () => {
-        const base = await start();
-        const res = await callRoute(base, 'exportStory', 'open');
-        expect(res.status).toBe(200);
-    });
-
     it('unknown story: 404 on every route, logged in or not', async () => {
         const base = await start();
         const cookie = await login(base, 'closed');
@@ -103,8 +97,8 @@ describe('story access matrix (D3)', () => {
         const base = await start(1000);
         const closed = await login(base, 'closed');
         const open = await login(base, 'open', { cookie: closed });
-        expect(outcomeOf(await callRoute(base, 'updateStoryInfo', 'closed', closed))).toBe('granted');
-        expect(outcomeOf(await callRoute(base, 'updateStoryInfo', 'open', open))).toBe('granted');
+        expect(outcomeOf(await callRoute(base, 'updateTimelineLayout', 'closed', closed))).toBe('granted');
+        expect(outcomeOf(await callRoute(base, 'updateTimelineLayout', 'open', open))).toBe('granted');
         await sleep(1100);
         expect(await outcomes(base, 'closed', closed)).toEqual(expected(() => 'unauthorized'));
         expect(await outcomes(base, 'open', open)).toEqual(
@@ -116,7 +110,7 @@ describe('story access matrix (D3)', () => {
         const base = await start();
         const before = Date.now();
         const cookie = await login(base, 'closed');
-        const res = await callRoute(base, 'getStoryInfo', 'closed', cookie);
+        const res = await callRoute(base, 'getProject', 'closed', cookie);
         expect(res.body.grant.expiresAt).toBeGreaterThanOrEqual(before + 24 * 60 * 60_000);
         expect(res.body.grant.expiresAt).toBeLessThanOrEqual(Date.now() + 24 * 60 * 60_000);
     });

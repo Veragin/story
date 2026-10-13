@@ -41,14 +41,30 @@ export type TCreateStoryBody = Omit<TStoryDto, 'id'> & { password: string };
 /** `mapSize` may be sent only unchanged; an absent or empty `password` keeps the current one. */
 export type TUpdateStoryBody = TVersionedBody & Partial<Omit<TStoryDto, 'id'> & { password: string }>;
 
+/** The `importStory` form fields; the map size comes from the zip. */
+export type TImportStoryBody = Omit<TCreateStoryBody, 'mapSize'>;
+
+/** The `exportStory` response type. */
 export const STORY_ZIP_CONTENT_TYPE = 'application/zip';
 
 export const MAX_STORY_ZIP_BYTES = 50 * 1024 * 1024;
 
-/** `importStory` on `@story/server`: a form with the zip in `STORY_IMPORT_ZIP_FIELD` (the CSRF check wants this type). */
+/** `importStory`: a form with the zip in `STORY_IMPORT_ZIP_FIELD` (the CSRF check wants this type). */
 export const STORY_IMPORT_CONTENT_TYPE = 'multipart/form-data';
 
 export const STORY_IMPORT_ZIP_FIELD = 'zip';
+
+/** The `importStory` form: every field is text, `public` is `"true"` or `"false"`. */
+export const storyImportForm = (zip: Blob, body: TImportStoryBody, fileName = 'story.zip'): FormData => {
+    const form = new FormData();
+    form.set('name', body.name);
+    form.set('author', body.author);
+    form.set('description', body.description);
+    form.set('password', body.password);
+    form.set('public', String(body.public));
+    form.set(STORY_IMPORT_ZIP_FIELD, zip, fileName);
+    return form;
+};
 
 export type TLoginBody = { password: string };
 

@@ -118,17 +118,16 @@ const boundaryZones = [
     ),
 ];
 
-// the template lies under the server but is a story, so it gets a story's zones
-const TEMPLATE = `${SERVER}/template`;
-const templateZones = [
+// a template lies under its server but is a story, so it gets a story's zones
+const templateZones = (server) => [
     zone(
-        tree(TEMPLATE),
+        tree(`${server}/template`),
         [
             pkg('ui'),
             tree('stories'),
             tree(PROTOCOL),
-            ...services(SERVICES.filter((s) => s !== SERVER)),
-            ...['src', '__tests__'].map((p) => tree(`${SERVER}/${p}`)),
+            ...services(SERVICES.filter((s) => s !== server)),
+            ...['src', '__tests__'].map((p) => tree(`${server}/${p}`)),
         ],
         'The story template is a story: it may import only @story/shared, @story/core and its own types/ and data/ — no @story/ui, no service, no other story.'
     ),
@@ -250,17 +249,17 @@ export default tseslint.config(
             ],
         },
     },
-    {
+    ...SERVERS.map((server) => ({
         // `{}` data types: the server generates `export type T<Id>Data = {}`
-        files: [`${TEMPLATE}/**/*.ts`],
+        files: [`${server}/template/**/*.ts`],
         settings: {
             'import/resolver': {
-                typescript: { project: `./${TEMPLATE}/tsconfig.json` },
+                typescript: { project: `./${server}/template/tsconfig.json` },
             },
         },
         rules: {
-            'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones }],
+            'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones(server) }],
             '@typescript-eslint/no-empty-object-type': 'off',
         },
-    }
+    }))
 );

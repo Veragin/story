@@ -51,7 +51,7 @@ const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
             delete info.unlocked;
             return json(200, info);
         }
-        if (method === 'POST' && url.startsWith('/api/stories/import?')) return json(201, story('copy'));
+        if (method === 'POST' && url === '/api/stories/import') return json(201, story('copy'));
         return json(404, { error: 'not_found' });
     };
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(answer(input, init)));
@@ -160,14 +160,24 @@ describe('StoriesStore', () => {
         expect((await loading)?.version).toBe('v1');
     });
 
-    it('imports the raw zip under the given id', async () => {
+    it('imports the zip as a multipart form with the story fields', async () => {
         const { store, calls } = setup();
         const zip = new Blob([new Uint8Array([0x50, 0x4b])], { type: 'application/zip' });
-        const imported = await store.importZip(zip, 'my copy');
+        const body = { name: 'My copy', author: 'Me', password: 'secret-1', description: '', public: true };
+        const imported = await store.importZip(zip, body);
         expect(imported.id).toBe('copy');
         const call = calls.find((c) => c.url.startsWith('/api/stories/import'))!;
-        expect(call.url).toBe('/api/stories/import?id=my%20copy');
-        expect(call.headers['content-type']).toBe('application/zip');
-        expect(call.body).toBe(zip);
+        expect(call.url).toBe('/api/stories/import');
+        expect(call.method).toBe('POST');
+        expect(call.headers['content-type']).toBeUndefined(); // the browser adds the multipart boundary
+        const form = call.body as FormData;
+        expect(Object.fromEntries([...form].filter(([key]) => key !== 'zip'))).toEqual({
+            name: 'My copy',
+            author: 'Me',
+            password: 'secret-1',
+            description: '',
+            public: 'true',
+        });
+        expect(form.get('zip')).toBeInstanceOf(Blob);
     });
 });

@@ -1,11 +1,15 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import { STORY_LIMITS, type TCreateStoryBody } from '@story/protocol';
 import { CreateStoryDialog } from '../CreateStoryDialog';
+import { ImportStoryDialog } from '../ImportStoryDialog';
 import {
     EMPTY_STORY_FORM,
+    importFormOf,
     toCreateBody,
+    toImportBody,
     toUpdateBody,
     validateStoryForm,
     type TStoryFormValue,
@@ -83,46 +87,60 @@ describe('validateStoryForm', () => {
             public: false,
         });
     });
+
+    it('leaves the map size out of an import: it comes from the zip', () => {
+        const noMap = { ...valid, mapWidth: '', mapHeight: '0' };
+        expect(
+            validateStoryForm(noMap, { passwordRequired: true, mapSize: false })
+        ).toEqual({});
+        expect(toImportBody(noMap)).toEqual({
+            name: 'My Story',
+            author: 'Me',
+            password: 'secret-1',
+            description: '',
+            public: false,
+        });
+        expect(importFormOf('my-story.ZIP').name).toBe('my-story');
+    });
 });
 
-describe('CreateStoryDialog', () => {
-    let root: Root | null = null;
+let root: Root | null = null;
 
-    afterEach(() => {
-        act(() => root?.unmount());
-        root = null;
-        document.body.innerHTML = '';
+afterEach(() => {
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = '';
+});
+
+const renderDialog = (dialog: ReactNode) => {
+    const container = document.body.appendChild(document.createElement('div'));
+    root = createRoot(container);
+    act(() => root!.render(dialog));
+};
+
+const input = (field: keyof TStoryFormValue) =>
+    document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[data-field="${field}"]`
+    );
+
+// React tracks controlled values; bypass via the native setter so `input` registers
+const type = (field: keyof TStoryFormValue, value: string) => {
+    const el = input(field)!;
+    const setter = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(el),
+        'value'
+    )!.set!;
+    act(() => {
+        setter.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
     });
+};
 
-    const render = (onSubmit: (body: TCreateStoryBody) => Promise<void>) => {
-        const container = document.body.appendChild(
-            document.createElement('div')
+describe('CreateStoryDialog', () => {
+    const render = (onSubmit: (body: TCreateStoryBody) => Promise<void>) =>
+        renderDialog(
+            <CreateStoryDialog onSubmit={onSubmit} onClose={() => {}} />
         );
-        root = createRoot(container);
-        act(() =>
-            root!.render(
-                <CreateStoryDialog onSubmit={onSubmit} onClose={() => {}} />
-            )
-        );
-    };
-
-    const input = (field: keyof TStoryFormValue) =>
-        document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-            `[data-field="${field}"]`
-        )!;
-
-    // React tracks controlled values; bypass via the native setter so `input` registers
-    const type = (field: keyof TStoryFormValue, value: string) => {
-        const el = input(field);
-        const setter = Object.getOwnPropertyDescriptor(
-            Object.getPrototypeOf(el),
-            'value'
-        )!.set!;
-        act(() => {
-            setter.call(el, value);
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-    };
 
     const createButton = () =>
         document.querySelector<HTMLButtonElement>('[data-action="create"]')!;
@@ -180,5 +198,58 @@ describe('CreateStoryDialog', () => {
             'Field "name" must not be empty'
         );
         expect(createButton().disabled).toBe(false);
+    });
+});
+
+describe('ImportStoryDialog', () => {
+    const importButton = () =>
+        document.querySelector<HTMLButtonElement>('[data-action="import"]')!;
+
+    it('asks for the New story fields without the map size, named after the file', async () => {
+        const onSubmit = vi.fn(() => Promise.resolve());
+        renderDialog(
+            <ImportStoryDialog
+                fileName="old-tale.zip"
+                onSubmit={onSubmit}
+                onClose={() => {}}
+            />
+        );
+        expect(document.body.textContent).toContain('Import old-tale.zip');
+        expect(input('mapWidth')).toBeNull();
+        expect(input('mapHeight')).toBeNull();
+        expect(input('name')!.value).toBe('old-tale');
+
+        act(() => importButton().click());
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(document.body.textContent).toContain(
+            `At least ${STORY_LIMITS.passwordMinLength} characters`
+        );
+
+        type('name', 'Old Tale');
+        type('password', 'secret-1');
+        type('passwordConfirm', 'secret-1');
+        await act(() => Promise.resolve(importButton().click()));
+        expect(onSubmit).toHaveBeenCalledWith({
+            name: 'Old Tale',
+            author: '',
+            password: 'secret-1',
+            description: '',
+            public: false,
+        });
+    });
+
+    it('shows a rejected import in the dialog', async () => {
+        renderDialog(
+            <ImportStoryDialog
+                fileName="bad.zip"
+                onSubmit={() => Promise.reject(new Error('The zip has no map'))}
+                onClose={() => {}}
+            />
+        );
+        type('password', 'secret-1');
+        type('passwordConfirm', 'secret-1');
+        await act(() => Promise.resolve(importButton().click()));
+        expect(document.body.textContent).toContain('The zip has no map');
+        expect(importButton().disabled).toBe(false);
     });
 });

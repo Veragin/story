@@ -3,11 +3,12 @@ import {
     buildPath,
     GLOBAL_ROUTES,
     STORY_ROUTES,
-    STORY_ZIP_CONTENT_TYPE,
+    storyImportForm,
     type TApiErrorBody,
     type TApiErrorCode,
     type TCreateStoryBody,
     type TGlobalRouteName,
+    type TImportStoryBody,
     type TRouteBody,
     type TRouteParams,
     type TRouteResponse,
@@ -35,10 +36,6 @@ export class ApiError extends Error {
         return this.status === 401;
     }
 
-    get isExists() {
-        return this.body.error === 'exists';
-    }
-
     get isStale() {
         return this.body.error === 'stale';
     }
@@ -51,7 +48,7 @@ export const errorMessage = (e: unknown): string => (e instanceof Error ? e.mess
 export type TLandingApi = {
     listStories(): Promise<TStoryListItemDto[]>;
     createStory(body: TCreateStoryBody): Promise<TStoryDto>;
-    importStory(zip: Blob, id: string): Promise<TStoryDto>;
+    importStory(zip: Blob, body: TImportStoryBody): Promise<TStoryDto>;
     login(storyId: string, password: string): Promise<void>;
     getSession(): Promise<TSessionDto>;
     getStoryInfo(storyId: string): Promise<TStoryInfoDto>;
@@ -105,17 +102,12 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
     return {
         listStories: () => request('listStories', {}),
         createStory: (body) => request('createStory', {}, body),
-        importStory: (zip, id) =>
-            send<TStoryDto>(
-                fetchImpl,
-                `${baseUrl}${buildGlobalPath('importStory', {})}?id=${encodeURIComponent(id)}`,
-                // raw body (`RAW_BODY_ROUTES`): the CSRF check wants the zip content type here
-                {
-                    method: GLOBAL_ROUTES.importStory.method,
-                    headers: { 'content-type': STORY_ZIP_CONTENT_TYPE },
-                    body: zip,
-                }
-            ),
+        importStory: (zip, body) =>
+            send<TStoryDto>(fetchImpl, baseUrl + buildGlobalPath('importStory', {}), {
+                method: GLOBAL_ROUTES.importStory.method,
+                // the browser sets the multipart content type with its boundary
+                body: storyImportForm(zip, body),
+            }),
         login: (storyId, password) => request('login', { storyId }, { password }),
         getSession: () => request('getSession', {}),
         getStoryInfo: (storyId) =>
