@@ -7,17 +7,9 @@ import tseslint from 'typescript-eslint';
 
 // shared → types → { ui, core } → data → services. `types ⇄ data` and `core → data` are allowed
 // here because they are type-only (the latter enforced by `no-restricted-imports` below).
-const SERVER = 'Visualizer/server';
-const NEST_SERVER = 'server';
-const SERVERS = [SERVER, NEST_SERVER];
+const SERVER = 'server';
 const PROTOCOL = 'protocol';
-const SERVICES = [
-    'clients/SingleEngine',
-    'clients/Visualizer',
-    'clients/LandingPage',
-    'clients/MultiEngine',
-    ...SERVERS,
-];
+const SERVICES = ['clients/SingleEngine', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
 
 // globs only: a zone mixing globs and plain paths flags every import in its target
 const tree = (dir) => `./${dir}/**`;
@@ -109,25 +101,23 @@ const boundaryZones = [
         'clients/LandingPage may import only @story/protocol, @story/ui and @story/shared — it talks to the server over HTTP and never imports a story.'
     ),
     // the server reads the story as source text; importing it would run it
-    ...SERVERS.map((server) =>
-        zone(
-            tree(server),
-            [pkg('data'), pkg('core'), pkg('ui')],
-            `${server} reads data/ as source and must not import @story/data, @story/core or @story/ui.`
-        )
+    zone(
+        tree(SERVER),
+        [pkg('data'), pkg('core'), pkg('ui')],
+        `${SERVER} reads data/ as source and must not import @story/data, @story/core or @story/ui.`
     ),
 ];
 
-// a template lies under its server but is a story, so it gets a story's zones
-const templateZones = (server) => [
+// the template lies under the server but is a story, so it gets a story's zones
+const templateZones = [
     zone(
-        tree(`${server}/template`),
+        tree(`${SERVER}/template`),
         [
             pkg('ui'),
             tree('stories'),
             tree(PROTOCOL),
-            ...services(SERVICES.filter((s) => s !== server)),
-            ...['src', '__tests__'].map((p) => tree(`${server}/${p}`)),
+            ...services(SERVICES.filter((s) => s !== SERVER)),
+            ...['src', '__tests__'].map((p) => tree(`${SERVER}/${p}`)),
         ],
         'The story template is a story: it may import only @story/shared, @story/core and its own types/ and data/ — no @story/ui, no service, no other story.'
     ),
@@ -249,17 +239,17 @@ export default tseslint.config(
             ],
         },
     },
-    ...SERVERS.map((server) => ({
+    {
         // `{}` data types: the server generates `export type T<Id>Data = {}`
-        files: [`${server}/template/**/*.ts`],
+        files: [`${SERVER}/template/**/*.ts`],
         settings: {
             'import/resolver': {
-                typescript: { project: `./${server}/template/tsconfig.json` },
+                typescript: { project: `./${SERVER}/template/tsconfig.json` },
             },
         },
         rules: {
-            'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones(server) }],
+            'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones }],
             '@typescript-eslint/no-empty-object-type': 'off',
         },
-    }))
+    }
 );

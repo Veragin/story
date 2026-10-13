@@ -5,6 +5,7 @@ import { isStoryId } from '@story/protocol';
 import { isMissingFileError, readTextOrNull } from '../json/atomicWrite';
 import { parseStoryFile, STORY_FILE } from './storyFile';
 import type { StoryRepository, TUpsertResult } from './StoryRepository';
+import { storySeedId, type TStorySeed } from './storySeed';
 import { migrateStoryTsconfig } from './storyTsconfig';
 
 export type TImportStoryFilesReport = {
@@ -15,8 +16,7 @@ export type TImportStoryFilesReport = {
 };
 
 export type TImportStoryFilesOptions = {
-    // copied into the root when the database holds no story yet
-    seed?: string;
+    seed?: TStorySeed;
 };
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -40,14 +40,15 @@ const importStory = async (
     root: string,
     id: string,
     stories: StoryRepository,
-    report: TImportStoryFilesReport
+    report: TImportStoryFilesReport,
+    seedId: string | undefined
 ): Promise<void> => {
     const dir = path.join(root, id);
     const storyFile = path.join(dir, STORY_FILE);
     try {
         const text = await readTextOrNull(storyFile);
         if (text === null && !(await stories.exists(id))) {
-            report.skipped.push({ id, reason: `no ${STORY_FILE} and no database row` });
+            if (id !== seedId) report.skipped.push({ id, reason: `no ${STORY_FILE} and no database row` });
             return;
         }
         const result = text === null ? null : await stories.upsert(id, parseStoryFile(JSON.parse(text)));
@@ -61,19 +62,31 @@ const importStory = async (
     }
 };
 
-const seedStory = async (root: string, seed: string): Promise<string | null> => {
-    const id = path.basename(seed);
-    const target = path.join(root, id);
-    if (await exists(target)) return null;
+const copySeed = async (seedDir: string, target: string): Promise<void> => {
+    await mkdir(path.dirname(target), { recursive: true });
     // a dot name is never a story id, so nothing picks up a half-copied folder
-    const tmp = path.join(root, `.seed-${randomBytes(6).toString('hex')}`);
+    const tmp = path.join(path.dirname(target), `.seed-${randomBytes(6).toString('hex')}`);
     try {
-        await cp(seed, tmp, { recursive: true });
+        await cp(seedDir, tmp, { recursive: true });
         await rename(tmp, target);
     } catch (e) {
         await rm(tmp, { recursive: true, force: true });
         throw e;
     }
+};
+
+// A seed folder without a row gets the seed's metadata; a missing folder is copied in only while the
+// database holds no story at all (a fresh install), so a story deleted later stays deleted.
+const seedStory = async (root: string, seed: TStorySeed, stories: StoryRepository): Promise<string | null> => {
+    const id = storySeedId(seed);
+    if (await stories.exists(id)) return null;
+    const target = path.join(root, id);
+    if (!(await exists(target))) {
+        if ((await stories.count()) > 0) return null;
+        await copySeed(seed.dir, target);
+    }
+    await stories.insert(id, seed.file);
+    await migrateStoryTsconfig(target);
     return id;
 };
 
@@ -82,12 +95,10 @@ export const importStoryFiles = async (
     stories: StoryRepository,
     options: TImportStoryFilesOptions = {}
 ): Promise<TImportStoryFilesReport> => {
+    const { seed } = options;
     const report: TImportStoryFilesReport = { imported: [], skipped: [], tsconfigRewritten: [], seeded: null };
-    for (const id of await storyDirs(root)) await importStory(root, id, stories, report);
-    if (options.seed !== undefined && (await stories.count()) === 0) {
-        await mkdir(root, { recursive: true });
-        report.seeded = await seedStory(root, options.seed);
-        if (report.seeded !== null) await importStory(root, report.seeded, stories, report);
-    }
+    const seedId = seed === undefined ? undefined : storySeedId(seed);
+    for (const id of await storyDirs(root)) await importStory(root, id, stories, report, seedId);
+    if (seed !== undefined) report.seeded = await seedStory(root, seed, stories);
     return report;
 };

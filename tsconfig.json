@@ -42,15 +42,10 @@
         "clients/LandingPage/src",
         "clients/MultiEngine/src",
 
-        /* The wire contract and the node server (plan WP1). The server is node-land checked under
-           the browser libs here, because §7's rule is one root `tsc --noEmit` over the whole graph
-           and an unchecked workspace is worse than an over-permissive one; it is checked strictly
-           (no DOM, node types) by `Visualizer/server/tsconfig.json`. The server's tests are
-           package source like `clients/shared/core/__tests__`, so they are listed too. */
+        /* The wire contract. The server (`server/`) is checked by its own `server/tsconfig.json`
+           (decorators, node libs). */
         "protocol/src",
-        "protocol/__tests__",
-        "Visualizer/server/src",
-        "Visualizer/server/__tests__"
+        "protocol/__tests__"
     ],
     "exclude": [
         "node_modules",

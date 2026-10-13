@@ -24,7 +24,7 @@ const DATA_INDEX = 'data/index.ts';
 const NPC_TYPES = ['TNpc', 'TNpcData'];
 const ITEM_INFO_SATISFIES = 'Record<string, TItemInfo & Record<string, unknown>>';
 
-const log = (message: string) => console.warn(`[visualizer-server] structure layout migration: ${message}`);
+const log = (message: string) => console.warn(`[server] structure layout migration: ${message}`);
 
 const replaceText = (sf: SourceFile, from: string, to: string) => {
     const text = sf.getFullText();

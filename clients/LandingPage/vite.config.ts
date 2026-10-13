@@ -44,7 +44,7 @@ export default defineConfig({
         // no `changeOrigin`: the server's CSRF check needs the original `Host` to match `Origin`
         proxy: {
             '/api': {
-                target: process.env.VISUALIZER_SERVER ?? 'http://localhost:8123',
+                target: process.env.STORY_SERVER ?? 'http://localhost:8123',
             },
         },
     },

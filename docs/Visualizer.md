@@ -2,7 +2,7 @@
 
 The author's editor for the story. It shows a hex map with location polygons, a timeline of chapters and time triggers, a Twine-like graph of each chapter's passages, and forms for the entities. It holds every story of the installation (`stories/<id>/`, see [`docs/README.md`](README.md#stories)), each behind its password, and **reads and writes the story's own source files** in its `data/` and `types/`, so every edit in the UI is an edit to TypeScript source that the author also edits by hand.
 
-How to run it, the env vars, the `map.json` format and the full list of known limitations are in [`Visualizer/README.md`](../Visualizer/README.md). This file covers what you need to understand and change the service.
+How to run it, the env vars, the `map.json` format and the full list of known limitations are in [`clients/Visualizer/README.md`](../clients/Visualizer/README.md). This file covers what you need to understand and change the service.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Four yarn workspaces. Dependencies go one way: **client → protocol ← server*
 | Workspace                        | Path                   | What it is                                                                                                                       |
 | -------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `@story/protocol`                | `protocol/`            | The wire contract: `STORY_ROUTES` / `GLOBAL_ROUTES` + `TApiSpec` (`src/routes.ts`) and all DTOs (`src/dto/`)                     |
-| `@story/visualizer-server`       | `Visualizer/server/`   | `node:http` on **:8123** (`tsx watch`). Reads and writes story source with ts-morph                                              |
+| `@story/server`                  | `server/`              | NestJS on **:8123** (swc loader), story metadata and logins in MySQL. Reads and writes story source with ts-morph                |
 | `@story/visualizer-client`       | `clients/Visualizer/`  | React + MobX + MUI, Vite on **:8101**. Vite proxies `/api` to the server                                                         |
 | `@story/visualizer-landing-page` | `clients/LandingPage/` | The story list (create, edit, open, play, export, import). React + MobX + MUI, Vite on **:8103**, `/api` proxied like the client |
 
@@ -48,7 +48,7 @@ stories/     StoryStore (story.json), StoryContexts (loaded stories), access.ts 
              storyFolders.ts (create from the template, import), storyInput.ts (body checks), zip.ts
 ```
 
-`Visualizer/server/template/` is not server code: it is the story that "create story" copies (`data/` and `types/`; one chapter `start`, character `hero` with an `intro` passage, location `home`, npc `stranger`, item `gold`). It is the smallest story that type-checks: with no npc or no item, the id unions collapse to `never` and the engine's types break. It has its own `tsconfig.json`, and `yarn typecheck` checks it with the stories (`scripts/typecheck-stories.mjs`); `eslint.config.js` lints it with a story's zones. A new story gets its own `tsconfig.json`, written for its folder (`storyTsconfig`), because the engine paths in it are relative.
+`server/template/` is not server code: it is the story that "create story" copies (`data/` and `types/`; one chapter `start`, character `hero` with an `intro` passage, location `home`, npc `stranger`, item `gold`). It is the smallest story that type-checks: with no npc or no item, the id unions collapse to `never` and the engine's types break. It has its own `tsconfig.json`, and `yarn typecheck` checks it with the stories (`scripts/typecheck-stories.mjs`); `eslint.config.js` lints it with a story's zones. A new story gets its own `tsconfig.json`, written for its folder (`storyTsconfig`), because the engine paths in it are relative.
 
 ### How a write works
 
@@ -208,7 +208,7 @@ Behaviour that is settled (keep it unless the user asks otherwise):
 
 Besides the `.ts` source it edits, the Visualizer owns these JSON files. They are validated whole-document replaces: an unknown field is a 400. A missing file reads as the default with `version: ''`, and a `PUT` with `version: ''` creates it.
 
-- `data/locations/map.json`: tiles (one run-length-encoded string per row), palette, `tileText` keyed `"<row>,<col>"`, and location polygons keyed by location id in tile-renderer world coordinates. Format: [`Visualizer/README.md`](../Visualizer/README.md#mapjson). While it is missing, `GET` answers an empty map of the story's `mapSize` (`story.json`).
+- `data/locations/map.json`: tiles (one run-length-encoded string per row), palette, `tileText` keyed `"<row>,<col>"`, and location polygons keyed by location id in tile-renderer world coordinates. Format: [`clients/Visualizer/README.md`](../clients/Visualizer/README.md#mapjson). While it is missing, `GET` answers an empty map of the story's `mapSize` (`story.json`).
 - `data/chapters/timeline.layout.json`: `{ chapters: { [id]: { y } }, triggers: { … } }`.
 - `data/chapters/<ch>/<ch>.layout.json`: `{ passages: { [passageId]: { x, y } } }`.
 
@@ -294,7 +294,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
     - update the API table above
 2. **New editable field**: extend the reader (source → DTO) and the writer's field list. Anything that is not a plain literal must stay `{code}`.
 3. **New page**: add a route in `shell/router.ts`, a case in `shell/Shell.tsx`, a tab in `shell/TopBar.tsx`, and a `pages/<Name>/` folder with a MobX store that loads through `api`, subscribes to `apiEvents` and keeps view state in `ui-state`.
-4. **Verify**: `yarn typecheck && yarn lint && yarn test`. The test projects are `visualizer-server` (node), `protocol` (node), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) in `vitest.workspace.ts`. To try writes against the real server, run it on a copy of `stories/`: `STORIES_ROOT=<copy> PORT=<port> yarn dev:visualizer-server`. When driving the Map page from headless Chrome, inject `* { transition: none !important }` first: a CSS transition over the map canvases (the location modal's Save button turning enabled) stalls the headless renderer.
+4. **Verify**: `yarn typecheck && yarn lint && yarn test`. The test projects are `server` (node, MySQL `story_test`), `protocol` (node), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) in `vitest.workspace.ts`. To try writes against the real server, run it on a copy of `stories/`: `STORIES_ROOT=<copy> PORT=<port> yarn dev:server`. When driving the Map page from headless Chrome, inject `* { transition: none !important }` first: a CSS transition over the map canvases (the location modal's Save button turning enabled) stalls the headless renderer.
 
 ## Open items
 

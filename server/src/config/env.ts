@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-const DEFAULT_PORT = 8125;
+const DEFAULT_PORT = 8123;
 
 const optionalText = z.string().trim().optional();
 

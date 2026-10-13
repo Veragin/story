@@ -1,12 +1,15 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { verifyPassword } from '../src/auth/password';
 import { EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
 import { importStoryFiles } from '../src/stories/importStoryFiles';
-import { parseStoryFile, STORY_FILE } from '../src/stories/storyFile';
+import { STORY_FILE } from '../src/stories/storyFile';
+import { readStorySeed, type TStorySeed } from '../src/stories/storySeed';
 import { StoryRepository } from '../src/stories/StoryRepository';
 import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { setupTestDatabase } from './helpers/database';
+import { EXAMPLE_PASSWORD } from './helpers/http';
 import { copyExampleStory, makeTempStoriesRoot, storyFixture, writeStoryFolder } from './helpers/storiesRoot';
 
 const STALE_TSCONFIG = JSON.stringify({ extends: '../../tsconfig.base.json', include: ['data', 'types'] });
@@ -118,58 +121,79 @@ describe('importStoryFiles', () => {
         expect(await readFile(path.join(dir, 'tsconfig.json'), 'utf8')).toBe(await storyTsconfig(dir));
     });
 
-    it('imports the committed example story (the seed input)', async () => {
-        const dir = await copyExampleStory(root, 'example');
-        const committed = parseStoryFile(JSON.parse(await readFile(path.join(EXAMPLE_STORY_ROOT, STORY_FILE), 'utf8')));
-
-        const report = await importStoryFiles(root, stories());
-
-        expect(report.imported).toEqual([{ id: 'example', result: 'inserted' }]);
-        expect(report.tsconfigRewritten).toEqual(['example']);
-        expect(await stories().read('example')).toEqual(committed);
-        expect(await fileExists(path.join(dir, STORY_FILE))).toBe(false);
-        expect(await fileExists(path.join(EXAMPLE_STORY_ROOT, STORY_FILE))).toBe(true);
-    });
-
     describe('seed', () => {
         let seedRoot: string;
-        let seed: string;
+        let seed: TStorySeed;
         let cleanupSeed: () => Promise<void>;
 
         beforeEach(async () => {
             ({ root: seedRoot, cleanup: cleanupSeed } = await makeTempStoriesRoot());
-            seed = await writeStoryFolder(seedRoot, 'example', {
-                storyJson: JSON.stringify(storyFixture({ name: 'Example', public: true })),
-                tsconfig: STALE_TSCONFIG,
-            });
+            const dir = await writeStoryFolder(seedRoot, 'example', { tsconfig: STALE_TSCONFIG });
+            seed = { dir, file: storyFixture({ name: 'Example', public: true }) };
         });
         afterEach(() => cleanupSeed());
 
-        it('copies and imports the seed into an empty database, leaving the seed itself alone', async () => {
+        it('copies the seed folder into an empty database and inserts its row, leaving the seed alone', async () => {
             const target = path.join(root, 'missing-root');
 
             const report = await importStoryFiles(target, stories(), { seed });
 
-            expect(report).toEqual({
-                imported: [{ id: 'example', result: 'inserted' }],
-                skipped: [],
-                tsconfigRewritten: ['example'],
-                seeded: 'example',
-            });
-            expect((await stories().read('example'))?.name).toBe('Example');
-            expect(await fileExists(path.join(target, 'example', STORY_FILE))).toBe(false);
-            expect(await fileExists(path.join(seed, STORY_FILE))).toBe(true);
+            expect(report).toEqual({ imported: [], skipped: [], tsconfigRewritten: [], seeded: 'example' });
+            expect(await stories().read('example')).toEqual(seed.file);
+            const copied = path.join(target, 'example');
+            expect(await readFile(path.join(copied, 'tsconfig.json'), 'utf8')).toBe(await storyTsconfig(copied));
+            expect(await readFile(path.join(seed.dir, 'tsconfig.json'), 'utf8')).toBe(STALE_TSCONFIG);
 
             expect((await importStoryFiles(target, stories(), { seed })).seeded).toBeNull();
         });
 
-        it('does not seed when the database already holds a story', async () => {
+        it('gives an existing seed folder without a row its row, even when other stories exist', async () => {
+            await writeStoryFolder(root, 'alpha', { storyJson: JSON.stringify(storyFixture()) });
+            await writeStoryFolder(root, 'example');
+
+            const report = await importStoryFiles(root, stories(), { seed });
+
+            expect(report).toMatchObject({ imported: [{ id: 'alpha', result: 'inserted' }], skipped: [] });
+            expect(report.seeded).toBe('example');
+            expect((await stories().read('example'))?.name).toBe('Example');
+        });
+
+        it('does not copy the seed folder when the database already holds a story', async () => {
             await writeStoryFolder(root, 'alpha', { storyJson: JSON.stringify(storyFixture()) });
 
             const report = await importStoryFiles(root, stories(), { seed });
 
             expect(report.seeded).toBeNull();
             expect(await fileExists(path.join(root, 'example'))).toBe(false);
+        });
+
+        it('lets a legacy story.json in the seed folder win over the seed metadata', async () => {
+            await writeStoryFolder(root, 'example', { storyJson: JSON.stringify(storyFixture({ name: 'Mine' })) });
+
+            const report = await importStoryFiles(root, stories(), { seed });
+
+            expect(report.imported).toEqual([{ id: 'example', result: 'inserted' }]);
+            expect(report.seeded).toBeNull();
+            expect((await stories().read('example'))?.name).toBe('Mine');
+        });
+    });
+
+    describe('the committed example', () => {
+        it('has no story.json: its metadata is the seed in server/seed', async () => {
+            expect(await fileExists(path.join(EXAMPLE_STORY_ROOT, STORY_FILE))).toBe(false);
+            const { file } = await readStorySeed(EXAMPLE_STORY_ROOT);
+            expect(file).toMatchObject({ name: 'Example', public: true, mapSize: { width: 80, height: 60 } });
+            expect(await verifyPassword(EXAMPLE_PASSWORD, file.password)).toBe(true);
+        });
+
+        it('gives a copy of the example folder the committed seed metadata (the dev checkout)', async () => {
+            await copyExampleStory(root, 'example');
+            const seed = await readStorySeed(EXAMPLE_STORY_ROOT);
+
+            const report = await importStoryFiles(root, stories(), { seed });
+
+            expect(report).toEqual({ imported: [], skipped: [], tsconfigRewritten: [], seeded: 'example' });
+            expect(await stories().read('example')).toEqual(seed.file);
         });
     });
 });

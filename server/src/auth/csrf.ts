@@ -4,7 +4,7 @@ import { HttpError } from '../common/HttpError';
 import { routeContentType } from '../common/routeBody';
 import { normalizeOrigin } from '../config/env';
 
-const DEV_PORTS = [8100, 8101, 8103, 8123, 8125];
+const DEV_PORTS = [8100, 8101, 8103, 8123];
 
 export const DEFAULT_ALLOWED_ORIGINS: readonly string[] = DEV_PORTS.flatMap((port) => [
     `http://localhost:${port}`,

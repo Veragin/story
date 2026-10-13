@@ -12,7 +12,7 @@ export const startWatcher = async (bus: EventBus): Promise<FSWatcher> => {
     watcher.on('add', (file) => bus.fileChanged(file, 'add'));
     watcher.on('change', (file) => bus.fileChanged(file, 'change'));
     watcher.on('unlink', (file) => bus.fileChanged(file, 'unlink'));
-    watcher.on('error', (e) => console.error('[visualizer-server] watcher error', e));
+    watcher.on('error', (e) => console.error('[server] watcher error', e));
     await new Promise<void>((resolve) => watcher.once('ready', () => resolve()));
     return watcher;
 };

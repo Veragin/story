@@ -1,7 +1,7 @@
 # Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
 #
-#   app    the repo with its dependencies installed: runs the Visualizer server (`tsx src/index.ts`)
-#          and, until the per-story engine build lands (plan D7), the SingleEngine Vite dev server
+#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc
+#          loader) and, until the per-story engine build lands (plan D7), the SingleEngine Vite dev server
 #   web    `app` plus the static builds of the landing page (base `/`) and the Visualizer client
 #          (base `/visualizer/`); only a build stage, nothing runs it
 #   proxy  Caddy with `docker/Caddyfile` and the two builds from `web`: the one public origin
@@ -17,8 +17,8 @@ RUN chown node:node /app
 USER node
 COPY --chown=node:node . .
 RUN yarn install --immutable
-# The seed for an empty `stories` volume (`docker/prod-entrypoint.sh`). `/app/stories` itself is
-# shadowed by the volume at run time.
+# The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
+# `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
 RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/example && chmod +x docker/prod-entrypoint.sh
 ENTRYPOINT ["/app/docker/prod-entrypoint.sh"]
 

@@ -1,20 +1,18 @@
-import { readFile, stat } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import type { Server } from 'node:http';
 import path from 'node:path';
 import type { INestApplication, Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import type { TRouteName } from '@story/protocol';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/AppModule';
 import { AUTH_OPTIONS, GRANT_TTL_MS, type TAuthOptions } from '../../src/auth/authOptions';
 import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
 import { SessionService } from '../../src/auth/SessionService';
 import { configureExpressApp, EXPRESS_APP_OPTIONS } from '../../src/common/expressApp';
-import { NOT_YET_PORTED_ROUTES } from '../../src/common/notYetPortedRoutes';
-import { NOT_YET_PORTED } from '../../src/common/ProtocolRouteCheck';
 import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
-import { parseStoryFile, STORY_FILE, type TStoryFile } from '../../src/stories/storyFile';
+import type { TStoryFile } from '../../src/stories/storyFile';
+import { readStorySeed } from '../../src/stories/storySeed';
 import { STORIES_ROOT } from '../../src/stories/storiesRoot';
 import { StoryRepository } from '../../src/stories/StoryRepository';
 import type { TServerContext } from '../../src/storyContext/serverContext';
@@ -34,7 +32,6 @@ export type TModuleOverride = { replace: Type; with: Type };
 export type TTestAppOptions = {
     controllers?: Type[];
     overrideModules?: readonly TModuleOverride[];
-    notYetPorted?: readonly TRouteName[];
     auth?: Partial<TAuthOptions>;
     truncate?: boolean;
     storiesRoot?: string;
@@ -81,7 +78,6 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 export const createTestApp = async ({
     controllers = [],
     overrideModules = [],
-    notYetPorted = NOT_YET_PORTED_ROUTES,
     auth = {},
     truncate = true,
     storiesRoot,
@@ -99,8 +95,6 @@ export const createTestApp = async ({
     const builder = Test.createTestingModule({ imports: [AppModule], controllers });
     for (const override of overrideModules) builder.overrideModule(override.replace).useModule(override.with);
     const moduleRef = await builder
-        .overrideProvider(NOT_YET_PORTED)
-        .useValue(notYetPorted)
         .overrideProvider(AUTH_OPTIONS)
         .useValue({ ...TEST_AUTH_OPTIONS, ...auth })
         .overrideProvider(STORIES_ROOT)
@@ -149,8 +143,7 @@ const portOf = (server: Server): number => {
 // the old suites' `base = await listenLocal(app)`: a test app already listens on 127.0.0.1
 export const listenLocal = (app: TTestApp): Promise<string> => Promise.resolve(app.base);
 
-export const readExampleStoryFile = async (): Promise<TStoryFile> =>
-    parseStoryFile(JSON.parse(await readFile(path.join(EXAMPLE_STORY_ROOT, STORY_FILE), 'utf8')));
+export const readExampleStoryFile = async (): Promise<TStoryFile> => (await readStorySeed(EXAMPLE_STORY_ROOT)).file;
 
 // the example's password hash, so EXAMPLE_PASSWORD logs in
 export const seedStory = async (app: INestApplication, id: string, overrides: Partial<TStoryFile> = {}) => {

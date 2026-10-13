@@ -98,9 +98,9 @@ describe('CSRF: content type and origin of every mutation', () => {
         expect([res.status, (await res.json()).message]).toEqual([400, expect.stringMatching(/^Not a valid zip/)]);
     });
 
-    it('allows the dev ports by default, 8125 included', async () => {
+    it('allows the dev ports by default', async () => {
         const base = await start();
-        for (const port of [8100, 8101, 8103, 8123, 8125]) {
+        for (const port of [8100, 8101, 8103, 8123]) {
             for (const host of ['localhost', '127.0.0.1']) {
                 const res = await tryLogin(base, { ...JSON_TYPE, origin: `http://${host}:${port}` });
                 expect([port, host, res.status]).toEqual([port, host, 204]);

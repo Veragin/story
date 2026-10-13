@@ -9,12 +9,23 @@ const SERVER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const WATCHED = ['src', '../protocol/src', '../clients/shared/utils/src'].map((dir) => path.resolve(SERVER_ROOT, dir));
 const DEBOUNCE_MS = 150;
 const LOADER = ['--import', '@swc-node/register/esm-register'];
+const EXAMPLE_SEED = path.resolve(SERVER_ROOT, '../stories/example');
 
 let child: ChildProcess | undefined;
 let timer: NodeJS.Timeout | undefined;
 let changed: string | undefined;
 let restarting = false;
 let closing = false;
+
+// the committed example has no story.json (D4): its row comes from server/seed, once per database
+const importStoryFiles = async () => {
+    const importer = spawn(process.execPath, [...LOADER, 'scripts/importStoryFiles.ts', '--seed', EXAMPLE_SEED], {
+        cwd: SERVER_ROOT,
+        stdio: 'inherit',
+    });
+    const [code]: unknown[] = await once(importer, 'exit');
+    if (code) console.log(`[dev] stories:import-files exited with code ${String(code)}, starting the server anyway`);
+};
 
 const start = () => {
     child = spawn(process.execPath, [...LOADER, 'src/main.ts'], { cwd: SERVER_ROOT, stdio: 'inherit' });
@@ -60,7 +71,8 @@ const shutdown = async () => {
     process.exit(0);
 };
 
-watcher.on('all', (_event, file) => schedule(file));
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
-start();
+await importStoryFiles();
+watcher.on('all', (_event, file) => schedule(file));
+if (!closing) start();

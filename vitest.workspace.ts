@@ -23,14 +23,6 @@ export default defineWorkspace([
         },
     },
     {
-        test: {
-            name: 'visualizer-server',
-            root: './Visualizer/server',
-            environment: 'node',
-            include: ['__tests__/**/*.test.ts'],
-        },
-    },
-    {
         // esbuild cannot emit decorator metadata, which Nest DI needs (plan R1)
         esbuild: false,
         plugins: [swc.vite({ tsconfigFile: './server/tsconfig.json' })],

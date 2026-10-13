@@ -2,7 +2,7 @@
 #   SITE_ADDRESS=stories.example.com docker compose -f docker/docker-compose.prod.yml up -d --build
 #
 # One public origin, served by Caddy (`docker/Caddyfile`) on 80/443:
-#   /  landing page · /visualizer/  Visualizer client · /play/  SingleEngine · /api/  Visualizer server
+#   /  landing page · /visualizer/  Visualizer client · /play/  SingleEngine · /api/  the server (server/)
 #
 # Only Caddy publishes ports. The server and the engine are reachable only through it, which is what
 # makes `TRUST_PROXY=1` (the login limiter trusts X-Forwarded-For) and `ENGINE_ALLOWED_HOSTS=*` safe.
@@ -13,8 +13,10 @@
 # Secrets come from `.env` next to this file (`docker/.env`, copied from `.env.example`): `DB_PASSWORD`,
 # `MYSQL_ROOT_PASSWORD`. MySQL publishes no port; only the server reaches it.
 #
-# Stories live in the `stories` volume (seeded with the example story when empty), the database in
-# the `mysql` volume. Logins live in the server's memory: a restart logs everyone out.
+# Story content lives in the `stories` volume, story metadata and logins in the database (`mysql`
+# volume), so a restart keeps everyone logged in. On start the server service (and only it:
+# STORY_DB_SETUP=1) applies the migrations, imports any legacy `story.json` and seeds the example
+# story into an empty database (`docker/prod-entrypoint.sh`).
 name: story-prod
 
 x-app: &app
@@ -32,9 +34,11 @@ x-app: &app
 services:
   server:
     <<: *app
-    working_dir: /app/Visualizer/server
-    command: ['/app/node_modules/.bin/tsx', 'src/index.ts']
+    working_dir: /app/server
+    # source-only like in dev: the swc loader emits the decorator metadata Nest needs
+    command: [node, --import, '@swc-node/register/esm-register', src/main.ts]
     environment:
+      STORY_DB_SETUP: '1'
       STORIES_ROOT: /app/stories
       PORT: '8123'
       COOKIE_SECURE: '1'
@@ -69,7 +73,7 @@ services:
       STORIES_ROOT: /app/stories
       ENGINE_BASE: /play/
       ENGINE_ALLOWED_HOSTS: '*'
-      VISUALIZER_SERVER: http://server:8123
+      STORY_SERVER: http://server:8123
       VITE_LANDING_URL: /
     depends_on:
       server:

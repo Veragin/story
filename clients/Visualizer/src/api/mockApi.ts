@@ -309,9 +309,10 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         health: () =>
             reply(() => ({
                 ok: true as const,
-                service: '@story/visualizer-server' as const,
+                service: '@story/server' as const,
                 storiesRoot: '(mock)',
                 watching: false,
+                database: 'up' as const,
             })),
         login: () => reply(() => undefined),
         getStoryInfo: () => reply(() => MOCK_STORY),

@@ -15,10 +15,10 @@ const STORY_SPECIFIER = /^@story\/(data|types)(?:\/(.*))?$/;
 
 type TOptions = {
     storiesRoot: string;
-    visualizerServer: string;
+    storyServer: string;
 };
 
-export const storiesPlugin = ({ storiesRoot, visualizerServer }: TOptions): Plugin => {
+export const storiesPlugin = ({ storiesRoot, storyServer }: TOptions): Plugin => {
     // the real path, so a symlinked STORIES_ROOT gives no duplicates
     const root = existsSync(storiesRoot) ? realpathSync(storiesRoot) : path.resolve(storiesRoot);
     let config: ResolvedConfig;
@@ -48,7 +48,7 @@ export const storiesPlugin = ({ storiesRoot, visualizerServer }: TOptions): Plug
     };
 
     const fetchAccess: TStoryAccessFetch = async (storyId, cookie) => {
-        const res = await fetch(`${visualizerServer}/api/stories/${encodeURIComponent(storyId)}/access`, {
+        const res = await fetch(`${storyServer}/api/stories/${encodeURIComponent(storyId)}/access`, {
             headers: cookie ? { cookie } : {},
             signal: AbortSignal.timeout(5000),
         });
@@ -80,7 +80,7 @@ export const storiesPlugin = ({ storiesRoot, visualizerServer }: TOptions): Plug
                 ok = await canPlay(storyId, req.headers.cookie ?? '');
             } catch (e: unknown) {
                 config.logger.error(`[story:stories] access check failed: ${String(e)}`);
-                refuse(502, 'Could not check access to the story (is the Visualizer server running?)');
+                refuse(502, 'Could not check access to the story (is the story server running?)');
                 return;
             }
             if (ok) next();

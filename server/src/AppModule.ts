@@ -5,7 +5,6 @@ import { AuthModule } from './auth/AuthModule';
 import { ApiExceptionFilter } from './common/ApiExceptionFilter';
 import { JsonBodyInterceptor } from './common/JsonBodyInterceptor';
 import { JsonResponseInterceptor } from './common/JsonResponseInterceptor';
-import { NOT_YET_PORTED_ROUTES } from './common/notYetPortedRoutes';
 import { ProtocolRoutesModule } from './common/ProtocolRoutesModule';
 import { AppConfigModule } from './config/AppConfigModule';
 import { DatabaseModule } from './database/DatabaseModule';
@@ -30,7 +29,7 @@ import { StoriesModule } from './stories/StoriesModule';
         AppConfigModule,
         DatabaseModule,
         ScheduleModule.forRoot(),
-        ProtocolRoutesModule.forRoot(NOT_YET_PORTED_ROUTES),
+        ProtocolRoutesModule,
         HealthModule,
         StoriesModule,
         AuthModule,

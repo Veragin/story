@@ -8,10 +8,10 @@ const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 const repoRoot = at('../..');
 
-// same default and resolution as the Visualizer server's `STORIES_ROOT`
+// same default and resolution as the server's `STORIES_ROOT`
 const storiesRoot = path.resolve(repoRoot, process.env.STORIES_ROOT ?? 'stories');
 
-const visualizerServer = process.env.VISUALIZER_SERVER ?? 'http://localhost:8123';
+const storyServer = process.env.STORY_SERVER ?? 'http://localhost:8123';
 
 const siblingPackages = ['../shared/utils', '../shared/ui', '../shared/core'].map(at);
 
@@ -36,7 +36,7 @@ export default defineConfig({
     base: process.env.ENGINE_BASE || '/',
     assetsInclude: ['**/*.png', '**/*.jpg'],
     publicDir: false,
-    plugins: [react(), watchSiblingPackages(), storiesPlugin({ storiesRoot, visualizerServer })],
+    plugins: [react(), watchSiblingPackages(), storiesPlugin({ storiesRoot, storyServer })],
     resolve: {
         // string `find` is a prefix match: subpaths must precede their bare package name
         alias: [
@@ -61,7 +61,7 @@ export default defineConfig({
         },
         // same origin so the `story_session` cookie reaches the story guard; Host passes through for CSRF
         proxy: {
-            '/api': { target: visualizerServer },
+            '/api': { target: storyServer },
         },
     },
     esbuild: {

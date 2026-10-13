@@ -1,19 +1,19 @@
 # Visualizer
 
-The author's editor for the story: a map, a timeline of chapters and time triggers, a Twine-like view of each chapter's passages, and forms for the entities. It holds every story under `stories/` (each behind its password; the landing page lists them) and reads and writes the author's own files in the story's `data/` and `types/`, so what you edit here is the story's source code. Spec: [`docs/Visualizer.md`](../docs/Visualizer.md).
+The author's editor for the story: a map, a timeline of chapters and time triggers, a Twine-like view of each chapter's passages, and forms for the entities. It holds every story under `stories/` (each behind its password; the landing page lists them) and reads and writes the author's own files in the story's `data/` and `types/`, so what you edit here is the story's source code. Spec: [`docs/Visualizer.md`](../../docs/Visualizer.md). The server half (`server/`, NestJS + MySQL) is described here too until it gets its own doc.
 
 ## Running it
 
 ```bash
 yarn dev                        # every service, including both halves of the Visualizer
-yarn dev:visualizer-server      # just the server, http://localhost:8123 (tsx watch)
+yarn dev:server                 # just the server, http://localhost:8123 (NestJS, needs MySQL; seeds the example's row)
 yarn dev:visualizer             # just the client, http://localhost:8101 (Vite)
 yarn dev:landing-page           # just the landing page (story list), http://localhost:8103 (Vite)
 ```
 
-In docker: `make start` runs everything. Or run `make up` and then `make dev-visualizer-server` plus `make dev-visualizer` (and `make dev-landing-page`).
+In docker: `make start` runs everything. Or run `make up` and then `make dev-server` plus `make dev-visualizer` (and `make dev-landing-page`).
 
-**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SingleEngine, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export; a taken id asks for another) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
+**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SingleEngine, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
 
 Open a story from the landing page (http://localhost:8103): the client runs on http://localhost:8101/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8123/api/health` (or `localhost:8101/api/health` through the proxy) answers `{"ok":true,...}`.
 
@@ -21,38 +21,39 @@ Open a story from the landing page (http://localhost:8103): the client runs on h
 
 | Env var               | Where        | Default                 | Meaning                                                                                                                                                                                                                                                                                                                         |
 | --------------------- | ------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `STORIES_ROOT`        | server       | `stories`               | The folder holding one folder per story (`<id>/` with `story.json`, `data/`, `types/`); each story's routes are under `/api/stories/<id>/`. A relative path is resolved against the repo root. Point it at a copy to experiment safely. The tests always use a temp copy.                                                       |
+| `STORIES_ROOT`        | server       | `stories`               | The folder holding one folder per story (`<id>/` with `tsconfig.json`, `data/`, `types/`; the metadata is in the database); each story's routes are under `/api/stories/<id>/`. A relative path is resolved against the repo root. Point it at a copy to experiment safely. The tests always use a temp copy.                   |
 | `PORT`                | server       | `8123`                  | Listen port.                                                                                                                                                                                                                                                                                                                    |
 | `COOKIE_SECURE`       | server       | (off)                   | `1` marks the `story_session` login cookie `Secure`. Set it when the server is behind HTTPS.                                                                                                                                                                                                                                    |
 | `ALLOWED_ORIGINS`     | server       | the dev ports           | Comma-separated origins a mutation (non-GET request) may come from, e.g. `https://stories.example.com`. It replaces the default, `http://localhost:<port>` and `http://127.0.0.1:<port>` for 8100, 8101, 8103 and 8123. A request whose `Origin` matches its own `Host` is always allowed, and one without `Origin` (curl) too. |
-| `VISUALIZER_SERVER`   | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                                                                                                                                                                                                                                |
+| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                                                                                                                                                                                                                                |
 | `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                                                                                                                                                                                                                                |
 | `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash).                                                                                                                                                                                                           |
-| `VISUALIZER_SERVER`   | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                                                                                                                                                                                                                                 |
+| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                                                                                                                                                                                                                                 |
 | `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                                                                                                                                                                                                                              |
 | `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                                                                                                                                                                                                                                         |
 | `STORIES_ROOT`        | SingleEngine | `stories`               | Where the engine's dev server finds the stories it serves (`vite/storiesPlugin.ts`). Keep it the same as the server's.                                                                                                                                                                                                          |
-| `VISUALIZER_SERVER`   | SingleEngine | `http://localhost:8123` | Target of SingleEngine's Vite `/api` proxy, and the server its story guard asks `GET /api/stories/<id>/access`.                                                                                                                                                                                                                 |
+| `STORY_SERVER`        | SingleEngine | `http://localhost:8123` | Target of SingleEngine's Vite `/api` proxy, and the server its story guard asks `GET /api/stories/<id>/access`.                                                                                                                                                                                                                 |
 | `VITE_LANDING_URL`    | SingleEngine | this host, port 8103    | Where SingleEngine goes without `?story=` or after a cancelled password prompt.                                                                                                                                                                                                                                                 |
 
-**Auth.** Every story route needs a login grant: `POST /api/stories/<id>/login {"password"}` sets the `story_session` cookie (HttpOnly, SameSite=Lax, 24 h per story, one cookie for several stories; sessions live in memory, so a restart logs everyone out). Without it a story route answers `401` (the one exception: the images of a `public` story); the client and the landing page then ask for the password. To poke at the API by hand: `curl -c jar -H 'content-type: application/json' -d '{"password":"example"}' localhost:8123/api/stories/example/login`, then `curl -b jar …`. The example story's password is `example`. Details: `server/src/auth/`, `server/src/stories/access.ts`.
+**Auth.** Every story route needs a login grant: `POST /api/stories/<id>/login {"password"}` sets the `story_session` cookie (HttpOnly, SameSite=Lax, 24 h per story, one cookie for several stories; sessions live in MySQL, so a restart keeps everyone logged in). Without it a story route answers `401`, except the reads (every `GET`) of a `public` story; the client and the landing page then ask for the password. To poke at the API by hand: `curl -c jar -H 'content-type: application/json' -d '{"password":"example"}' localhost:8123/api/stories/example/login`, then `curl -b jar …`. The example story's password is `example`. Details: `server/src/auth/` (`StoryAccessGuard`, access levels from `protocol/src/routes.ts`).
 
-**Stories.** `GET /api/stories` lists every story (no password; `unlocked` says whether your cookie holds its grant). Creating and importing need no login; the story's info and export need its grant:
+**Stories.** `GET /api/stories` lists every story (no password; `unlocked` says whether your cookie holds its grant). Creating and importing need no login; the story's info and export need its grant (or a `public` story, for reading):
 
 ```bash
-# create from Visualizer/server/template/ (201, logs you in; the id is a slug of the name)
+# create from server/template/ (201, logs you in; the id is a slug of the name)
 curl -c jar -H 'content-type: application/json' localhost:8123/api/stories \
   -d '{"name":"My Story","author":"Me","password":"secret-1","description":"","mapSize":{"width":40,"height":30},"public":false}'
-curl -b jar localhost:8123/api/stories/my-story/info             # story.json without the password, + version
+curl -b jar localhost:8123/api/stories/my-story/info             # the story's info without the password, + version
 curl -b jar -X PUT -H 'content-type: application/json' localhost:8123/api/stories/my-story/info \
   -d '{"version":"<version>","name":"Renamed","password":"new-secret"}'   # mapSize is read-only
 curl -b jar -o my-story.zip localhost:8123/api/stories/my-story/export
-curl -H 'content-type: application/zip' --data-binary @my-story.zip 'localhost:8123/api/stories/import?id=my-copy'
+curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secret-2 -F description= -F public=false \
+  localhost:8123/api/stories/import                                # 201, logs you in; the id is a slug of the name
 ```
 
-The name must not be empty, the password has at least 6 characters, and each side of the map is 1–500 tiles (`STORY_LIMITS`). An import keeps the zip's password, answers `409 exists` when the id is taken, and refuses anything but `story.json`, `tsconfig.json`, `data/` and `types/` at the zip's root (no `..`, absolute paths or symlinks; at most 50 MB). New and imported stories land in `STORIES_ROOT`; `stories/*` other than `example` is git-ignored.
+The name must not be empty, the password has at least 6 characters, and each side of the map is 1–500 tiles (`STORY_LIMITS`). An export holds only `tsconfig.json`, `data/` and `types/` (no metadata, no password hash). An import takes the metadata from the form like **New story** (the map size comes from the zip's `data/locations/map.json`), ignores a `story.json` in an older zip, and refuses anything else at the zip's root (no `..`, absolute paths or symlinks; at most 50 MB). New and imported stories land in `STORIES_ROOT`; `stories/*` other than `example` is git-ignored.
 
-Tests: `yarn test` at the root runs the `visualizer-server` (node), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) projects from `vitest.workspace.ts`, among the others.
+Tests: `yarn test` at the root runs the `server` (node, against MySQL `story_test`), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) projects from `vitest.workspace.ts`, among the others.
 
 ## Deploying (production)
 
@@ -63,7 +64,7 @@ Tests: `yarn test` at the root runs the `visualizer-server` (node), `visualizer-
 | `/`            | the landing page, static build                                                               |
 | `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                             |
 | `/play/`       | SingleEngine, still a Vite dev server (`base` `/play/`) until the per-story build lands (D7) |
-| `/api/`        | the Visualizer server (`tsx src/index.ts`), stories in the `stories` volume                  |
+| `/api/`        | the server (`server/`), stories in the `stories` volume, metadata and logins in MySQL        |
 
 ```bash
 cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD
@@ -72,7 +73,7 @@ make prod-logs
 make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The server runs with `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>` and `TRUST_PROXY=1`; only Caddy publishes ports. MySQL (`mysql:8.4`, `mysql` volume) is reachable only by the server. A fresh `stories` volume is seeded with the example story (`docker/prod-entrypoint.sh`); back it up like any other volume. Logins are in memory, so a restart logs everyone out. The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain.
+`SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The server runs with `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>` and `TRUST_PROXY=1`; only Caddy publishes ports. MySQL (`mysql:8.4`, `mysql` volume) is reachable only by the server. On start the server applies the migrations, imports any legacy `story.json` and seeds the example story into an empty database (`docker/prod-entrypoint.sh`); back up both volumes. Logins are in the database, so a restart keeps everyone logged in. The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain.
 
 | Env var                | Where        | Default | Meaning                                                                                                                                                                                                                                                                                                                          |
 | ---------------------- | ------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -86,15 +87,17 @@ make prod-down                                  # keeps the volumes (stories, da
 
 ```
 protocol/    @story/protocol  the wire contract: STORY_ROUTES / GLOBAL_ROUTES / TApiSpec (src/routes.ts) and every DTO (src/dto/)
-Visualizer/
-  server/    @story/visualizer-server    node:http on :8123
-    src/http/         router (typed from TApiSpec), JSON bodies, HttpError → status mapping
-    src/routes/       one file per resource
+server/      @story/server    NestJS on :8123 (swc loader), MySQL through TypeORM
+    src/common/       @ProtocolRoute (paths from the protocol), route check, JSON bodies, ApiExceptionFilter
+    src/editor/       one module + thin controller per resource
     src/project/      ts-morph source reader/writer: SourceProject, readers/, writers/, registry, validate, values
     src/json/         map.json and *.layout.json stores, atomic write (tmp + rename)
     src/events/       EventBus (transactions), chokidar watcher, SSE, content-hash versions
-    src/auth/         story passwords (scrypt), in-memory sessions, cookie, CSRF check, login rate limit
-    src/stories/      story registry (story.json), loaded stories, the grant check, create / import, zips
+    src/auth/         story passwords (scrypt), sessions in MySQL, cookie, CSRF and story access guards, login rate limit
+    src/stories/      story rows (StoryRepository), folders, create / import, zips, stories:import-files
+    src/storyContext/ loaded stories (leases, idle eviction)
+    src/database/     data source, entities, migrations
+    seed/             the example story's metadata (its database row on a fresh database)
     template/         the story "create story" copies (not server code; type-checked on its own)
 clients/
   Visualizer/  @story/visualizer-client    React + MobX, Vite on :8101
@@ -115,7 +118,7 @@ Dependencies go one way: client → protocol ← server, and landing page → pr
 
 ## How the source writer works
 
-- **One long-lived ts-morph `Project` per loaded story** over its `data/` and `types/` (`project/SourceProject.ts`), dropped when the story has been idle for a while (`stories/StoryContexts.ts`). Each request stats the story files and re-parses only the ones that changed, so hand edits are picked up by the next request. Operations run one at a time.
+- **One long-lived ts-morph `Project` per loaded story** over its `data/` and `types/` (`project/SourceProject.ts`), dropped when the story has been idle for a while (`storyContext/StoryContexts.ts`). Each request stats the story files and re-parses only the ones that changed, so hand edits are picked up by the next request. Operations run one at a time.
 - **Readers** turn source into DTOs. A field whose initializer is a plain literal comes back as the literal. Anything else (`_('…')`, an expression, a closure) comes back as `{ code }`, its source text verbatim. Trigger `condition`/`action` and link `onFinish` are always code.
 - **Writers edit nodes, not files.** A `PUT` is partial: only the fields in the body are touched, and inside a field only the smallest node that changed is replaced (`setInitializer`). `{ code }` is written back verbatim. Comments, other statements in the file and properties the reader does not understand are kept. An unchanged write leaves the file byte-identical.
 - **The source editor is the one exception.** In the chapter view, the code button (toolbar: the selected passage, else the chapter; passage editor: that passage) opens the whole `.ts` file in CodeMirror. `PUT /api/stories/<id>/source/<chapter|passage>/<id>` `{ version, text }` replaces the whole file, but through the same session and commit as every write: prettier, the type check (`422` with diagnostics by line, shown in the editor's gutter), atomic write, one event, `409 stale` ("Changed on disk: Reload / Keep mine"). Only chapter and passage files under `data/` can be reached, by owner and id, never by path. It replaced "open in editor", which cannot work on a server.
@@ -177,7 +180,7 @@ The page never reloads because the story changed. `data/` is not in Vite's modul
 1. For each loaded story, the server watches its `data/` and `types/` with chokidar, batches changes over about 150 ms, maps them to resources and sends them on that story's `GET /api/stories/:storyId/events` (SSE). Its own writes send exactly one event per operation.
 2. `clients/Visualizer/src/api/events.ts` (`apiEvents.subscribe({ kind, id?, chapterId? }, cb)`) delivers them to the page stores. Events for the client's own saves (same `version`) are filtered out. After a reconnect, `onResync` tells stores to refetch what is on screen.
 3. Stores refetch only the changed resource and update it in place. A form with unsaved input for a resource that changed shows "Changed on disk: Reload / Keep mine". The map merges unsaved edits three-way instead.
-4. View state (tab, camera, selection, drafts) is kept in `sessionStorage` (`clients/Visualizer/src/ui-state.ts`), keyed by story, so a real reload (server restart under `tsx watch`, client code change) loses little.
+4. View state (tab, camera, selection, drafts) is kept in `sessionStorage` (`clients/Visualizer/src/ui-state.ts`), keyed by story, so a real reload (server restart in `yarn dev`, client code change) loses little.
 5. The event stream needs the story's grant too. When the browser gives up on it (an `EventSource` cannot see the `401`), the client probes with `GET /info`, which asks for the password on a 401, and re-creates the stream right after the login.
 
 ## Known limitations

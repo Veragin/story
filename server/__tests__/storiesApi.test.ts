@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { readdir, readFile, rm, stat } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
@@ -27,8 +27,7 @@ beforeEach(async () => {
     app = await createTestApp();
     base = app.base;
     storiesRoot = app.storiesRoot;
-    const example = await copyExampleStory(storiesRoot, 'example');
-    await rm(path.join(example, STORY_FILE));
+    await copyExampleStory(storiesRoot, 'example');
     await seedStory(app.app, 'example');
 });
 

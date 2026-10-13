@@ -63,7 +63,7 @@ describe('pathToResources', () => {
         'data/locations/readme.md',
         'types/package.json',
         'clients/shared/core/src/index.ts',
-        'Visualizer/server/src/index.ts',
+        'server/src/main.ts',
         'data/catalogs/readme.md',
     ])('%s maps to nothing', (file) => {
         expect(pathToResources(file)).toEqual([]);

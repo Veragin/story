@@ -71,7 +71,7 @@ export const locationStyle = (color: string): Pick<TLocationShapeDto, 'fill' | '
 });
 
 const errorMessage = (e: unknown) => {
-    if (e instanceof ApiError && e.isNotImplemented) return _('The Visualizer server does not implement this yet');
+    if (e instanceof ApiError && e.isNotImplemented) return _('The story server does not implement this yet');
     return e instanceof Error ? e.message : String(e);
 };
 

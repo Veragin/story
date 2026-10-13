@@ -39,7 +39,7 @@ const parseError = async (res: Response): Promise<TApiErrorBody> => {
     }
     return {
         error: res.status === 404 ? 'not_found' : 'internal',
-        message: res.status >= 502 && res.status <= 504 ? 'Visualizer server unreachable' : res.statusText,
+        message: res.status >= 502 && res.status <= 504 ? 'Story server unreachable' : res.statusText,
     };
 };
 

@@ -24,11 +24,10 @@ export type TProjectChapterDto = TProjectEntryDto & {
 
 export type THealthDto = {
     ok: true;
-    /** `@story/server` is the NestJS server that replaces `@story/visualizer-server`. */
-    service: '@story/visualizer-server' | '@story/server';
+    service: '@story/server';
     /** Absolute path of `STORIES_ROOT`. */
     storiesRoot: string;
     watching: boolean;
-    /** `@story/server` only: the database answered a ping (otherwise the response is 503). */
-    database?: 'up';
+    /** The database answered a ping (otherwise the response is 503). */
+    database: 'up';
 };

@@ -6,13 +6,23 @@ import { ProtocolRoute, ProtocolRouteName } from '../src/common/ProtocolRoute';
 import { ProtocolRoutesModule } from '../src/common/ProtocolRoutesModule';
 import { RouteParams, type THandlerParams } from '../src/common/RouteParams';
 
-const otherThan = (...ported: TRouteName[]) => ROUTE_NAMES.filter((route) => !ported.includes(route));
+const otherThan = (...excluded: TRouteName[]) => ROUTE_NAMES.filter((route) => !excluded.includes(route));
 
-const boot = async (controllers: Type[], notYetPorted: readonly TRouteName[]) => {
-    const moduleRef = await Test.createTestingModule({
-        imports: [ProtocolRoutesModule.forRoot(notYetPorted)],
-        controllers,
-    }).compile();
+// one controller with a real @ProtocolRoute handler per given route
+const routeStubs = (routes: readonly TRouteName[]): Type => {
+    @Controller()
+    class RouteStubs {}
+    const prototype: object = RouteStubs.prototype;
+    for (const route of routes) {
+        Object.defineProperty(prototype, route, { value: () => ({ route }), writable: true, configurable: true });
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, route);
+        if (descriptor) ProtocolRoute(route)(prototype, route, descriptor);
+    }
+    return RouteStubs;
+};
+
+const boot = async (controllers: Type[]) => {
+    const moduleRef = await Test.createTestingModule({ imports: [ProtocolRoutesModule], controllers }).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     try {
         await app.init();
@@ -46,31 +56,25 @@ class UnknownRoute {
 Reflect.defineMetadata(ProtocolRouteName.KEY, 'bogus', UnknownRoute.prototype.bogus);
 
 describe('protocol route completeness check', () => {
-    it('boots when every route has one handler or is not yet ported', async () => {
-        await expect(boot([HealthOnly], otherThan('health'))).resolves.toBeUndefined();
+    it('boots when every route has exactly one handler', async () => {
+        await expect(boot([HealthOnly, routeStubs(otherThan('health'))])).resolves.toBeUndefined();
     });
 
     it('fails boot when a route has no handler', async () => {
-        await expect(boot([HealthOnly], otherThan('health', 'getChapter', 'login'))).rejects.toThrow(
+        await expect(boot([HealthOnly, routeStubs(otherThan('health', 'getChapter', 'login'))])).rejects.toThrow(
             'Protocol routes without a handler: getChapter, login'
         );
     });
 
     it('fails boot when a route has two handlers', async () => {
-        await expect(boot([HealthOnly, SecondHealth], otherThan('health'))).rejects.toThrow(
+        await expect(boot([HealthOnly, SecondHealth, routeStubs(otherThan('health'))])).rejects.toThrow(
             'Protocol route health has 2 handlers (HealthOnly.health, SecondHealth.again)'
         );
     });
 
     it('fails boot on a handler for an unknown route name', async () => {
-        await expect(boot([HealthOnly, UnknownRoute], otherThan('health'))).rejects.toThrow(
+        await expect(boot([HealthOnly, UnknownRoute, routeStubs(otherThan('health'))])).rejects.toThrow(
             'Unknown protocol route "bogus" (UnknownRoute.bogus)'
-        );
-    });
-
-    it('fails boot when a not yet ported route has a handler', async () => {
-        await expect(boot([HealthOnly], ROUTE_NAMES)).rejects.toThrow(
-            'Protocol route health has a handler: drop it from NOT_YET_PORTED'
         );
     });
 });

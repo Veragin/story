@@ -65,7 +65,7 @@ export class EventBus {
             try {
                 listener(event);
             } catch (e) {
-                console.error('[visualizer-server] event listener failed', e);
+                console.error('[server] event listener failed', e);
             }
         }
     }

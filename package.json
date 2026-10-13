@@ -13,7 +13,6 @@
         "clients/SingleEngine",
         "clients/MultiEngine",
         "protocol",
-        "Visualizer/server",
         "server"
     ],
     "comment:scripts:dev": "`--exclude story-root` stops a pasted foreach line from re-running this script (yarn's self-guard keys off npm_lifecycle_event). No `-t`: it would deadlock once a dependency gains a watch-mode dev script.",
@@ -22,7 +21,6 @@
         "dev": "yarn workspaces foreach -Apvi --jobs unlimited --exclude story-root run dev",
         "dev:engine": "yarn workspace @story/single-engine dev",
         "dev:visualizer": "yarn workspace @story/visualizer-client dev",
-        "dev:visualizer-server": "yarn workspace @story/visualizer-server dev",
         "dev:server": "yarn workspace @story/server dev",
         "dev:landing-page": "yarn workspace @story/visualizer-landing-page dev",
         "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",

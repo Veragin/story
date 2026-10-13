@@ -2215,20 +2215,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@story/visualizer-server@workspace:Visualizer/server":
-  version: 0.0.0-use.local
-  resolution: "@story/visualizer-server@workspace:Visualizer/server"
-  dependencies:
-    "@story/protocol": "workspace:^"
-    "@story/shared": "workspace:^"
-    chokidar: "npm:^4.0.3"
-    fflate: "npm:^0.8.3"
-    prettier: "npm:^3.3.3"
-    ts-morph: "npm:^24.0.0"
-    tsx: "npm:^4.20.5"
-  languageName: unknown
-  linkType: soft
-
 "@swc-node/core@npm:1.15.0":
   version: 1.15.0
   resolution: "@swc-node/core@npm:1.15.0"
