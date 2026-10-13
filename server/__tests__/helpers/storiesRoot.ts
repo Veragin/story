@@ -1,7 +1,7 @@
 import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { EXAMPLE_STORY_ROOT } from '../../src/project/ProjectRoot';
+import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
 import { STORY_FILE, type TStoryFile } from '../../src/stories/storyFile';
 
 export type TTempStoriesRoot = { root: string; cleanup: () => Promise<void> };
@@ -39,4 +39,23 @@ export const writeStoryFolder = async (
     if (files.storyJson !== undefined) await writeFile(path.join(dir, STORY_FILE), files.storyJson);
     if (files.tsconfig !== undefined) await writeFile(path.join(dir, 'tsconfig.json'), files.tsconfig);
     return dir;
+};
+
+// the old suites' temp roots: copies of the example without DB rows; seed them with createTestApp({ stories })
+export const makeTempStories = async (
+    ids: readonly string[] = ['example']
+): Promise<{ storiesRoot: string; projects: ProjectRoot[]; cleanup: () => Promise<void> }> => {
+    const { root, cleanup } = await makeTempStoriesRoot();
+    const projects: ProjectRoot[] = [];
+    for (const id of ids) projects.push(new ProjectRoot(await copyExampleStory(root, id), id));
+    return { storiesRoot: root, projects, cleanup };
+};
+
+export const makeTempProject = async (): Promise<{
+    storiesRoot: string;
+    project: ProjectRoot;
+    cleanup: () => Promise<void>;
+}> => {
+    const { storiesRoot, projects, cleanup } = await makeTempStories();
+    return { storiesRoot, project: projects[0], cleanup };
 };

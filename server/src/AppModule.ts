@@ -9,7 +9,11 @@ import { NOT_YET_PORTED_ROUTES } from './common/notYetPortedRoutes';
 import { ProtocolRoutesModule } from './common/ProtocolRoutesModule';
 import { AppConfigModule } from './config/AppConfigModule';
 import { DatabaseModule } from './database/DatabaseModule';
+import { LayoutsModule } from './editor/layouts/LayoutsModule';
+import { MapsModule } from './editor/maps/MapsModule';
+import { EventsModule } from './events/EventsModule';
 import { HealthModule } from './health/HealthModule';
+import { StoryContextModule } from './storyContext/StoryContextModule';
 import { StoriesModule } from './stories/StoriesModule';
 
 @Module({
@@ -21,6 +25,10 @@ import { StoriesModule } from './stories/StoriesModule';
         HealthModule,
         StoriesModule,
         AuthModule,
+        StoryContextModule,
+        EventsModule,
+        MapsModule,
+        LayoutsModule,
     ],
     providers: [
         { provide: APP_FILTER, useClass: ApiExceptionFilter },

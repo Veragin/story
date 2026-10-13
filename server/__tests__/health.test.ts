@@ -32,7 +32,7 @@ describe('GET /api/health', () => {
             ok: true,
             service: '@story/server',
             storiesRoot: expect.any(String),
-            watching: false,
+            watching: true,
             database: 'up',
         };
         expect(await response.json()).toEqual(expected);

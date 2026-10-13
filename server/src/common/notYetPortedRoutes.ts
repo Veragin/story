@@ -2,7 +2,6 @@ import type { TRouteName } from '@story/protocol';
 
 // shrinks to empty as phase 9 ports the handlers; phase 10 deletes this file and the allowance
 export const NOT_YET_PORTED_ROUTES: readonly TRouteName[] = [
-    'events',
     'getProject',
     'createChapter',
     'getChapter',
@@ -44,10 +43,4 @@ export const NOT_YET_PORTED_ROUTES: readonly TRouteName[] = [
     'getImage',
     'getImageFile',
     'uploadImage',
-    'getMap',
-    'updateMap',
-    'getTimelineLayout',
-    'updateTimelineLayout',
-    'getChapterLayout',
-    'updateChapterLayout',
 ];

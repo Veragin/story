@@ -1,14 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { EXAMPLE_PASSWORD, login, requestJson } from './helpers/http';
-import { stubbedApp } from './helpers/routeStubs';
 import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
-
-const { controllers, notYetPorted } = stubbedApp(['updateTimelineLayout', 'getTimelineLayout']);
 
 let app: TTestApp | undefined;
 
 const start = async (allowedOrigins?: string[]) => {
-    app = await createTestApp({ controllers, notYetPorted, auth: allowedOrigins ? { allowedOrigins } : {} });
+    app = await createTestApp({ auth: allowedOrigins ? { allowedOrigins } : {} });
     await seedStory(app.app, 'secret', { public: false });
     return app.base;
 };
@@ -23,6 +20,12 @@ const JSON_TYPE = { 'content-type': 'application/json; charset=utf-8' };
 
 const send = (base: string, method: string, url: string, headers: Record<string, string>, body = '{"version":"1"}') =>
     fetch(base + url, { method, headers, body });
+
+// the real layout route: a passing PUT carries the current version, so it answers 200
+const putLayout = async (base: string, cookie: string, headers: Record<string, string>) => {
+    const { version } = (await requestJson(base + LAYOUT, 'GET', { headers: { cookie } })).body;
+    return send(base, 'PUT', LAYOUT, { cookie, ...headers }, JSON.stringify({ version, chapters: {}, triggers: {} }));
+};
 
 const tryLogin = (base: string, headers: Record<string, string>) =>
     send(base, 'POST', '/api/stories/secret/login', headers, JSON.stringify({ password: EXAMPLE_PASSWORD }));
@@ -39,15 +42,15 @@ describe('CSRF: content type and origin of every mutation', () => {
                 { error: 'bad_request', message: 'Expected content-type application/json' },
             ]);
         }
-        expect((await send(base, 'PUT', LAYOUT, { cookie, ...JSON_TYPE })).status).toBe(200);
-        expect((await send(base, 'PUT', LAYOUT, { cookie, 'content-type': 'Application/JSON' })).status).toBe(200);
+        expect((await putLayout(base, cookie, JSON_TYPE)).status).toBe(200);
+        expect((await putLayout(base, cookie, { 'content-type': 'Application/JSON' })).status).toBe(200);
     });
 
     it('refuses a foreign or null origin, accepts listed, own and missing origins', async () => {
         const base = await start(['https://stories.example.com']);
         const cookie = await login(base, 'secret');
         const put = (origin?: string) =>
-            send(base, 'PUT', LAYOUT, { cookie, ...JSON_TYPE, ...(origin === undefined ? {} : { origin }) });
+            putLayout(base, cookie, { ...JSON_TYPE, ...(origin === undefined ? {} : { origin }) });
 
         const evil = await put('https://evil.example');
         expect([evil.status, await evil.json()]).toEqual([

@@ -94,12 +94,13 @@ describe('story access matrix (D3)', () => {
     }, 60_000);
 
     it('an expired grant counts as none', async () => {
-        const base = await start(1000);
+        const base = await start(3000);
+        const loggedInAt = Date.now();
         const closed = await login(base, 'closed');
         const open = await login(base, 'open', { cookie: closed });
-        expect(outcomeOf(await callRoute(base, 'updateTimelineLayout', 'closed', closed))).toBe('granted');
-        expect(outcomeOf(await callRoute(base, 'updateTimelineLayout', 'open', open))).toBe('granted');
-        await sleep(1100);
+        expect(await outcomes(base, 'closed', closed)).toEqual(expected(() => 'granted'));
+        expect(await outcomes(base, 'open', open)).toEqual(expected(() => 'granted'));
+        await sleep(loggedInAt + 3100 - Date.now());
         expect(await outcomes(base, 'closed', closed)).toEqual(expected(() => 'unauthorized'));
         expect(await outcomes(base, 'open', open)).toEqual(
             expected((access) => (access === 'read' ? 'public' : 'unauthorized'))
@@ -110,7 +111,7 @@ describe('story access matrix (D3)', () => {
         const base = await start();
         const before = Date.now();
         const cookie = await login(base, 'closed');
-        const res = await callRoute(base, 'getProject', 'closed', cookie);
+        const res = await callRoute(base, STORY_ROUTES_UNDER_TEST[0], 'closed', cookie);
         expect(res.body.grant.expiresAt).toBeGreaterThanOrEqual(before + 24 * 60 * 60_000);
         expect(res.body.grant.expiresAt).toBeLessThanOrEqual(Date.now() + 24 * 60 * 60_000);
     });

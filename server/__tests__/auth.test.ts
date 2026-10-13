@@ -1,3 +1,4 @@
+import http from 'node:http';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +11,7 @@ import { hashToken, SESSION_PRUNE_JOB, SessionService } from '../src/auth/Sessio
 import { StoryRepository } from '../src/stories/StoryRepository';
 import { setupTestDatabase } from './helpers/database';
 import { cookieOf, EXAMPLE_PASSWORD, login, requestJson, sleep } from './helpers/http';
+import { openEventStream } from './helpers/sse';
 import { storyFixture } from './helpers/storiesRoot';
 import { createTestApp, readExampleStoryFile, seedStory, type TTestApp } from './helpers/testApp';
 
@@ -285,5 +287,29 @@ describe('over HTTP', () => {
         await sleep(400);
         expect((await call(base, 'GET', '/api/stories/secret/access', { cookie })).body.canEdit).toBe(false);
         expect((await call(base, 'GET', '/api/session', { cookie })).body).toEqual({ storyIds: [] });
+    });
+
+    it('closes the change feed when its grant expires', async () => {
+        const base = await start({ grantTtlMs: 1500 });
+        const cookie = await login(base, 'secret');
+        const req = http.get(`${base}/api/stories/secret/events`, { headers: { cookie } });
+        const response = await new Promise<http.IncomingMessage>((resolve) => req.on('response', resolve));
+        expect(response.statusCode).toBe(200);
+        const opened = Date.now();
+        response.resume();
+        await new Promise((resolve) => response.on('end', resolve));
+        expect(Date.now() - opened).toBeGreaterThan(1000);
+        expect((await call(base, 'GET', '/api/stories/secret/events', { cookie })).status).toBe(401);
+    });
+
+    it('keeps the change feed of a public story read without a grant open past any grant expiry', async () => {
+        const base = await start({ grantTtlMs: 300 });
+        const stream = await openEventStream(`${base}/api/stories/example/events`);
+        expect(stream.response.statusCode).toBe(200);
+        let ended = false;
+        stream.response.on('end', () => (ended = true));
+        await sleep(600);
+        expect(ended).toBe(false);
+        stream.close();
     });
 });

@@ -37,3 +37,14 @@ export const login = async (
     if (res.status !== 204) throw new Error(`login to ${storyId} answered ${res.status}`);
     return cookieOf(res);
 };
+
+// long enough for chokidar to report and a 50 ms batch to flush, with margin for a slow CI box
+export const QUIET_MS = 700;
+
+export const waitFor = async (predicate: () => boolean, timeoutMs = 5000) => {
+    const start = Date.now();
+    while (!predicate()) {
+        if (Date.now() - start > timeoutMs) throw new Error('timed out');
+        await sleep(20);
+    }
+};
