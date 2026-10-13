@@ -1,4 +1,4 @@
-import type { TCatalogEntryDto, TCatalogListDto, TFieldDesc } from '@story/visualizer-protocol';
+import type { TCatalogEntryDto, TCatalogListDto, TFieldDesc } from '@story/protocol';
 import type { SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';

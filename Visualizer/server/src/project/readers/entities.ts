@@ -10,7 +10,7 @@ import type {
     TNpcDto,
     TValue,
     TValueRecord,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { Node, type ObjectLiteralExpression, type PropertyAssignment, type SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';

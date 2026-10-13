@@ -1,5 +1,5 @@
 import { DeltaTime } from '@story/shared';
-import { isCode, type TCode, type TFunctionDto, type TTypeRef, type TValue } from '@story/visualizer-protocol';
+import { isCode, type TCode, type TFunctionDto, type TTypeRef, type TValue } from '@story/protocol';
 import {
     type ArrayLiteralExpression,
     type Expression,

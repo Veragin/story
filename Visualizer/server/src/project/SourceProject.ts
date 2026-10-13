@@ -1,13 +1,13 @@
 import type { Stats } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import type { TChangeEvent, TDiagnosticDto, TReferenceDto } from '@story/visualizer-protocol';
+import type { TChangeEvent, TDiagnosticDto, TReferenceDto } from '@story/protocol';
 import { format, resolveConfig, type Options } from 'prettier';
 import { IndentationText, Project, QuoteKind, type SourceFile, ts } from 'ts-morph';
 import type { EventBus, TTransaction } from '../events/EventBus';
 import { HttpError, isHttpError } from '../http/HttpError';
 import { importedNames, isIdentifierUsed, removeImportOf } from './ast';
-import { EXAMPLE_STORY_ROOT, REPO_ROOT, type ProjectRoot } from './ProjectRoot';
+import { EXAMPLE_STORY_ROOT, enginePaths, REPO_ROOT, type ProjectRoot } from './ProjectRoot';
 import { diagnoseProject, newDiagnostics, syntaxDiagnostic, withFields } from './validate';
 
 export class SourceProject {
@@ -195,9 +195,7 @@ const compilerOptionsFor = (root: ProjectRoot): ts.CompilerOptions => ({
         '@story/types': [path.join(root.typesDir, 'index.ts')],
         '@story/data': [path.join(root.dataDir, 'index.ts')],
         '@story/data/*': [path.join(root.dataDir, '*')],
-        '@story/shared': [path.join(REPO_ROOT, 'shared/src/index.ts')],
-        '@story/core': [path.join(REPO_ROOT, 'core/src/index.ts')],
-        '@story/ui': [path.join(REPO_ROOT, 'ui/src/index.ts')],
+        ...enginePaths((entry) => path.join(REPO_ROOT, entry)),
     },
 });
 

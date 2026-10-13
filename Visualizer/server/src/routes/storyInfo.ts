@@ -1,4 +1,4 @@
-import type { TStoryInfoDto } from '@story/visualizer-protocol';
+import type { TStoryInfoDto } from '@story/protocol';
 import type { TServerContext } from '../context';
 import { assertVersion } from '../events/version';
 import { HttpError } from '../http/HttpError';

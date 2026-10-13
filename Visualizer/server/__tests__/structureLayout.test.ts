@@ -1,6 +1,6 @@
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { TChangeEvent } from '@story/visualizer-protocol';
+import type { TChangeEvent } from '@story/protocol';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { EventBus } from '../src/events/EventBus';

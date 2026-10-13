@@ -10,12 +10,12 @@
                story, the example included, is also checked on its own through its
                `stories/<id>/tsconfig.json` (`scripts/typecheck-stories.mjs`). */
             "@story/types": ["stories/example/types/index.ts"],
-            "@story/shared": ["shared/src/index.ts"],
-            "@story/ui": ["ui/src/index.ts"],
-            "@story/core": ["core/src/index.ts"],
+            "@story/shared": ["clients/shared/utils/src/index.ts"],
+            "@story/ui": ["clients/shared/ui/src/index.ts"],
+            "@story/core": ["clients/shared/core/src/index.ts"],
             "@story/data": ["stories/example/data/index.ts"],
             "@story/data/*": ["stories/example/data/*"],
-            "@story/visualizer-protocol": ["Visualizer/protocol/src/index.ts"]
+            "@story/protocol": ["protocol/src/index.ts"]
 
             /* No legacy `baseUrl: src` aliases are left: `src/` is gone as of Phase 8 and
                every app resolves its own files relatively, inside its own workspace.
@@ -33,28 +33,22 @@
        build output, so this must keep listing every package as it is extracted. */
     "include": [
         "stories/example/types",
-        "shared",
-        "ui",
-        "core",
+        "clients/shared/utils",
+        "clients/shared/ui",
+        "clients/shared/core",
         "stories/example/data",
-        "SingleEngine/src",
-        "Visualizer/client/src",
-        "Visualizer/landing-page/src",
-        "MultiEngine/client/src",
+        "clients/SingleEngine/src",
+        "clients/Visualizer/src",
+        "clients/LandingPage/src",
+        "clients/MultiEngine/src",
 
-        /* The MultiEngine server is node-land, and this program carries the browser libs from
-           `tsconfig.base.json`. It is listed here anyway, because §7's rule is one root
-           `tsc --noEmit` over the whole graph and an unchecked workspace is worse than an
-           over-permissive one. `MultiEngine/server/tsconfig.json` is the stricter, DOM-less
-           view of the same files for editors and eslint. */
-        "MultiEngine/server/src",
-
-        /* The Visualizer's wire contract and its node server (plan WP1). Same trade-off as the
-           MultiEngine server above: node-land checked under the browser libs here, and strictly
+        /* The wire contract and the node server (plan WP1). The server is node-land checked under
+           the browser libs here, because §7's rule is one root `tsc --noEmit` over the whole graph
+           and an unchecked workspace is worse than an over-permissive one; it is checked strictly
            (no DOM, node types) by `Visualizer/server/tsconfig.json`. The server's tests are
-           package source like `core/__tests__`, so they are listed too. */
-        "Visualizer/protocol/src",
-        "Visualizer/protocol/__tests__",
+           package source like `clients/shared/core/__tests__`, so they are listed too. */
+        "protocol/src",
+        "protocol/__tests__",
         "Visualizer/server/src",
         "Visualizer/server/__tests__"
     ],
@@ -63,10 +57,10 @@
         "dist",
 
         /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
-        "SingleEngine/vite.config.ts",
-        "Visualizer/client/vite.config.ts",
-        "Visualizer/landing-page/vite.config.ts",
-        "MultiEngine/client/vite.config.ts",
+        "clients/SingleEngine/vite.config.ts",
+        "clients/Visualizer/vite.config.ts",
+        "clients/LandingPage/vite.config.ts",
+        "clients/MultiEngine/vite.config.ts",
         "vitest.workspace.ts"
     ]
 }

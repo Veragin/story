@@ -1,4 +1,4 @@
-import { isSourceOwner, type TSourceOwner } from '@story/visualizer-protocol';
+import { isSourceOwner, type TSourceOwner } from '@story/protocol';
 import type { TServerContext } from '../context';
 import { pathParam } from '../http/params';
 import { SourceProject } from '../project/SourceProject';

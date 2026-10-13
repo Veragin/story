@@ -1,5 +1,5 @@
 import type { ServerResponse } from 'node:http';
-import { SSE_EVENT, type TChangeEvent, type THelloEvent } from '@story/visualizer-protocol';
+import { SSE_EVENT, type TChangeEvent, type THelloEvent } from '@story/protocol';
 import type { EventBus } from './EventBus';
 
 // keeps proxies (Vite's included) from closing an idle stream

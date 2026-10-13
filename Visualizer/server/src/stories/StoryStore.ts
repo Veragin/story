@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { isStoryId, type TMapSizeDto, type TStoryDto, type TVersion } from '@story/visualizer-protocol';
+import { isStoryId, type TMapSizeDto, type TStoryDto, type TVersion } from '@story/protocol';
 import { version } from '../events/version';
 import { errorMessage } from '../http/HttpError';
 import { isPlainObject } from '../http/body';

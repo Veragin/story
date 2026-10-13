@@ -10,7 +10,7 @@ import {
     type TStructTypeDto,
     type TStructureDto,
     type TTypeRef,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import {
     Node,
     type ObjectLiteralExpression,

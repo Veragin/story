@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { EMPTY_VERSION, type TVersion } from '@story/visualizer-protocol';
+import { EMPTY_VERSION, type TVersion } from '@story/protocol';
 import { HttpError } from '../http/HttpError';
 
 export const version = (...contents: (string | Uint8Array | null | undefined)[]): TVersion => {

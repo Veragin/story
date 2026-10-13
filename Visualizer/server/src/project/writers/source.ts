@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { TDiagnosticDto, TSourceDto, TSourceOwner, TUpdateSourceBody } from '@story/visualizer-protocol';
+import type { TDiagnosticDto, TSourceDto, TSourceOwner, TUpdateSourceBody } from '@story/protocol';
 import { ts } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';

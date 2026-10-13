@@ -6,7 +6,7 @@ import type {
     TPassageDto,
     TPassageType,
     TUpdatePassageBody,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { version as hash } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removePassagePositions } from '../../json';

@@ -10,9 +10,9 @@
             "@story/types": ["types/index.ts"],
             "@story/data": ["data/index.ts"],
             "@story/data/*": ["data/*"],
-            "@story/core": ["../../../core/src/index.ts"],
-            "@story/shared": ["../../../shared/src/index.ts"],
-            "@story/ui": ["../../../ui/src/index.ts"]
+            "@story/core": ["../../../clients/shared/core/src/index.ts"],
+            "@story/shared": ["../../../clients/shared/utils/src/index.ts"],
+            "@story/ui": ["../../../clients/shared/ui/src/index.ts"]
         }
     },
     "include": ["data", "types"],

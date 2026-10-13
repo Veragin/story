@@ -6,20 +6,20 @@ How to run it, the env vars, the `map.json` format and the full list of known li
 
 ## Architecture
 
-Four yarn workspaces. Dependencies go one way: **client → protocol ← server**, and **landing-page → protocol**.
+Four yarn workspaces. Dependencies go one way: **client → protocol ← server**, and **landing page → protocol**.
 
-| Workspace                        | Path                       | What it is                                                                                                                       |
-| -------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `@story/visualizer-protocol`     | `Visualizer/protocol/`     | The wire contract: `STORY_ROUTES` / `GLOBAL_ROUTES` + `TApiSpec` (`src/routes.ts`) and all DTOs (`src/dto/`)                     |
-| `@story/visualizer-server`       | `Visualizer/server/`       | `node:http` on **:8123** (`tsx watch`). Reads and writes story source with ts-morph                                              |
-| `@story/visualizer-client`       | `Visualizer/client/`       | React + MobX + MUI, Vite on **:8101**. Vite proxies `/api` to the server                                                         |
-| `@story/visualizer-landing-page` | `Visualizer/landing-page/` | The story list (create, edit, open, play, export, import). React + MobX + MUI, Vite on **:8103**, `/api` proxied like the client |
+| Workspace                        | Path                   | What it is                                                                                                                       |
+| -------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `@story/protocol`                | `protocol/`            | The wire contract: `STORY_ROUTES` / `GLOBAL_ROUTES` + `TApiSpec` (`src/routes.ts`) and all DTOs (`src/dto/`)                     |
+| `@story/visualizer-server`       | `Visualizer/server/`   | `node:http` on **:8123** (`tsx watch`). Reads and writes story source with ts-morph                                              |
+| `@story/visualizer-client`       | `clients/Visualizer/`  | React + MobX + MUI, Vite on **:8101**. Vite proxies `/api` to the server                                                         |
+| `@story/visualizer-landing-page` | `clients/LandingPage/` | The story list (create, edit, open, play, export, import). React + MobX + MUI, Vite on **:8103**, `/api` proxied like the client |
 
 Hard rules (enforced by `eslint.config.js`, check with `yarn lint`):
 
 - The **client never imports `@story/data` or `@story/core` at runtime**; only type imports from `@story/types`. All story data comes from the server. This is also what keeps Vite from reloading the page when a story file changes.
 - The **server never imports the story**; it parses it as source text.
-- The **landing page imports only `@story/visualizer-protocol`, `@story/ui` and `@story/shared`**: no story, no other Visualizer app. Its password prompt is `PasswordDialog` from `@story/ui`, shared with the client and SingleEngine.
+- The **landing page imports only `@story/protocol`, `@story/ui` and `@story/shared`**: no story, no other Visualizer app. Its password prompt is `PasswordDialog` from `@story/ui`, shared with the client and SingleEngine.
 - `protocol` imports no service code. `data/` and `types/` never import any service.
 
 ## Server (`Visualizer/server/src/`)
@@ -110,7 +110,7 @@ Invariants to keep:
     - **No id cycle**: a catalog type must not reach its own ids through `ref` fields (`TRace.kin: TRaceId[]`, or `TRace → TClan → TRaceId`, or through `TItem`, whose ids come from `itemInfo`). tsc turns such an id type into `any`, so `createType` / `updateType` refuse it with `422` (`writers/idCycles.ts`). Plain type-name cycles are fine.
 - `data/__tests__/story.test.ts` flags unreachable passages and characters without a start passage. Passages and characters created from the UI trip it until the author wires them up. That is intended; the server does not refuse those writes.
 
-## Client (`Visualizer/client/src/`)
+## Client (`clients/Visualizer/src/`)
 
 ```
 api/        the only way to reach story data: `api` (httpApi or mockApi), `apiEvents`, ApiError,
@@ -129,7 +129,7 @@ theme.ts    the single dark MUI theme
 - **The story** (`api/story.ts`): the client edits the story in `?story=<id>` (the landing page's **Open** puts it there), read once at load. Without it `main.tsx` goes to the landing page (`VITE_LANDING_URL`, default this host on :8103). Every story call, the event stream and the `ui-state` keys (`visualizer:<id>:…`) use it; the mock ignores it. The top bar shows the story's name (`GET /info`, `shell/storyInfoStore.ts`) and a "← Stories" link to the landing page.
 - **Login** (`api/auth.ts`, `shell/LoginPrompt.tsx`): a `401` on any request opens `PasswordDialog` from `@story/ui`; the request waits, and is retried once after the login (`httpApi`'s `onUnauthorized`). Requests that 401 while the prompt is open wait on the same prompt. Cancel goes back to the landing page. An `EventSource` cannot see a 401 (the browser just gives up on the stream), so `apiEvents` calls `onGiveUp` when it does, which probes with `GET /info` (and so opens the prompt on a 401); after the login `apiEvents.reconnectNow()` re-creates the stream, and its `hello` fires `onResync`.
 - **Routing** (`shell/router.ts`): `#/map`, `#/timeline`, `#/timeline/chapter/:chapterId`, `#/entities[/:kind[/:id]]`, `#/entities/catalogs/:catalog[/:id]`, `#/structure[/types|literals[/:name]]`, `#/_canvas`, `#/_inputs` (the inputs playground). `shell/Shell.tsx` switches pages on `route.page`.
-- **Shared stores** (`client/src/context.ts`): `structureStore` (`StructureStore`: literals, types, `fieldsOf(typeName, dataType?)`, `refOptions(refName)`, the structure writes as `TWriteResult` = ok / invalid / referenced / stale / exists / error) and `entityStore` (`EntityStore`: lists of every kind and catalog, `optionsOf(refTarget)`, CRUD, delete previews). `store.start()` returns a release and subscribes to events only while someone holds it (`RefCountedSubscription`). `DraftResource` is the draft / stale / save / Keep mine / delete logic of one form, used by the entity, catalog entry and structure forms; a version change that leaves the form's fields equal (our own `addLiteralValue`, a sibling item in the same file) rebases silently instead of going stale.
+- **Shared stores** (`clients/Visualizer/src/context.ts`): `structureStore` (`StructureStore`: literals, types, `fieldsOf(typeName, dataType?)`, `refOptions(refName)`, the structure writes as `TWriteResult` = ok / invalid / referenced / stale / exists / error) and `entityStore` (`EntityStore`: lists of every kind and catalog, `optionsOf(refTarget)`, CRUD, delete previews). `store.start()` returns a release and subscribes to events only while someone holds it (`RefCountedSubscription`). `DraftResource` is the draft / stale / save / Keep mine / delete logic of one form, used by the entity, catalog entry and structure forms; a version change that leaves the form's fields equal (our own `addLiteralValue`, a sibling item in the same file) rebases silently instead of going stale.
 - **Control bar**: a page renders `<ControlBar>…</ControlBar>` anywhere in its tree, and the children are portalled into the top bar. Use at most one per page.
 - **Modals**: `modals` from `shell/modals.ts` (`modals.confirm`, `modals.open`). **Keyboard**: `keyboard` / `useKey` from `shell/keyboard.ts`. Keys are ignored while an input is focused or a modal is open, unless the handler passes `allowInModal`.
 - **API usage**: `import { api, apiEvents, ApiError } from '../api'`. Mutations return the new DTO; keep its `version` for the next `PUT`. For live refresh, use `apiEvents.subscribe({ kind, id?, chapterId? }, cb)`, plus `apiEvents.onResync(cb)` to refetch after a reconnect. The client's own saves are filtered out automatically. Stores that hold lists subscribe to `kind: '*'` and refetch on `op: 'created' | 'deleted'`.
@@ -157,7 +157,7 @@ theme.ts    the single dark MUI theme
 - Double-click fires the shape's `action`. With `scene.editable = false` nothing can be edited or selected.
 - In tests, jsdom has no `PointerEvent`: dispatch `MouseEvent`s named `pointerdown` etc. (`canvas/__tests__/helpers.ts`). `canvas/__tests__/setup.ts` stubs `getContext`.
 
-## Landing page (`Visualizer/landing-page/src/`)
+## Landing page (`clients/LandingPage/src/`)
 
 The story list and the way into every story: http://localhost:8103 in dev, `/` in production. It talks to the server only through `GLOBAL_ROUTES` plus a story's `/info` (`api.ts`).
 
@@ -214,7 +214,7 @@ Besides the `.ts` source it edits, the Visualizer owns these JSON files. They ar
 
 ## API
 
-The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/protocol/src/routes.ts): `STORY_ROUTES` and `GLOBAL_ROUTES` hold the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath` (story routes) and `buildGlobalPath`.
+The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `STORY_ROUTES` and `GLOBAL_ROUTES` hold the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath` (story routes) and `buildGlobalPath`.
 
 - The server holds every story under `STORIES_ROOT` (`stories/<id>/`). A story route acts on one story and lives under `/api/stories/:storyId` (`storyApiPrefix`); the table below gives its path relative to that prefix. Each story has its own project, change feed and watcher, loaded on its first request and unloaded when idle (`server/src/stories/StoryContexts.ts`). An unknown story answers `404`.
 - **Auth** (`server/src/auth/`, `server/src/stories/access.ts`): every story route needs a grant for its story in the `story_session` cookie (from `login`, 24 h, in memory), else `401`; SSE and image bytes included, and an `/events` stream is ended when its grant expires. `login` and `getStoryAccess` are global routes and need none; the images (`getImage`, `getImageFile`) of a `public` story need none either (`PUBLIC_STORY_READS`). Every mutation must send `content-type: application/json` (the import: `application/zip`), else `400`, and, if it has an `Origin`, one in `ALLOWED_ORIGINS` or matching its `Host` (CSRF). 10 wrong passwords per IP and story within 10 minutes answer `429`.
@@ -290,17 +290,17 @@ The source of truth is [`Visualizer/protocol/src/routes.ts`](../Visualizer/proto
 
 1. **New or changed route**: edit `protocol/src/routes.ts` (`STORY_ROUTES` or `GLOBAL_ROUTES`, + `TApiSpec`) and the DTOs in `protocol/src/dto/`. Then:
     - add the handler in `server/src/routes/<resource>.ts` (with the reader or writer in `project/`)
-    - add the method to `client/src/api/types.ts`, `httpApi.ts` and `mockApi.ts`
+    - add the method to `clients/Visualizer/src/api/types.ts`, `httpApi.ts` and `mockApi.ts`
     - update the API table above
 2. **New editable field**: extend the reader (source → DTO) and the writer's field list. Anything that is not a plain literal must stay `{code}`.
 3. **New page**: add a route in `shell/router.ts`, a case in `shell/Shell.tsx`, a tab in `shell/TopBar.tsx`, and a `pages/<Name>/` folder with a MobX store that loads through `api`, subscribes to `apiEvents` and keeps view state in `ui-state`.
-4. **Verify**: `yarn typecheck && yarn lint && yarn test`. The test projects are `visualizer-server` (node), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) in `vitest.workspace.ts`. To try writes against the real server, run it on a copy of `stories/`: `STORIES_ROOT=<copy> PORT=<port> yarn dev:visualizer-server`. When driving the Map page from headless Chrome, inject `* { transition: none !important }` first: a CSS transition over the map canvases (the location modal's Save button turning enabled) stalls the headless renderer.
+4. **Verify**: `yarn typecheck && yarn lint && yarn test`. The test projects are `visualizer-server` (node), `protocol` (node), `visualizer-client` (jsdom) and `visualizer-landing-page` (jsdom) in `vitest.workspace.ts`. To try writes against the real server, run it on a copy of `stories/`: `STORIES_ROOT=<copy> PORT=<port> yarn dev:visualizer-server`. When driving the Map page from headless Chrome, inject `* { transition: none !important }` first: a CSS transition over the map canvases (the location modal's Save button turning enabled) stalls the headless renderer.
 
 ## Open items
 
 - `null` in a partial `PUT` removes an optional field (entity fields, a key of `userFields`, linear `nextPassageId`), and the Entities form sends it, but the protocol body types do not model `null` yet.
 - `shell/router.ts` defines its own `ENTITY_KINDS`. Its order is the menu order, which differs from the protocol's.
-- `client/index.html` links its favicon from `stories/example/data/assets`.
+- `clients/Visualizer/index.html` links its favicon from `stories/example/data/assets`.
 - Images are not resources of the event feed: an upload emits no event, and a `.png` added or changed by hand shows up the next time the form or panel is opened.
 - Uploads are PNG only (the file picker offers `image/png`, the server checks the signature). There is no conversion, since the server has no image library, and no "remove image".
 - Structure drafts are not kept across a page reload, and switching the selection drops an unsaved type or literal draft without asking.

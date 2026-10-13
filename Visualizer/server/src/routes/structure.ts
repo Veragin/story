@@ -1,4 +1,4 @@
-import type { TStructureDto } from '@story/visualizer-protocol';
+import type { TStructureDto } from '@story/protocol';
 import type { TServerContext } from '../context';
 import { readStructure } from '../project/readers/structure';
 import { SourceProject } from '../project/SourceProject';

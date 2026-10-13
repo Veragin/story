@@ -13,11 +13,11 @@ yarn dev:landing-page           # just the landing page (story list), http://loc
 
 In docker: `make start` runs everything. Or run `make up` and then `make dev-visualizer-server` plus `make dev-visualizer` (and `make dev-landing-page`).
 
-**Landing page** (`landing-page/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SingleEngine, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export; a taken id asks for another) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
+**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SingleEngine, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export; a taken id asks for another) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
 
 Open a story from the landing page (http://localhost:8103): the client runs on http://localhost:8101/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8123/api/health` (or `localhost:8101/api/health` through the proxy) answers `{"ok":true,...}`.
 
-**Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`client/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
+**Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`clients/Visualizer/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
 
 | Env var               | Where        | Default                 | Meaning                                                                                                                                                                                                                                                                                                                         |
 | --------------------- | ------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -84,8 +84,8 @@ make prod-down                                  # keeps the volumes (stories, ce
 ## Layout
 
 ```
+protocol/    @story/protocol  the wire contract: STORY_ROUTES / GLOBAL_ROUTES / TApiSpec (src/routes.ts) and every DTO (src/dto/)
 Visualizer/
-  protocol/  @story/visualizer-protocol  the wire contract: STORY_ROUTES / GLOBAL_ROUTES / TApiSpec (src/routes.ts) and every DTO (src/dto/)
   server/    @story/visualizer-server    node:http on :8123
     src/http/         router (typed from TApiSpec), JSON bodies, HttpError → status mapping
     src/routes/       one file per resource
@@ -95,7 +95,8 @@ Visualizer/
     src/auth/         story passwords (scrypt), in-memory sessions, cookie, CSRF check, login rate limit
     src/stories/      story registry (story.json), loaded stories, the grant check, create / import, zips
     template/         the story "create story" copies (not server code; type-checked on its own)
-  client/    @story/visualizer-client    React + MobX, Vite on :8101
+clients/
+  Visualizer/  @story/visualizer-client    React + MobX, Vite on :8101
     src/api/          typed client (httpApi), mockApi, ApiError, live events (events.ts), the story id (story.ts), login (auth.ts)
     src/canvas/       the Canvas library: Scene, Camera, shapes, selection / vertex / line controllers (#/_canvas playground)
     src/shell/        top bar, hash router, control-bar slot, modals, keyboard helper
@@ -103,13 +104,13 @@ Visualizer/
     src/stores/       shared stores: StructureStore (literals, types), EntityStore (entity and catalog lists), DraftResource
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
     src/components/   inputs/ (the value inputs and their form/ variants), Notices, FormHeader, SourceEditorDialog (CodeMirror 6)
-  landing-page/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
+  LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
     src/api.ts        typed client over GLOBAL_ROUTES (+ a story's /info)
     src/StoriesStore.ts  the list, the unlocked flags, requireUnlocked → the password prompt
     src/*Dialog.tsx, StoryList / StoryCard / ImportStoryButton  the UI
 ```
 
-Dependencies go one way: client → protocol ← server, and landing-page → protocol. The client never imports `@story/data` or `@story/core` at runtime (`eslint.config.js` rejects it); it only has type imports from `@story/types`. The server reads the story as source text and never imports it.
+Dependencies go one way: client → protocol ← server, and landing page → protocol. The client never imports `@story/data` or `@story/core` at runtime (`eslint.config.js` rejects it); it only has type imports from `@story/types`. The server reads the story as source text and never imports it.
 
 ## How the source writer works
 
@@ -164,18 +165,18 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
 - `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
 
-In the client, `components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `clients/Visualizer/src/components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
-The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`SingleEngine/vite/storiesPlugin.ts`, read by `SingleEngine/src/images.ts`), so there too a missing `.png` just means no picture.
+The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`clients/SingleEngine/vite/storiesPlugin.ts`, read by `clients/SingleEngine/src/images.ts`), so there too a missing `.png` just means no picture.
 
 ## Live refresh
 
 The page never reloads because the story changed. `data/` is not in Vite's module graph, so editing a story file cannot trigger HMR in the Visualizer. Instead:
 
 1. For each loaded story, the server watches its `data/` and `types/` with chokidar, batches changes over about 150 ms, maps them to resources and sends them on that story's `GET /api/stories/:storyId/events` (SSE). Its own writes send exactly one event per operation.
-2. `client/src/api/events.ts` (`apiEvents.subscribe({ kind, id?, chapterId? }, cb)`) delivers them to the page stores. Events for the client's own saves (same `version`) are filtered out. After a reconnect, `onResync` tells stores to refetch what is on screen.
+2. `clients/Visualizer/src/api/events.ts` (`apiEvents.subscribe({ kind, id?, chapterId? }, cb)`) delivers them to the page stores. Events for the client's own saves (same `version`) are filtered out. After a reconnect, `onResync` tells stores to refetch what is on screen.
 3. Stores refetch only the changed resource and update it in place. A form with unsaved input for a resource that changed shows "Changed on disk: Reload / Keep mine". The map merges unsaved edits three-way instead.
-4. View state (tab, camera, selection, drafts) is kept in `sessionStorage` (`client/src/ui-state.ts`), keyed by story, so a real reload (server restart under `tsx watch`, client code change) loses little.
+4. View state (tab, camera, selection, drafts) is kept in `sessionStorage` (`clients/Visualizer/src/ui-state.ts`), keyed by story, so a real reload (server restart under `tsx watch`, client code change) loses little.
 5. The event stream needs the story's grant too. When the browser gives up on it (an `EventSource` cannot see the `401`), the client probes with `GET /info`, which asks for the password on a 401, and re-creates the stream right after the login.
 
 ## Known limitations

@@ -1,7 +1,7 @@
 {
     /* Per-package config for editors and `eslint --projectService`. Type checking of record is
-       the single root `tsc --noEmit` (REFACTOR_PLAN §7), which lists this package too. Node-land,
-       like MultiEngine/server: no DOM lib, node types. */
+       the single root `tsc --noEmit` (REFACTOR_PLAN §7), which lists this package too. Node-land:
+       no DOM lib, node types. */
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
         "lib": ["ES2022"],

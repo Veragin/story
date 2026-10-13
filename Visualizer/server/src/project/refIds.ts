@@ -1,9 +1,4 @@
-import {
-    refTarget,
-    typeDefaultContext,
-    type TStructureDto,
-    type TTypeDefaultContext,
-} from '@story/visualizer-protocol';
+import { refTarget, typeDefaultContext, type TStructureDto, type TTypeDefaultContext } from '@story/protocol';
 import { itemNodes, registerEntriesOf } from './readers/entities';
 import { catalogIds } from './readers/structure';
 import type { SourceProject } from './SourceProject';

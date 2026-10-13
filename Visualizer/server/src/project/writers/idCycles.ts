@@ -1,10 +1,4 @@
-import {
-    refIdTypeName,
-    refNameOfIdType,
-    type TFieldDesc,
-    type TStructureDto,
-    type TTypeRef,
-} from '@story/visualizer-protocol';
+import { refIdTypeName, refNameOfIdType, type TFieldDesc, type TStructureDto, type TTypeRef } from '@story/protocol';
 import { HttpError } from '../../http/HttpError';
 import { syntaxDiagnostic } from '../validate';
 

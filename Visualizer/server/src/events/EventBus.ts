@@ -1,6 +1,6 @@
 import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import type { TChangeEvent } from '@story/visualizer-protocol';
+import type { TChangeEvent } from '@story/protocol';
 import { atomicWrite } from '../json/atomicWrite';
 import type { ProjectRoot } from '../project/ProjectRoot';
 import { passageLocalIdOf } from './passageLocalId';

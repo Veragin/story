@@ -62,7 +62,7 @@ describe('pathToResources', () => {
         'data/chapters/village/thomas.passages/notes.md',
         'data/locations/readme.md',
         'types/package.json',
-        'core/src/index.ts',
+        'clients/shared/core/src/index.ts',
         'Visualizer/server/src/index.ts',
         'data/catalogs/readme.md',
     ])('%s maps to nothing', (file) => {

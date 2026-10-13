@@ -2,37 +2,15 @@ import { randomBytes } from 'node:crypto';
 import { cp, lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GLOBAL_MAP_ID, isStoryId, type TMapSizeDto } from '@story/visualizer-protocol';
+import { GLOBAL_MAP_ID, isStoryId, type TMapSizeDto } from '@story/protocol';
 import { HttpError } from '../http/HttpError';
-import { formatJson } from '../json/format';
 import { createDefaultMap, encodeMapFile } from '../json/mapStore';
-import { REPO_ROOT } from '../project/ProjectRoot';
 import { STORY_FILE, storyFileText, type StoryStore, type TStoryFile } from './StoryStore';
+import { storyTsconfig } from './storyTsconfig';
 
 const TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../template');
 
 const TEMPLATE_DIRS = ['data', 'types'];
-
-const storyTsconfig = (storyDir: string): Promise<string> => {
-    const repo = path.relative(storyDir, REPO_ROOT).split(path.sep).join('/') || '.';
-    const config = {
-        extends: `${repo}/tsconfig.base.json`,
-        compilerOptions: {
-            baseUrl: '.',
-            paths: {
-                '@story/types': ['types/index.ts'],
-                '@story/data': ['data/index.ts'],
-                '@story/data/*': ['data/*'],
-                '@story/core': [`${repo}/core/src/index.ts`],
-                '@story/shared': [`${repo}/shared/src/index.ts`],
-                '@story/ui': [`${repo}/ui/src/index.ts`],
-            },
-        },
-        include: ['data', 'types'],
-        exclude: ['data/__tests__', 'data/assets', 'node_modules'],
-    };
-    return formatJson(config);
-};
 
 export const slugify = (name: string): string =>
     name

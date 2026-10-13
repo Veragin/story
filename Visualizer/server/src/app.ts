@@ -1,12 +1,6 @@
 import { stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import {
-    GLOBAL_ROUTES,
-    splitStoryPath,
-    STORY_ROUTES,
-    matchRoute,
-    type TGlobalRouteName,
-} from '@story/visualizer-protocol';
+import { GLOBAL_ROUTES, splitStoryPath, STORY_ROUTES, matchRoute, type TGlobalRouteName } from '@story/protocol';
 import { cookieSecureFromEnv } from './auth/cookie';
 import { allowedOriginsFromEnv, assertSafeMutation } from './auth/csrf';
 import { LoginLimiter, trustProxyFromEnv } from './auth/LoginLimiter';

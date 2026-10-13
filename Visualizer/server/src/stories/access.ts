@@ -1,5 +1,5 @@
 import type { IncomingMessage } from 'node:http';
-import type { TStoryRouteName } from '@story/visualizer-protocol';
+import type { TStoryRouteName } from '@story/protocol';
 import { readSessionToken } from '../auth/cookie';
 import type { SessionStore } from '../auth/SessionStore';
 import { HttpError } from '../http/HttpError';

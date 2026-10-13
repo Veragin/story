@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildPath, STORY_ROUTES, type TRouteParams, type TStoryRouteName } from '@story/visualizer-protocol';
+import { buildPath, STORY_ROUTES, type TRouteParams, type TStoryRouteName } from '@story/protocol';
 import { LoginLimiter } from '../src/auth/LoginLimiter';
 import { hashPassword, verifyPassword } from '../src/auth/password';
 import { GRANT_TTL_MS, SessionStore } from '../src/auth/SessionStore';

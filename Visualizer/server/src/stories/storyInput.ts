@@ -1,4 +1,4 @@
-import { STORY_LIMITS, type TMapSizeDto } from '@story/visualizer-protocol';
+import { STORY_LIMITS, type TMapSizeDto } from '@story/protocol';
 import { hashPassword } from '../auth/password';
 import { isPlainObject } from '../http/body';
 import { HttpError } from '../http/HttpError';

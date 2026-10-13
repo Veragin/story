@@ -8,7 +8,7 @@ import {
     STORY_ROUTES,
     storyApiPrefix,
     type TStoryRouteName,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
 import type { TServerContext } from '../src/context';
 import { HttpError } from '../src/http/HttpError';

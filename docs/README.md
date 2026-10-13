@@ -23,7 +23,7 @@ Only `stories/example/` is committed; every other folder under `stories/` is git
 
 Every story is behind its password: the Visualizer asks for it, and so does SingleEngine unless the story is `public`. A login lasts 24 h per story (see [`Visualizer/README.md`](../Visualizer/README.md)).
 
-Everything outside `stories/` — `shared/`, `ui/`, `core/`, `SingleEngine/`, `Visualizer/`, `MultiEngine/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
+Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui}` packages), `protocol/`, `Visualizer/server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
 
 The split is also what keeps an engine upgrade safe for every story at once: author edits land in `types/`/`data/`, and engine changes land everywhere else. **Nothing in `types/` or `data/` may import from a service**; `yarn lint` enforces it for every story (`import/no-restricted-paths` in `eslint.config.js`).
 
@@ -31,26 +31,25 @@ The split is also what keeps an engine upgrade safe for every story at once: aut
 
 ```bash
 yarn install       # Yarn 4 workspaces; no build step, packages are consumed as TS source
-yarn dev           # all six services at once, output labelled per workspace
+yarn dev           # all five services at once, output labelled per workspace
 yarn test          # Vitest
 ```
 
-Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:visualizer-server` / `yarn dev:landing-page` / `yarn dev:multi-engine` / `yarn dev:multi-engine-server`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-visualizer-server` / `make dev-landing-page` / `make dev-multi-engine` / `make dev-multi-engine-server`. (`make start` already holds all six ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SingleEngine all need the Visualizer server (it holds the stories and the logins); see [`Visualizer/README.md`](../Visualizer/README.md).
+Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:visualizer-server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-visualizer-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SingleEngine all need the Visualizer server (it holds the stories and the logins); see [`Visualizer/README.md`](../Visualizer/README.md).
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`.
 
 ### Ports
 
-| Service                       | Port | Status                               |
-| ----------------------------- | ---- | ------------------------------------ |
-| SingleEngine (vite)           | 8100 | implemented; proxies `/api` to 8123  |
-| Visualizer client (vite)      | 8101 | implemented; proxies `/api` to 8123  |
-| MultiEngine client (vite)     | 8102 | scaffold                             |
-| Landing page (vite)           | 8103 | implemented; proxies `/api` to 8123  |
-| Visualizer server (node/tsx)  | 8123 | implemented                          |
-| MultiEngine server (node/tsx) | 8124 | scaffold — every route answers `501` |
+| Service                      | Port | Status                              |
+| ---------------------------- | ---- | ----------------------------------- |
+| SingleEngine (vite)          | 8100 | implemented; proxies `/api` to 8123 |
+| Visualizer client (vite)     | 8101 | implemented; proxies `/api` to 8123 |
+| MultiEngine client (vite)    | 8102 | scaffold                            |
+| Landing page (vite)          | 8103 | implemented; proxies `/api` to 8123 |
+| Visualizer server (node/tsx) | 8123 | implemented                         |
 
-`docker-compose.yml` publishes all six. The Visualizer client and the landing page call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8100, 8101 and 8103 (SingleEngine proxies `/api` the same way, for the access check and the login). The landing page (the story list: create, edit, open, play, export, import) is the place to start.
+`docker-compose.yml` publishes all five. The Visualizer client and the landing page call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `VISUALIZER_SERVER`), so the browser only needs 8100, 8101 and 8103 (SingleEngine proxies `/api` the same way, for the access check and the login). The landing page (the story list: create, edit, open, play, export, import) is the place to start.
 
 ## Data structure
 
@@ -174,15 +173,14 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
 
 - MultiEngine
     - a service that can play the story for multiple players
-    - splits into `MultiEngine/client/` and `MultiEngine/server/`
-    - server handles the world state and story progress
-    - client handles ui and comunicate with server
-    - not implemented yet — both halves are scaffolds; the server boots and answers `501` to everything
+    - `clients/MultiEngine/` is the client; multiplayer will be a module of the one server
+    - the server will handle the world state and story progress, the client the ui
+    - not implemented yet — the client is a scaffold, and there is no server part
 
 - Visualizer
     - a service for creating and viewing the story and the world
     - used by the author of the game
-    - splits into `Visualizer/client/` (React app), `Visualizer/server/` (node server that holds every story under `stories/`, guards each with its password, and reads and writes the `.ts` files in its `data/` and `types/`), `Visualizer/protocol/` (the typed API contract both import) and `Visualizer/landing-page/` (the story list: create, edit, open, play, export, import)
+    - splits into `clients/Visualizer/` (React app), `Visualizer/server/` (node server that holds every story under `stories/`, guards each with its password, and reads and writes the `.ts` files in its `data/` and `types/`), `protocol/` (the typed API contract both import) and `clients/LandingPage/` (the story list: create, edit, open, play, export, import)
     - implemented: map, timeline, chapter view and entities pages; the structure tab is future work
     - see [`Visualizer/README.md`](../Visualizer/README.md) and [`docs/Visualizer.md`](Visualizer.md)
 

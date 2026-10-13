@@ -1,4 +1,4 @@
-import type { TSessionDto, TStoryAccessDto } from '@story/visualizer-protocol';
+import type { TSessionDto, TStoryAccessDto } from '@story/protocol';
 import { clearedSessionCookie, readSessionToken, sessionCookie } from '../auth/cookie';
 import { clientAddress, loginKey } from '../auth/LoginLimiter';
 import { verifyPassword } from '../auth/password';

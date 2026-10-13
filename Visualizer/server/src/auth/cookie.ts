@@ -1,5 +1,5 @@
 import type { IncomingMessage } from 'node:http';
-import { SESSION_COOKIE } from '@story/visualizer-protocol';
+import { SESSION_COOKIE } from '@story/protocol';
 
 const COOKIE_MAX_AGE_S = 24 * 60 * 60;
 

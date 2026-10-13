@@ -13,7 +13,7 @@ import {
     type TStructureDto,
     type TUpdateTypeBody,
     type TUpdateTypeDto,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { Node, type PropertySignature, type SourceFile, type TypeLiteralNode } from 'ts-morph';
 import { HttpError } from '../../http/HttpError';
 import { keyText, lineOf, removeStatement } from '../ast';

@@ -1,10 +1,4 @@
-import type {
-    TCreateTriggerBody,
-    TDeleteTriggerBody,
-    TOkDto,
-    TTriggerDto,
-    TUpdateTriggerBody,
-} from '@story/visualizer-protocol';
+import type { TCreateTriggerBody, TDeleteTriggerBody, TOkDto, TTriggerDto, TUpdateTriggerBody } from '@story/protocol';
 import { Node } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';

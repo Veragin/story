@@ -1,4 +1,4 @@
-import { isStoryId, MAX_STORY_ZIP_BYTES, type TStoryDto, type TStoryListItemDto } from '@story/visualizer-protocol';
+import { isStoryId, MAX_STORY_ZIP_BYTES, type TStoryDto, type TStoryListItemDto } from '@story/protocol';
 import { readSessionToken, sessionCookie } from '../auth/cookie';
 import { isSupportedPasswordHash } from '../auth/password';
 import type { TGlobalContext } from '../context';

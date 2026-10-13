@@ -7,7 +7,7 @@ import {
     type TImageDto,
     type TImageOwner,
     type TUploadImageBody,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { version } from '../events/version';
 import { HttpError } from '../http/HttpError';
 import { isMissingFileError } from '../json/atomicWrite';

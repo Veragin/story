@@ -6,7 +6,7 @@ import type {
     TOkDto,
     TReferenceDto,
     TUpdateLiteralBody,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { Node, type SourceFile, type StringLiteral, SyntaxKind, type Type, type TypeAliasDeclaration } from 'ts-morph';
 import { HttpError } from '../../http/HttpError';
 import { lineOf, quote, removeStatement, setUnionMembers } from '../ast';

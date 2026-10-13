@@ -1,6 +1,6 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { TStoryRouteName } from '@story/visualizer-protocol';
+import type { TStoryRouteName } from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
 import { HttpError } from '../src/http/HttpError';
 import type { ProjectRoot } from '../src/project/ProjectRoot';

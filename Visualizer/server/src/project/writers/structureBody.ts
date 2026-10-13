@@ -5,7 +5,7 @@ import {
     type TStructNameError,
     type TStructureDto,
     type TTypeRef,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { HttpError } from '../../http/HttpError';
 import { ENGINE_TYPES } from '../readers/structure';
 import { assertType, syntaxDiagnostic } from '../validate';

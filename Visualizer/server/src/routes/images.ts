@@ -1,4 +1,4 @@
-import { isImageOwner, type TImageOwner } from '@story/visualizer-protocol';
+import { isImageOwner, type TImageOwner } from '@story/protocol';
 import type { TServerContext } from '../context';
 import { pathParam } from '../http/params';
 import { RAW_RESPONSE } from '../http/router';

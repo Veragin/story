@@ -5,7 +5,7 @@ import {
     sameTypeRef,
     type TChangeEvent,
     type TVersion,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import type { SourceFile, TypeAliasDeclaration } from 'ts-morph';
 import type { EventBus } from '../../events/EventBus';
 import { pathToResources } from '../../events/pathToEvent';

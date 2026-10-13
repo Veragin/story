@@ -1,4 +1,4 @@
-import type { TGlobalRouteName, TStoryRouteName } from '@story/visualizer-protocol';
+import type { TGlobalRouteName, TStoryRouteName } from '@story/protocol';
 import type { LoginLimiter } from './auth/LoginLimiter';
 import type { SessionStore } from './auth/SessionStore';
 import type { EventBus } from './events/EventBus';

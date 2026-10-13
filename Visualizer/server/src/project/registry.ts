@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { capitalize } from '@story/shared';
-import type { TDiagnosticDto, TReferenceDto } from '@story/visualizer-protocol';
+import type { TDiagnosticDto, TReferenceDto } from '@story/protocol';
 import { Node, type SourceFile, SyntaxKind, type TypeLiteralNode } from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import {

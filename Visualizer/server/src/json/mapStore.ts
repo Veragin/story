@@ -1,10 +1,4 @@
-import {
-    GLOBAL_MAP_ID,
-    type TMapDto,
-    type TMapFile,
-    type TMapTileDto,
-    type TVersion,
-} from '@story/visualizer-protocol';
+import { GLOBAL_MAP_ID, type TMapDto, type TMapFile, type TMapTileDto, type TVersion } from '@story/protocol';
 import type { TServerContext } from '../context';
 import type { TTransaction } from '../events/EventBus';
 import { assertVersion, version } from '../events/version';

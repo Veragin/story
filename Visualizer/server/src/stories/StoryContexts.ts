@@ -1,4 +1,4 @@
-import { STORY_ROUTES, type TStoryRouteName } from '@story/visualizer-protocol';
+import { STORY_ROUTES, type TStoryRouteName } from '@story/protocol';
 import type { FSWatcher } from 'chokidar';
 import type { TServerContext } from '../context';
 import { EventBus } from '../events/EventBus';
@@ -9,6 +9,7 @@ import { ProjectRoot } from '../project/ProjectRoot';
 import { SourceProject } from '../project/SourceProject';
 import { registerRoutes } from '../routes';
 import type { StoryStore } from './StoryStore';
+import { migrateStoryTsconfig } from './storyTsconfig';
 
 export type TStoryContextsOptions = {
     stories: StoryStore;
@@ -141,6 +142,7 @@ export class StoryContexts {
 
     private async load(storyId: string, loaded: TLoaded): Promise<TServerContext> {
         const project = new ProjectRoot(this.stories.dir(storyId), storyId);
+        await migrateStoryTsconfig(project.root);
         const bus = new EventBus({ project, batchMs: this.batchMs });
         loaded.bus = bus;
         const router = new Router<TStoryRouteName>(STORY_ROUTES);

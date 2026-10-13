@@ -2,9 +2,9 @@ import { execFile } from 'node:child_process';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import type { TChangeEvent } from '@story/visualizer-protocol';
+import type { TChangeEvent } from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
-import { ProjectRoot, REPO_ROOT } from '../src/project/ProjectRoot';
+import { enginePaths, ProjectRoot, REPO_ROOT } from '../src/project/ProjectRoot';
 import { readChapterPassages } from '../src/project/readers/passages';
 import { entitySources } from '../src/project/readers/entities';
 import { SourceProject } from '../src/project/SourceProject';
@@ -70,8 +70,7 @@ export const tscTemp = async (root: string): Promise<{ ok: boolean; output: stri
                 '@story/types': ['types/index.ts'],
                 '@story/data': ['data/index.ts'],
                 '@story/data/*': ['data/*'],
-                '@story/shared': [path.join(REPO_ROOT, 'shared/src/index.ts')],
-                '@story/core': [path.join(REPO_ROOT, 'core/src/index.ts')],
+                ...enginePaths((entry) => path.join(REPO_ROOT, entry)),
             },
         },
         include: ['data', 'types'],

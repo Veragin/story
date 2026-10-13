@@ -6,7 +6,7 @@ import {
     type TDeleteCatalogEntryBody,
     type TUpdateCatalogEntryBody,
     type TValueRecord,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { catalogResource, deleteClearingReferences, deleteReferences, type TDeletePlan } from '../clearReferences';

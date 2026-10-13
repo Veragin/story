@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PNG_SIGNATURE } from '@story/visualizer-protocol';
+import { PNG_SIGNATURE } from '@story/protocol';
 import { startSourceApp } from './sourceHelpers';
 
 let t: Awaited<ReturnType<typeof startSourceApp>>;

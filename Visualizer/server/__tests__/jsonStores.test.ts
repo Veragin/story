@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { format } from 'prettier';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { TChangeEvent, TMapDto, TMapFile } from '@story/visualizer-protocol';
+import type { TChangeEvent, TMapDto, TMapFile } from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
 import type { TServerContext } from '../src/context';
 import {

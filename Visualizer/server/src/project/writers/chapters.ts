@@ -6,7 +6,7 @@ import type {
     TOkDto,
     TRemoveChapterCharacterBody,
     TUpdateChapterBody,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { HttpError } from '../../http/HttpError';
 import { removePassagePositions, removeTimelineEntries } from '../../json';
 import { capitalize } from '@story/shared';

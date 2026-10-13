@@ -30,5 +30,5 @@ RUN LANDING_BASE=/ VITE_VISUALIZER_URL=/visualizer VITE_ENGINE_URL=/play \
 
 FROM caddy:2 AS proxy
 COPY docker/Caddyfile /etc/caddy/Caddyfile
-COPY --from=web /app/Visualizer/landing-page/dist /srv/landing
-COPY --from=web /app/Visualizer/client/dist /srv/visualizer
+COPY --from=web /app/clients/LandingPage/dist /srv/landing
+COPY --from=web /app/clients/Visualizer/dist /srv/visualizer

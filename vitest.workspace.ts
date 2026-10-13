@@ -4,7 +4,7 @@ export default defineWorkspace([
     {
         test: {
             name: 'core',
-            root: './core',
+            root: './clients/shared/core',
             environment: 'node',
             include: ['__tests__/**/*.test.ts'],
             setupFiles: ['./__tests__/setup.ts'],
@@ -28,8 +28,8 @@ export default defineWorkspace([
     },
     {
         test: {
-            name: 'visualizer-protocol',
-            root: './Visualizer/protocol',
+            name: 'protocol',
+            root: './protocol',
             environment: 'node',
             include: ['__tests__/**/*.test.ts'],
         },
@@ -37,7 +37,7 @@ export default defineWorkspace([
     {
         test: {
             name: 'single-engine',
-            root: './SingleEngine',
+            root: './clients/SingleEngine',
             environment: 'node',
             include: ['vite/__tests__/**/*.test.ts'],
         },
@@ -45,7 +45,7 @@ export default defineWorkspace([
     {
         test: {
             name: 'visualizer-client',
-            root: './Visualizer/client',
+            root: './clients/Visualizer',
             environment: 'jsdom',
             include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
             setupFiles: ['./src/canvas/__tests__/setup.ts'],
@@ -54,7 +54,7 @@ export default defineWorkspace([
     {
         test: {
             name: 'visualizer-landing-page',
-            root: './Visualizer/landing-page',
+            root: './clients/LandingPage',
             environment: 'jsdom',
             include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
             setupFiles: ['./src/__tests__/setup.ts'],

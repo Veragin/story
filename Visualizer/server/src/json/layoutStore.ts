@@ -5,8 +5,8 @@ import type {
     TTimelineLayoutDto,
     TTimelineLayoutFile,
     TVersion,
-} from '@story/visualizer-protocol';
-import { eventIds } from '@story/visualizer-protocol';
+} from '@story/protocol';
+import { eventIds } from '@story/protocol';
 import type { TServerContext } from '../context';
 import type { TTransaction } from '../events/EventBus';
 import { assertVersion, version } from '../events/version';

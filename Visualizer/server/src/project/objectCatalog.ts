@@ -1,4 +1,4 @@
-import type { TValueRecord } from '@story/visualizer-protocol';
+import type { TValueRecord } from '@story/protocol';
 import { Node, type ObjectLiteralExpression, type PropertyAssignment } from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import { asObject, keyText, propertyKey } from './ast';

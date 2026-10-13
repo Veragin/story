@@ -4,7 +4,7 @@ import {
     type TApiErrorCode,
     type TDiagnosticDto,
     type TReferenceDto,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 
 export class HttpError extends Error {
     readonly status: number;

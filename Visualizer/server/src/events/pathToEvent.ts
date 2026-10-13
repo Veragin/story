@@ -1,4 +1,4 @@
-import { eventIds, type TChangeEvent } from '@story/visualizer-protocol';
+import { eventIds, type TChangeEvent } from '@story/protocol';
 import { isTempFile } from '../json/atomicWrite';
 
 // primary: the file *is* the resource, so deleting it deletes the resource

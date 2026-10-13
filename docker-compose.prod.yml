@@ -52,7 +52,7 @@ services:
   # serves the story files out of the same volume, each behind the server's access check.
   engine:
     <<: *app
-    working_dir: /app/SingleEngine
+    working_dir: /app/clients/SingleEngine
     command: ['/app/node_modules/.bin/vite']
     environment:
       STORIES_ROOT: /app/stories

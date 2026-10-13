@@ -1,5 +1,5 @@
 import type { IncomingMessage } from 'node:http';
-import { STORY_ZIP_CONTENT_TYPE, type TRouteName } from '@story/visualizer-protocol';
+import { STORY_ZIP_CONTENT_TYPE, type TRouteName } from '@story/protocol';
 import { HttpError } from '../http/HttpError';
 
 const MUTATION_CONTENT_TYPES: Partial<Record<TRouteName, string>> = { importStory: STORY_ZIP_CONTENT_TYPE };

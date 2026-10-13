@@ -1,6 +1,6 @@
 import { appendFile, rm, writeFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { TChangeEvent } from '@story/visualizer-protocol';
+import type { TChangeEvent } from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
 import type { TServerContext } from '../src/context';
 import { version } from '../src/events/version';

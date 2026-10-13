@@ -1,4 +1,4 @@
-import { isEntityKind, type TEntityKind } from '@story/visualizer-protocol';
+import { isEntityKind, type TEntityKind } from '@story/protocol';
 import type { TServerContext } from '../context';
 import { pathParam } from '../http/params';
 import { listEntities, readEntity } from '../project/readers/entities';

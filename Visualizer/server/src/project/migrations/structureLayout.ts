@@ -1,4 +1,4 @@
-import { eventIds } from '@story/visualizer-protocol';
+import { eventIds } from '@story/protocol';
 import { Node, type SourceFile, type VariableDeclaration } from 'ts-morph';
 import type { EventBus } from '../../events/EventBus';
 import { isHttpError } from '../../http/HttpError';

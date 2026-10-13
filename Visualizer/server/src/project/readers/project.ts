@@ -1,4 +1,4 @@
-import type { TProjectDto } from '@story/visualizer-protocol';
+import type { TProjectDto } from '@story/protocol';
 import { version } from '../../events/version';
 import { getProp } from '../ast';
 import type { SourceProject } from '../SourceProject';

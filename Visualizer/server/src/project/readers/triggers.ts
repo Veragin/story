@@ -1,4 +1,4 @@
-import type { TFunctionDto, TMaybeCode, TTriggerDto } from '@story/visualizer-protocol';
+import type { TFunctionDto, TMaybeCode, TTriggerDto } from '@story/protocol';
 import { version } from '../../events/version';
 import { lineOf } from '../ast';
 import type { SourceProject } from '../SourceProject';

@@ -1,10 +1,5 @@
 import { keysOf } from '@story/shared';
-import {
-    type TFieldDesc,
-    type TStructTypeDto,
-    type TTypeDefaultContext,
-    typeDefault,
-} from '@story/visualizer-protocol';
+import { type TFieldDesc, type TStructTypeDto, type TTypeDefaultContext, typeDefault } from '@story/protocol';
 import type { ObjectLiteralExpression } from 'ts-morph';
 import { asObject, getProp, getPropInit, keyText } from './ast';
 import { objectEntries } from './objectCatalog';

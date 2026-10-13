@@ -2,7 +2,7 @@ import { cp, mkdtemp, rm } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { TChangeEvent } from '@story/visualizer-protocol';
+import type { TChangeEvent } from '@story/protocol';
 import type { TApp } from '../src/app';
 import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../src/project/ProjectRoot';
 import { STORY_FILE } from '../src/stories/StoryStore';

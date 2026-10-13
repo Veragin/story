@@ -9,7 +9,7 @@ import {
     type TReferenceDto,
     type TStructureDto,
     type TTypeRef,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import type { ArrayLiteralExpression, Expression, ObjectLiteralExpression, PropertyAssignment } from 'ts-morph';
 import type { EventBus } from '../events/EventBus';
 import { version } from '../events/version';

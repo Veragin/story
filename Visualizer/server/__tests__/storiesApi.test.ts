@@ -4,7 +4,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MAX_STORY_ZIP_BYTES, STORY_LIMITS } from '@story/visualizer-protocol';
+import { MAX_STORY_ZIP_BYTES, STORY_LIMITS } from '@story/protocol';
 import { createApp, type TApp } from '../src/app';
 import { ProjectRoot, REPO_ROOT } from '../src/project/ProjectRoot';
 import { SourceProject } from '../src/project/SourceProject';

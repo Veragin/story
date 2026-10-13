@@ -7,6 +7,15 @@ export const DEFAULT_STORIES_ROOT = path.join(REPO_ROOT, 'stories');
 
 export const EXAMPLE_STORY_ROOT = path.join(DEFAULT_STORIES_ROOT, 'example');
 
+const ENGINE_PACKAGE_ENTRIES: Readonly<Record<string, string>> = {
+    '@story/core': 'clients/shared/core/src/index.ts',
+    '@story/shared': 'clients/shared/utils/src/index.ts',
+    '@story/ui': 'clients/shared/ui/src/index.ts',
+};
+
+export const enginePaths = (fromRepo: (repoRelative: string) => string): Record<string, string[]> =>
+    Object.fromEntries(Object.entries(ENGINE_PACKAGE_ENTRIES).map(([name, entry]) => [name, [fromRepo(entry)]]));
+
 export class ProjectRoot {
     readonly root: string;
     readonly dataDir: string;

@@ -1,4 +1,4 @@
-import type { TDiagnosticDto } from '@story/visualizer-protocol';
+import type { TDiagnosticDto } from '@story/protocol';
 import { type Diagnostic, Node, type SourceFile, ts } from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import type { SourceProject } from './SourceProject';

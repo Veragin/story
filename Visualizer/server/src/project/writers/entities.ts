@@ -10,7 +10,7 @@ import {
     type TUpdateEntityBody,
     type TValueRecord,
     typeDefault,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { Node, type ObjectLiteralExpression, type SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';

@@ -6,7 +6,7 @@ import type {
     TProjectChapterDto,
     TTimeRangeDto,
     TValueRecord,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import type { SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { findTypeAlias, getProp, lineOf } from '../ast';

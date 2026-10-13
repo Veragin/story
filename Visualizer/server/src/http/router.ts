@@ -12,7 +12,7 @@ import {
     type TRouteParams,
     type TRouteResponse,
     type TRouteTable,
-} from '@story/visualizer-protocol';
+} from '@story/protocol';
 import { errorMessage, HttpError, isHttpError } from './HttpError';
 import { isPlainObject, readJsonBody } from './body';
 

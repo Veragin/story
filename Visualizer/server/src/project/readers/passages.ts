@@ -1,10 +1,4 @@
-import type {
-    TChapterPassagesDto,
-    TFunctionDto,
-    TPassageDto,
-    TPassageEdgeDto,
-    TPassageType,
-} from '@story/visualizer-protocol';
+import type { TChapterPassagesDto, TFunctionDto, TPassageDto, TPassageEdgeDto, TPassageType } from '@story/protocol';
 import { Node, type NoSubstitutionTemplateLiteral, type SourceFile, type StringLiteral, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
 import { propertyKey, stringProp, unwrap } from '../ast';
