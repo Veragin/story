@@ -1,0 +1,5 @@
+{
+    /* Editors and eslint only; the root `tsc --noEmit` is the type check of record. */
+    "extends": "../../tsconfig.base.json",
+    "include": ["src"]
+}

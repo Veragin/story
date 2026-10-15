@@ -46,11 +46,6 @@ type Props = {
     onCancel: () => void;
 };
 
-/**
- * "Add" of the entity list: the id (validated like the server expects: a plain identifier
- * without `-`, unique in its kind) and the fields the type requires (`name`, `description`;
- * `type` for items, which also picks the items file).
- */
 export const CreateEntityDialog = ({
     kind,
     store,

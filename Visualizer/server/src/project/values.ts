@@ -1,42 +1,41 @@
 import { DeltaTime } from '@story/shared';
-import { isCode, type TCode, type TValue } from '@story/visualizer-protocol';
-import { type Expression, Node, type ObjectLiteralExpression, type SourceFile } from 'ts-morph';
+import { isCode, type TCode, type TFunctionDto, type TValue } from '@story/visualizer-protocol';
+import {
+    type ArrayLiteralExpression,
+    type Expression,
+    Node,
+    type ObjectLiteralExpression,
+    type PropertyAssignment,
+    type SourceFile,
+    SyntaxKind,
+} from 'ts-morph';
 import { HttpError } from '../http/HttpError';
 import { assertExpression } from './validate';
 import {
+    applyTextEdits,
     asArray,
     asObject,
     ensureNamedImport,
+    formatJsDoc,
     getProp,
     isPlainObject,
+    jsDocEdit,
     keyText,
     propertyKey,
+    propertyRemovalEdit,
     quote,
+    readJsDoc,
+    type TTextEdit,
     unwrap,
 } from './ast';
 
-/**
- * The value engine behind every reader and writer (plan §3 "Code-field convention").
- *
- * A `TSchema` says what a field *is* (a string, a `Time.fromString(…)`, a typed object with known
- * fields, a free-form `init` record, a reference to another declaration, …).
- *
- *  - `readValue(expr, schema)` turns an initializer into the DTO value: the plain value when the
- *    initializer is a literal of the expected shape, `{ code }` (verbatim source) otherwise.
- *  - `updateValue(expr, schema, next, ctx)` edits the initializer in place so it reads as `next`.
- *    It never touches a node whose value did not change, recurses into object/array literals
- *    so a sibling code field (a closure, a comment) survives, and replaces only the smallest node
- *    that changed. `{ code }` is written back verbatim.
- *
- * A typed `object` schema only reads the fields it knows and never removes a property it does
- * not know, so anything the reader did not understand is kept.
- */
 export type TSchema =
     | { t: 'value' }
     | { t: 'string' }
     | { t: 'number' }
     | { t: 'boolean' }
     | { t: 'code' }
+    | { t: 'fn'; empty: string }
     | { t: 'time' }
     | { t: 'timeRange' }
     | { t: 'delta' }
@@ -46,63 +45,64 @@ export type TSchema =
     | { t: 'record'; of: TSchema }
     | { t: 'ref'; ref: TRefResolver };
 
-/** A field of a typed object. `src` is the property name in the source when it differs from the DTO key. */
 export type TField = {
     schema: TSchema;
     src?: string;
-    /** Where `applyPartial` adds the property when it is missing: after the first of these that exists, else last. */
     after?: string[];
 };
 
-/** Resolves an identifier (`villageChapter`) to an id (`village`) and back. */
 export type TRefResolver = {
     what: string;
     read(expr: Expression): string | undefined;
-    /** Expression text for `id` in `ctx.sf`; adds the import it needs. Throws a 400 for an unknown id. */
     write(id: string, ctx: TWriteCtx): string;
 };
 
 export type TWriteCtx = {
     sf: SourceFile;
-    /** Project-relative path of `sf`, for diagnostics. */
     file?: string;
-    /** Dotted DTO path of the value being written, for error messages. */
     path: string;
 };
 
 export const S = {
-    value: { t: 'value' } as TSchema,
-    string: { t: 'string' } as TSchema,
-    number: { t: 'number' } as TSchema,
-    boolean: { t: 'boolean' } as TSchema,
-    code: { t: 'code' } as TSchema,
-    time: { t: 'time' } as TSchema,
-    timeRange: { t: 'timeRange' } as TSchema,
-    delta: { t: 'delta' } as TSchema,
-    linkCost: { t: 'linkCost' } as TSchema,
+    value: { t: 'value' } satisfies TSchema,
+    string: { t: 'string' } satisfies TSchema,
+    number: { t: 'number' } satisfies TSchema,
+    boolean: { t: 'boolean' } satisfies TSchema,
+    code: { t: 'code' } satisfies TSchema,
+    fn: (empty = '() => {}'): TSchema => ({ t: 'fn', empty }),
+    time: { t: 'time' } satisfies TSchema,
+    timeRange: { t: 'timeRange' } satisfies TSchema,
+    delta: { t: 'delta' } satisfies TSchema,
+    linkCost: { t: 'linkCost' } satisfies TSchema,
     array: (of: TSchema): TSchema => ({ t: 'array', of }),
     record: (of: TSchema = { t: 'value' }): TSchema => ({ t: 'record', of }),
     object: (fields: Record<string, TSchema | TField>): TSchema => ({
         t: 'object',
         fields: Object.fromEntries(
-            Object.entries(fields).map(([k, f]) => [k, 'schema' in f ? f : { schema: f }])
-        ) as Record<string, TField>,
+            Object.entries(fields).map(([k, f]): [string, TField] => [k, 'schema' in f ? f : { schema: f }])
+        ),
     }),
     ref: (ref: TRefResolver): TSchema => ({ t: 'ref', ref }),
 };
 
 const codeOf = (expr: Expression): TCode => ({ code: expr.getText() });
 
-/** The verbatim text of a `{ code }` value, after checking it is exactly one expression. */
+const ownerProp = (expr: Expression): PropertyAssignment | undefined => {
+    const parent = expr.getParent();
+    return Node.isPropertyAssignment(parent) && parent.getInitializer() === expr ? parent : undefined;
+};
+
+const fnOf = (expr: Expression): TFunctionDto => {
+    const prop = ownerProp(expr);
+    const description = prop ? readJsDoc(prop) : undefined;
+    return description === undefined ? codeOf(expr) : { code: expr.getText(), description };
+};
+
 const codeText = (value: TCode, ctx: TWriteCtx): string => {
     assertExpression(value.code, ctx.path, ctx.file);
     return value.code;
 };
 
-// ---------------------------------------------------------------------------------------------
-// Reading
-
-/** `Obj.method(args…)` with an identifier object, e.g. `Time.fromString('…')`. */
 const staticCall = (expr: Expression): { obj: string; method: string; args: Expression[] } | undefined => {
     const e = unwrap(expr);
     if (!Node.isCallExpression(e)) return undefined;
@@ -110,13 +110,13 @@ const staticCall = (expr: Expression): { obj: string; method: string; args: Expr
     if (!Node.isPropertyAccessExpression(callee)) return undefined;
     const obj = callee.getExpression();
     if (!Node.isIdentifier(obj)) return undefined;
-    return { obj: obj.getText(), method: callee.getName(), args: e.getArguments() as Expression[] };
+    return { obj: obj.getText(), method: callee.getName(), args: e.getArguments().filter((a) => Node.isExpression(a)) };
 };
 
 const readNumber = (expr: Expression): number | undefined => {
     const e = unwrap(expr);
     if (Node.isNumericLiteral(e)) return e.getLiteralValue();
-    if (Node.isPrefixUnaryExpression(e) && e.getOperatorToken() === 40 /* MinusToken */) {
+    if (Node.isPrefixUnaryExpression(e) && e.getOperatorToken() === SyntaxKind.MinusToken) {
         const operand = e.getOperand();
         if (Node.isNumericLiteral(operand)) return -operand.getLiteralValue();
     }
@@ -136,14 +136,12 @@ const readBoolean = (expr: Expression): boolean | undefined => {
     return undefined;
 };
 
-/** `Time.fromString('2.1. 8:00')` → `'2.1. 8:00'`. */
 const readTime = (expr: Expression): string | undefined => {
     const call = staticCall(expr);
     if (call?.obj !== 'Time' || call.method !== 'fromString' || call.args.length !== 1) return undefined;
     return readString(call.args[0]);
 };
 
-/** Seconds of `DeltaTime.fromMin(10)` & co. with literal arguments. */
 const readDelta = (expr: Expression): number | undefined => {
     const call = staticCall(expr);
     if (call?.obj !== 'DeltaTime' || call.args.length !== 1) return undefined;
@@ -170,7 +168,16 @@ const readDelta = (expr: Expression): number | undefined => {
     }
 };
 
-/** A free-form value (`init`, item props). */
+const plainEntries = (obj: ObjectLiteralExpression): [string, Expression][] | undefined => {
+    const entries: [string, Expression][] = [];
+    for (const p of obj.getProperties()) {
+        const key = propertyKey(p);
+        if (!Node.isPropertyAssignment(p) || key === undefined) return undefined;
+        entries.push([key, p.getInitializerOrThrow()]);
+    }
+    return entries;
+};
+
 const readFree = (expr: Expression): TValue => {
     const e = unwrap(expr);
     const s = readString(e);
@@ -186,12 +193,11 @@ const readFree = (expr: Expression): TValue => {
         return elements.map((el) => readFree(el));
     }
     if (Node.isObjectLiteralExpression(e)) {
-        if (!isPlainObject(e)) return codeOf(expr);
+        const entries = plainEntries(e);
+        if (!entries) return codeOf(expr);
         const out: Record<string, TValue> = {};
-        for (const p of e.getProperties()) {
-            out[propertyKey(p)!] = readFree((p as import('ts-morph').PropertyAssignment).getInitializerOrThrow());
-        }
-        // `{ code: '…' }` would read back as a TCode: keep it as code so it round-trips (common.ts).
+        for (const [key, init] of entries) out[key] = readFree(init);
+        // `{ code: '…' }` would read back as a TCode, so keep it as code to round-trip
         if (isCode(out)) return codeOf(expr);
         return out;
     }
@@ -205,13 +211,12 @@ const readObjectFields = (
     const out: Record<string, unknown> = {};
     for (const [key, field] of Object.entries(fields)) {
         const init = getPropFlexible(obj, field.src ?? key);
-        if (init === null) return undefined; // shorthand / method: not a plain object for us
+        if (init === null) return undefined; // shorthand / method: not a plain object
         if (init) out[key] = readValue(init, field.schema);
     }
     return out;
 };
 
-/** The initializer of `key`; `null` when the key is present but not as `key: value`. */
 const getPropFlexible = (obj: ObjectLiteralExpression, key: string): Expression | undefined | null => {
     for (const p of obj.getProperties()) {
         if (propertyKey(p) !== key) continue;
@@ -236,6 +241,8 @@ export const readValue = (expr: Expression, schema: TSchema): unknown => {
             return readBoolean(expr) ?? codeOf(expr);
         case 'code':
             return codeOf(expr);
+        case 'fn':
+            return fnOf(expr);
         case 'time':
             return readTime(expr) ?? codeOf(expr);
         case 'delta': {
@@ -275,12 +282,10 @@ export const readValue = (expr: Expression, schema: TSchema): unknown => {
         }
         case 'record': {
             const obj = asObject(expr);
-            if (!obj || !isPlainObject(obj)) return codeOf(expr);
+            const entries = obj && plainEntries(obj);
+            if (!entries) return codeOf(expr);
             const out: Record<string, unknown> = {};
-            for (const p of obj.getProperties()) {
-                const key = propertyKey(p)!;
-                out[key] = readValue((p as import('ts-morph').PropertyAssignment).getInitializerOrThrow(), schema.of);
-            }
+            for (const [key, init] of entries) out[key] = readValue(init, schema.of);
             if (schema.of.t === 'value' && isCode(out)) return codeOf(expr);
             return out;
         }
@@ -302,26 +307,21 @@ const LINK_COST_FIELDS: Record<string, TField> = {
     tools: { schema: { t: 'value' } },
 };
 
-// ---------------------------------------------------------------------------------------------
-// Equality
+const isRecordValue = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
 
-export const deepEqual = (a: unknown, b: unknown): boolean => {
+const deepEqual = (a: unknown, b: unknown): boolean => {
     if (a === b) return true;
-    if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
-    if (Array.isArray(a) !== Array.isArray(b)) return false;
-    if (Array.isArray(a)) {
-        const bb = b as unknown[];
-        return a.length === bb.length && a.every((x, i) => deepEqual(x, bb[i]));
+    if (Array.isArray(a) || Array.isArray(b)) {
+        return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
     }
-    const ao = a as Record<string, unknown>;
-    const bo = b as Record<string, unknown>;
+    if (!isRecordValue(a) || !isRecordValue(b)) return false;
+    const ao = a;
+    const bo = b;
     const ak = Object.keys(ao).filter((k) => ao[k] !== undefined);
     const bk = Object.keys(bo).filter((k) => bo[k] !== undefined);
     return ak.length === bk.length && ak.every((k) => deepEqual(ao[k], bo[k]));
 };
-
-// ---------------------------------------------------------------------------------------------
-// Generating source for a DTO value
 
 const bad = (ctx: TWriteCtx, expected: string, value: unknown) =>
     HttpError.badRequest(`Field "${ctx.path}" must be ${expected} or { code } (got ${JSON.stringify(value)})`);
@@ -330,9 +330,6 @@ const child = (ctx: TWriteCtx, key: string | number): TWriteCtx => ({
     ...ctx,
     path: ctx.path ? `${ctx.path}.${key}` : String(key),
 });
-
-const isRecordValue = (v: unknown): v is Record<string, unknown> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v);
 
 const numberText = (n: number, ctx: TWriteCtx) => {
     if (!Number.isFinite(n)) throw bad(ctx, 'a finite number', n);
@@ -356,8 +353,8 @@ const genFree = (value: unknown, ctx: TWriteCtx): string => {
 
 const genDelta = (value: unknown, ctx: TWriteCtx): string => {
     if (isCode(value)) return codeText(value, ctx);
-    const seconds = isRecordValue(value) ? value.seconds : undefined;
-    if (typeof seconds !== 'number' || !Number.isFinite(seconds) || Object.keys(value as object).length !== 1) {
+    const seconds = isRecordValue(value) && Object.keys(value).length === 1 ? value.seconds : undefined;
+    if (typeof seconds !== 'number' || !Number.isFinite(seconds)) {
         throw bad(ctx, '{ seconds: number }', value);
     }
     const local = ensureNamedImport(ctx.sf, 'DeltaTime', '@story/shared');
@@ -371,20 +368,49 @@ const genTime = (value: unknown, ctx: TWriteCtx): string => {
     return `${local}.fromString(${quote(value)})`;
 };
 
+const asFunction = (value: unknown, empty: string, ctx: TWriteCtx): { code: string; description?: string } => {
+    const invalid = () =>
+        HttpError.badRequest(`Field "${ctx.path}" must be { code, description? } (got ${JSON.stringify(value)})`);
+    if (
+        !isRecordValue(value) ||
+        !Object.keys(value).every((k) => k === 'code' || k === 'description' || value[k] === undefined)
+    ) {
+        throw invalid();
+    }
+    const { code: raw, description } = value;
+    if (
+        (raw !== undefined && typeof raw !== 'string') ||
+        (description !== undefined && typeof description !== 'string')
+    ) {
+        throw invalid();
+    }
+    const code = raw === undefined || raw.trim() === '' ? empty : codeText({ code: raw }, ctx);
+    return description ? { code, description } : { code };
+};
+
 const genObject = (value: unknown, fields: Record<string, TField>, ctx: TWriteCtx): string => {
     if (isCode(value)) return codeText(value, ctx);
     if (!isRecordValue(value)) throw bad(ctx, 'an object', value);
     const parts: string[] = [];
+    let described = false;
     for (const [key, v] of Object.entries(value)) {
         if (v === undefined) continue;
         const field = fields[key];
-        if (!field) throw HttpError.badRequest(`Unknown field "${ctx.path ? ctx.path + '.' : ''}${key}"`);
-        parts.push(`${keyText(field.src ?? key)}: ${genValue(v, field.schema, child(ctx, key))}`);
+        if (!field) throw HttpError.badRequest(`Unknown field "${child(ctx, key).path}"`);
+        const text = `${keyText(field.src ?? key)}: ${genValue(v, field.schema, child(ctx, key))}`;
+        const description =
+            field.schema.t === 'fn' ? asFunction(v, field.schema.empty, child(ctx, key)).description : undefined;
+        described ||= description !== undefined;
+        parts.push(description === undefined ? text : `${formatJsDoc(description)}\n${text}`);
     }
-    return parts.length === 0 ? '{}' : `{ ${parts.join(', ')} }`;
+    if (parts.length === 0) return '{}';
+    // a JSDoc goes on its own line: one property per line (prettier keeps the object expanded)
+    return described ? `{\n${parts.join(',\n')},\n}` : `{ ${parts.join(', ')} }`;
 };
 
 export const genValue = (value: unknown, schema: TSchema, ctx: TWriteCtx): string => {
+    // an `fn` description is a comment before the property, written by `genObject` / `afterAdd`
+    if (schema.t === 'fn') return asFunction(value, schema.empty, ctx).code;
     if (isCode(value)) return codeText(value, ctx);
     switch (schema.t) {
         case 'value':
@@ -426,17 +452,52 @@ export const genValue = (value: unknown, schema: TSchema, ctx: TWriteCtx): strin
     }
 };
 
-// ---------------------------------------------------------------------------------------------
-// Updating in place
-
 const replace = (expr: Expression, text: string) => {
     if (expr.getText() !== text) expr.replaceWithText(text);
 };
 
-/**
- * Apply `next` to the property set of an object literal: update the keys present in `next`, add
- * the missing ones, and (when `removeMissing` is given) remove the listed keys `next` lacks.
- */
+type TPendingDoc = { prop: PropertyAssignment } & ({ description: string | undefined } | { removeProp: true });
+
+const pendingDocs = new WeakMap<SourceFile, TPendingDoc[]>();
+
+const queueDoc = (sf: SourceFile, entry: TPendingDoc) => {
+    const list = pendingDocs.get(sf) ?? [];
+    list.push(entry);
+    pendingDocs.set(sf, list);
+};
+
+const afterAdd = (prop: PropertyAssignment, schema: TSchema, v: unknown, ctx: TWriteCtx) => {
+    if (schema.t !== 'fn') return;
+    const { description } = asFunction(v, schema.empty, ctx);
+    if (description !== undefined) queueDoc(ctx.sf, { prop, description });
+};
+
+const removeProp = (prop: PropertyAssignment, schema: TSchema | undefined, sf: SourceFile) => {
+    if (schema?.t === 'fn') queueDoc(sf, { prop, removeProp: true });
+    else prop.remove();
+};
+
+const flushJsDocs = (sf: SourceFile) => {
+    const list = pendingDocs.get(sf);
+    pendingDocs.delete(sf);
+    if (!list) return;
+    const edits: TTextEdit[] = [];
+    for (const entry of list) {
+        if (entry.prop.wasForgotten()) continue;
+        const edit = 'removeProp' in entry ? propertyRemovalEdit(entry.prop) : jsDocEdit(entry.prop, entry.description);
+        if (edit) edits.push(edit);
+    }
+    applyTextEdits(sf, edits);
+};
+
+const updateFn = (expr: Expression, empty: string, next: unknown, ctx: TWriteCtx) => {
+    const { code, description } = asFunction(next, empty, ctx);
+    const prop = ownerProp(expr);
+    if (!prop) throw new Error(`Field "${ctx.path}": a described function must be a property value`);
+    replace(expr, code);
+    queueDoc(ctx.sf, { prop, description });
+};
+
 const updateObjectLiteral = (
     obj: ObjectLiteralExpression,
     next: Record<string, unknown>,
@@ -447,22 +508,32 @@ const updateObjectLiteral = (
     for (const [key, v] of Object.entries(next)) {
         if (v === undefined) continue;
         const field = fieldOf(key);
-        if (!field) throw HttpError.badRequest(`Unknown field "${ctx.path ? ctx.path + '.' : ''}${key}"`);
+        if (!field) throw HttpError.badRequest(`Unknown field "${child(ctx, key).path}"`);
         const src = field.src ?? key;
         const prop = getProp(obj, src);
         if (prop) {
             updateValue(prop.getInitializerOrThrow(), field.schema, v, child(ctx, key));
         } else {
-            obj.addPropertyAssignment({ name: keyText(src), initializer: genValue(v, field.schema, child(ctx, key)) });
+            const added = obj.addPropertyAssignment({
+                name: keyText(src),
+                initializer: genValue(v, field.schema, child(ctx, key)),
+            });
+            afterAdd(added, field.schema, v, child(ctx, key));
         }
     }
     for (const key of removable) {
         if (next[key] !== undefined) continue;
-        getProp(obj, fieldOf(key)?.src ?? key)?.remove();
+        const field = fieldOf(key);
+        const prop = getProp(obj, field?.src ?? key);
+        if (prop) removeProp(prop, field?.schema, ctx.sf);
     }
 };
 
 export const updateValue = (expr: Expression, schema: TSchema, next: unknown, ctx: TWriteCtx): void => {
+    if (schema.t === 'fn') {
+        updateFn(expr, schema.empty, next, ctx);
+        return;
+    }
     const current = readValue(expr, schema);
     if (deepEqual(current, next)) return;
     if (isCode(next)) {
@@ -491,36 +562,44 @@ export const updateValue = (expr: Expression, schema: TSchema, next: unknown, ct
                 }
                 break;
             }
-            const obj = asObject(expr)!;
+            const obj = asObject(expr);
+            if (!obj) break;
             updateObjectLiteral(obj, next, (k) => TIME_RANGE_FIELDS[k], [], ctx);
             return;
         }
         case 'linkCost': {
-            if (currentIsCode || !isRecordValue(next) || 'seconds' in next || 'seconds' in (current as object)) break;
-            updateObjectLiteral(asObject(expr)!, next, (k) => LINK_COST_FIELDS[k], Object.keys(LINK_COST_FIELDS), ctx);
+            const obj = asObject(expr);
+            if (!obj || currentIsCode || !isRecordValue(next) || 'seconds' in next) break;
+            if (!isRecordValue(current) || 'seconds' in current) break;
+            updateObjectLiteral(obj, next, (k) => LINK_COST_FIELDS[k], Object.keys(LINK_COST_FIELDS), ctx);
             return;
         }
         case 'object': {
-            if (currentIsCode || !isRecordValue(next)) break;
-            updateObjectLiteral(asObject(expr)!, next, (k) => schema.fields[k], Object.keys(schema.fields), ctx);
+            const obj = asObject(expr);
+            if (!obj || currentIsCode || !isRecordValue(next)) break;
+            updateObjectLiteral(obj, next, (k) => schema.fields[k], Object.keys(schema.fields), ctx);
             return;
         }
         case 'record':
         case 'value': {
             if (currentIsCode || !isRecordValue(next) || !isRecordValue(current)) {
-                if (schema.t === 'value' && Array.isArray(next) && Array.isArray(current)) {
-                    updateArray(expr, { t: 'value' }, next, current, ctx);
+                const arr = asArray(expr);
+                if (schema.t === 'value' && arr && Array.isArray(next) && Array.isArray(current)) {
+                    updateArray(arr, { t: 'value' }, next, current, ctx);
                     return;
                 }
                 break;
             }
+            const obj = asObject(expr);
+            if (!obj) break;
             const of: TSchema = schema.t === 'record' ? schema.of : { t: 'value' };
-            updateObjectLiteral(asObject(expr)!, next, () => ({ schema: of }), Object.keys(current), ctx);
+            updateObjectLiteral(obj, next, () => ({ schema: of }), Object.keys(current), ctx);
             return;
         }
         case 'array': {
-            if (currentIsCode || !Array.isArray(next)) break;
-            updateArray(expr, schema.of, next, current as unknown[], ctx);
+            const arr = asArray(expr);
+            if (!arr || currentIsCode || !Array.isArray(next) || !Array.isArray(current)) break;
+            updateArray(arr, schema.of, next, current, ctx);
             return;
         }
         default:
@@ -529,17 +608,11 @@ export const updateValue = (expr: Expression, schema: TSchema, next: unknown, ct
     replace(expr, genValue(next, schema, ctx));
 };
 
-/**
- * Same length: edit element by element (so untouched elements, and untouched fields of the
- * touched ones, keep their text). Otherwise: keep the common prefix, then remove / append the
- * rest. A middle insertion or removal therefore rewrites the elements after it — from the DTO,
- * where code fields are verbatim.
- */
-const updateArray = (expr: Expression, of: TSchema, next: unknown[], current: unknown[], ctx: TWriteCtx) => {
-    const arr = asArray(expr)!;
+// element-wise, so untouched elements keep their text; a middle insert/remove rewrites the tail
+const updateArray = (arr: ArrayLiteralExpression, of: TSchema, next: unknown[], current: unknown[], ctx: TWriteCtx) => {
     const common = Math.min(next.length, current.length);
     for (let i = 0; i < common; i++) {
-        updateValue(arr.getElements()[i] as Expression, of, next[i], child(ctx, i));
+        updateValue(arr.getElements()[i], of, next[i], child(ctx, i));
     }
     for (let i = current.length - 1; i >= next.length; i--) arr.removeElement(i);
     for (let i = current.length; i < next.length; i++) {
@@ -547,16 +620,30 @@ const updateArray = (expr: Expression, of: TSchema, next: unknown[], current: un
     }
 };
 
-/**
- * Apply a partial PUT body to the top-level object of a resource: each key present in `body`
- * (except `version`) is written through its schema; `null` removes an optional property.
- */
 export const applyPartial = (
     obj: ObjectLiteralExpression,
     body: Record<string, unknown>,
     fields: Record<string, TField>,
     sf: SourceFile,
     { skip = [], optional = [] }: { skip?: string[]; optional?: string[] } = {}
+) => {
+    try {
+        applyFields(obj, body, fields, sf, skip, optional);
+    } catch (e) {
+        pendingDocs.delete(sf); // a refused write applies nothing, not even queued comments
+        throw e;
+    }
+    // last: the comment edits forget the nodes navigated above
+    flushJsDocs(sf);
+};
+
+const applyFields = (
+    obj: ObjectLiteralExpression,
+    body: Record<string, unknown>,
+    fields: Record<string, TField>,
+    sf: SourceFile,
+    skip: string[],
+    optional: string[]
 ) => {
     for (const [key, v] of Object.entries(body)) {
         if (key === 'version' || skip.includes(key) || v === undefined) continue;
@@ -566,7 +653,7 @@ export const applyPartial = (
         const prop = getProp(obj, src);
         if (v === null) {
             if (!optional.includes(key)) throw HttpError.badRequest(`Field "${key}" is required and cannot be removed`);
-            prop?.remove();
+            if (prop) removeProp(prop, field.schema, sf);
             continue;
         }
         const ctx: TWriteCtx = { sf, path: key };
@@ -574,13 +661,14 @@ export const applyPartial = (
         else {
             const added = { name: keyText(src), initializer: genValue(v, field.schema, ctx) };
             const anchor = field.after?.map((k) => getProp(obj, fields[k]?.src ?? k)).find((p) => p !== undefined);
-            if (anchor) obj.insertPropertyAssignment(obj.getProperties().indexOf(anchor) + 1, added);
-            else obj.addPropertyAssignment(added);
+            const addedProp = anchor
+                ? obj.insertPropertyAssignment(obj.getProperties().indexOf(anchor) + 1, added)
+                : obj.addPropertyAssignment(added);
+            afterAdd(addedProp, field.schema, v, ctx);
         }
     }
 };
 
-/** Read the listed fields of a resource object (missing optional fields are left out). */
 export const readFields = (obj: ObjectLiteralExpression, fields: Record<string, TField>): Record<string, unknown> => {
     const out: Record<string, unknown> = {};
     for (const [key, field] of Object.entries(fields)) {

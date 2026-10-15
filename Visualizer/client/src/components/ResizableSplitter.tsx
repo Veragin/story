@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { styled } from '@mui/material';
 
-type Props = {
+type TProps = {
     leftContent: React.ReactNode;
     rightContent: React.ReactNode;
-    initialLeftWidth?: number; // as percentage (0-100)
-    minLeftWidth?: number; // as percentage
-    maxLeftWidth?: number; // as percentage
-    splitterWidth?: number; // in pixels
+    initialLeftWidth?: number;
+    minLeftWidth?: number;
+    maxLeftWidth?: number;
+    splitterWidth?: number;
 };
 
 export const ResizableSplitter = ({
@@ -17,7 +17,7 @@ export const ResizableSplitter = ({
     minLeftWidth = 20,
     maxLeftWidth = 80,
     splitterWidth = 8,
-}: Props) => {
+}: TProps) => {
     const [leftWidth, setLeftWidth] = useState(initialLeftWidth);
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -130,7 +130,6 @@ const SSplitter = styled('div')<{ $isDragging: boolean }>`
         background-color: rgba(100, 150, 255, 0.8);
     }
 
-    /* Add a visual indicator */
     position: relative;
 
     &::after {

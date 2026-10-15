@@ -1,7 +1,9 @@
 import type { TWorldState } from '@story/data';
+import type { Engine } from '../engine/Engine';
 import type {
     TChapter,
     TChapterId,
+    TChapterPassage,
     TCharacter,
     TCharacterId,
     TItemId,
@@ -10,11 +12,9 @@ import type {
     TNpc,
     TNpcId,
 } from '@story/types';
+import { keysOf } from '@story/shared';
 
-/**
- * Structural shape of `data/register` — only the slices the world state is built from.
- * Typed structurally on purpose: this module must not depend on `data/` at value level.
- */
+/** Typed structurally: `core` must not depend on `data/` at value level. */
 export type TWorldStateRegister = {
     characters: { readonly [Id in TCharacterId]: TCharacter<Id> };
     npcs: { readonly [Id in TNpcId]: TNpc<Id> };
@@ -22,23 +22,28 @@ export type TWorldStateRegister = {
     locations: { readonly [Id in TLocationId]: TLocation<Id> };
 };
 
-/** Structural shape of `data/items/itemInfo` — the static per-item data merged into inventories. */
-export type TItemInfoRegister = { readonly [Id in TItemId]: object };
+export type TItemInfoRegister = { readonly [Id in TItemId]: { readonly name: string } };
 
-/**
- * Builds a pristine world state from the story register: every character, NPC,
- * chapter and location at its `init` values, with a `ref` back to its definition.
- *
- * Deliberately *does not* construct an `Engine`. An `Engine` loads any saved game out of
- * localStorage and mutates the state it is given, which is right for a play session and wrong
- * for anything that needs the story's starting point — the Visualizer's passage graph renders
- * passage bodies against this base state so the graph shows the story as authored, not as the
- * last player left it. `createWorldState` is the play-session wrapper on top of this.
- */
+/** A chapter's lazy `<id>.passages.ts` module. */
+export type TPassagesModule = {
+    default: { readonly [passageId: string]: (s: TWorldState, e: Engine) => TChapterPassage<TChapterId> };
+};
+
+export type TStoryRegister = TWorldStateRegister & {
+    passages: { readonly [Id in TChapterId]: () => Promise<TPassagesModule> };
+};
+
+/** The story, injected so the engine can run any story with this shape. */
+export type TStoryModule = {
+    register: TStoryRegister;
+    itemInfo: TItemInfoRegister;
+};
+
+/** The story's authored starting state, without an `Engine` (which would load the saved game). */
 export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemInfoRegister): TWorldState => {
     const ss = {
-        time: register.chapters.village.timeRange.start,
-        mainCharacterId: 'thomas',
+        time: storyStart(register),
+        mainCharacterId: keysOf(register.characters)[0],
         currentHistory: {},
 
         characters: {} as Record<TCharacterId, unknown>,
@@ -47,7 +52,7 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
         locations: {} as Record<TLocationId, unknown>,
     };
 
-    (Object.keys(register.characters) as TCharacterId[]).forEach((id) => {
+    keysOf(register.characters).forEach((id) => {
         const { inventory, ...rest } = register.characters[id].init;
         ss.characters[id] = {
             ...rest,
@@ -55,7 +60,7 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
             ref: register.characters[id],
         };
     });
-    (Object.keys(register.npcs) as TNpcId[]).forEach((id) => {
+    keysOf(register.npcs).forEach((id) => {
         const { inventory, ...rest } = register.npcs[id].init;
         ss.npcs[id] = {
             ...rest,
@@ -63,11 +68,16 @@ export const buildWorldState = (register: TWorldStateRegister, itemInfo: TItemIn
             ref: register.npcs[id],
         };
     });
-    (Object.keys(register.chapters) as TChapterId[]).forEach((id) => {
+    keysOf(register.chapters).forEach((id) => {
         ss.chapters[id] = { ...register.chapters[id].init, ref: register.chapters[id] };
     });
-    (Object.keys(register.locations) as TLocationId[]).forEach((id) => {
+    keysOf(register.locations).forEach((id) => {
         ss.locations[id] = { ...register.locations[id].init, ref: register.locations[id] };
     });
     return ss as TWorldState;
 };
+
+const storyStart = (register: TWorldStateRegister) =>
+    (Object.values(register.chapters) as TChapter<TChapterId>[])
+        .map((chapter) => chapter.timeRange.start)
+        .reduce((earliest, start) => (start.isBefore(earliest) ? start : earliest));

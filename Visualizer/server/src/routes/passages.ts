@@ -3,11 +3,6 @@ import { readChapterPassages, readPassage } from '../project/readers/passages';
 import { SourceProject } from '../project/SourceProject';
 import { createPassage, deletePassage, updatePassage } from '../project/writers/passages';
 
-/**
- * Passages: `/api/chapters/:chapterId/passages`, `/api/passages/:passageId`
- * (`project/readers/passages.ts`, `project/writers/passages.ts`). `openPassage` is registered by
- * `routes/open.ts`.
- */
 export const registerPassageRoutes = ({ router, project, bus }: TServerContext) => {
     const sp = SourceProject.for(project);
     const w = { sp, bus };

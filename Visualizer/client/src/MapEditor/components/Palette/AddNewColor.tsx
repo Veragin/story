@@ -1,10 +1,9 @@
 import { Row, showToast, spacingCss } from '@story/ui';
-import { MapStore } from '../../MapStore';
-import { Button, Tooltip } from '@mui/material';
+import type { MapStore } from '../../MapStore';
+import { Button, Tooltip, TextField } from '@mui/material';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { List } from './List';
-import { TextField } from '../../../components/TextField';
 import { useState } from 'react';
 import styled from '@emotion/styled';
 

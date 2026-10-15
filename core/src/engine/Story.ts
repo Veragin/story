@@ -1,10 +1,8 @@
-import { DeltaTime, TPassageId } from '@story/shared';
+import { DeltaTime, showToast, TPassageId } from '@story/shared';
 import { TLinkCost } from '@story/types';
 import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { parsePassageId } from '../parsePassageId';
-import { showToast } from '@story/shared';
-import { itemInfo } from '@story/data';
 import { action, makeObservable } from 'mobx';
 
 export class Story {
@@ -28,6 +26,7 @@ export class Story {
         });
 
         if (items && items.length > 0 && characterId === this.s.mainCharacterId) {
+            const { itemInfo } = this.e.storyModule;
             showToast(
                 _('You have spent: %s', items.map((item) => `${item.amount} ${itemInfo[item.id].name}`).join(', ')),
                 {

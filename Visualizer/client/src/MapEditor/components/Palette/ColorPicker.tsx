@@ -1,12 +1,13 @@
 import styled from '@emotion/styled';
-import { Row, spacingCss } from '@story/ui';
-import { MapStore } from '../../MapStore';
+import { Row } from '@story/ui';
+import type { MapStore } from '../../MapStore';
 import { List } from './List';
 import { Button, Tooltip } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import { observer } from 'mobx-react-lite';
+import { Color } from './Color';
 
 type Props = {
     mapStore: MapStore;
@@ -79,45 +80,4 @@ export const ColorPicker = observer(
 const SButton = styled(Button)`
     min-width: unset;
     border-radius: 0;
-`;
-
-type TColorProps = {
-    name: string;
-    color: string;
-    isActive: boolean;
-    onClick: () => void;
-};
-
-const Color = ({ color, isActive, name, onClick }: TColorProps) => {
-    return (
-        <SRow
-            $isActive={isActive}
-            onClick={onClick}
-            onWheel={(e) => e.stopPropagation()}
-            onMouseMove={(e) => e.stopPropagation()}
-        >
-            <SColor color={color}></SColor>
-            <span>{name}</span>
-        </SRow>
-    );
-};
-
-const SRow = styled(Row)<{ $isActive: boolean }>`
-    background-color: ${({ $isActive }) => ($isActive ? '#444' : '#000')};
-    color: ${({ $isActive }) => ($isActive ? '#fff' : '#ddd')};
-    &:hover {
-        background-color: #333;
-    }
-    padding: ${spacingCss(0.5)};
-    gap: ${spacingCss(0.5)};
-    cursor: pointer;
-    align-self: stretch;
-`;
-
-const SColor = styled.div<{ color: string }>`
-    background-color: ${({ color }) => color};
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: 1px solid #000;
 `;

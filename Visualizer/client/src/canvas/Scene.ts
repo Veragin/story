@@ -1,44 +1,27 @@
 import { Camera } from './Camera';
 import { Emitter } from './Emitter';
-import { rectsIntersect } from './geometry';
+import { clamp, rectsIntersect } from './geometry';
 import { isTypingTarget } from './input';
 import type { Shape } from './shapes/Shape';
 import type { TRectEdge } from './shapes/RectShape';
 import type { TPoint, TSize } from './types';
-
-// ---------------------------------------------------------------------------------------------
-// Events
-// ---------------------------------------------------------------------------------------------
 
 export type TChangeKind = 'move' | 'resize' | 'vertex-move' | 'vertex-add' | 'vertex-remove';
 
 export type TPointerInfo = { world: TPoint; screen: TPoint; client: TPoint };
 
 export type TSceneEvents = {
-    /** Selection changed (`shape` null = cleared). */
     select: { shape: Shape | null; previous: Shape | null };
-    /**
-     * A shape was edited by a controller. Drags emit `final: false` on every move and one
-     * `final: true` at the end; one-shot edits (insert/remove vertex) are `final: true` only.
-     * Save on `final`, or debounce the whole stream.
-     */
+    // drags stream `final: false` and end with one `final: true`; persist on `final`
     change: { shape: Shape; kind: TChangeKind; final: boolean; vertexIndex?: number; edge?: TRectEdge };
-    /** Double-click on a shape (after its `onAction` ran). */
     action: TPointerInfo & { shape: Shape };
-    /** The shape under the pointer changed (`shape` null = left every shape). */
     hover: TPointerInfo & { shape: Shape | null; previous: Shape | null };
-    /** Every pointer move over the canvas while no button is pressed — for tooltips that follow the cursor. */
     pointermove: TPointerInfo & { shape: Shape | null };
-    /** A tool created a shape and added it to the scene. */
     create: { shape: Shape; tool: string };
     add: { shape: Shape };
     remove: { shape: Shape };
     editable: { editable: boolean };
 };
-
-// ---------------------------------------------------------------------------------------------
-// Interactions (controllers plug in here)
-// ---------------------------------------------------------------------------------------------
 
 export type TScenePointerEvent = TPointerInfo & {
     button: number;
@@ -46,44 +29,30 @@ export type TScenePointerEvent = TPointerInfo & {
     ctrlKey: boolean;
     altKey: boolean;
     metaKey: boolean;
-    /** Topmost interactive shape under the pointer. */
     hit: Shape | null;
-    /** Hit tolerance in world units (the scene's pixel tolerance at the current zoom). */
+    // world units
     tolerance: number;
     native: MouseEvent;
 };
 
-/**
- * A controller registered with `scene.addInteraction`. Handlers run in `priority` order
- * (highest first). Returning `true` from `onPointerDown` captures the gesture: that controller
- * alone gets the following `onPointerMove`/`onPointerUp`, and camera drag-panning is skipped.
- * If nobody captures, dragging pans the camera. A press released without moving is a click,
- * offered to `onClick` handlers in priority order until one returns `true`.
- */
+// highest `priority` first; `true` from `onPointerDown` captures the gesture and suppresses panning
 export interface ISceneInteraction {
     priority?: number;
     onPointerDown?(e: TScenePointerEvent): boolean;
     onPointerMove?(e: TScenePointerEvent): void;
     onPointerUp?(e: TScenePointerEvent): void;
-    /** Pointer moves while no button is pressed. */
     onHover?(e: TScenePointerEvent): void;
     onClick?(e: TScenePointerEvent): boolean;
-    /** Returning `true` suppresses the shape's `onAction` and the `action` event. */
     onDoubleClick?(e: TScenePointerEvent): boolean;
     onContextMenu?(e: TScenePointerEvent): boolean;
-    /** Already filtered: never called while typing in an input. Return `true` if handled. */
     onKeyDown?(e: KeyboardEvent): boolean;
-    /** Cursor to show while hovering; the first defined answer wins. */
     getCursor?(e: TScenePointerEvent): string | undefined;
-    /** Draw in world space after all layers (handles, highlights, previews). */
     drawOverlay?(ctx: CanvasRenderingContext2D, scene: Scene): void;
 }
 
 export type TDrawHook = (ctx: CanvasRenderingContext2D, scene: Scene) => void;
 
-// ---------------------------------------------------------------------------------------------
-// Layers
-// ---------------------------------------------------------------------------------------------
+type TDrawPhase = 'before' | 'after' | 'screen';
 
 export class Layer {
     readonly shapes: Shape[] = [];
@@ -114,7 +83,6 @@ export class Layer {
         this._visible = v;
         this.scene.invalidate();
     }
-    /** When false, shapes are drawn but never hit-tested. */
     get interactive(): boolean {
         return this._interactive;
     }
@@ -123,36 +91,20 @@ export class Layer {
     }
 }
 
-// ---------------------------------------------------------------------------------------------
-// Scene
-// ---------------------------------------------------------------------------------------------
-
 export type TSceneOptions = {
-    /** Pass a shared camera to have several renderers follow one view. Default: a new one. */
     camera?: Camera;
-    /** Default true. False = view mode: controllers stop editing; hover, double-click and camera still work. */
     editable?: boolean;
-    /** Canvas background; transparent (cleared) when omitted, so a scene can sit over another canvas. */
+    // omitted = transparent, so a scene can sit over another canvas
     background?: string;
-    /** WASD/arrow panning. Default true. */
     keyboardPan?: boolean;
-    /** Keyboard pan speed in screen px per second. Default 600. */
     panSpeed?: number;
-    /** Drag on empty space (or with the middle button) pans. Default true. */
     dragPan?: boolean;
-    /** Wheel zooms at the cursor. Default true. */
     wheelZoom?: boolean;
-    /** Wheel zoom sensitivity. Default 0.0015 (per deltaY pixel). */
     wheelSensitivity?: number;
-    /** Pointer travel (px) below which a press counts as a click. Default 4. */
     clickTolerance?: number;
-    /** Hit-test slack in screen px. Default 4. */
     hitTolerance?: number;
-    /** Default `window.devicePixelRatio`. */
     pixelRatio?: number;
-    /** Track the canvas CSS size with a ResizeObserver (or window resize). Default true. */
     autoResize?: boolean;
-    /** Where keyboard listeners go. Default `window`. */
     keyboardTarget?: Window | HTMLElement;
 };
 
@@ -176,11 +128,6 @@ type TPress = {
     panning: boolean;
 };
 
-/**
- * Owns one `<canvas>`: layers of shapes, a camera, input dispatch and a redraw-on-demand loop.
- * Rendering happens only after `invalidate()` (called by shapes, the camera and controllers),
- * at most once per animation frame. `destroy()` removes every listener, frame and observer.
- */
 export class Scene {
     readonly canvas: HTMLCanvasElement;
     readonly camera: Camera;
@@ -201,7 +148,7 @@ export class Scene {
     private sortedLayers: Layer[] = [];
     private orderDirty = true;
     private interactions: ISceneInteraction[] = [];
-    private hooks = { before: [] as TDrawHook[], after: [] as TDrawHook[], screen: [] as TDrawHook[] };
+    private hooks: Record<TDrawPhase, TDrawHook[]> = { before: [], after: [], screen: [] };
     private frame: number | null = null;
     private dirty = true;
     private destroyed = false;
@@ -261,8 +208,6 @@ export class Scene {
         this.resize();
     }
 
-    // ---- state -------------------------------------------------------------------------------
-
     get editable(): boolean {
         return this._editable;
     }
@@ -273,16 +218,10 @@ export class Scene {
         this.invalidate();
     }
 
-    /** Canvas size in CSS pixels. */
     get size(): TSize {
         return { ...this.cssSize };
     }
 
-    get hoveredShape(): Shape | null {
-        return this.hovered;
-    }
-
-    /** Syncs the backing store with the canvas CSS size (or the given size) and redraws. */
     resize(size?: TSize): void {
         const width = size?.width ?? this.canvas.clientWidth;
         const height = size?.height ?? this.canvas.clientHeight;
@@ -296,9 +235,6 @@ export class Scene {
         this.invalidate();
     }
 
-    // ---- layers and shapes -------------------------------------------------------------------
-
-    /** Gets a layer, creating it (with `zIndex`) the first time. */
     layer(name: string, zIndex?: number): Layer {
         let layer = this.layers.get(name);
         if (!layer) {
@@ -309,10 +245,6 @@ export class Scene {
             layer.zIndex = zIndex;
         }
         return layer;
-    }
-
-    getLayers(): Layer[] {
-        return [...this.orderedLayers()];
     }
 
     add<T extends Shape>(shape: T, layerName = 'default'): T {
@@ -332,18 +264,15 @@ export class Scene {
         const layer = this.layers.get(shape.layerName);
         const i = layer?.shapes.indexOf(shape) ?? -1;
         if (layer && i >= 0) layer.shapes.splice(i, 1);
-        shape.host = null;
-        shape.layerName = null;
-        shape.hovered = false;
+        detach(shape);
         if (this.hovered === shape) this.hovered = null;
         this.events.emit('remove', { shape });
         this.invalidate();
     }
 
-    /** Removes every shape (of one layer, or of all). */
     clear(layerName?: string): void {
-        const layers = layerName ? [this.layers.get(layerName)].filter(Boolean) : [...this.layers.values()];
-        for (const layer of layers as Layer[]) for (const s of [...layer.shapes]) this.remove(s);
+        const layers = layerName ? [this.layers.get(layerName)] : [...this.layers.values()];
+        for (const layer of layers) for (const s of [...(layer?.shapes ?? [])]) this.remove(s);
     }
 
     getShape(id: string): Shape | undefined {
@@ -354,7 +283,6 @@ export class Scene {
         return undefined;
     }
 
-    /** All shapes in draw order (bottom first). */
     getShapes(): Shape[] {
         return this.orderedLayers().flatMap((l) => l.shapes);
     }
@@ -363,7 +291,6 @@ export class Scene {
         return shape.host === this;
     }
 
-    /** Topmost visible, interactive shape at a world point. */
     hitTest(world: TPoint, filter?: (s: Shape) => boolean): Shape | null {
         const tol = this.camera.screenToWorldDistance(this.hitTolerance);
         const layers = this.orderedLayers();
@@ -388,7 +315,6 @@ export class Scene {
         if (this.orderDirty) {
             this.sortedLayers = [...this.layers.values()].sort((a, b) => a.zIndex - b.zIndex);
             for (const l of this.sortedLayers) {
-                // Array.prototype.sort is stable, so equal zIndex keeps insertion order.
                 l.shapes.sort((a, b) => a.zIndex - b.zIndex);
             }
             this.orderDirty = false;
@@ -396,9 +322,6 @@ export class Scene {
         return this.sortedLayers;
     }
 
-    // ---- interactions and hooks --------------------------------------------------------------
-
-    /** Registers a controller. Returns the function that removes it again. */
     addInteraction(interaction: ISceneInteraction): () => void {
         this.interactions.push(interaction);
         this.interactions.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
@@ -410,11 +333,8 @@ export class Scene {
         };
     }
 
-    /**
-     * Custom drawing. `before`/`after` run in world space before or after the layers
-     * (`after` still runs below the controller overlays); `screen` runs last in CSS pixels.
-     */
-    addDrawHook(hook: TDrawHook, phase: 'before' | 'after' | 'screen' = 'after'): () => void {
+    // `before`/`after` draw in world space around the layers (below overlays); `screen` last, in CSS px
+    addDrawHook(hook: TDrawHook, phase: TDrawPhase = 'after'): () => void {
         this.hooks[phase].push(hook);
         this.invalidate();
         return () => {
@@ -422,8 +342,6 @@ export class Scene {
             this.invalidate();
         };
     }
-
-    // ---- coordinates -------------------------------------------------------------------------
 
     clientToScreen(clientX: number, clientY: number): TPoint {
         const r = this.canvas.getBoundingClientRect();
@@ -438,19 +356,14 @@ export class Scene {
         return this.camera.worldToScreen(p);
     }
 
-    /** Centers the camera on a world point. */
     centerOn(world: TPoint): void {
         this.camera.centerOn(world, this.cssSize);
     }
 
-    /** World point at the middle of the view (e.g. where to put a newly added shape). */
     viewCenter(): TPoint {
         return this.camera.screenToWorld({ x: this.cssSize.width / 2, y: this.cssSize.height / 2 });
     }
 
-    // ---- rendering ---------------------------------------------------------------------------
-
-    /** Schedules a redraw on the next animation frame (coalesced). */
     invalidate(): void {
         this.dirty = true;
         this.schedule();
@@ -487,7 +400,6 @@ export class Scene {
         this.camera.panByWorld(Math.sign(dx) * step, Math.sign(dy) * step);
     }
 
-    /** Draws synchronously. Normally called by the frame loop; handy in tests. */
     renderNow(): void {
         this.dirty = false;
         const ctx = this.ctx;
@@ -507,7 +419,7 @@ export class Scene {
         const zoom = this.camera.zoom;
         const visible = this.camera.visibleRect(this.cssSize);
         const cull = visible.width > 0 && visible.height > 0;
-        // Slack so strokes, labels and arrowheads just outside the view are not culled.
+        // so strokes, labels and arrowheads just outside the view still draw
         const slack = 50 / zoom;
         const view = {
             x: visible.x - slack,
@@ -528,8 +440,6 @@ export class Scene {
         ctx.restore();
         for (const h of this.hooks.screen) h(ctx, this);
     }
-
-    // ---- input -------------------------------------------------------------------------------
 
     private listen<K extends string>(
         target: EventTarget,
@@ -564,25 +474,14 @@ export class Scene {
         if (this.press) return;
         if (e.button === 2) return; // right button → contextmenu handler
         const pe = this.toPointerEvent(e);
-        let captured: ISceneInteraction | null = null;
-        if (e.button === 0) {
-            for (const i of this.interactions) {
-                if (i.onPointerDown?.(pe)) {
-                    captured = i;
-                    break;
-                }
-            }
-        }
+        const captured = (e.button === 0 && this.interactions.find((i) => i.onPointerDown?.(pe))) || null;
         const panning = !captured && this.dragPan && (e.button === 0 || e.button === 1);
         if (!captured && !panning) return;
-        // No text selection while dragging, no middle-button autoscroll. That also stops the press
-        // from moving focus, so blur a focused form field by hand: otherwise keyboard panning
-        // would stay disabled after clicking from an input into the canvas.
+        // preventDefault also stops focus moving, so blur inputs by hand or keyboard panning stays off
         e.preventDefault();
         const active = document.activeElement;
         if (active instanceof HTMLElement && isTypingTarget(active)) active.blur();
         this.press = { button: e.button, start: pe.screen, last: pe.screen, moved: false, captured, panning };
-        // Follow the gesture outside the canvas; removed on up/cancel/destroy.
         window.addEventListener('pointermove', this.handleWindowPointerMove);
         window.addEventListener('pointerup', this.handleWindowPointerUp);
         window.addEventListener('pointercancel', this.handleWindowPointerUp);
@@ -614,7 +513,7 @@ export class Scene {
         const pe = this.toPointerEvent(e);
         press.captured?.onPointerUp?.(pe);
         if (!press.moved && press.button === 0 && e.type === 'pointerup') {
-            for (const i of this.interactions) if (i.onClick?.(pe)) break;
+            this.interactions.some((i) => i.onClick?.(pe));
         }
         this.updateHover(pe);
     };
@@ -669,7 +568,7 @@ export class Scene {
 
     private handleDoubleClick = (e: MouseEvent): void => {
         const pe = this.toPointerEvent(e);
-        for (const i of this.interactions) if (i.onDoubleClick?.(pe)) return;
+        if (this.interactions.some((i) => i.onDoubleClick?.(pe))) return;
         const shape = pe.hit;
         if (!shape) return;
         shape.onAction?.(shape);
@@ -679,14 +578,14 @@ export class Scene {
     private handleContextMenu = (e: MouseEvent): void => {
         e.preventDefault();
         const pe = this.toPointerEvent(e);
-        for (const i of this.interactions) if (i.onContextMenu?.(pe)) return;
+        this.interactions.some((i) => i.onContextMenu?.(pe));
     };
 
     private handleWheel = (e: WheelEvent): void => {
         if (!this.wheelZoom) return;
         e.preventDefault();
         const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
-        const delta = Math.max(-300, Math.min(300, e.deltaY * unit));
+        const delta = clamp(e.deltaY * unit, -300, 300);
         if (delta === 0) return;
         const factor = Math.exp(-delta * this.wheelSensitivity);
         this.camera.zoomAt(this.clientToScreen(e.clientX, e.clientY), factor);
@@ -694,11 +593,9 @@ export class Scene {
 
     private handleKeyDown = (e: KeyboardEvent): void => {
         if (isTypingTarget(e.target)) return;
-        for (const i of this.interactions) {
-            if (i.onKeyDown?.(e)) {
-                e.preventDefault();
-                return;
-            }
+        if (this.interactions.some((i) => i.onKeyDown?.(e))) {
+            e.preventDefault();
+            return;
         }
         if (!this.keyboardPan || e.ctrlKey || e.metaKey || e.altKey) return;
         if (!(e.code in PAN_KEYS)) return;
@@ -719,8 +616,6 @@ export class Scene {
         if (this.canvas.style.cursor !== cursor) this.canvas.style.cursor = cursor;
     }
 
-    // ---- teardown ----------------------------------------------------------------------------
-
     get isDestroyed(): boolean {
         return this.destroyed;
     }
@@ -735,11 +630,7 @@ export class Scene {
         this.resizeObserver = null;
         for (const c of this.cleanups.splice(0)) c();
         for (const layer of this.layers.values()) {
-            for (const s of layer.shapes) {
-                s.host = null;
-                s.layerName = null;
-                s.hovered = false;
-            }
+            layer.shapes.forEach(detach);
             layer.shapes.length = 0;
         }
         this.interactions = [];
@@ -747,3 +638,9 @@ export class Scene {
         this.events.clear();
     }
 }
+
+const detach = (shape: Shape): void => {
+    shape.host = null;
+    shape.layerName = null;
+    shape.hovered = false;
+};

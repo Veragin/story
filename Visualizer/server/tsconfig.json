@@ -8,5 +8,5 @@
         "types": ["node"],
         "jsx": "preserve"
     },
-    "include": ["src", "test"]
+    "include": ["src", "__tests__"]
 }

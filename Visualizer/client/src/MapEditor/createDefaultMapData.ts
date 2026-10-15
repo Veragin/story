@@ -3,10 +3,6 @@ import type { TMapDocument } from './types';
 export const DEFAULT_MAP_WIDTH = 80;
 export const DEFAULT_MAP_HEIGHT = 60;
 
-/**
- * An empty map of `width` columns × `height` rows. `data[i][j]` is row `i`, column `j`, the
- * indexing the renderer uses (this used to build `width` rows of `height` tiles, i.e. transposed).
- */
 export const createDefaultMapData = (
     id: string,
     name: string,

@@ -7,14 +7,10 @@ const NAME_GAP = 4;
 export type TTriggerShapeProps<TData> = TShapeProps<TData> & {
     x: number;
     name: string;
-    /** World y of the dot's center; read on every use, so the dot stays pinned above the strip. */
+    // a getter so the dot stays pinned above the strip
     getY: () => number;
 };
 
-/**
- * A time trigger: a green dot above the time strip with its name above it. Only `x` is state (the
- * trigger's time); `y` follows the strip, so moves are horizontal by construction.
- */
 export class TriggerShape<TData = unknown> extends Shape<TData> {
     readonly kind = 'trigger';
     x: number;
@@ -71,6 +67,7 @@ export class TriggerShape<TData = unknown> extends Shape<TData> {
         ctx.arc(this.x, this.y, TRIGGER_RADIUS, 0, Math.PI * 2);
     }
 
+    // y follows the strip, so moves are horizontal by construction
     translate(dx: number): void {
         this.x += dx;
         this.invalidate();

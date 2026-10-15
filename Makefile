@@ -64,26 +64,27 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-multi-engine dev-multi-engine-server logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-landing-page dev-multi-engine dev-multi-engine-server logs prod-up prod-down prod-logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
-# 8102 MultiEngine client, 8123 Visualizer server, 8124 MultiEngine server). The container stays idle at
-# PID 1 and `yarn dev` runs as a detached exec inside it, so a dev server that dies cannot
-# take `make ai` / `make bash` down with it.
+# 8102 MultiEngine client, 8103 landing page, 8123 Visualizer server, 8124 MultiEngine server).
+# The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
+# server that dies cannot take `make ai` / `make bash` down with it.
 start: stop
 	$(COMPOSE) up -d --build --remove-orphans
 	$(DEV_EXEC_DETACHED) bash -c 'yarn dev > $(DEV_LOG) 2>&1'
 	@echo ""
+	@echo "  Stories (landing)   http://localhost:8103  (start here: create, open, play, export)"
 	@echo "  SingleEngine        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
-	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/project, /api/events …)"
+	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/stories …)"
 	@echo "  MultiEngine client  http://localhost:8102"
 	@echo "  MultiEngine server  http://localhost:8124  (scaffold — every route answers 501)"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-engine"
 
 # The container without the services. Use this when you want a single service — `make start`
-# already holds all five ports, and vite is `strictPort`, so it would refuse rather than
+# already holds all six ports, and vite is `strictPort`, so it would refuse rather than
 # silently pick another one.
 up:
 	$(COMPOSE) up -d --build --remove-orphans
@@ -129,8 +130,29 @@ dev-visualizer:
 dev-visualizer-server:
 	$(DEV_EXEC) yarn dev:visualizer-server
 
+# The landing page (story list) on :8103. Like the client, it proxies /api to the server.
+dev-landing-page:
+	$(DEV_EXEC) yarn dev:landing-page
+
 dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
 
 dev-multi-engine-server:
 	$(DEV_EXEC) yarn dev:multi-engine-server
+
+# Production (multiple stories, phase 11): Caddy on 80/443 in front of the Visualizer server and
+# SingleEngine, one origin (docker-compose.prod.yml). Run on the host, not inside the dev
+# container. SITE_ADDRESS is the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com`
+# (default localhost). `prod-down` keeps the volumes (the stories, Caddy's certificates).
+PROD_COMPOSE = $(COMPOSE) -f docker-compose.prod.yml
+
+prod-up:
+	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans
+	@echo ""
+	@echo "  https://$(or $(SITE_ADDRESS),localhost)/   (/visualizer/, /play/, /api/)"
+
+prod-down:
+	$(PROD_COMPOSE) down
+
+prod-logs:
+	$(PROD_COMPOSE) logs -f

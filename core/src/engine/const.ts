@@ -1,13 +1,13 @@
 import { TChapterId, TChapterPassage, TChapterPassageId, TCharacterId, TPassageScreen } from '@story/types';
 
-export const DUMMY_PASSAGE: TChapterPassage<'village'> = {
-    id: 'forest',
+export const createDummyPassage = (chapterId: TChapterId, characterId: TCharacterId): TChapterPassage<TChapterId> => ({
+    id: '' as TChapterPassageId<TChapterId>,
     body: [],
-    characterId: 'thomas',
-    chapterId: 'village',
+    characterId,
+    chapterId,
     image: '',
-    title: 'Forest',
+    title: '',
     type: 'screen',
-};
+});
 
 export type TUnkownPassageScreen = TPassageScreen<TChapterId, TCharacterId, TChapterPassageId<TChapterId>>;

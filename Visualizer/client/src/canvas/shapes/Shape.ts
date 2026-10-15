@@ -2,21 +2,14 @@ import type { Camera } from '../Camera';
 import { rectBorderPoint, rectCenter } from '../geometry';
 import type { TPoint, TRect, TStroke } from '../types';
 
-/** What a shape needs from the scene it lives in. Implemented by `Scene`. */
 export interface IShapeHost {
     readonly camera: Camera;
     invalidate(): void;
-    /** Called when a shape's `zIndex` changed, so the draw order gets re-sorted. */
     markOrderDirty(): void;
 }
 
 export type TDragOptions = {
-    /** Restricts dragging to one axis. */
     axis?: 'x' | 'y';
-    /**
-     * Last word on where a drag may put the shape. Receives the proposed origin (see
-     * `Shape.getOrigin`) after `axis` was applied and returns the one to use.
-     */
     constrain?: (origin: TPoint, shape: Shape) => TPoint;
 };
 
@@ -25,9 +18,7 @@ export type TLabelStyle = {
     fontSize?: number;
     fontFamily?: string;
     fontWeight?: string | number;
-    /** Inner padding in world units (rects only). */
     padding?: number;
-    /** Rects only: `center` (default) or `top-left`. */
     placement?: 'center' | 'top-left';
 };
 
@@ -37,23 +28,17 @@ export type TShapeProps<TData = unknown> = {
     stroke?: TStroke;
     zIndex?: number;
     visible?: boolean;
-    /** Whether the selection controller may drag it once selected. Default false. */
     draggable?: boolean;
-    /** Whether a click selects it. Default true. */
     selectable?: boolean;
-    /** Whether it takes part in hit-testing at all (hover, click, double-click). Default true. */
     interactive?: boolean;
-    /** CSS cursor while hovering it. */
     cursor?: string;
-    /** Overrides applied while the pointer is over the shape. */
     hoverStyle?: { fill?: string; stroke?: TStroke };
     opacity?: number;
     drag?: TDragOptions;
     label?: string;
     labelStyle?: TLabelStyle;
-    /** Free payload for the page (entity id, DTO, ...). */
     data?: TData;
-    /** Called on double-click (the scene also emits `action`). Method syntax keeps `Shape<T>` assignable to `Shape`. */
+    // method syntax keeps `Shape<T>` assignable to `Shape`
     onAction?(shape: Shape<TData>): void;
 };
 
@@ -65,13 +50,6 @@ export type TRenderContext = {
 
 let nextId = 1;
 
-/**
- * Base class of every scene object. Subclasses implement geometry (`getBounds`, `hitTest`,
- * `tracePath`, `translate`); the base handles style, labels and change notification.
- *
- * Mutate through `update(patch)` or the subclass setters so the scene redraws. If you assign a
- * field directly, call `invalidate()` afterwards.
- */
 export abstract class Shape<TData = unknown> {
     abstract readonly kind: string;
 
@@ -92,11 +70,8 @@ export abstract class Shape<TData = unknown> {
     data: TData;
     onAction?(shape: Shape<TData>): void;
 
-    /** Set by the scene while the pointer is over this shape. */
     hovered = false;
-    /** The scene (or null while detached). Managed by `Scene.add`/`Scene.remove`. */
     host: IShapeHost | null = null;
-    /** Name of the layer it was added to. Managed by the scene. */
     layerName: string | null = null;
 
     constructor(props: TShapeProps<TData>) {
@@ -128,7 +103,6 @@ export abstract class Shape<TData = unknown> {
         this.invalidate();
     }
 
-    /** Assigns any props and redraws. */
     update(patch: Partial<TShapeProps<TData>>): this {
         Object.assign(this, patch);
         this.invalidate();
@@ -139,23 +113,19 @@ export abstract class Shape<TData = unknown> {
         this.host?.invalidate();
     }
 
-    /** Current zoom of the owning scene (1 while detached). */
     protected get zoom(): number {
         return this.host?.camera.zoom ?? 1;
     }
 
     abstract getBounds(): TRect;
 
-    /** `tolerance` is in world units (the scene converts its pixel tolerance with the zoom). */
+    // `tolerance` is in world units
     abstract hitTest(p: TPoint, tolerance: number): boolean;
 
-    /** Builds the outline path (used for fill, stroke and the selection highlight). */
     abstract tracePath(ctx: CanvasRenderingContext2D): void;
 
-    /** Moves the shape by a world delta. Must call `invalidate()`. */
     abstract translate(dx: number, dy: number): void;
 
-    /** The point dragging moves around; `drag.constrain` receives and returns it. Default: bounds top-left. */
     getOrigin(): TPoint {
         const b = this.getBounds();
         return { x: b.x, y: b.y };
@@ -171,12 +141,10 @@ export abstract class Shape<TData = unknown> {
         return rectCenter(this.getBounds());
     }
 
-    /** Where a line coming from `toward` meets this shape's border. */
     borderPoint(toward: TPoint): TPoint {
         return rectBorderPoint(this.getBounds(), toward);
     }
 
-    /** Whether the shape can be moved as a whole (lines anchored to shapes cannot). */
     canTranslate(): boolean {
         return true;
     }
@@ -200,21 +168,28 @@ export abstract class Shape<TData = unknown> {
         ctx.restore();
     }
 
-    /** Draws `label`. Subclasses place it; the default does nothing. */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected drawLabel(ctx: CanvasRenderingContext2D, rc: TRenderContext): void {}
+
+    protected labelFont(defaultColor: string, defaultFontSize: number) {
+        const s = this.labelStyle ?? {};
+        return {
+            color: s.color ?? defaultColor,
+            fontSize: s.fontSize ?? defaultFontSize,
+            fontFamily: s.fontFamily,
+            fontWeight: s.fontWeight,
+        };
+    }
 }
 
-/** Sets stroke style, width and dash, converting screen-pixel widths with the zoom. */
-export function applyStroke(ctx: CanvasRenderingContext2D, stroke: TStroke, zoom: number): void {
+export const applyStroke = (ctx: CanvasRenderingContext2D, stroke: TStroke, zoom: number): void => {
     const k = stroke.screenWidth ? 1 / zoom : 1;
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.width * k;
     ctx.setLineDash(stroke.dash ? stroke.dash.map((d) => d * k) : []);
-}
+};
 
-/** Half the stroke width in world units, used to widen hit areas. */
-export function halfStrokeWidth(stroke: TStroke | undefined, zoom: number): number {
+export const halfStrokeWidth = (stroke: TStroke | undefined, zoom: number): number => {
     if (!stroke) return 0;
     return (stroke.screenWidth ? stroke.width / zoom : stroke.width) / 2;
-}
+};

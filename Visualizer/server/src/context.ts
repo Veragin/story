@@ -1,12 +1,26 @@
+import type { TGlobalRouteName, TStoryRouteName } from '@story/visualizer-protocol';
+import type { LoginLimiter } from './auth/LoginLimiter';
+import type { SessionStore } from './auth/SessionStore';
 import type { EventBus } from './events/EventBus';
 import type { Router } from './http/router';
 import type { ProjectRoot } from './project/ProjectRoot';
+import type { StoryStore } from './stories/StoryStore';
 
-/** What every `routes/<resource>.ts` gets: the project on disk, the change bus, the router. */
 export type TServerContext = {
+    storyId: string;
+    stories: StoryStore;
     project: ProjectRoot;
     bus: EventBus;
-    router: Router;
-    /** Whether the file watcher is running (off in some tests). */
+    router: Router<TStoryRouteName>;
     watching: () => boolean;
+};
+
+export type TGlobalContext = {
+    router: Router<TGlobalRouteName>;
+    stories: StoryStore;
+    watch: boolean;
+    sessions: SessionStore;
+    loginLimiter: LoginLimiter;
+    trustProxy: boolean;
+    cookieSecure: boolean;
 };

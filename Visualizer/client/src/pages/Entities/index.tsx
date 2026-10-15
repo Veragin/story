@@ -22,17 +22,11 @@ const KINDS: { kind: TEntityKind; label: () => string }[] = [
 
 let store: EntitiesStore | null = null;
 
-/** The page's store, shared across mounts so switching tabs keeps lists and drafts. */
+// module-level so switching tabs keeps lists and drafts
 const getEntitiesStore = () =>
     (store ??= new EntitiesStore({ api, events: apiEvents }));
 
-/**
- * Entities page (`#/entities`, `#/entities/:kind`, `#/entities/:kind/:id`, plan WP7): the kind
- * menu on top, the list of that kind on the left, the selected entity's form on the right.
- * The route is the source of truth for the selection; `#/entities` alone goes back to the last
- * kind and entity of this tab (ui-state).
- */
-const EntitiesPage = observer(({ kind, id }: Props) => {
+export const EntitiesPage = observer(({ kind, id }: Props) => {
     const s = getEntitiesStore();
 
     useEffect(() => {
@@ -86,8 +80,6 @@ const EntitiesPage = observer(({ kind, id }: Props) => {
         </PageContainer>
     );
 });
-
-export default EntitiesPage;
 
 const SPage = styled('div')`
     display: flex;

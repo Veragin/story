@@ -7,57 +7,27 @@ import { passageLocalIdOf } from './passageLocalId';
 import { localIdFromPassageFile, pathToResource, resourceKey, type TResourceRef } from './pathToEvent';
 import { version } from './version';
 
-export type TChangeListener = (event: TChangeEvent) => void;
+type TChangeListener = (event: TChangeEvent) => void;
 
-/** What a `bus.transaction` callback gets: the only way server code should touch the disk. */
 export type TTransaction = {
-    /** The project the bus writes to (so helpers like `json/index.ts#removePassagePositions` need only `tx`). */
     readonly project: ProjectRoot;
-    /** Atomic write (tmp + rename) that the watcher will not echo back. Bytes for images. */
     writeFile(file: string, contents: string | Uint8Array): Promise<void>;
-    /** Delete a file (missing is fine). */
     deleteFile(file: string): Promise<void>;
-    /** Delete a directory and everything in it (a `<character>.passages/` folder). */
     deleteDir(dir: string): Promise<void>;
-    /**
-     * Declare a change made some other way (e.g. a library that saved a file itself) so the
-     * watcher ignores it. `contents: null` means "the file will not exist".
-     */
+    // for files saved by something else (e.g. a library), so the watcher ignores them
     expect(file: string, contents: string | null): void;
-    /**
-     * The single event this operation emits once it commits. Calling it again replaces the
-     * event: a transaction emits at most one (plan §3 "Live refresh", point 2).
-     */
+    // replaces any earlier call: a transaction emits at most one event
     setEvent(event: TChangeEvent): void;
 };
 
-export type TEventBusOptions = {
+type TEventBusOptions = {
     project: ProjectRoot;
-    /** Window over which hand edits are collected into one batch. */
     batchMs?: number;
-    /**
-     * How long after a transaction commits the watcher keeps ignoring the files it wrote, as long
-     * as their content is still what the transaction wrote. Chokidar reports a write within a few
-     * ms, so this is generous on purpose.
-     */
     suppressMs?: number;
 };
 
 type TSuppression = { hash: string | null; until: number };
 
-/**
- * The server's change feed (plan §3 "Live refresh", point 2).
- *
- *  - **Hand edits**: the watcher (see `watcher.ts`) calls `fileChanged` for every file under
- *    `data/` and `types/`. Changes are collected for `batchMs` (~150 ms), mapped to resources
- *    (`pathToResource`), deduplicated, and emitted as one `TChangeEvent` per resource, with the
- *    changed file's content hash as `version`.
- *  - **Server writes**: go through `transaction`. Transactions run one at a time; every file one
- *    writes is recorded with the hash of what it wrote, and the watcher drops those changes. On
- *    commit the transaction emits *exactly one* event — the one set with `tx.setEvent`. If the
- *    callback throws, nothing is emitted and the suppressions are dropped, so whatever did reach
- *    the disk is reported by the watcher like a hand edit.
- */
 export class EventBus {
     readonly project: ProjectRoot;
     private readonly batchMs: number;
@@ -68,19 +38,19 @@ export class EventBus {
     private pending = new Map<string, 'add' | 'change' | 'unlink'>();
     private batchTimer: NodeJS.Timeout | null = null;
     private flushing: Promise<void> | null = null;
-    /** Last known local id of each passage file (by absolute path), for unlink events. */
+    // last parsed id per passage file, so an unlink still reports the id the file had
     private passageIds = new Map<string, string>();
     private activeTransactions = 0;
     private txQueue: Promise<unknown> = Promise.resolve();
     private closed = false;
 
+    // suppressMs is generous on purpose: chokidar reports a write within a few ms
     constructor({ project, batchMs = 150, suppressMs = 5000 }: TEventBusOptions) {
         this.project = project;
         this.batchMs = batchMs;
         this.suppressMs = suppressMs;
     }
 
-    /** Listen to every emitted event. Returns the unsubscribe function. */
     subscribe(listener: TChangeListener): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
@@ -90,7 +60,6 @@ export class EventBus {
         return this.listeners.size;
     }
 
-    /** Emit right away, bypassing batching (prefer `transaction`). */
     emit(event: TChangeEvent) {
         for (const listener of this.listeners) {
             try {
@@ -101,16 +70,6 @@ export class EventBus {
         }
     }
 
-    /**
-     * Run a multi-file write as one operation that emits one event:
-     *
-     *     const dto = await bus.transaction(async (tx) => {
-     *         await tx.writeFile(chapterFile, chapterSource);
-     *         await tx.writeFile(registerFile, registerSource);
-     *         tx.setEvent({ kind: 'chapter', id: chapterId, version: version(chapterSource), op: 'created' });
-     *         return readChapter(chapterId);
-     *     });
-     */
     transaction<T>(fn: (tx: TTransaction) => Promise<T>): Promise<T> {
         const run = async () => {
             this.activeTransactions++;
@@ -161,12 +120,11 @@ export class EventBus {
         return result;
     }
 
-    /** Called by the watcher for every add / change / unlink of a file. */
     fileChanged(file: string, kind: 'add' | 'change' | 'unlink' = 'change') {
         if (this.closed) return;
         const abs = path.resolve(file);
         const previous = this.pending.get(abs);
-        // add followed by unlink within one batch is a no-op the flush will see as "missing"
+        // a change after an add in the same batch is still a creation
         this.pending.set(abs, previous === 'add' && kind === 'change' ? 'add' : kind);
         this.scheduleFlush();
     }
@@ -184,7 +142,6 @@ export class EventBus {
         }, this.batchMs);
     }
 
-    /** Wait for the current batch window (tests). */
     async settle(): Promise<void> {
         while (this.batchTimer || this.flushing || this.activeTransactions > 0) {
             if (this.flushing) await this.flushing;
@@ -220,11 +177,7 @@ export class EventBus {
         for (const event of events.values()) this.emit(event);
     }
 
-    /**
-     * `pathToResource` names a passage after its file; the id the server serves it under comes
-     * from its `id` literal (`passageLocalId`). Parse the file for it, and remember it so an
-     * unlink still reports the id the file had.
-     */
+    // the served id comes from the file's `id` literal, not its file name
     private passageRef(abs: string, ref: TResourceRef, contents: Buffer | null): TResourceRef {
         const fileLocalId = localIdFromPassageFile(path.basename(abs));
         const prefix = ref.id.slice(0, ref.id.length - fileLocalId.length);
@@ -255,7 +208,7 @@ export class EventBus {
 const toEvent = (ref: TResourceRef, hash: string | null, change: 'add' | 'change' | 'unlink'): TChangeEvent => {
     const { primary, ...rest } = ref;
     if (!primary) {
-        // a secondary file changed (or went away): the resource itself is still there
+        // a secondary file going away does not delete the resource
         return { ...rest, version: hash ?? '', op: 'updated' };
     }
     if (hash === null) return { ...rest, version: null, op: 'deleted' };

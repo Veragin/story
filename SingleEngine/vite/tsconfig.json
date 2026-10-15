@@ -1,0 +1,8 @@
+{
+    /* Node-land (the Vite plugin and its tests), for editors and `eslint --projectService`: the
+       nearest tsconfig of these files would otherwise be `SingleEngine/tsconfig.json`, which is
+       browser-land and covers `src` only. `yarn typecheck` checks them through the root
+       `tsconfig.node.json`, of which this is the same view. */
+    "extends": "../../tsconfig.node.json",
+    "include": ["."]
+}

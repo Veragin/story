@@ -6,7 +6,7 @@ import type {
     TUpdateTriggerBody,
 } from '@story/visualizer-protocol';
 import { Node } from 'ts-morph';
-import { assertVersion, version } from '../../events/version';
+import { version } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removeTimelineEntries } from '../../json';
 import {
@@ -24,7 +24,7 @@ import { readTrigger, readTriggerSource, TRIGGER_FIELDS } from '../readers/trigg
 import { referenceAt } from '../registry';
 import { allTriggers, assertId, chapterFile, chapterObject, findTrigger } from '../story';
 import { applyPartial } from '../values';
-import { asBody, DERIVED_FIELDS, optionalText, requireText, type TWriter } from './common';
+import { asBody, assertCurrentVersion, DERIVED_FIELDS, optionalText, requireText, type TWriter } from './common';
 
 const TRIGGER_DERIVED = [...DERIVED_FIELDS, 'triggerId', 'chapterId'];
 
@@ -36,7 +36,7 @@ export const updateTrigger = ({ sp, bus }: TWriter, triggerId: string, rawBody: 
     sp.run(async (): Promise<TTriggerDto> => {
         const body = asBody(rawBody);
         const current = readTrigger(sp, triggerId);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const abs = sp.root.paths.triggersFile(current.chapterId);
         const s = sp.session();
         s.apply(() => {
@@ -114,10 +114,9 @@ export const deleteTrigger = ({ sp, bus }: TWriter, triggerId: string, rawBody: 
         const body = asBody(rawBody);
         const t = findTrigger(sp, triggerId);
         const current = readTriggerSource(sp, t);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const abs = t.sf.getFilePath();
         const chapterAbs = sp.root.paths.chapterFile(t.chapterId);
-        // anything but the owning chapter's `triggers: [...]` that imports the trigger
         const refs = sp
             .storyFiles()
             .filter((sf) => sf.getFilePath() !== abs && sf.getFilePath() !== chapterAbs)

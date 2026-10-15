@@ -24,39 +24,23 @@ import {
     type TMaybeCode,
 } from '@story/visualizer-protocol';
 import { parseStringLiteral, quoteString } from './codeLiterals';
-
-/**
- * Editors for the code-field convention of the protocol (plan §3): a field typed `T | TCode`
- * is edited either as a literal (a text box, a number, a picker…) or as a raw TypeScript
- * snippet in a monospace textarea, and a toggle switches between the two. Fields that are
- * always code (`onFinish`) have no toggle.
- *
- *     <StringCodeField label={_('Title')} value={p.title} onChange={(title) => edit({ title })} />
- *     <CodeField label="onFinish" value={link.onFinish} onChange={…} optional emptyCode="() => {}" />
- *
- * Switching literal → code writes the literal as TS source (`toCode`); code → literal reads it
- * back with `fromCode` when the snippet is a plain literal, else falls back to `emptyLiteral`.
- */
+import { FieldLabel } from './FieldLabel';
+import { SAddRow, SField, SSpacer } from './fieldLayout';
 
 export type TCodeFieldProps<T> = {
     label: string;
     value: TMaybeCode<T> | undefined;
     onChange: (value: TMaybeCode<T> | undefined) => void;
-    /** Renders the literal editor. Without it the field is code only. */
     literal?: (
         value: T,
         onChange: (value: T) => void,
         hasError: boolean
     ) => ReactNode;
-    /** Literal used when switching to literal mode and the code is not a plain literal, or when adding. */
     emptyLiteral?: T;
     toCode?: (value: T) => string;
     fromCode?: (code: string) => T | undefined;
-    /** The field may be absent: shows "+ label" when it is, and a remove button when it is not. */
     optional?: boolean;
-    /** With `optional`: whether a present value may be removed again. Default true. */
     removable?: boolean;
-    /** Code used when a code-only field is added. */
     emptyCode?: string;
     diagnostics?: TDiagnosticDto[];
     helperText?: string;
@@ -107,21 +91,16 @@ export const CodeField = <T,>({
     const toggle = () => {
         if (isCode(value)) {
             const parsed = fromCode?.(value.code);
-            onChange(parsed !== undefined ? parsed : (emptyLiteral as T));
+            onChange(parsed !== undefined ? parsed : emptyLiteral);
         } else {
-            onChange({ code: toCode(value as T) });
+            onChange({ code: toCode(value) });
         }
     };
 
     return (
         <SField>
             <SHeader>
-                <Typography
-                    variant="caption"
-                    color={hasError ? 'error' : 'text.secondary'}
-                >
-                    {label}
-                </Typography>
+                <FieldLabel hasError={hasError}>{label}</FieldLabel>
                 <SSpacer />
                 {literal && (
                     <Tooltip
@@ -168,7 +147,7 @@ export const CodeField = <T,>({
                     disabled={disabled}
                 />
             ) : (
-                literal?.(value as T, (v) => onChange(v), hasError)
+                literal?.(value, (v) => onChange(v), hasError)
             )}
             {helperText && (
                 <Typography variant="caption" color="text.secondary">
@@ -180,19 +159,20 @@ export const CodeField = <T,>({
     );
 };
 
-/** Monospace textarea for TS snippets. Tab indents by four spaces. */
 export const CodeTextArea = ({
     value,
     onChange,
     hasError,
     disabled,
     minRows = 1,
+    ariaLabel,
 }: {
     value: string;
     onChange: (code: string) => void;
     hasError?: boolean;
     disabled?: boolean;
     minRows?: number;
+    ariaLabel?: string;
 }) => {
     const ref = useRef<HTMLTextAreaElement>(null);
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -212,6 +192,7 @@ export const CodeTextArea = ({
             ref={ref}
             value={value}
             spellCheck={false}
+            aria-label={ariaLabel}
             disabled={disabled}
             rows={Math.max(minRows, value.split('\n').length)}
             data-error={hasError ? 'true' : undefined}
@@ -239,8 +220,6 @@ export const FieldDiagnostics = ({
             ))}
         </SDiagnostics>
     );
-
-// ---- literal presets -----------------------------------------------------------------------------
 
 const parseNumber = (code: string) => {
     const n = Number(code.trim());
@@ -326,7 +305,6 @@ export const BooleanCodeField = (props: TPresetProps<boolean>) => (
 
 export type TOption = { id: string; label?: string };
 
-/** A string id (passage, location, chapter) picked from `options`, free text allowed. */
 export const IdCodeField = ({
     options,
     placeholder,
@@ -346,7 +324,7 @@ export const IdCodeField = ({
                     liProps: HTMLAttributes<HTMLLIElement> & { key?: Key },
                     id
                 ) => {
-                    // MUI passes `key` inside the props; React wants it as its own attribute.
+                    // MUI passes `key` inside the props; React rejects a spread key
                     const props = { ...liProps };
                     delete props.key;
                     const o = options.find((x) => x.id === id);
@@ -376,27 +354,10 @@ export const IdCodeField = ({
     />
 );
 
-const SField = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-`;
-
 const SHeader = styled('div')`
     display: flex;
     align-items: center;
     min-height: 28px;
-`;
-
-const SAddRow = styled('div')`
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-`;
-
-const SSpacer = styled('span')`
-    flex: 1;
 `;
 
 const STextArea = styled('textarea')`

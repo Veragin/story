@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import { spacingCss } from '@story/ui';
 import type { EntitiesStore } from './EntitiesStore';
 
-/** Stale / diagnostics / references / error banners above the entity form. */
 export const Notices = observer(({ store }: { store: EntitiesStore }) => {
     const { stale, diagnostics, references, error } = store;
     return (

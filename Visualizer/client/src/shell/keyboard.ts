@@ -1,26 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { modals } from './modals';
 
-/**
- * Global keyboard shortcuts. One `keydown` listener on `window`, attached while at least one
- * handler is registered.
- *
- *   const off = keyboard.on('Delete', () => deleteSelected());
- *   const off = keyboard.on(['ctrl+z', 'meta+z'], undo);
- *   useKey('Escape', () => store.clearSelection());
- *
- * Key specs: an `event.key` value (`'Delete'`, `'Escape'`, `'ArrowLeft'`, `'w'`, `'+'`; single
- * letters match case-insensitively), optionally prefixed with modifiers `ctrl+`, `alt+`,
- * `shift+`, `meta+`, `mod+` (ctrl or meta). Without a modifier prefix the handler only fires when
- * ctrl/alt/meta are NOT held (shift is ignored for plain keys so `'+'` and `'?'` work).
- *
- * Events are ignored while an input, textarea, select or contenteditable element is focused,
- * and while a modal is open, unless the handler opts in (`allowInInputs` / `allowInModal`).
- *
- * Handlers run newest first. A handler that returns `true` consumes the event: later (older)
- * handlers are skipped and `preventDefault()` is called.
- */
-
 export type TKeyHandler = (event: KeyboardEvent) => boolean | void;
 
 export type TKeyOptions = {
@@ -69,7 +49,6 @@ const matches = (k: TParsedKey, e: KeyboardEvent): boolean => {
     return e.altKey === k.alt && e.shiftKey === k.shift;
 };
 
-/** True for elements where typing should not trigger shortcuts. */
 export const isEditableTarget = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
@@ -81,7 +60,6 @@ class Keyboard {
     private entries: TEntry[] = [];
     private attached = false;
 
-    /** Register a handler. Returns the function that unregisters it. */
     on = (key: string | string[], handler: TKeyHandler, options: TKeyOptions = {}): (() => void) => {
         const entry: TEntry = {
             keys: (Array.isArray(key) ? key : [key]).map(parseKey),
@@ -130,10 +108,6 @@ class Keyboard {
 
 export const keyboard = new Keyboard();
 
-/**
- * Hook form of `keyboard.on`. The latest `handler` is always called, so it does not need to be
- * memoised. Re-registers only when the key spec or options change.
- */
 export const useKey = (
     key: string | string[],
     handler: TKeyHandler,
@@ -141,6 +115,7 @@ export const useKey = (
 ) => {
     const handlerRef = useRef(handler);
     handlerRef.current = handler;
+    // a string, so an inline key array does not re-register on every render
     const keySpec = Array.isArray(key) ? key.join('\u0000') : key;
     const { enabled = true, allowInInputs, allowInModal } = options;
 

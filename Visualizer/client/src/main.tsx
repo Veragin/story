@@ -5,13 +5,20 @@ import { ThemeProvider } from '@mui/material';
 import { GlobalThemeWrapper } from '@story/ui';
 import { darkTheme } from './theme';
 import '@story/ui/index.css';
+import { goToLanding, STORY_ID } from './api';
 
-createRoot(document.getElementById('root')!).render(
-    <GlobalThemeWrapper>
-        <ThemeProvider theme={darkTheme}>
-            <Wrapper>
-                <Shell />
-            </Wrapper>
-        </ThemeProvider>
-    </GlobalThemeWrapper>
-);
+const rootElement = document.getElementById('root');
+
+if (!STORY_ID) {
+    goToLanding();
+} else if (rootElement) {
+    createRoot(rootElement).render(
+        <GlobalThemeWrapper>
+            <ThemeProvider theme={darkTheme}>
+                <Wrapper>
+                    <Shell />
+                </Wrapper>
+            </ThemeProvider>
+        </GlobalThemeWrapper>
+    );
+}

@@ -1,0 +1,8 @@
+{
+    "name": "Example",
+    "author": "Jan Tichavsky",
+    "password": "scrypt$16384$8$1$LuVRnihgKcV-Us_5p1ojMg$NQf-fHa-HQ624iKiUDe45_CKtmK6rO6Yx7GiXuuYDH7xAINXEgW3rKkD_pzkyTFbqK0XTviK9X3yrGqg8V-JPQ",
+    "mapSize": { "width": 80, "height": 60 },
+    "description": "The reference story: a village, a wedding and a kingdom, played by Thomas and Annie. It ships with the engine and is what the engine's tests play.",
+    "public": true
+}

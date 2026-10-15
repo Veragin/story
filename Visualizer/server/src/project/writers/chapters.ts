@@ -7,10 +7,10 @@ import type {
     TRemoveChapterCharacterBody,
     TUpdateChapterBody,
 } from '@story/visualizer-protocol';
-import { assertVersion } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removePassagePositions, removeTimelineEntries } from '../../json';
-import { cap, quote } from '../ast';
+import { capitalize } from '@story/shared';
+import { quote } from '../ast';
 import { chapterFields, chapterVersion, readChapter } from '../readers/chapters';
 import { passageIdOfFile } from '../readers/passages';
 import {
@@ -37,7 +37,15 @@ import {
     registeredPassageIds,
 } from '../story';
 import { applyPartial } from '../values';
-import { applyDataType, asBody, DERIVED_FIELDS, optionalText, requireText, type TWriter } from './common';
+import {
+    applyDataType,
+    asBody,
+    assertCurrentVersion,
+    DERIVED_FIELDS,
+    optionalText,
+    requireText,
+    type TWriter,
+} from './common';
 import { newPassageText } from './passages';
 
 const CHAPTER_DERIVED = [...DERIVED_FIELDS, 'chapterId', 'characters', 'dataType'];
@@ -46,7 +54,7 @@ export const updateChapter = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
     sp.run(async (): Promise<TChapterDto> => {
         const body = asBody(rawBody);
         const current = readChapter(sp, chapterId);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const s = sp.session();
         s.apply(() => {
             const sf = s.edit(sp.root.paths.chapterFile(chapterId));
@@ -67,7 +75,6 @@ export const updateChapter = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
         return readChapter(sp, chapterId);
     });
 
-/** The text of a new `<ch>.chapter.ts`. */
 const newChapterText = (id: string, title: string, description: string, location: string, start: string, end: string) =>
     `import { Time } from '@story/shared';
 import { TChapter } from '@story/types';
@@ -89,7 +96,7 @@ export const ${id}Chapter: TChapter<'${id}'> = {
     init: {},
 };
 
-export type T${cap(id)}ChapterData = {};
+export type T${capitalize(id)}ChapterData = {};
 `;
 
 export const createChapter = ({ sp, bus }: TWriter, rawBody: TCreateChapterBody) =>
@@ -99,8 +106,10 @@ export const createChapter = ({ sp, bus }: TWriter, rawBody: TCreateChapterBody)
         const title = requireText(body, 'title');
         const description = optionalText(body, 'description') ?? '';
         const location = requireText(body, 'location');
-        const range = body.timeRange as { start?: unknown; end?: unknown } | undefined;
-        if (!range || typeof range.start !== 'string' || typeof range.end !== 'string') {
+        const range = body.timeRange;
+        const start = typeof range === 'object' && range !== null && 'start' in range ? range.start : undefined;
+        const end = typeof range === 'object' && range !== null && 'end' in range ? range.end : undefined;
+        if (typeof start !== 'string' || typeof end !== 'string') {
             throw HttpError.badRequest('Field "timeRange" must be { start, end } time strings');
         }
         if (!registerEntries(sp, 'locations').some((e) => e.id === location)) {
@@ -115,10 +124,7 @@ export const createChapter = ({ sp, bus }: TWriter, rawBody: TCreateChapterBody)
         }
         const s = sp.session();
         s.apply(() => {
-            s.create(
-                paths.chapterFile(chapterId),
-                newChapterText(chapterId, title, description, location, range.start as string, range.end as string)
-            );
+            s.create(paths.chapterFile(chapterId), newChapterText(chapterId, title, description, location, start, end));
             s.create(paths.chapterPassagesFile(chapterId), emptyPassagesFileText(chapterId));
             registerAdd(s, 'chapters', chapterId, {
                 importName: `${chapterId}Chapter`,
@@ -131,9 +137,9 @@ export const createChapter = ({ sp, bus }: TWriter, rawBody: TCreateChapterBody)
                 s,
                 'chapters',
                 chapterId,
-                `{ ref: TChapter<'${chapterId}'> } & T${cap(chapterId)}ChapterData`,
+                `{ ref: TChapter<'${chapterId}'> } & T${capitalize(chapterId)}ChapterData`,
                 {
-                    dataType: `T${cap(chapterId)}ChapterData`,
+                    dataType: `T${capitalize(chapterId)}ChapterData`,
                     targetFile: paths.chapterFile(chapterId),
                     storyTypes: ['TChapter'],
                 }
@@ -153,7 +159,7 @@ export const deleteChapter = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
     sp.run(async (): Promise<TOkDto> => {
         const body = asBody(rawBody);
         const current = readChapter(sp, chapterId);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const paths = sp.root.paths;
         const dir = paths.chapterDir(chapterId);
         const inChapter = (abs: string) => abs.startsWith(dir + path.sep);
@@ -210,7 +216,7 @@ export const addChapterCharacter = ({ sp, bus }: TWriter, chapterId: string, raw
         const s = sp.session();
         s.apply(() => {
             passagesAddCharacter(s, chapterId, characterId);
-            s.create(passageFile, newPassageText(chapterId, characterId, localId, 'screen', cap(localId)));
+            s.create(passageFile, newPassageText(chapterId, characterId, localId, 'screen', capitalize(localId)));
             passagesAddPassage(s, chapterId, characterId, passageId, passageFile, `${localId}Passage`);
         });
         await s.commit(bus, () => ({
@@ -232,7 +238,7 @@ export const removeChapterCharacter = (
     sp.run(async (): Promise<TChapterDto> => {
         const body = asBody(rawBody);
         const current = readChapter(sp, chapterId);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const entry = current.characters.find((c) => c.characterId === characterId);
         if (!entry) throw HttpError.notFound(`Character "${characterId}" is not in chapter "${chapterId}"`);
         const dir = sp.root.paths.characterPassagesDir(chapterId, characterId);

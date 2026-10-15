@@ -1,8 +1,7 @@
-/**
- * Tiny shape checks for the JSON stores. They throw `ShapeError` naming the offending path
- * (`data[3][7].tile`); the store turns it into a 400 for a request body or a 422 for a broken
- * file on disk.
- */
+import { isPlainObject } from '../http/body';
+import { HttpError } from '../http/HttpError';
+import type { ProjectRoot } from '../project/ProjectRoot';
+
 export class ShapeError extends Error {
     constructor(
         readonly at: string,
@@ -13,11 +12,8 @@ export class ShapeError extends Error {
     }
 }
 
-export const isRecord = (v: unknown): v is Record<string, unknown> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v);
-
 export const expectRecord = (v: unknown, at: string): Record<string, unknown> => {
-    if (!isRecord(v)) throw new ShapeError(at, 'an object');
+    if (!isPlainObject(v)) throw new ShapeError(at, 'an object');
     return v;
 };
 
@@ -52,11 +48,26 @@ export const expectPoint = (v: unknown, at: string): { x: number; y: number } =>
     return { x: expectNumber(o.x, `${at}.x`), y: expectNumber(o.y, `${at}.y`) };
 };
 
-/** Refuse keys the format does not know, so a typo is an error instead of silently lost data. */
 export const onlyKeys = (o: Record<string, unknown>, at: string, allowed: readonly string[]) => {
     for (const key of Object.keys(o)) {
         if (!allowed.includes(key)) {
             throw new ShapeError(at ? `${at}.${key}` : key, `no such field (allowed: ${allowed.join(', ')})`);
         }
     }
+};
+
+export const parseRequestBody = <T>(parse: (value: unknown) => T, value: unknown): T => {
+    try {
+        return parse(value);
+    } catch (e) {
+        if (e instanceof ShapeError) throw HttpError.badRequest(e.message);
+        throw e;
+    }
+};
+
+export const brokenJsonFileError = (project: ProjectRoot, file: string, e: unknown): HttpError => {
+    const rel = project.rel(file);
+    const message =
+        e instanceof ShapeError ? e.message : `Not valid JSON: ${e instanceof Error ? e.message : String(e)}`;
+    return HttpError.invalid([{ file: rel, line: 1, column: 1, message }], `${rel}: ${message}`);
 };

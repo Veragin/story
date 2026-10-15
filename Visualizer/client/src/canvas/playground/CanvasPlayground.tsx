@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, styled } from '@mui/material';
 import { Camera } from '../Camera';
+import { boundsOf, rectToPolygon } from '../geometry';
 import { LineTool } from '../controllers/LineTool';
 import { SelectionController } from '../controllers/SelectionController';
 import { VertexEditController } from '../controllers/VertexEditController';
@@ -12,11 +13,7 @@ import { RectShape } from '../shapes/RectShape';
 import type { Shape } from '../shapes/Shape';
 import { TextShape } from '../shapes/TextShape';
 
-/**
- * Dev playground for the Canvas library (`#/_canvas`). Not translated: it is a developer tool.
- * Shows polygons with vertex editing, resizable rects, anchored arrows, text, the line tool,
- * the editable toggle, hover tooltips and the event stream.
- */
+// untranslated: developer-only tool
 
 type TDemo = { tooltip: string };
 
@@ -28,7 +25,7 @@ type TRig = {
     lineTool: LineTool;
 };
 
-function buildDemo(scene: Scene): void {
+const buildDemo = (scene: Scene): void => {
     const tip = (tooltip: string): TDemo => ({ tooltip });
     const stroke = { color: '#ffffff88', width: 2, screenWidth: true };
 
@@ -109,7 +106,6 @@ function buildDemo(scene: Scene): void {
             width: 220,
             label: 'Village',
             fill: '#00695c',
-            // snap to a 20-unit grid
             drag: {
                 constrain: (p) => ({
                     x: Math.round(p.x / 20) * 20,
@@ -162,7 +158,14 @@ function buildDemo(scene: Scene): void {
         }),
         'labels'
     );
-}
+};
+
+const tooltipOf = (shape: Shape | null): string | undefined => {
+    const data = shape?.data;
+    if (typeof data !== 'object' || data === null || !('tooltip' in data))
+        return undefined;
+    return typeof data.tooltip === 'string' ? data.tooltip : undefined;
+};
 
 export const CanvasPlayground = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,8 +189,6 @@ export const CanvasPlayground = () => {
         buildDemo(scene);
 
         const push = (line: string) => setLog((l) => [line, ...l].slice(0, 12));
-        const tooltipFor = (s: Shape | null) =>
-            (s?.data as TDemo | undefined)?.tooltip;
         const offs = [
             camera.subscribe((s) => setZoom(s.zoom)),
             lineTool.events.on('state', ({ active }) => setLineActive(active)),
@@ -205,7 +206,7 @@ export const CanvasPlayground = () => {
                 push(`create ${shape.id}`)
             ),
             scene.events.on('pointermove', ({ shape, screen }) => {
-                const text = tooltipFor(shape);
+                const text = tooltipOf(shape);
                 setTooltip(
                     text ? { text, x: screen.x + 14, y: screen.y + 14 } : null
                 );
@@ -271,16 +272,10 @@ export const CanvasPlayground = () => {
         if (!rig) return;
         const shapes = rig.scene.getShapes();
         if (shapes.length === 0) return;
-        const b = shapes.map((s) => s.getBounds());
-        const minX = Math.min(...b.map((r) => r.x));
-        const minY = Math.min(...b.map((r) => r.y));
-        const maxX = Math.max(...b.map((r) => r.x + r.width));
-        const maxY = Math.max(...b.map((r) => r.y + r.height));
-        rig.scene.camera.fitRect(
-            { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
-            rig.scene.size,
-            40
+        const bounds = boundsOf(
+            shapes.flatMap((s) => rectToPolygon(s.getBounds()))
         );
+        rig.scene.camera.fitRect(bounds, rig.scene.size, 40);
     };
 
     return (
@@ -334,8 +329,6 @@ export const CanvasPlayground = () => {
         </SRoot>
     );
 };
-
-export default CanvasPlayground;
 
 const SRoot = styled('div')`
     display: flex;

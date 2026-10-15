@@ -1,6 +1,5 @@
 import { Avatar, Button, styled, Tooltip } from '@mui/material';
 import { Modal, Row, spacingCss, Text } from '@story/ui';
-import { register } from '@story/data';
 import { useState } from 'react';
 import { Inventory } from './Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -14,7 +13,7 @@ export const StatusBar = observer(() => {
     const s = useWorldState();
     const char = s.characters[s.mainCharacterId];
     const [openInventory, setOpenInventory] = useState(false);
-    const character = register.characters[s.mainCharacterId];
+    const character = e.storyModule.register.characters[s.mainCharacterId];
     const portrait = characterImage(s.mainCharacterId);
 
     return (

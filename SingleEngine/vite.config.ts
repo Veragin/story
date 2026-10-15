@@ -1,23 +1,21 @@
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { storiesPlugin } from './vite/storiesPlugin';
 
-/** Absolute path of `p`, resolved against this config file (i.e. `SingleEngine/`). */
 const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-/** The monorepo root. Everything this app imports lives under it, none of it under `root`. */
 const repoRoot = at('..');
 
-/** The internal packages this app pulls source out of — all of them siblings, none under `root`. */
-const siblingPackages = ['../types', '../data', '../shared', '../ui', '../core'].map(at);
+// same default and resolution as the Visualizer server's `STORIES_ROOT`
+const storiesRoot = path.resolve(repoRoot, process.env.STORIES_ROOT ?? 'stories');
 
-/**
- * Vite seeds its watcher with `root` only; anything outside is added lazily, the first time a
- * module is transformed. That is enough to hot-reload a file that is already in the graph, but
- * a *new* file is never seen — so adding `data/chapters/…/newPassage.ts` would not invalidate
- * the chapter barrel that is about to import it. Seeding the sibling packages up front closes
- * the gap (§7, §10 risk 4).
- */
+const visualizerServer = process.env.VISUALIZER_SERVER ?? 'http://localhost:8123';
+
+const siblingPackages = ['../shared', '../ui', '../core'].map(at);
+
+// Vite only watches `root` up front; files outside it are seen lazily, so new ones would be missed.
 const watchSiblingPackages = () => ({
     name: 'story:watch-sibling-packages',
     configureServer(server: { watcher: { add: (paths: string[]) => void } }) {
@@ -25,43 +23,28 @@ const watchSiblingPackages = () => ({
     },
 });
 
-// https://vitejs.dev/config/
+const allowedHostsFromEnv = (value: string | undefined): true | string[] | undefined => {
+    const hosts = (value ?? '')
+        .split(',')
+        .map((h) => h.trim())
+        .filter(Boolean);
+    if (hosts.includes('*')) return true;
+    return hosts.length > 0 ? hosts : undefined;
+};
+
 export default defineConfig({
+    base: process.env.ENGINE_BASE || '/',
     assetsInclude: ['**/*.png', '**/*.jpg'],
-    // No static-serve root: story art lives next to the story (§3) — each image is the `.png`
-    // sibling of the passage / character / npc file it belongs to — and is pulled in through
-    // the bundler by `src/images.ts` (`import.meta.glob`), so it gets hashed and validated at
-    // build time instead of being copied verbatim.
     publicDir: false,
-    plugins: [react(), watchSiblingPackages()],
+    plugins: [react(), watchSiblingPackages(), storiesPlugin({ storiesRoot, visualizerServer })],
     resolve: {
-        /**
-         * Explicit source aliases rather than `vite-tsconfig-paths` (§7).
-         *
-         * Both arrangements resolve; the difference is what they resolve *to*. Left alone,
-         * `@story/core` would go through the workspace symlink in `node_modules` and land on
-         * the same file — but the aliases state the intent in one place, independently of
-         * whether `yarn install` has linked anything, and they keep every internal package on
-         * its real source path so an edit in `core/src` is a plain module-graph invalidation
-         * and HMR crosses the package boundary.
-         *
-         * Order matters: `@rollup/plugin-alias` treats a string `find` as a prefix, so a bare
-         * `@story/ui` entry would also swallow `@story/ui/index.css` and rewrite it to
-         * `ui/src/index.ts/index.css`. Every subpath a package publishes through `exports` is
-         * therefore listed ahead of its bare name.
-         */
+        // string `find` is a prefix match: subpaths must precede their bare package name
         alias: [
             { find: '@story/ui/index.css', replacement: at('../ui/src/index.css') },
             { find: '@story/ui', replacement: at('../ui/src/index.ts') },
 
-            // `@story/data` publishes `"./*"`: the author's tree is the public surface (§5),
-            // so deep paths resolve by pattern instead of an enumerated list that would go
-            // stale every time the story grows a folder.
-            { find: /^@story\/data\/(.+)$/, replacement: at('../data/') + '$1' },
-            { find: '@story/data', replacement: at('../data/index.ts') },
-
+            // `@story/data` / `@story/types` differ per story: `storiesPlugin` resolves them
             { find: '@story/core', replacement: at('../core/src/index.ts') },
-            { find: '@story/types', replacement: at('../types/index.ts') },
             { find: '@story/shared', replacement: at('../shared/src/index.ts') },
         ],
     },
@@ -69,21 +52,20 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 8100,
         strictPort: true,
+        allowedHosts: allowedHostsFromEnv(process.env.ENGINE_ALLOWED_HOSTS),
         fs: {
-            // `root` is `SingleEngine/`, so every sibling package is outside it and would be
-            // refused by the dev server's file-serving guard (§10 risk 4).
-            allow: [repoRoot],
+            allow: [repoRoot, storiesRoot],
         },
-        // The sibling packages are added to this watcher by `watchSiblingPackages` above;
-        // `ignored` keeps that from dragging in the workspace symlink farm or build output.
         watch: {
             ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+        },
+        // same origin so the `story_session` cookie reaches the story guard; Host passes through for CSRF
+        proxy: {
+            '/api': { target: visualizerServer },
         },
     },
     esbuild: {
         supported: {
-            // `data/register.ts` code-splits the story with dynamic passage imports that the
-            // engine awaits at module scope (§7).
             'top-level-await': true,
         },
     },

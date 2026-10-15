@@ -9,36 +9,22 @@ import {
 } from '@story/visualizer-protocol';
 import { parseLiteral, valueToSource } from './entityFields';
 
-/**
- * The Entities page's code fields (plan §3 "Code-field convention"). A monospace textarea is
- * enough: the text is written back verbatim by the server (`setInitializer`) and type-checked
- * there (422 diagnostics come back next to the field).
- *
- * Local to this page on purpose (WP6 builds its own in `pages/Chapter/`); the two can be merged
- * later.
- */
-
 type TCodeAreaProps = {
     'value': string;
     'onChange': (value: string) => void;
     'placeholder'?: string;
-    'minRows'?: number;
-    'readOnly'?: boolean;
     'error'?: boolean;
     'aria-label'?: string;
 };
 
-/** A monospace textarea that grows with its content. Tab inserts four spaces. */
-export const CodeArea = ({
+const CodeArea = ({
     value,
     onChange,
     placeholder,
-    minRows = 1,
-    readOnly,
     error,
     ...rest
 }: TCodeAreaProps) => {
-    const rows = Math.max(minRows, value.split('\n').length);
+    const rows = Math.max(1, value.split('\n').length);
     return (
         <STextarea
             {...rest}
@@ -46,11 +32,10 @@ export const CodeArea = ({
             value={value}
             rows={Math.min(rows, 24)}
             placeholder={placeholder}
-            readOnly={readOnly}
             data-error={error ? 'true' : undefined}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-                if (e.key !== 'Tab' || e.shiftKey || readOnly) return;
+                if (e.key !== 'Tab' || e.shiftKey) return;
                 e.preventDefault();
                 const el = e.currentTarget;
                 const { selectionStart: start, selectionEnd: end } = el;
@@ -68,26 +53,15 @@ type TMaybeCodeFieldProps<T> = {
     label: string;
     value: TMaybeCode<T> | undefined;
     onChange: (value: TMaybeCode<T>) => void;
-    /** Whether a non-code value is a literal this field can edit. */
     accept: (value: unknown) => value is T;
-    /** Literal to use when switching back from code that is not a plain literal. */
     fallback: T;
     renderLiteral: (value: T, onChange: (value: T) => void) => ReactNode;
-    /** Error lines (422 diagnostics) shown under the field. */
     errors?: string[];
-    /** Extra buttons next to the toggle. */
     actions?: ReactNode;
-    /** The literal editor is a whole block (table, record) rather than one input. */
     block?: boolean;
 };
 
-/**
- * A field of type `T | TCode`: the literal editor, or a code area, with a toggle between them.
- * Values the literal editor cannot show (wrong type) are shown as code. Switching code → literal
- * parses a plain literal (`'Forest'`, `10`, `true`); other code comes back only if unchanged
- * since it was switched, else the toggle is disabled.
- */
-export function MaybeCodeField<T>({
+export const MaybeCodeField = <T,>({
     label,
     value,
     onChange,
@@ -97,7 +71,7 @@ export function MaybeCodeField<T>({
     errors = [],
     actions,
     block,
-}: TMaybeCodeFieldProps<T>) {
+}: TMaybeCodeFieldProps<T>) => {
     const remembered = useRef<{ code: string; literal: T } | null>(null);
     const asCode: TCode | null = isCode(value)
         ? value
@@ -177,9 +151,8 @@ export function MaybeCodeField<T>({
             <FieldErrors errors={errors} />
         </SField>
     );
-}
+};
 
-/** A field that is always code (custom data types, unknown fields). */
 export const CodeOnlyField = ({
     label,
     value,
@@ -211,7 +184,7 @@ export const CodeOnlyField = ({
     </SField>
 );
 
-export const FieldErrors = ({ errors }: { errors: string[] }) =>
+const FieldErrors = ({ errors }: { errors: string[] }) =>
     errors.length === 0 ? null : (
         <SErrors>
             {errors.map((e, i) => (

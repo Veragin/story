@@ -1,17 +1,16 @@
-import type { TCode, TMaybeCode, TTriggerDto } from '@story/visualizer-protocol';
+import type { TFunctionDto, TMaybeCode, TTriggerDto } from '@story/visualizer-protocol';
 import { version } from '../../events/version';
 import { lineOf } from '../ast';
 import type { SourceProject } from '../SourceProject';
 import { findTrigger, type TTriggerSource } from '../story';
 import { readFields, S, type TField } from '../values';
 
-/** Editable fields of a `TTimeTrigger` (`types/TTimeTrigger.ts`). */
 export const TRIGGER_FIELDS: Record<string, TField> = {
     name: { schema: S.string },
     description: { schema: S.string },
     time: { schema: S.time },
-    condition: { schema: S.code },
-    action: { schema: S.code },
+    condition: { schema: S.fn('() => true') },
+    action: { schema: S.fn() },
 };
 
 export const readTriggerSource = (sp: SourceProject, t: TTriggerSource): TTriggerDto => {
@@ -24,12 +23,11 @@ export const readTriggerSource = (sp: SourceProject, t: TTriggerSource): TTrigge
         file: sp.root.rel(t.sf.getFilePath()),
         line: lineOf(decl),
         exportName: t.exportName,
-        // until a trigger has a `name`, its id stands in (protocol `dto/trigger.ts`)
         name: (fields.name ?? t.triggerId) as TMaybeCode<string>,
         description: (fields.description ?? '') as TMaybeCode<string>,
         time: (fields.time ?? { code: '' }) as TMaybeCode<string>,
-        condition: (fields.condition ?? { code: '() => true' }) as TCode,
-        action: (fields.action ?? { code: '() => {}' }) as TCode,
+        condition: (fields.condition ?? { code: '() => true' }) as TFunctionDto,
+        action: (fields.action ?? { code: '() => {}' }) as TFunctionDto,
     };
 };
 

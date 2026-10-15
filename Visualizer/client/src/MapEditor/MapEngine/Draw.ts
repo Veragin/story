@@ -21,14 +21,6 @@ import { computeTilePos, findNeighbor, mapWorldBounds, minimapSize } from './uti
 const FONT_FAMILY = 'system-ui, sans-serif';
 const TEXT_MAX_WIDTH = MAP_TILE_WIDTH * 0.86;
 
-/**
- * Renders the hex tiles of `mapStore.data` into one canvas, following a shared `Camera`
- * (`screen = (world - camera.xy) * camera.zoom`, the same transform as the Locations `Scene`).
- *
- * It redraws only after `render()` (tile edits, camera moves, resizes), at most once per animation
- * frame, and `destroy()` cancels the pending frame, the resize observer and the camera
- * subscription (the old loop re-armed `requestAnimationFrame` forever and was never stopped).
- */
 export class Draw {
     private readonly ctx: CanvasRenderingContext2D | null;
     private frame: number | null = null;
@@ -62,7 +54,6 @@ export class Draw {
         this.resize();
     }
 
-    /** Canvas size in CSS px. */
     get size(): TSize {
         return { ...this.cssSize };
     }
@@ -84,7 +75,6 @@ export class Draw {
         this.render();
     };
 
-    /** Schedules a redraw on the next animation frame (coalesced). */
     render = () => {
         if (this.destroyed || this.frame !== null) return;
         this.frame = requestAnimationFrame(() => {
@@ -103,7 +93,6 @@ export class Draw {
         this.offCamera();
     };
 
-    /** Draws synchronously (the frame callback; handy in tests). */
     renderNow = () => {
         const ctx = this.ctx;
         if (!ctx) return;
@@ -130,7 +119,6 @@ export class Draw {
         if (this.mapStore.interactive && this.mapStore.showMinimap) this.renderMinimap(ctx, map);
     };
 
-    /** Rows and columns that intersect the view (clamped to the map). */
     visibleRange = (map: Pick<TMapDocument, 'width' | 'height'>) => {
         const view = this.camera.visibleRect(this.cssSize);
         const clampI = (v: number) => Math.min(Math.max(0, v), map.height - 1);
@@ -187,7 +175,7 @@ export class Draw {
                     ctx.font = `${DESCRIPTION_FONT_SIZE}px ${FONT_FAMILY}`;
                     lines.forEach((line, k) => ctx.fillText(line, x, top + DESCRIPTION_FONT_SIZE * 1.2 * (k + 0.5)));
                 } else if (tile.description) {
-                    // a description exists but the zoom is too small to read it: a small marker
+                    // too small to read at this zoom: marker only
                     ctx.beginPath();
                     ctx.arc(x, y + HEX_RADIUS * 0.55, 2.5, 0, Math.PI * 2);
                     ctx.fill();
@@ -238,7 +226,6 @@ export class Draw {
             }
         }
 
-        // the part of the map in view (the old code scaled y by the minimap *width*)
         const bounds = mapWorldBounds(map);
         const view = this.camera.visibleRect(this.cssSize);
         ctx.save();
@@ -275,7 +262,6 @@ export class Draw {
     }
 }
 
-/** Black or white, whichever reads better on the tile colour. */
 export const textColorFor = (background: string | undefined): string => {
     const hex = background?.replace('#', '') ?? '';
     const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex.slice(0, 6);
@@ -284,7 +270,6 @@ export const textColorFor = (background: string | undefined): string => {
     return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#111111' : '#ffffff';
 };
 
-/** The description wrapped to the tile width, at most `DESCRIPTION_MAX_LINES` lines. */
 export const descriptionLines = (description: string): string[] => {
     const font = { fontSize: DESCRIPTION_FONT_SIZE, fontFamily: FONT_FAMILY };
     const lines = wrapText(description, TEXT_MAX_WIDTH, font);

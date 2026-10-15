@@ -22,9 +22,7 @@ import {
 import { CodeOnlyField, MaybeCodeField, SLabel } from './CodeField';
 import { isBoolean, isNumber, isString, valueToSource } from './entityFields';
 
-/** Literal editors used inside `MaybeCodeField` and the record / table editors. */
-
-export const TextInput = ({
+const TextInput = ({
     value,
     onChange,
     multiline,
@@ -49,8 +47,7 @@ export const TextInput = ({
     />
 );
 
-/** A number input that tolerates intermediate text (`-`, ``) without losing the value. */
-export const NumberInput = ({
+const NumberInput = ({
     value,
     onChange,
     label,
@@ -81,7 +78,7 @@ export const NumberInput = ({
     );
 };
 
-export const BoolInput = ({
+const BoolInput = ({
     value,
     onChange,
     label,
@@ -101,8 +98,7 @@ export const BoolInput = ({
     />
 );
 
-/** Pick an id from `options`, or type any other (free solo). */
-export const IdPicker = ({
+const IdPicker = ({
     value,
     onChange,
     options,
@@ -155,8 +151,6 @@ export const IdMultiPicker = ({
     />
 );
 
-/* ---------------------------------------------------------------- inventory */
-
 const isInventory = (v: unknown): v is TInventoryEntryDto[] =>
     Array.isArray(v) &&
     v.every(
@@ -168,8 +162,7 @@ const isInventory = (v: unknown): v is TInventoryEntryDto[] =>
             typeof (e as { id?: unknown }).id === 'string'
     );
 
-/** `inventory: [{ id: 'bow', amount: 1 }]` as rows; extra keys of an entry are kept. */
-export const InventoryField = ({
+const InventoryField = ({
     value,
     onChange,
     itemIds,
@@ -237,8 +230,6 @@ export const InventoryField = ({
         )}
     />
 );
-
-/* ---------------------------------------------------------------- local characters */
 
 const isLocalCharacters = (v: unknown): v is TLocalCharacterDto[] =>
     Array.isArray(v) &&
@@ -325,8 +316,6 @@ export const LocalCharactersField = ({
     />
 );
 
-/* ---------------------------------------------------------------- simple maybe-code fields */
-
 export const StringField = ({
     label,
     value,
@@ -393,13 +382,10 @@ export const IdField = ({
     />
 );
 
-/* ---------------------------------------------------------------- records (init, item props) */
-
 export type TKnownField = {
     key: string;
     label: string;
     kind: 'number' | 'string' | 'boolean' | 'location' | 'inventory';
-    /** Shown even when the record does not have it yet. */
     always?: boolean;
 };
 
@@ -410,14 +396,9 @@ type TRecordEditorProps = {
     known: TKnownField[];
     locationIds: string[];
     itemIds: string[];
-    /** Diagnostics of a key (`init.health`). */
     errorsOf: (key: string) => string[];
 };
 
-/**
- * An object literal (`init`, an item's props): the known fields with their own editors, and
- * every other key as a code field (custom data, plan WP7), plus add / remove of keys.
- */
 export const RecordEditor = ({
     label,
     value,
@@ -573,9 +554,7 @@ export const RecordEditor = ({
     );
 };
 
-/* ---------------------------------------------------------------- bits */
-
-export const RemoveButton = ({
+const RemoveButton = ({
     onClick,
     title,
 }: {
@@ -593,7 +572,7 @@ export const RemoveButton = ({
     </Tooltip>
 );
 
-export const AddButton = ({
+const AddButton = ({
     label,
     onClick,
 }: {
@@ -610,7 +589,7 @@ export const AddButton = ({
     </Button>
 );
 
-export const STable = styled('div')`
+const STable = styled('div')`
     display: flex;
     flex-direction: column;
     gap: ${spacingCss(1.5)};

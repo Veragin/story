@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { MapStore } from '../../MapStore';
+import type { MapStore } from '../../MapStore';
 import styled from '@emotion/styled';
 import { Column } from '@story/ui';
 import {

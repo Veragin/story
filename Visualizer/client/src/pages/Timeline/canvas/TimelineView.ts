@@ -23,18 +23,21 @@ export type TTimelineTooltip = { title: string; lines: string[]; x: number; y: n
 
 export type TTimelineViewOptions = {
     timeManager: TimeManager;
-    /** Hover / drag info for the React tooltip (screen coordinates relative to the canvas). */
     onTooltip?: (tooltip: TTimelineTooltip) => void;
-    /** Double-click on a trigger. */
     onOpenTrigger?: (triggerId: string) => void;
-    /** Wheel zoom sensitivity per deltaY pixel. */
     wheelSensitivity?: number;
 };
 
 const MIN_CHAPTER_WIDTH = 6;
 const WHEEL_SENSITIVITY = 0.0015;
 
-/** A stable, muted color per location, so chapters of one place read as a group. */
+const timelineDataOf = (shape: Shape | null | undefined): TTimelineShapeData | null => {
+    const data: unknown = shape?.data;
+    if (typeof data !== 'object' || data === null || !('kind' in data) || !('id' in data)) return null;
+    const { kind, id } = data;
+    return (kind === 'chapter' || kind === 'trigger') && typeof id === 'string' ? { kind, id } : null;
+};
+
 export const locationColor = (location: TMaybeCode<string>) => {
     const key = typeof location === 'string' ? location : location.code;
     let hash = 0;
@@ -42,15 +45,6 @@ export const locationColor = (location: TMaybeCode<string>) => {
     return `hsl(${Math.abs(hash) % 360}, 40%, 34%)`;
 };
 
-/**
- * The Timeline canvas (plan WP5) on the Canvas library: chapter boxes (`RectShape`: x/width from
- * the time range, free y from the layout), parent → child arrows, trigger dots and the time strip,
- * over a camera whose zoom stays at 1. Time zoom (wheel) changes `store.pps` and keeps the time
- * under the cursor in place. Dragging empty space pans, dragging on the strip pans in time only.
- *
- * Shapes are rebuilt from the store by an `autorun`; the user's edits go back through
- * `store.commitChapter` / `store.commitTrigger` when a gesture ends (`change` with `final`).
- */
 export class TimelineView {
     readonly camera: Camera;
     readonly scene: Scene;
@@ -115,16 +109,12 @@ export class TimelineView {
         this.scene.destroy();
     }
 
-    // ---- camera / time zoom --------------------------------------------------------------------
-
-    /** Changes the time scale by `factor`, keeping the time under screen x `sx` in place. */
     zoomAt(sx: number, factor: number): void {
         const t = this.store.xToTime(this.camera.x + sx);
         const pps = this.store.setPps(this.store.pps * factor);
         this.camera.set({ x: t * pps - sx });
     }
 
-    /** Time at the middle of the view (where "Add" places new things). */
     viewCenterTime(): number {
         return Math.max(0, this.store.xToTime(this.camera.x + this.scene.size.width / 2));
     }
@@ -139,8 +129,6 @@ export class TimelineView {
         this.zoomAt(e.clientX - rect.left, factor);
     }
 
-    // ---- strip ---------------------------------------------------------------------------------
-
     private inStrip(screenY: number): boolean {
         return screenY >= this.scene.size.height - STRIP_HEIGHT;
     }
@@ -153,7 +141,6 @@ export class TimelineView {
 
     private panLastX = 0;
 
-    /** Dragging on the strip (or an unselected trigger) pans the time only, like the old strip. */
     private readonly stripPan: ISceneInteraction = {
         priority: -1,
         onPointerDown: (e) => {
@@ -187,9 +174,7 @@ export class TimelineView {
         ctx.restore();
     };
 
-    // ---- store → shapes ------------------------------------------------------------------------
-
-    /** Rebuilds the shapes from the store. Reads every observable first, so the autorun keeps its deps. */
+    // reads every observable before the dragging bail-out, so the autorun keeps its deps
     private sync(): void {
         const store = this.store;
         const chapters = store.chapterIds.flatMap((id) => {
@@ -229,7 +214,7 @@ export class TimelineView {
 
         if (this.dragging) return; // the gesture's end commits, which re-runs this
 
-        // Selecting writes back to the store (`handleSelect`), so apply inside an action.
+        // selecting writes back to the store (`handleSelect`)
         runInAction(() => {
             this.applyChapters(chapters);
             this.applyTriggers(triggers);
@@ -341,23 +326,19 @@ export class TimelineView {
         if (this.selection.selected !== target) this.selection.select(target);
     }
 
-    /** Shape of a chapter / trigger (tests, the page). */
     shapeOf(kind: 'chapter' | 'trigger', id: string): Shape | undefined {
         return kind === 'chapter' ? this.chapterShapes.get(id) : this.triggerShapes.get(id);
     }
 
-    // ---- shapes → store ------------------------------------------------------------------------
-
     private handleSelect = ({ shape }: TSceneEvents['select']): void => {
-        const data = shape?.data as TTimelineShapeData | undefined;
-        const next = data && (data.kind === 'chapter' || data.kind === 'trigger') ? data : null;
+        const next = timelineDataOf(shape);
         const cur = this.store.selected;
         if (cur?.kind === next?.kind && cur?.id === next?.id) return;
         this.store.select(next ? { kind: next.kind, id: next.id } : null);
     };
 
     private handleChange = ({ shape, kind, final, edge }: TSceneEvents['change']): void => {
-        const data = shape.data as TTimelineShapeData | undefined;
+        const data = timelineDataOf(shape);
         if (!data) return;
         if (!final) {
             this.dragging = true;
@@ -366,9 +347,8 @@ export class TimelineView {
         }
         this.dragging = false;
         this.opts.onTooltip?.(null);
-        const pps = this.store.pps;
         if (data.kind === 'trigger' && shape instanceof TriggerShape) {
-            void this.store.commitTrigger(data.id, Math.max(0, snapTime(this.store.xToTime(shape.x), pps)));
+            void this.store.commitTrigger(data.id, this.snapX(shape.x));
             return;
         }
         if (data.kind !== 'chapter' || !(shape instanceof RectShape)) return;
@@ -378,7 +358,6 @@ export class TimelineView {
         void this.store.commitChapter(data.id, { start, end, y: shape.y });
     };
 
-    /** The time range a moved / resized box stands for, snapped; a move keeps the duration. */
     private shapeRange(
         shape: RectShape,
         kind: TSceneEvents['change']['kind'],
@@ -386,26 +365,27 @@ export class TimelineView {
         range: { start: number; end: number }
     ): { start: number; end: number } {
         const pps = this.store.pps;
-        const snap = (x: number) => Math.max(0, snapTime(this.store.xToTime(x), pps));
         if (kind === 'move') {
-            const start = snap(shape.x);
+            const start = this.snapX(shape.x);
             return { start, end: start + (range.end - range.start) };
         }
         let { start, end } = range;
-        if (edge === 'left') start = Math.min(snap(shape.x), end - snapStep(pps));
-        if (edge === 'right') end = Math.max(snap(shape.x + shape.width), start + snapStep(pps));
+        if (edge === 'left') start = Math.min(this.snapX(shape.x), end - snapStep(pps));
+        if (edge === 'right') end = Math.max(this.snapX(shape.x + shape.width), start + snapStep(pps));
         return { start: Math.max(0, start), end };
     }
 
-    // ---- tooltips ------------------------------------------------------------------------------
+    private snapX(x: number): number {
+        return Math.max(0, snapTime(this.store.xToTime(x), this.store.pps));
+    }
 
     private renderTime(seconds: number): string {
         return this.opts.timeManager.renderTime(Time.fromS(Math.max(0, seconds)), 'dateTime');
     }
 
     private showHoverTooltip(shape: Shape | null, screen: { x: number; y: number }): void {
-        const data = shape?.data as TTimelineShapeData | undefined;
-        if (!data || (data.kind !== 'chapter' && data.kind !== 'trigger') || !this.opts.onTooltip) {
+        const data = timelineDataOf(shape);
+        if (!data || !this.opts.onTooltip) {
             this.opts.onTooltip?.(null);
             return;
         }
@@ -441,17 +421,14 @@ export class TimelineView {
         const b = shape.getBounds();
         const screen = this.camera.worldToScreen({ x: b.x, y: b.y + b.height });
         const pos = { x: Math.max(0, screen.x), y: screen.y + 8 };
-        const pps = this.store.pps;
         if (data.kind === 'trigger' && shape instanceof TriggerShape) {
-            const t = snapTime(this.store.xToTime(shape.x), pps);
-            this.opts.onTooltip({ title: this.renderTime(t), lines: [], ...pos, y: screen.y - 60 });
+            this.opts.onTooltip({ title: this.renderTime(this.snapX(shape.x)), lines: [], ...pos, y: screen.y - 60 });
             return;
         }
         const range = this.store.chapterRange(data.id);
         if (!range || !(shape instanceof RectShape)) return;
-        const snap = (x: number) => Math.max(0, snapTime(this.store.xToTime(x), pps));
-        const start = snap(shape.x);
-        const end = snap(shape.x + shape.width);
+        const start = this.snapX(shape.x);
+        const end = this.snapX(shape.x + shape.width);
         this.opts.onTooltip({ title: `${this.renderTime(start)} – ${this.renderTime(end)}`, lines: [], ...pos });
     }
 }

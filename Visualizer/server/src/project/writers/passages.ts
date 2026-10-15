@@ -7,11 +7,12 @@ import type {
     TPassageType,
     TUpdatePassageBody,
 } from '@story/visualizer-protocol';
-import { assertVersion, version as hash } from '../../events/version';
+import { version as hash } from '../../events/version';
 import { HttpError } from '../../http/HttpError';
 import { removePassagePositions } from '../../json';
 import { siblingPng } from '../images';
-import { cap, quote } from '../ast';
+import { capitalize } from '@story/shared';
+import { quote } from '../ast';
 import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
 import {
@@ -23,11 +24,12 @@ import {
     passageSource,
 } from '../story';
 import { applyPartial } from '../values';
-import { asBody, DERIVED_FIELDS, optionalText, type TWriter } from './common';
+import { asBody, assertCurrentVersion, DERIVED_FIELDS, optionalText, type TWriter } from './common';
 
 const PASSAGE_TYPES: TPassageType[] = ['screen', 'linear', 'transition'];
 
-/** Read-only in v1 (plan WP2 "Rename: not supported"). */
+const isPassageType = (value: unknown): value is TPassageType => PASSAGE_TYPES.some((t) => t === value);
+
 const PASSAGE_DERIVED = [
     ...DERIVED_FIELDS,
     'passageId',
@@ -39,11 +41,6 @@ const PASSAGE_DERIVED = [
     'type',
 ];
 
-/**
- * A new passage file in the named-export `<local>Passage` pattern (plan WP2 "Create passage").
- * A new transition points at itself so that it type-checks and is not a dangling reference; the
- * author retargets it in the form.
- */
 export const newPassageText = (
     chapterId: string,
     characterId: string,
@@ -57,7 +54,8 @@ export const newPassageText = (
             ? `    type: 'screen',\n    title: ${quote(title)},\n    image: '',\n\n    body: [],\n`
             : type === 'linear'
               ? `    type: 'linear',\n    description: ${quote(title)},\n`
-              : `    type: 'transition',\n    nextPassageId: ${quote(`${chapterId}-${characterId}-${localId}`)},\n`;
+              : // points at itself so it type-checks until the author retargets it
+                `    type: 'transition',\n    nextPassageId: ${quote(`${chapterId}-${characterId}-${localId}`)},\n`;
     return `import { TPassage } from '@story/types';
 import { ${union} } from '../${chapterId}.passages';
 
@@ -76,10 +74,9 @@ export const createPassage = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
         chapterFile(sp, chapterId);
         const characterId = assertId(body.characterId, 'characterId');
         const localId = assertId(body.localId, 'localId');
-        const type = body.type as TPassageType;
-        if (!PASSAGE_TYPES.includes(type))
-            throw HttpError.badRequest(`Field "type" must be one of ${PASSAGE_TYPES.join(', ')}`);
-        const title = optionalText(body, 'title') ?? cap(localId);
+        const type = body.type;
+        if (!isPassageType(type)) throw HttpError.badRequest(`Field "type" must be one of ${PASSAGE_TYPES.join(', ')}`);
+        const title = optionalText(body, 'title') ?? capitalize(localId);
         if (!chapterCharacterFiles(sp, chapterId).has(characterId)) {
             throw HttpError.badRequest(
                 `Character "${characterId}" is not in chapter "${chapterId}" — add the character to the chapter first`
@@ -115,7 +112,7 @@ export const updatePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
         const body = asBody(rawBody);
         const sf = findPassageFile(sp, passageId);
         const current = readPassageFile(sp, sf);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         if (body.type !== undefined && body.type !== current.type) {
             throw HttpError.badRequest(`Field "type" is read-only (the passage is a ${current.type} passage)`);
         }
@@ -123,7 +120,8 @@ export const updatePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
         const s = sp.session();
         s.apply(() => {
             const file = s.edit(abs);
-            const src = passageSource(file)!;
+            const src = passageSource(file);
+            if (!src) throw new Error(`${sp.root.rel(abs)}: no passage function returning an object`);
             const type = passageType(src) ?? 'screen';
             applyPartial(src.obj, body, PASSAGE_FIELDS[type], file, {
                 skip: PASSAGE_DERIVED,
@@ -149,7 +147,7 @@ export const deletePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
         const body = asBody(rawBody);
         const sf = findPassageFile(sp, passageId);
         const current = readPassageFile(sp, sf);
-        await assertVersion(body.version as string, current.version, () => current);
+        assertCurrentVersion(body, current);
         const abs = sf.getFilePath();
         const passagesFile = sp.root.paths.chapterPassagesFile(current.chapterId);
         const refs = findStringReferences(sp, new Set([passageId]), (f) => f === abs || f === passagesFile);
@@ -160,7 +158,6 @@ export const deletePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
             passagesRemovePassage(s, current.chapterId, current.characterId, passageId, abs);
         });
         s.after((tx) => removePassagePositions(tx, current.chapterId, [passageId]));
-        // the passage's art goes with it (`project/images.ts`)
         s.after((tx) => tx.deleteFile(siblingPng(abs)));
         await s.commit(
             bus,

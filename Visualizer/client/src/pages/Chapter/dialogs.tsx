@@ -1,18 +1,11 @@
 import type { TReferenceDto } from '@story/visualizer-protocol';
 import { modals } from '../../shell';
 import { ReferencedError, type ChapterGraphStore } from './ChapterGraphStore';
-import {
-    AddCharacterDialog,
-    AddPassageDialog,
-    PickCharacterDialog,
-    ReferencesDialog,
-} from './ChapterDialogs';
+import { AddCharacterDialog } from './AddCharacterDialog';
+import { AddPassageDialog } from './AddPassageDialog';
+import { PickCharacterDialog } from './PickCharacterDialog';
+import { ReferencesDialog } from './ReferencesDialog';
 import { errorText } from './dialogUtils';
-
-/**
- * The chapter view's toolbar flows (plan WP6): add / remove character, add passage, delete the
- * selected passage. Each opens on the shell's modal stack.
- */
 
 const showReferences = (
     title: string,

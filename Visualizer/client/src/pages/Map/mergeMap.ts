@@ -2,7 +2,6 @@ import type { TMapDto } from '@story/visualizer-protocol';
 import { createDefaultMapData } from '../../MapEditor/createDefaultMapData';
 import type { TMapDocument, TMapTile } from '../../MapEditor/types';
 
-/** `map.json` contents of a DTO (the file is the DTO without its version). */
 export const toMapDocument = (dto: TMapDto): TMapDocument => {
     const doc: Partial<TMapDto> = structuredClone(dto);
     delete doc.version;
@@ -14,7 +13,6 @@ const sameTile = (a: TMapTile | undefined, b: TMapTile | undefined) =>
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-/** Key-wise three-way merge of a record: keys the local side changed (or deleted) win. */
 const mergeRecord = <T>(base: Record<string, T>, local: Record<string, T>, remote: Record<string, T>) => {
     const result: Record<string, T> = {};
     const keys = new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)]);
@@ -26,16 +24,7 @@ const mergeRecord = <T>(base: Record<string, T>, local: Record<string, T>, remot
     return result;
 };
 
-/**
- * Three-way merge of the map, used when a save answers `409 stale` or a live-refresh event
- * arrives while there are unsaved edits. `base` is the version both sides started from (the
- * last one read from or written to the server; `null` when the map was never on the server).
- *
- * Whatever the local side changed since `base` wins, everything else comes from `remote`:
- * tiles cell by cell (label and description included), palette colours and location shapes key
- * by key (a local delete stays deleted), and title / sub-map links as a whole. The size comes from
- * `remote` unless the local side resized; local cell edits outside the remote size are dropped.
- */
+// local changes since `base` win; local cell edits outside the remote size are dropped
 export const mergeMaps = (base: TMapDocument | null, local: TMapDocument, remote: TMapDocument): TMapDocument => {
     const b = base ?? { ...createDefaultMapData(local.mapId, local.title, local.width, local.height), palette: {} };
     const localResized = local.width !== b.width || local.height !== b.height;
@@ -66,5 +55,4 @@ export const mergeMaps = (base: TMapDocument | null, local: TMapDocument, remote
     };
 };
 
-/** Whether two documents are equal (used to skip a save that would write nothing new). */
 export const sameMap = (a: TMapDocument | null, b: TMapDocument | null) => same(a, b);

@@ -1,14 +1,17 @@
-import { styled, Tab, Tabs } from '@mui/material';
+import { useEffect } from 'react';
+import { Button, styled, Tab, Tabs, Typography } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
+import { landingUrl, STORY_ID } from '../api';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
+import { storyInfo } from './storyInfoStore';
 
 type TTab = {
     value: string;
     label: () => string;
     route?: TRoute;
-    /** pages that highlight this tab */
     pages: TPage[];
 };
 
@@ -31,18 +34,30 @@ const TABS: TTab[] = [
         route: { page: 'entities' },
         pages: ['entities'],
     },
-    // future (docs/Visualizer.md "Structure"), out of scope for now
     { value: 'structure', label: () => _('Structure'), pages: [] },
 ];
 
-export const TOP_BAR_HEIGHT = 48;
+const TOP_BAR_HEIGHT = 48;
 
 export const TopBar = observer(() => {
     const active =
         TABS.find((t) => t.pages.includes(router.route.page))?.value ?? false;
 
+    useEffect(() => void storyInfo.load(), []);
+
     return (
         <SBar>
+            <SBack
+                color="inherit"
+                size="small"
+                startIcon={<ArrowBackIcon />}
+                href={landingUrl()}
+            >
+                {_('Stories')}
+            </SBack>
+            <SStoryName variant="subtitle2" title={STORY_ID}>
+                {storyInfo.info?.name ?? STORY_ID}
+            </SStoryName>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -63,7 +78,7 @@ export const TopBar = observer(() => {
     );
 });
 
-/** Keeps the navy bar of `appTheme`; the rest of the app runs on the Visualizer's `darkTheme`. */
+// appTheme's navy on purpose; the rest of the app uses darkTheme
 const SBar = styled(Row)`
     flex: 0 0 ${TOP_BAR_HEIGHT}px;
     height: ${TOP_BAR_HEIGHT}px;
@@ -73,6 +88,21 @@ const SBar = styled(Row)`
     background-color: ${appTheme.palette.primary.dark};
     border-bottom: 1px solid ${appTheme.palette.primary.main};
     color: white;
+`;
+
+const SBack = styled(Button)`
+    flex-shrink: 0;
+    text-transform: none;
+    opacity: 0.8;
+` as typeof Button;
+
+const SStoryName = styled(Typography)`
+    flex-shrink: 1;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
 `;
 
 const STabs = styled(Tabs)`

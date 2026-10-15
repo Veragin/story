@@ -16,7 +16,7 @@ import {
     key,
     pendingFrames,
     uninstallFrames,
-} from './test/helpers';
+} from './__tests__/helpers';
 
 let scene: Scene;
 let canvas: HTMLCanvasElement;

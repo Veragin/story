@@ -1,10 +1,6 @@
-import { ROUTES, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/visualizer-protocol';
+import { buildPath, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/visualizer-protocol';
+import { STORY_ID } from './story';
 
-/**
- * Which change events a subscriber wants. `kind: '*'` is everything. `id` narrows to one resource
- * (wildcard events such as `trigger` `*` or `entity` `items/*` still match). `chapterId` narrows to
- * events scoped to one chapter.
- */
 export type TEventFilter = {
     kind: TResourceKind | '*';
     id?: string;
@@ -20,16 +16,22 @@ type TEventSourceLike = Pick<EventSource, 'addEventListener' | 'close' | 'readyS
 
 export type TApiEventsOptions = {
     url?: string;
-    /**
-     * Injected for tests; defaults to the browser `EventSource` (absent → events are a no-op).
-     * `null` never opens a stream (mock mode). Note that `undefined` means "use the default".
-     */
+    // `null` never opens a stream; `undefined` means the browser default
     createEventSource?: ((url: string) => TEventSourceLike) | null;
-    /** How long a version passed to `markSaved` is remembered. */
     savedTtlMs?: number;
-    /** Backoff for re-creating a stream the browser gave up on. */
+    holdMaxMs?: number;
     reconnectMinMs?: number;
     reconnectMaxMs?: number;
+    onGiveUp?: () => void;
+};
+
+const EVENT_SOURCE_CLOSED = 2;
+
+const addTo = <T>(set: Set<T>, entry: T): (() => void) => {
+    set.add(entry);
+    return () => {
+        set.delete(entry);
+    };
 };
 
 export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolean => {
@@ -42,46 +44,41 @@ export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolea
     return false;
 };
 
-/**
- * The client end of `GET /api/events` (plan §3 "Live refresh", points 2–3).
- *
- *     // a store keeps its resource fresh:
- *     const off = apiEvents.subscribe({ kind: 'passage', id: passageId }, () => this.refetch());
- *     // after a real reconnect you may have missed events — refetch what is on screen:
- *     const offResync = apiEvents.onResync(() => this.refetch());
- *
- * Own saves are not echoed: the http api calls `markSaved(version)` for every resource a mutation
- * returns, and an event carrying one of those versions is dropped (once). The stream is opened
- * lazily by the first `subscribe` and re-created with backoff when the browser gives up on it
- * (e.g. the proxy answers 502 while the server restarts under `tsx watch`).
- */
 export class ApiEvents {
     private readonly url: string;
     private readonly createEventSource?: (url: string) => TEventSourceLike;
     private readonly savedTtlMs: number;
     private readonly reconnectMinMs: number;
     private readonly reconnectMaxMs: number;
+    private readonly onGiveUp?: () => void;
 
     private source: TEventSourceLike | null = null;
     private listeners = new Set<{ filter: TEventFilter; listener: TEventListener }>();
     private resyncListeners = new Set<() => void>();
     private statusListeners = new Set<(status: TConnectionStatus) => void>();
     private saved = new Map<TVersion, number>();
+    private readonly holdMaxMs: number;
+    private holds = 0;
+    private held: TChangeEvent[] = [];
     private connectedOnce = false;
     private reconnectDelay: number;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private _status: TConnectionStatus = 'idle';
 
     constructor({
-        url = ROUTES.events.path,
+        url = buildPath(STORY_ID, 'events', {}),
         createEventSource = typeof EventSource === 'undefined' ? undefined : (u) => new EventSource(u),
         savedTtlMs = 30_000,
+        holdMaxMs = 30_000,
         reconnectMinMs = 1000,
         reconnectMaxMs = 15_000,
+        onGiveUp,
     }: TApiEventsOptions = {}) {
         this.url = url;
+        this.onGiveUp = onGiveUp;
         this.createEventSource = createEventSource ?? undefined;
         this.savedTtlMs = savedTtlMs;
+        this.holdMaxMs = holdMaxMs;
         this.reconnectMinMs = reconnectMinMs;
         this.reconnectMaxMs = reconnectMaxMs;
         this.reconnectDelay = reconnectMinMs;
@@ -91,38 +88,48 @@ export class ApiEvents {
         return this._status;
     }
 
-    /** Subscribe to events of a kind (`'passage'`) or matching a filter. Returns the unsubscribe. */
     subscribe(filter: TEventFilter | TResourceKind | '*', listener: TEventListener): () => void {
         const entry = { filter: typeof filter === 'string' ? { kind: filter } : filter, listener };
-        this.listeners.add(entry);
+        const unsubscribe = addTo(this.listeners, entry);
         this.connect();
-        return () => {
-            this.listeners.delete(entry);
-        };
+        return unsubscribe;
     }
 
-    /** Called after a reconnect (not the first connect): events may have been missed. */
     onResync(listener: () => void): () => void {
-        this.resyncListeners.add(listener);
-        return () => {
-            this.resyncListeners.delete(listener);
-        };
+        return addTo(this.resyncListeners, listener);
     }
 
     onStatus(listener: (status: TConnectionStatus) => void): () => void {
-        this.statusListeners.add(listener);
-        return () => {
-            this.statusListeners.delete(listener);
-        };
+        return addTo(this.statusListeners, listener);
     }
 
-    /** Remember a version this client just wrote, so its echo event is ignored. */
     markSaved(version: TVersion) {
         this.saved.set(version, Date.now() + this.savedTtlMs);
     }
 
-    /** Deliver an event to the subscribers (the SSE stream and `mockApi` both come through here). */
+    // a save's echo can beat its response, so events wait until `markSaved` has the version
+    hold(): () => void {
+        this.holds++;
+        let released = false;
+        const release = () => {
+            if (released) return;
+            released = true;
+            clearTimeout(timer);
+            this.holds--;
+            if (this.holds > 0) return;
+            const held = this.held;
+            this.held = [];
+            held.forEach((e) => this.dispatch(e));
+        };
+        const timer = setTimeout(release, this.holdMaxMs);
+        return release;
+    }
+
     dispatch(event: TChangeEvent) {
+        if (this.holds > 0) {
+            this.held.push(event);
+            return;
+        }
         const now = Date.now();
         for (const [v, until] of this.saved) if (until < now) this.saved.delete(v);
         if (event.version && this.saved.has(event.version)) {
@@ -139,7 +146,6 @@ export class ApiEvents {
         }
     }
 
-    /** Open the stream (idempotent; `subscribe` calls it). */
     connect() {
         if (this.source || this.reconnectTimer || !this.createEventSource) return;
         this.setStatus(this.connectedOnce ? 'reconnecting' : 'connecting');
@@ -160,11 +166,9 @@ export class ApiEvents {
             }
         });
         source.onerror = () => {
-            // A late error from a stream that was closed (or replaced) meanwhile.
             if (this.source !== source) return;
-            // CONNECTING: the browser retries by itself (the server sent `retry:`).
-            // CLOSED: it gave up (non-200 answer) — re-create it ourselves, with backoff.
-            if (source.readyState === 2 /* CLOSED */) {
+            // while CONNECTING the browser retries by itself; CLOSED means it gave up
+            if (source.readyState === EVENT_SOURCE_CLOSED) {
                 source.close();
                 this.source = null;
                 this.setStatus('reconnecting');
@@ -173,10 +177,19 @@ export class ApiEvents {
                     this.connect();
                 }, this.reconnectDelay);
                 this.reconnectDelay = Math.min(this.reconnectMaxMs, this.reconnectDelay * 2);
+                this.onGiveUp?.();
             } else {
                 this.setStatus('reconnecting');
             }
         };
+    }
+
+    reconnectNow() {
+        if (!this.reconnectTimer) return;
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+        this.reconnectDelay = this.reconnectMinMs;
+        this.connect();
     }
 
     close() {

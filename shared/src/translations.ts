@@ -1,7 +1,4 @@
-// Not redundant, and not replaceable by an `import`: TypeScript drops `x.d.ts` from an
-// `include` glob when `x.ts` sits next to it (it assumes the .d.ts is that file's emit),
-// so the ambient `_` declared in ./translations.d.ts only reaches the program through this
-// explicit reference — which also ties the declaration to the module that installs it.
+// tsc drops a .d.ts from `include` when a same-named .ts sits next to it
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./translations.d.ts" />
 
