@@ -1,7 +1,7 @@
 import { Module, RequestMethod, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { StoryRepositoryModule } from '../stories/StoryRepositoryModule';
+import { DatabaseModule } from '../database/DatabaseModule';
 import { AuthController } from './AuthController';
 import { AUTH_OPTIONS, authOptionsFromConfig } from './authOptions';
 import { CsrfGuard } from './CsrfGuard';
@@ -11,7 +11,7 @@ import { StoryAccessGuard } from './StoryAccessGuard';
 import { UnmatchedStoryPathMiddleware } from './UnmatchedStoryPathMiddleware';
 
 @Module({
-    imports: [StoryRepositoryModule],
+    imports: [DatabaseModule],
     controllers: [AuthController],
     providers: [
         { provide: AUTH_OPTIONS, inject: [ConfigService], useFactory: authOptionsFromConfig },

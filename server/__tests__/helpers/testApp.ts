@@ -14,7 +14,7 @@ import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
 import type { TStoryFile } from '../../src/stories/storyFile';
 import { readStorySeed } from '../../src/stories/storySeed';
 import { STORIES_ROOT } from '../../src/stories/storiesRoot';
-import { StoryRepository } from '../../src/stories/StoryRepository';
+import { StoryRepository } from '../../src/database/repositories/StoryRepository';
 import type { TServerContext } from '../../src/storyContext/serverContext';
 import { StoryContexts } from '../../src/storyContext/StoryContexts';
 import {

@@ -2,7 +2,7 @@ import { Injectable, type NestMiddleware } from '@nestjs/common';
 import { GLOBAL_ROUTES, matchRoute, splitStoryPath, STORY_ROUTES } from '@story/protocol';
 import type { Request, Response } from 'express';
 import { HttpError } from '../common/HttpError';
-import { StoryRepository } from '../stories/StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { readSessionToken } from './cookie';
 import { SessionService } from './SessionService';
 

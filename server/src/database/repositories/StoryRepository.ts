@@ -2,9 +2,9 @@ import { isDeepStrictEqual } from 'node:util';
 import { Injectable } from '@nestjs/common';
 import { isStoryId, type TVersion } from '@story/protocol';
 import { DataSource, type EntityManager } from 'typeorm';
-import { Story } from './Story';
-import type { TStoryFile } from './storyFile';
-import { StoryVersionConflictError } from './StoryVersionConflictError';
+import type { TStoryFile } from '../../stories/storyFile';
+import { StoryVersionConflictError } from '../../stories/StoryVersionConflictError';
+import { Story } from '../entities/Story';
 
 export type TVersionedStoryFile = { file: TStoryFile; version: TVersion };
 

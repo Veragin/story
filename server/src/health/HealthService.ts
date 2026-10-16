@@ -1,15 +1,15 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { THealthDto } from '@story/protocol';
-import { DataSource } from 'typeorm';
 import type { TEnv } from '../config/env';
+import { DatabaseService } from '../database/DatabaseService';
 import { STORY_CONTEXTS_OPTIONS, type TStoryContextsOptions } from '../storyContext/storyContextsOptions';
 
 @Injectable()
 export class HealthService {
     constructor(
         private readonly config: ConfigService<TEnv, true>,
-        private readonly dataSource: DataSource,
+        private readonly database: DatabaseService,
         @Inject(STORY_CONTEXTS_OPTIONS) private readonly contexts: TStoryContextsOptions
     ) {}
 
@@ -26,7 +26,7 @@ export class HealthService {
 
     private async pingDatabase(): Promise<void> {
         try {
-            await this.dataSource.query('SELECT 1');
+            await this.database.ping();
         } catch {
             throw new ServiceUnavailableException('Database unreachable');
         }

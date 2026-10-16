@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { StoryVersionConflictError } from '../src/stories/StoryVersionConflictError';
 import { setupTestDatabase } from './helpers/database';
 import { storyFixture } from './helpers/storiesRoot';

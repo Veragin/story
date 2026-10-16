@@ -6,7 +6,7 @@ import { exists } from '../common/fileStat';
 import { errorMessage } from '../common/HttpError';
 import { isMissingFileError, readTextOrNull } from '../json/atomicWrite';
 import { parseStoryFile, STORY_FILE } from './storyFile';
-import type { StoryRepository, TUpsertResult } from './StoryRepository';
+import type { StoryRepository, TUpsertResult } from '../database/repositories/StoryRepository';
 import { storySeedId, type TStorySeed } from './storySeed';
 import { migrateStoryTsconfig } from './storyTsconfig';
 

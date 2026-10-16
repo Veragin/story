@@ -5,7 +5,7 @@ import { jsonObjectBody, requireString } from '../common/body';
 import { HttpError } from '../common/HttpError';
 import { ProtocolRoute } from '../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../common/RouteParams';
-import { StoryRepository } from '../stories/StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { AUTH_OPTIONS, type TAuthOptions } from './authOptions';
 import { clearedSessionCookie, readSessionToken, sessionCookie } from './cookie';
 import { clientAddress, LoginLimiter, loginKey } from './LoginLimiter';

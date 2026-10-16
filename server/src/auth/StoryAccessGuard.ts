@@ -4,7 +4,7 @@ import { isStoryRouteName, routeDef, STORY_ID_PARAM } from '@story/protocol';
 import type { Request } from 'express';
 import { HttpError } from '../common/HttpError';
 import { ProtocolRouteName } from '../common/ProtocolRoute';
-import { StoryRepository } from '../stories/StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { readSessionToken } from './cookie';
 import { SessionService } from './SessionService';
 import { attachStoryGrant } from './storyGrant';

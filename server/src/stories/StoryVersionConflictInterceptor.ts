@@ -3,7 +3,7 @@ import type { TStoryInfoDto } from '@story/protocol';
 import { catchError, from, type Observable } from 'rxjs';
 import { HttpError } from '../common/HttpError';
 import { toStoryDto } from './storyFile';
-import { StoryRepository } from './StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { StoryVersionConflictError } from './StoryVersionConflictError';
 
 // a stale `version` answers 409 `stale` with the story info as it is now, like the file-based server did

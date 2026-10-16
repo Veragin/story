@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { parseEnv } from '../src/config/env';
 import { dataSource } from '../src/database/dataSource';
 import { importStoryFiles } from '../src/stories/importStoryFiles';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { readStorySeed, storySeedFile } from '../src/stories/storySeed';
 
 const { values } = parseArgs({ options: { seed: { type: 'string' } } });

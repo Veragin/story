@@ -10,7 +10,7 @@ import { ProtocolRoute } from '../common/ProtocolRoute';
 import { toStoryDto, type TStoryFile } from './storyFile';
 import { StoryFolders } from './StoryFolders';
 import { parseCreateStoryBody, parseImportStoryBody, zipMapSize } from './storyInput';
-import { StoryRepository } from './StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { StoryZipInterceptor } from './StoryZipInterceptor';
 import { unzipStory } from './zip';
 

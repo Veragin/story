@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { StoryRepositoryModule } from '../../stories/StoryRepositoryModule';
+import { DatabaseModule } from '../../database/DatabaseModule';
 import { MapsController } from './MapsController';
 
-@Module({ imports: [StoryRepositoryModule], controllers: [MapsController] })
+@Module({ imports: [DatabaseModule], controllers: [MapsController] })
 export class MapsModule {}

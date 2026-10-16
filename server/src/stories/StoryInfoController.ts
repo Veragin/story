@@ -8,7 +8,7 @@ import { RouteParams, type THandlerParams } from '../common/RouteParams';
 import { toStoryDto } from './storyFile';
 import { StoryFolders } from './StoryFolders';
 import { applyUpdateStoryBody, hashUpdatePassword } from './storyInput';
-import { StoryRepository } from './StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { StoryVersionConflictError } from './StoryVersionConflictError';
 
 @Controller()

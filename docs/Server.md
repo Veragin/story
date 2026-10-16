@@ -24,11 +24,12 @@ server/
     main.ts            bootstrap: Express without Nest's body parser (common/expressApp.ts), shutdown hooks
     AppModule.ts       imports every module; global filter and the JSON interceptors
     config/            env.ts (ENV_SCHEMA, zod), AppConfigModule
-    database/          dataSourceOptions (shared by app + CLI), dataSource.ts (TypeORM CLI), entityRegistry, migrationRegistry, migrations/
+    database/          DatabaseModule (exports DatabaseService + repositories; import it to touch the DB), entities/, repositories/,
+                       dataSourceOptions (shared by app + CLI), dataSource.ts (TypeORM CLI), entityRegistry, migrationRegistry, migrations/
     common/            @ProtocolRoute, @RouteParams, boot route check, JSON body/response interceptors, ApiExceptionFilter, HttpError
     health/            GET /api/health (+ DB ping)
-    auth/              AuthController, SessionService (Session/SessionGrant entities), LoginLimiter, password (scrypt), cookie, CsrfGuard, StoryAccessGuard
-    stories/           Story entity, StoryRepository, StoryFolders (create / import / export), zip, storyInput, StoriesController, StoryInfoController, importStoryFiles
+    auth/              AuthController, SessionService, LoginLimiter, password (scrypt), cookie, CsrfGuard, StoryAccessGuard
+    stories/           StoryFolders (create / import / export), zip, storyInput, StoriesController, StoryInfoController, importStoryFiles
     storyContext/      StoryContexts (loaded stories, leases, idle eviction), StoryLeaseInterceptor, @StoryCtx()
     events/            EventBus (transactions), chokidar watcher, pathToEvent, SSE, EventsController
     editor/            one module + thin controller per feature: chapters passages triggers entities catalogs structure source images maps layouts projectInfo
@@ -140,7 +141,7 @@ yarn migration:create src/database/migrations/AddThing     # empty
 
 All go through the TypeORM CLI with the swc loader and `src/database/dataSource.ts` (prefix `DB_HOST=127.0.0.1` outside docker).
 
-**Gotcha: entities and migrations are registered by hand.** TypeORM loads globs with native `import()`, which bypasses the swc/Vitest transform, so `dataSourceOptions` takes explicit class lists. After `migration:generate`/`create`, add the class to `MIGRATIONS` in `database/migrationRegistry.ts`; a new entity goes into `ENTITIES` in `database/entityRegistry.ts` (the test truncation picks it up from there). Also:
+**Gotcha: entities and migrations are registered by hand.** TypeORM loads globs with native `import()`, which bypasses the swc/Vitest transform, so `dataSourceOptions` takes explicit class lists. After `migration:generate`/`create`, add the class to `MIGRATIONS` in `database/migrationRegistry.ts`; a new entity goes in `database/entities/`, into `ENTITIES` in `database/entityRegistry.ts`, and gets a repository in `database/repositories/` provided and exported by `DatabaseModule` (the test truncation picks it up from there). Also:
 
 - The generated `up`/`down` are `async` without `await` and fail `require-await`: keep the `await queryRunner.query(…)` calls (or return a promise).
 - Entities rely on `strictPropertyInitialization: false` (no `!` on columns). `datetime(3|6)` create-date columns need an explicit `default: () => 'CURRENT_TIMESTAMP(n)'`.

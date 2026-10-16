@@ -1,14 +1,16 @@
 import http from 'node:http';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { DataSource } from 'typeorm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GRANT_TTL_MS, type TAuthOptions } from '../src/auth/authOptions';
 import { LoginLimiter } from '../src/auth/LoginLimiter';
 import { hashPassword, verifyPassword } from '../src/auth/password';
-import { Session } from '../src/auth/Session';
-import { SessionGrant } from '../src/auth/SessionGrant';
 import { hashToken, SESSION_PRUNE_JOB, SessionService } from '../src/auth/SessionService';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { DatabaseService } from '../src/database/DatabaseService';
+import { Session } from '../src/database/entities/Session';
+import { SessionGrant } from '../src/database/entities/SessionGrant';
+import { SessionGrantRepository } from '../src/database/repositories/SessionGrantRepository';
+import { SessionRepository } from '../src/database/repositories/SessionRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { setupTestDatabase } from './helpers/database';
 import { cookieOf, EXAMPLE_PASSWORD, login, requestJson, sleep } from './helpers/http';
 import { openEventStream } from './helpers/sse';
@@ -72,7 +74,12 @@ describe('SessionService', () => {
     const sessionsWith = async (options: Pick<TAuthOptions, 'grantTtlMs'> = { grantTtlMs: GRANT_TTL_MS }) => {
         const stories = new StoryRepository(dataSource);
         for (const id of ['alpha', 'beta']) await stories.insert(id, storyFixture());
-        return new SessionService(dataSource, options);
+        return new SessionService(
+            new DatabaseService(dataSource),
+            new SessionRepository(dataSource),
+            new SessionGrantRepository(dataSource),
+            options
+        );
     };
 
     afterEach(() => {
@@ -277,7 +284,7 @@ describe('over HTTP', () => {
             canEdit: true,
             canPlay: true,
         });
-        expect(await app.app.get(DataSource).manager.count(Session)).toBe(1);
+        expect(await app.app.get(SessionRepository).count()).toBe(1);
     });
 
     it('refuses a grant once it expired', async () => {

@@ -5,7 +5,7 @@ import { RouteParams, type THandlerParams } from '../../common/RouteParams';
 import { readMap, updateMap } from '../../json/mapStore';
 import type { TServerContext } from '../../storyContext/serverContext';
 import { StoryCtx } from '../../storyContext/StoryCtx';
-import { StoryRepository } from '../../stories/StoryRepository';
+import { StoryRepository } from '../../database/repositories/StoryRepository';
 
 @Controller()
 export class MapsController {

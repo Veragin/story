@@ -6,7 +6,7 @@ import { EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
 import { importStoryFiles } from '../src/stories/importStoryFiles';
 import { STORY_FILE } from '../src/stories/storyFile';
 import { readStorySeed, type TStorySeed } from '../src/stories/storySeed';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { setupTestDatabase } from './helpers/database';
 import { EXAMPLE_PASSWORD } from './helpers/http';

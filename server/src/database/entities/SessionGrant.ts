@@ -1,5 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn, type Relation } from 'typeorm';
-import { Story } from '../stories/Story';
+import { Story } from './Story';
 import { Session } from './Session';
 
 @Entity({ name: 'session_grant' })

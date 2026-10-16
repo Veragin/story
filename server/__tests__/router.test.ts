@@ -6,7 +6,7 @@ import { ProtocolRoute } from '../src/common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../src/common/RouteParams';
 import { TriggersModule } from '../src/editor/triggers/TriggersModule';
 import { ProjectRoot } from '../src/project/ProjectRoot';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { StoryVersionConflictError } from '../src/stories/StoryVersionConflictError';
 import { login, type TAny } from './helpers/http';
 import { createTestApp, type TTestApp } from './helpers/testApp';

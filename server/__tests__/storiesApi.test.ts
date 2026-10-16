@@ -12,7 +12,7 @@ import { SourceProject } from '../src/project/SourceProject';
 import { diagnoseProject } from '../src/project/validate';
 import { STORY_FILE } from '../src/stories/storyFile';
 import { slugify } from '../src/stories/StoryFolders';
-import { StoryRepository } from '../src/stories/StoryRepository';
+import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { cookieOf, EXAMPLE_PASSWORD, login, requestJson, type TJsonResponse } from './helpers/http';
 import { storyProblems } from './helpers/sourceHelpers';

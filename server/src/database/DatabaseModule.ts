@@ -2,7 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TEnv } from '../config/env';
+import { DatabaseService } from './DatabaseService';
 import { dataSourceOptions } from './dataSourceOptions';
+import { SessionGrantRepository } from './repositories/SessionGrantRepository';
+import { SessionRepository } from './repositories/SessionRepository';
+import { StoryRepository } from './repositories/StoryRepository';
+
+const REPOSITORIES = [StoryRepository, SessionRepository, SessionGrantRepository];
 
 @Module({
     imports: [
@@ -18,5 +24,7 @@ import { dataSourceOptions } from './dataSourceOptions';
                 }),
         }),
     ],
+    providers: [DatabaseService, ...REPOSITORIES],
+    exports: [DatabaseService, ...REPOSITORIES],
 })
 export class DatabaseModule {}

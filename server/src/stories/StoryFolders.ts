@@ -9,7 +9,7 @@ import { exists } from '../common/fileStat';
 import { createDefaultMap, encodeMapFile, MAP_FILE } from '../json/mapFile';
 import { STORIES_ROOT } from './storiesRoot';
 import type { TStoryFile } from './storyFile';
-import { StoryRepository } from './StoryRepository';
+import { StoryRepository } from '../database/repositories/StoryRepository';
 import { storyTsconfig } from './storyTsconfig';
 import { zipStory } from './zip';
 
