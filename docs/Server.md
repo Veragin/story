@@ -127,7 +127,7 @@ Outside the schema: `STORY_DB_SETUP=1` makes `docker/prod-entrypoint.sh` run the
 
 ## Database and migrations
 
-`synchronize` is off everywhere; the schema changes only through migrations. The app runs pending migrations on boot (`migrationsRun`), the prod entrypoint runs them before that, and the test helper runs them per suite.
+`synchronize` is off everywhere; the schema changes only through migrations. `stories:import-files` runs the pending ones (dev before every server start, prod in the entrypoint), the app itself does not, and the test helper runs them per suite.
 
 ```bash
 cd server   # or: yarn workspace @story/server <script>

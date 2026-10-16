@@ -1,6 +1,7 @@
-import { lstat, readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
+import { lstatOrNull } from '../common/fileStat';
 import { errorMessage, HttpError } from '../common/HttpError';
 import { isTempFile } from '../json/atomicWrite';
 import { STORY_FILE } from './storyFile';
@@ -30,10 +31,10 @@ const exportedFiles = async (storyDir: string): Promise<[string, string][]> => {
     };
     for (const name of TOP_FILES) {
         const abs = path.join(storyDir, name);
-        if ((await lstat(abs).catch(() => null))?.isFile()) out.push([name, abs]);
+        if ((await lstatOrNull(abs))?.isFile()) out.push([name, abs]);
     }
     for (const name of TOP_DIRS) {
-        if ((await lstat(path.join(storyDir, name)).catch(() => null))?.isDirectory()) await walk(name);
+        if ((await lstatOrNull(path.join(storyDir, name)))?.isDirectory()) await walk(name);
     }
     return out;
 };

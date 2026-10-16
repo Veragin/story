@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { cp, lstat, mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { cp, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { isStoryId } from '@story/protocol';
+import { exists } from '../common/fileStat';
+import { errorMessage } from '../common/HttpError';
 import { isMissingFileError, readTextOrNull } from '../json/atomicWrite';
 import { parseStoryFile, STORY_FILE } from './storyFile';
 import type { StoryRepository, TUpsertResult } from './StoryRepository';
@@ -18,10 +20,6 @@ export type TImportStoryFilesReport = {
 export type TImportStoryFilesOptions = {
     seed?: TStorySeed;
 };
-
-const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
-
-const exists = async (file: string) => (await lstat(file).catch(() => null)) !== null;
 
 const storyDirs = async (root: string): Promise<string[]> => {
     try {

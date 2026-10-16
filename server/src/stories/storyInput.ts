@@ -97,11 +97,27 @@ export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto 
 
 const UPDATE_FIELDS = ['version', 'id', 'name', 'author', 'description', 'public', 'password', 'mapSize'];
 
-export const applyUpdateStoryBody = async (
+export type TPasswordHash = () => string | undefined;
+
+// scrypt runs before the transaction, so no pooled connection waits on it; an invalid password still throws in order
+export const hashUpdatePassword = async (body: Record<string, unknown>): Promise<TPasswordHash> => {
+    if (body.password === undefined || body.password === '') return () => undefined;
+    try {
+        const hash = await hashPassword(password(body.password));
+        return () => hash;
+    } catch (e) {
+        return () => {
+            throw e;
+        };
+    }
+};
+
+export const applyUpdateStoryBody = (
     storyId: string,
     current: TStoryFile,
-    body: Record<string, unknown>
-): Promise<TStoryFile> => {
+    body: Record<string, unknown>,
+    passwordHash: TPasswordHash
+): TStoryFile => {
     const unknown = Object.keys(body).filter((k) => !UPDATE_FIELDS.includes(k));
     if (unknown.length > 0) throw HttpError.badRequest(`Unknown field(s): ${unknown.join(', ')}`);
     if (body.id !== undefined && body.id !== storyId) throw HttpError.badRequest('Field "id" is read-only');
@@ -118,7 +134,7 @@ export const applyUpdateStoryBody = async (
         next.description = text(body, 'description', L.descriptionMaxLength, { trim: false });
     }
     if (body.public !== undefined) next.public = flag(body, 'public');
-    if (body.password !== undefined && body.password !== '')
-        next.password = await hashPassword(password(body.password));
+    const hash = passwordHash();
+    if (hash !== undefined) next.password = hash;
     return next;
 };

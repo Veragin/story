@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { cp, lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Inject, Injectable } from '@nestjs/common';
 import { GLOBAL_MAP_ID, isStoryId, type TMapSizeDto } from '@story/protocol';
 import type { EntityManager } from 'typeorm';
+import { exists } from '../common/fileStat';
 import { createDefaultMap, encodeMapFile, MAP_FILE } from '../json/mapFile';
 import { STORIES_ROOT } from './storiesRoot';
 import type { TStoryFile } from './storyFile';
@@ -27,8 +28,6 @@ export const slugify = (name: string): string =>
         .replace(/^-+/, '')
         .slice(0, STORY_ID_MAX_LENGTH)
         .replace(/-+$/, '') || 'story';
-
-const exists = async (file: string) => (await lstat(file).catch(() => null)) !== null;
 
 const writeInto = async (dir: string, rel: string, contents: string | Uint8Array) => {
     const file = path.join(dir, ...rel.split('/'));

@@ -7,7 +7,7 @@ import { ProtocolRoute } from '../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../common/RouteParams';
 import { toStoryDto } from './storyFile';
 import { StoryFolders } from './StoryFolders';
-import { applyUpdateStoryBody } from './storyInput';
+import { applyUpdateStoryBody, hashUpdatePassword } from './storyInput';
 import { StoryRepository } from './StoryRepository';
 import { StoryVersionConflictError } from './StoryVersionConflictError';
 
@@ -26,17 +26,18 @@ export class StoryInfoController {
     }
 
     @ProtocolRoute('updateStoryInfo')
-    updateStoryInfo(
+    async updateStoryInfo(
         @RouteParams() { storyId }: THandlerParams<'updateStoryInfo'>,
         @Body() body: unknown
     ): Promise<TStoryInfoDto> {
         const fields = jsonObjectBody(body);
+        const passwordHash = await hashUpdatePassword(fields);
         return this.stories.exclusive(async (manager) => {
             const current = await this.stories.readVersioned(storyId, manager);
             if (!current) throw HttpError.noStory(storyId);
             // stale before invalid, as the version is what the change was based on
             if (fields.version !== current.version) throw new StoryVersionConflictError(storyId);
-            const next = await applyUpdateStoryBody(storyId, current.file, fields);
+            const next = applyUpdateStoryBody(storyId, current.file, fields, passwordHash);
             const version = await this.stories.write(storyId, next, current.version, manager);
             return { ...toStoryDto(storyId, next), version };
         });

@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises';
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import type { FSWatcher } from 'chokidar';
 import { EventBus } from '../events/EventBus';
@@ -139,6 +140,7 @@ export class StoryContexts implements OnApplicationShutdown {
 
     private async load(storyId: string, loaded: TLoaded): Promise<TServerContext> {
         const project = new ProjectRoot(this.folders.dir(storyId), storyId);
+        await mkdir(project.root, { recursive: true });
         await migrateStoryTsconfig(project.root);
         const bus = new EventBus({ project, batchMs: this.options.batchMs });
         loaded.bus = bus;

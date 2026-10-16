@@ -10,8 +10,6 @@ export const SESSION_PRUNE_JOB = 'session-prune';
 
 const SESSION_PRUNE_MS = 10 * 60_000;
 
-const TOUCH_AFTER_MS = 5 * 60_000;
-
 type TSessionRef = { id: number; token: string };
 
 export type TGrantResult = { token: string; expiresAt: number };
@@ -31,8 +29,7 @@ export class SessionService {
         return this.dataSource.transaction(async (manager) => {
             const now = Date.now();
             const live = token === undefined ? null : await this.liveSession(token, now, manager);
-            if (live) await manager.update(Session, { id: live.id }, { lastSeenAt: new Date(now) });
-            const session = live ?? (await this.createSession(now, manager));
+            const session = live ?? (await this.createSession(manager));
             const expiresAt = now + this.options.grantTtlMs;
             await manager.upsert(SessionGrant, { sessionId: session.id, storyId, expiresAt: new Date(expiresAt) }, [
                 'sessionId',
@@ -44,13 +41,8 @@ export class SessionService {
 
     async expiresAt(token: string | undefined, storyId: string): Promise<number | null> {
         if (token === undefined) return null;
-        const now = Date.now();
-        const grant = await this.liveGrants(token, now).andWhere('grant.storyId = :storyId', { storyId }).getOne();
-        if (!grant) return null;
-        if (grant.session.lastSeenAt.getTime() < now - TOUCH_AFTER_MS) {
-            await this.dataSource.manager.update(Session, { id: grant.sessionId }, { lastSeenAt: new Date(now) });
-        }
-        return grant.expiresAt.getTime();
+        const grant = await this.liveGrants(token, Date.now()).andWhere('grant.storyId = :storyId', { storyId }).getOne();
+        return grant?.expiresAt.getTime() ?? null;
     }
 
     async storyIds(token: string | undefined): Promise<string[]> {
@@ -93,9 +85,9 @@ export class SessionService {
         return null;
     }
 
-    private async createSession(now: number, manager: EntityManager): Promise<TSessionRef> {
+    private async createSession(manager: EntityManager): Promise<TSessionRef> {
         const token = newToken();
-        const result = await manager.insert(Session, { tokenHash: hashToken(token), lastSeenAt: new Date(now) });
+        const result = await manager.insert(Session, { tokenHash: hashToken(token) });
         const id: unknown = result.identifiers[0]?.id;
         if (typeof id !== 'number') throw new Error('Session insert returned no id');
         return { id, token };

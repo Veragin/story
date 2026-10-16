@@ -6,7 +6,11 @@ import { StoryRepository } from '../stories/StoryRepository';
 import { readSessionToken } from './cookie';
 import { SessionService } from './SessionService';
 
-const unmatchedStoryId = (method: string, pathname: string): string | null => {
+// Express answers HEAD with the GET handler
+const routeMethod = (method: string) => (method === 'HEAD' ? 'GET' : method);
+
+const unmatchedStoryId = (requestMethod: string, pathname: string): string | null => {
+    const method = routeMethod(requestMethod);
     if (matchRoute(GLOBAL_ROUTES, method, pathname)) return null;
     const scoped = splitStoryPath(pathname);
     if (!scoped || matchRoute(STORY_ROUTES, method, scoped.rest)) return null;
