@@ -1,4 +1,12 @@
-import { buildPath, SSE_EVENT, type TChangeEvent, type TResourceKind, type TVersion } from '@story/protocol';
+import {
+    buildPath,
+    SSE_EVENT,
+    STORY_EVENT_REASONS,
+    type TChangeEvent,
+    type TResourceKind,
+    type TStoryEvent,
+    type TVersion,
+} from '@story/protocol';
 import { STORY_ID } from './story';
 
 export type TEventFilter = {
@@ -44,6 +52,23 @@ export const matchesFilter = (filter: TEventFilter, event: TChangeEvent): boolea
     return false;
 };
 
+const isStoryEvent = (value: unknown): value is TStoryEvent =>
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'story' &&
+    'reason' in value &&
+    STORY_EVENT_REASONS.some((reason) => reason === value.reason);
+
+const eventData = (e: Event): unknown => {
+    if (!('data' in e) || typeof e.data !== 'string') return undefined;
+    try {
+        return JSON.parse(e.data);
+    } catch {
+        return undefined;
+    }
+};
+
 export class ApiEvents {
     private readonly url: string;
     private readonly createEventSource?: (url: string) => TEventSourceLike;
@@ -56,6 +81,7 @@ export class ApiEvents {
     private listeners = new Set<{ filter: TEventFilter; listener: TEventListener }>();
     private resyncListeners = new Set<() => void>();
     private statusListeners = new Set<(status: TConnectionStatus) => void>();
+    private writeListeners = new Set<() => void>();
     private saved = new Map<TVersion, number>();
     private readonly holdMaxMs: number;
     private holds = 0;
@@ -97,6 +123,20 @@ export class ApiEvents {
 
     onResync(listener: () => void): () => void {
         return addTo(this.resyncListeners, listener);
+    }
+
+    // own successful writes; their SSE echo is dropped, so it can't tell
+    onWrite(listener: () => void): () => void {
+        return addTo(this.writeListeners, listener);
+    }
+
+    notifyWrite() {
+        this.writeListeners.forEach((l) => l());
+    }
+
+    // the whole story changed (a git pull or checkout): every store refetches as after a reconnect
+    storyChanged() {
+        this.resyncListeners.forEach((l) => l());
     }
 
     onStatus(listener: (status: TConnectionStatus) => void): () => void {
@@ -164,6 +204,11 @@ export class ApiEvents {
             } catch (err) {
                 console.error('[api/events] bad event', err);
             }
+        });
+        source.addEventListener(SSE_EVENT.story, (e) => {
+            const data = eventData(e);
+            if (isStoryEvent(data)) this.storyChanged();
+            else console.error('[api/events] bad story event', data);
         });
         source.onerror = () => {
             if (this.source !== source) return;

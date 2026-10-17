@@ -15,9 +15,18 @@ import type {
     TCreatePassageBody,
     TCreateTriggerBody,
     TCreateTypeBody,
+    TDeleteGitConfigBody,
     TEntityDtoByKind,
     TEntityKind,
     TEntityListDto,
+    TGitCheckoutBody,
+    TGitCommitBody,
+    TGitCommitResultDto,
+    TGitDto,
+    TGitLogEntryDto,
+    TGitLogQuery,
+    TGitPullResultDto,
+    TGitStatusDto,
     THealthDto,
     TLiteralDto,
     TImageDto,
@@ -26,8 +35,10 @@ import type {
     TOkDto,
     TPassageDto,
     TProjectDto,
+    TSetupGitBody,
     TSourceDto,
     TSourceOwner,
+    TStoryAccessDto,
     TStoryInfoDto,
     TStructTypeDto,
     TStructureDto,
@@ -37,6 +48,7 @@ import type {
     TUpdateChapterLayoutBody,
     TUpdateCatalogEntryBody,
     TUpdateEntityBody,
+    TUpdateGitConfigBody,
     TUpdateLiteralBody,
     TUpdateMapBody,
     TUpdatePassageBody,
@@ -53,6 +65,7 @@ export type TVisualizerApi = {
     health(): Promise<THealthDto>;
     login(password: string): Promise<void>;
     getStoryInfo(): Promise<TStoryInfoDto>;
+    getStoryAccess(): Promise<TStoryAccessDto>;
     getProject(): Promise<TProjectDto>;
 
     createChapter(body: TCreateChapterBody): Promise<TChapterDto>;
@@ -109,4 +122,15 @@ export type TVisualizerApi = {
     updateTimelineLayout(body: TUpdateTimelineLayoutBody): Promise<TTimelineLayoutDto>;
     getChapterLayout(chapterId: string): Promise<TChapterLayoutDto>;
     updateChapterLayout(chapterId: string, body: TUpdateChapterLayoutBody): Promise<TChapterLayoutDto>;
+
+    getGit(): Promise<TGitDto>;
+    updateGitConfig(body: TUpdateGitConfigBody): Promise<TGitDto>;
+    setupGit(body: TSetupGitBody): Promise<TGitDto>;
+    deleteGitConfig(body: TDeleteGitConfigBody): Promise<void>;
+    gitFetch(): Promise<TGitStatusDto>;
+    gitCommit(body: TGitCommitBody): Promise<TGitCommitResultDto>;
+    gitPush(): Promise<TGitStatusDto>;
+    gitPull(): Promise<TGitPullResultDto>;
+    gitCheckout(body: TGitCheckoutBody): Promise<TGitStatusDto>;
+    getGitLog(query?: TGitLogQuery): Promise<TGitLogEntryDto[]>;
 };

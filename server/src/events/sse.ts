@@ -1,5 +1,5 @@
 import type { ServerResponse } from 'node:http';
-import { SSE_EVENT, type TChangeEvent, type THelloEvent } from '@story/protocol';
+import { SSE_EVENT, type TChangeEvent, type THelloEvent, type TStoryEvent } from '@story/protocol';
 import type { EventBus } from './EventBus';
 
 // keeps proxies (Vite's included) from closing an idle stream
@@ -21,10 +21,14 @@ export const openEventStream = (res: ServerResponse, bus: EventBus) => {
     const unsubscribe = bus.subscribe((event: TChangeEvent) => {
         res.write(frame(SSE_EVENT.change, event));
     });
+    const unsubscribeStory = bus.onStory((event: TStoryEvent) => {
+        res.write(frame(SSE_EVENT.story, event));
+    });
     const heartbeat = setInterval(() => res.write(': ping\n\n'), HEARTBEAT_MS);
     const cleanup = () => {
         clearInterval(heartbeat);
         unsubscribe();
+        unsubscribeStory();
     };
     res.on('close', cleanup);
     res.on('error', cleanup);

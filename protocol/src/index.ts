@@ -13,5 +13,6 @@ export * from './dto/image';
 export * from './dto/source';
 export * from './dto/map';
 export * from './dto/layout';
+export * from './dto/git';
 export * from './dto/events';
 export * from './dto/errors';

@@ -24,11 +24,34 @@ export type THttpApiOptions = {
     fetch?: typeof fetch;
     onSaved?: (version: string) => void;
     onMutation?: () => () => void;
+    onStoryWrite?: () => void;
     onUnauthorized?: (error: ApiError) => Promise<void>;
 };
 
 // a source save rewrites whole files behind the forms' back, so its echo must reach the pages
 const NOT_MARKED_SAVED: readonly TRouteName[] = ['updateSource'];
+
+const NOT_STORY_WRITES: readonly TRouteName[] = [
+    'login',
+    'logout',
+    'updateGitConfig',
+    'setupGit',
+    'deleteGitConfig',
+    'gitFetch',
+    'gitCommit',
+    'gitPush',
+    'gitPull',
+    'gitCheckout',
+];
+
+export type TQuery = Record<string, string | number | undefined>;
+
+const queryString = (query: TQuery | undefined): string => {
+    const entries = Object.entries(query ?? {}).flatMap(([key, value]) =>
+        value === undefined ? [] : [[key, String(value)]]
+    );
+    return entries.length === 0 ? '' : `?${new URLSearchParams(entries)}`;
+};
 
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
     try {
@@ -60,17 +83,19 @@ export const createRequest = ({
     fetch: fetchImpl = fetch,
     onSaved,
     onMutation,
+    onStoryWrite,
     onUnauthorized,
 }: THttpApiOptions = {}) => {
     return async <R extends TRouteName>(
         route: R,
         params: TRouteParams<R>,
-        body?: TRouteBody<R>
+        body?: TRouteBody<R>,
+        query?: TQuery
     ): Promise<TRouteResponse<R>> => {
         const { method, path } = endpoint(storyId, route, params);
         const send = async (): Promise<Response> => {
             try {
-                return await fetchImpl(baseUrl + path, {
+                return await fetchImpl(baseUrl + path + queryString(query), {
                     method,
                     // on every mutation, bodyless ones included: the server's CSRF check requires it
                     headers: method === 'GET' ? undefined : { 'content-type': 'application/json' },
@@ -98,6 +123,7 @@ export const createRequest = ({
             if (!res.ok) {
                 throw new ApiError(res.status, await parseError(res), route);
             }
+            if (method !== 'GET' && !NOT_STORY_WRITES.includes(route)) onStoryWrite?.();
             if (res.status === 204) return undefined as TRouteResponse<R>;
             const json = (await res.json()) as TRouteResponse<R>;
             if (method !== 'GET' && onSaved && !NOT_MARKED_SAVED.includes(route)) {
@@ -117,6 +143,7 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         health: () => request('health', {}),
         login: (password) => request('login', { storyId: options.storyId ?? STORY_ID }, { password }),
         getStoryInfo: () => request('getStoryInfo', {}),
+        getStoryAccess: () => request('getStoryAccess', { storyId: options.storyId ?? STORY_ID }),
         getProject: () => request('getProject', {}),
 
         createChapter: (body) => request('createChapter', {}, body),
@@ -178,5 +205,16 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         updateTimelineLayout: (body) => request('updateTimelineLayout', {}, body),
         getChapterLayout: (chapterId) => request('getChapterLayout', { chapterId }),
         updateChapterLayout: (chapterId, body) => request('updateChapterLayout', { chapterId }, body),
+
+        getGit: () => request('getGit', {}),
+        updateGitConfig: (body) => request('updateGitConfig', {}, body),
+        setupGit: (body) => request('setupGit', {}, body),
+        deleteGitConfig: (body) => request('deleteGitConfig', {}, body),
+        gitFetch: () => request('gitFetch', {}),
+        gitCommit: (body) => request('gitCommit', {}, body),
+        gitPush: () => request('gitPush', {}),
+        gitPull: () => request('gitPull', {}),
+        gitCheckout: (body) => request('gitCheckout', {}, body),
+        getGitLog: (query) => request('getGitLog', {}, undefined, query),
     };
 };

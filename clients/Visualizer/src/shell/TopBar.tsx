@@ -4,6 +4,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, STORY_ID } from '../api';
+import { GitButton } from './GitButton';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
 import { storyInfo } from './storyInfoStore';
@@ -78,6 +79,7 @@ export const TopBar = observer(() => {
                     />
                 ))}
             </STabs>
+            <GitButton />
             <SControlBar ref={shell.setControlBarEl} />
         </SBar>
     );

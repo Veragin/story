@@ -22,6 +22,18 @@ import type {
     TUpdateChapterLayoutBody,
     TUpdateTimelineLayoutBody,
 } from './dto/layout';
+import type {
+    TDeleteGitConfigBody,
+    TGitCheckoutBody,
+    TGitCommitBody,
+    TGitCommitResultDto,
+    TGitDto,
+    TGitLogEntryDto,
+    TGitPullResultDto,
+    TGitStatusDto,
+    TSetupGitBody,
+    TUpdateGitConfigBody,
+} from './dto/git';
 import type { TMapDto, TUpdateMapBody } from './dto/map';
 import type {
     TChapterPassagesDto,
@@ -81,14 +93,15 @@ export const storyApiPrefix = (storyId: string) => `${STORIES_PREFIX}/${encodeUR
 
 /**
  * Who may call a route (D3). `public`: anyone. `read`: a grant for the story, or the story is public.
- * `write`: a grant for the story.
+ * `write`: a grant for the story. Story mutations are always `write`; a story `GET` is `read` unless
+ * only editors may see it (git config and status).
  */
 export type TRouteAccess = 'public' | 'read' | 'write';
 
 export type TRouteDef = { readonly method: THttpMethod; readonly path: string; readonly access: TRouteAccess };
 
 type TStoryRouteDef =
-    | { method: 'GET'; path: `/${string}`; access: 'read' }
+    | { method: 'GET'; path: `/${string}`; access: 'read' | 'write' }
     | { method: Exclude<THttpMethod, 'GET'>; path: `/${string}`; access: 'write' };
 
 export const STORY_ROUTES = {
@@ -154,6 +167,17 @@ export const STORY_ROUTES = {
     updateTimelineLayout: { method: 'PUT', path: '/layout/timeline', access: 'write' },
     getChapterLayout: { method: 'GET', path: '/layout/chapters/:chapterId', access: 'read' },
     updateChapterLayout: { method: 'PUT', path: '/layout/chapters/:chapterId', access: 'write' },
+
+    getGit: { method: 'GET', path: '/git', access: 'write' },
+    updateGitConfig: { method: 'PUT', path: '/git/config', access: 'write' },
+    setupGit: { method: 'POST', path: '/git/setup', access: 'write' },
+    deleteGitConfig: { method: 'DELETE', path: '/git/config', access: 'write' },
+    gitFetch: { method: 'POST', path: '/git/fetch', access: 'write' },
+    gitCommit: { method: 'POST', path: '/git/commit', access: 'write' },
+    gitPush: { method: 'POST', path: '/git/push', access: 'write' },
+    gitPull: { method: 'POST', path: '/git/pull', access: 'write' },
+    gitCheckout: { method: 'POST', path: '/git/checkout', access: 'write' },
+    getGitLog: { method: 'GET', path: '/git/log', access: 'write' },
 } as const satisfies Record<string, TStoryRouteDef>;
 
 export const GLOBAL_ROUTES = {
@@ -323,6 +347,25 @@ export type TApiSpec = {
     updateTimelineLayout: { body: TUpdateTimelineLayoutBody; response: TTimelineLayoutDto };
     getChapterLayout: { body: undefined; response: TChapterLayoutDto };
     updateChapterLayout: { body: TUpdateChapterLayoutBody; response: TChapterLayoutDto };
+
+    /** `available: false` without `GIT_TOKEN_KEY` or `git` on the server. Does not fetch. */
+    getGit: { body: undefined; response: TGitDto };
+    updateGitConfig: { body: TUpdateGitConfigBody; response: TGitDto };
+    setupGit: { body: TSetupGitBody; response: TGitDto };
+    /** `removeRepo: false` keeps the story's `.git` folder. */
+    deleteGitConfig: { body: TDeleteGitConfigBody; response: undefined };
+    /** Refreshes `ahead` / `behind` and the remote branches. */
+    gitFetch: { body: undefined; response: TGitStatusDto };
+    /** Stages everything; `409 git_nothing_to_commit` on a clean tree. A failed push keeps the commit. */
+    gitCommit: { body: TGitCommitBody; response: TGitCommitResultDto };
+    /** `409 git_rejected` when the remote is ahead. */
+    gitPush: { body: undefined; response: TGitStatusDto };
+    /** Fetch + merge; `409 git_dirty` with uncommitted changes, `409 git_conflict` (merge aborted) on a conflict. */
+    gitPull: { body: undefined; response: TGitPullResultDto };
+    /** `409 git_dirty` with uncommitted changes. */
+    gitCheckout: { body: TGitCheckoutBody; response: TGitStatusDto };
+    /** Newest first; query `TGitLogQuery`. */
+    getGitLog: { body: undefined; response: TGitLogEntryDto[] };
 };
 
 export type TRouteBody<R extends TRouteName> = TApiSpec[R]['body'];
@@ -394,10 +437,10 @@ export const matchPath = (template: string, pathname: string): Record<string, st
 };
 
 /** Mutations without a body; still sent as `application/json`: the CSRF check wants it on every mutation. */
-export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout'];
+export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout', 'gitFetch', 'gitPush', 'gitPull'];
 
 /** `204 No Content`. */
-export const NO_CONTENT_ROUTES: readonly TRouteName[] = ['login', 'logout'];
+export const NO_CONTENT_ROUTES: readonly TRouteName[] = ['login', 'logout', 'deleteGitConfig'];
 
 /** `201 Created`. */
 export const CREATED_ROUTES: readonly TRouteName[] = [
@@ -411,4 +454,5 @@ export const CREATED_ROUTES: readonly TRouteName[] = [
     'createCatalogEntry',
     'createType',
     'createLiteral',
+    'setupGit',
 ];

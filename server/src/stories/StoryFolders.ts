@@ -79,12 +79,31 @@ export class StoryFolders {
         return zipStory(dir, added);
     }
 
-    private async place(kind: string, file: TStoryFile, fill: (tmp: string) => Promise<void>): Promise<string> {
+    // a dot name is never a story id, so nobody lists or loads it half-built
+    async makeTemp(kind: string): Promise<string> {
         await mkdir(this.root, { recursive: true });
-        // a dot name is never a story id, so nobody lists or loads it half-built
         const tmp = path.join(this.root, `.${kind}-${randomBytes(6).toString('hex')}`);
+        await mkdir(tmp);
+        return tmp;
+    }
+
+    // the old folder comes back if the new one cannot take its name
+    async replace(storyId: string, tmp: string): Promise<void> {
+        const dir = this.dir(storyId);
+        const old = path.join(this.root, `.replace-${randomBytes(6).toString('hex')}`);
+        await rename(dir, old);
         try {
-            await mkdir(tmp);
+            await rename(tmp, dir);
+        } catch (e) {
+            await rename(old, dir);
+            throw e;
+        }
+        await rm(old, { recursive: true, force: true });
+    }
+
+    private async place(kind: string, file: TStoryFile, fill: (tmp: string) => Promise<void>): Promise<string> {
+        const tmp = await this.makeTemp(kind);
+        try {
             await fill(tmp);
             // a sibling of the final folder, so the relative engine paths are the same; the zip's own may point elsewhere
             await writeInto(tmp, 'tsconfig.json', await storyTsconfig(tmp));

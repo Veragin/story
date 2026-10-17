@@ -20,6 +20,7 @@ import { ImagesModule } from './editor/images/ImagesModule';
 import { LayoutsModule } from './editor/layouts/LayoutsModule';
 import { MapsModule } from './editor/maps/MapsModule';
 import { EventsModule } from './events/EventsModule';
+import { GitModule } from './git/GitModule';
 import { HealthModule } from './health/HealthModule';
 import { StoryContextModule } from './storyContext/StoryContextModule';
 import { StoriesModule } from './stories/StoriesModule';
@@ -46,6 +47,7 @@ import { StoriesModule } from './stories/StoriesModule';
         ImagesModule,
         MapsModule,
         LayoutsModule,
+        GitModule,
     ],
     providers: [
         { provide: APP_FILTER, useClass: ApiExceptionFilter },

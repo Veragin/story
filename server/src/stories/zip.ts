@@ -6,8 +6,8 @@ import { errorMessage, HttpError } from '../common/HttpError';
 import { isTempFile } from '../json/atomicWrite';
 import { STORY_FILE } from './storyFile';
 
-const TOP_FILES = ['tsconfig.json'];
-const TOP_DIRS = ['data', 'types'];
+export const STORY_TOP_FILES = ['tsconfig.json'];
+export const STORY_TOP_DIRS = ['data', 'types'];
 
 const MAX_ENTRIES = 10_000;
 const MAX_UNPACKED_BYTES = 200 * 1024 * 1024;
@@ -29,11 +29,11 @@ const exportedFiles = async (storyDir: string): Promise<[string, string][]> => {
             // anything else (a symlink, a socket) is not part of a story
         }
     };
-    for (const name of TOP_FILES) {
+    for (const name of STORY_TOP_FILES) {
         const abs = path.join(storyDir, name);
         if ((await lstatOrNull(abs))?.isFile()) out.push([name, abs]);
     }
-    for (const name of TOP_DIRS) {
+    for (const name of STORY_TOP_DIRS) {
         if ((await lstatOrNull(path.join(storyDir, name)))?.isDirectory()) await walk(name);
     }
     return out;
@@ -110,8 +110,14 @@ const entryPath = (name: string): string | null => {
     const [top] = segments;
     // older exports carried the metadata, password hash included: never trusted, never read
     if (segments.length === 1 && !isDir && top === STORY_FILE) return null;
-    if (segments.length === 1 ? !(isDir ? TOP_DIRS : TOP_FILES).includes(top) : !TOP_DIRS.includes(top)) {
-        throw refuse(`a story zip holds only ${[...TOP_FILES, ...TOP_DIRS.map((d) => `${d}/`)].join(', ')}`);
+    if (
+        segments.length === 1
+            ? !(isDir ? STORY_TOP_DIRS : STORY_TOP_FILES).includes(top)
+            : !STORY_TOP_DIRS.includes(top)
+    ) {
+        throw refuse(
+            `a story zip holds only ${[...STORY_TOP_FILES, ...STORY_TOP_DIRS.map((d) => `${d}/`)].join(', ')}`
+        );
     }
     return isDir ? null : segments.join('/');
 };

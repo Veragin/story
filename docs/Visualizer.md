@@ -116,6 +116,7 @@ canvas/     the Canvas library: Scene, Camera, shapes, controllers (playground a
 shell/      TopBar with tabs, hash router, <ControlBar> slot, modal host, keyboard helper
 pages/      Map, Timeline, Chapter, Entities, Structure (each has a MobX store + components + __tests__/)
 stores/     the shared stores: StructureStore, EntityStore, DraftResource, writeResult (singletons in context.ts)
+git/        GitStore (singleton `gitStore` in context.ts), GitMenu, the commit / branch / history / settings dialogs (gitDialogs.tsx)
 MapEditor/  hex tile renderer ported from mapMaker, used by the Map page
 components/ inputs/ (the value inputs, below), FormHeader, Notices, formLayout, ResizableSplitter,
             SourceEditorDialog (CodeMirror, openSourceEditor)
@@ -127,6 +128,7 @@ theme.ts    the single dark MUI theme
 - **Login** (`api/auth.ts`, `shell/LoginPrompt.tsx`): a `401` on any request opens `PasswordDialog` from `@story/ui`; the request waits, and is retried once after the login (`httpApi`'s `onUnauthorized`). Requests that 401 while the prompt is open wait on the same prompt. Cancel goes back to the landing page. An `EventSource` cannot see a 401 (the browser just gives up on the stream), so `apiEvents` calls `onGiveUp` when it does, which probes with `GET /info` (and so opens the prompt on a 401); after the login `apiEvents.reconnectNow()` re-creates the stream, and its `hello` fires `onResync`.
 - **Routing** (`shell/router.ts`): `#/map`, `#/timeline`, `#/timeline/chapter/:chapterId`, `#/entities[/:kind[/:id]]`, `#/entities/catalogs/:catalog[/:id]`, `#/structure[/types|literals[/:name]]`, `#/_canvas`, `#/_inputs` (the inputs playground). `shell/Shell.tsx` switches pages on `route.page`.
 - **Shared stores** (`clients/Visualizer/src/context.ts`): `structureStore` (`StructureStore`: literals, types, `fieldsOf(typeName, dataType?)`, `refOptions(refName)`, the structure writes as `TWriteResult` = ok / invalid / referenced / stale / exists / error) and `entityStore` (`EntityStore`: lists of every kind and catalog, `optionsOf(refTarget)`, CRUD, delete previews). `store.start()` returns a release and subscribes to events only while someone holds it (`RefCountedSubscription`). `DraftResource` is the draft / stale / save / Keep mine / delete logic of one form, used by the entity, catalog entry and structure forms; a version change that leaves the form's fields equal (our own `addLiteralValue`, a sibling item in the same file) rebases silently instead of going stale.
+- **Git** (`shell/GitButton.tsx`, `git/`): shown in the top bar only when the session can edit the story (`getStoryAccess`) and `getGit` says `available`. Not connected: an outlined "Git" button opens `GitSettingsDialog` (remote, branch, token, author; first setup uploads the story or replaces it with the repo's content; disconnect keeps or deletes `.git`). Connected: the branch, the uncommitted-change count and `↑ahead ↓behind`; a click fetches (at most every 30 s) and opens `GitMenu`: Commit & push…, Push (when ahead and clean), Pull, Switch branch…, History…, Settings…. `GitStore` refreshes the status (debounced) after editor writes and change events, and on `onResync` (a reconnect or a `story` event); git error codes have messages in `api/errorMessage.ts`. Server side: [`Server.md`](Server.md#git).
 - **Control bar**: a page renders `<ControlBar>…</ControlBar>` anywhere in its tree, and the children are portalled into the top bar. Use at most one per page.
 - **Modals**: `modals` from `shell/modals.ts` (`modals.confirm`, `modals.open`). **Keyboard**: `keyboard` / `useKey` from `shell/keyboard.ts`. Keys are ignored while an input is focused or a modal is open, unless the handler passes `allowInModal`.
 - **API usage**: `import { api, apiEvents, ApiError } from '../api'`. Mutations return the new DTO; keep its `version` for the next `PUT`. For live refresh, use `apiEvents.subscribe({ kind, id?, chapterId? }, cb)`, plus `apiEvents.onResync(cb)` to refetch after a reconnect. The client's own saves are filtered out automatically. Stores that hold lists subscribe to `kind: '*'` and refetch on `op: 'created' | 'deleted'`.
@@ -214,13 +216,14 @@ Besides the `.ts` source it edits, the Visualizer owns these JSON files. They ar
 The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `STORY_ROUTES` and `GLOBAL_ROUTES` hold the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath` (story routes) and `buildGlobalPath`.
 
 - The server holds every story under `STORIES_ROOT` (`stories/<id>/`). A story route acts on one story and lives under `/api/stories/:storyId` (`storyApiPrefix`); the table below gives its path relative to that prefix. Each story has its own project, change feed and watcher, loaded on its first request and unloaded when idle (`server/src/storyContext/StoryContexts.ts`). An unknown story answers `404`.
-- **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
+- **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations, and the editor-only `GET`s `getGit` and `getGitLog`, always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
 - **Stories** (`server/src/stories/`): anyone may list, create or import a story. Create copies the template, writes a `tsconfig.json` and an empty `map.json` of `mapSize`, inserts the story's row (scrypt hash) and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. Export and import (multipart: the zip + the metadata fields) are in [`Server.md`](Server.md#stories). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
 - **Zips** (`server/src/stories/zip.ts`): a story zip holds `tsconfig.json`, `data/`, `types/` at its root, no metadata. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes.
 - Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `exportStory` (the zip) and the body of `importStory` (`multipart/form-data`).
 - A `PUT` or `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
 - `PUT` bodies are **partial** (`{ version, ...changedFields }`; an omitted field is left untouched). The map and the two layouts are the exception: their `PUT` replaces the whole document.
-- `create*` routes, `importStory` and `addChapterCharacter` answer `201`; everything else answers `200`.
+- `create*` routes, `importStory`, `addChapterCharacter` and `setupGit` answer `201`; `login`, `logout` and `deleteGitConfig` answer `204`; everything else answers `200`.
+- **Git** (`server/src/git/`, DTOs in `protocol/src/dto/git.ts`): per-story settings (remote, branch, encrypted token, author) and the repo in the story folder. `getGit` answers `{ available, config, status }`: `available: false` (and `null`s) without `GIT_TOKEN_KEY` or `git` on the server, or for a story in `GIT_DISABLED_STORIES`; the other git routes then answer `503 git_unavailable`. `getGit` never fetches (`gitFetch` does); `config.hasToken` stands in for the token, which is never sent back. `updateGitConfig` is versioned and partial (`token` absent or `''` keeps it, `null` clears it). `getGitLog` takes the query `limit` (1–200, default 50) and `before` (a commit hash). `gitFetch`, `gitPush` and `gitPull` have no body. The flows, locking and reload: [`Server.md`](Server.md#git).
 - `DELETE /entities/:kind/:id` and `DELETE /catalogs/:name/:id` answer `{ ok, cleared }` (see **Deleting a referenced instance**); their `GET …/references` answers `{ cleared, blocking }` and writes nothing.
 - `:kind` is one of `characters | npcs | locations | items`. `:name` of a catalog is its export name (`races`), of a type or literal the type name (`TRace`, `TItemType`). `:mapId` is always `global`. For the images `:owner` is one of `passages | characters | npcs`, and its `:id` is a full passage id or an entity id; for the source it is `chapter | passage` (a chapter id or a full passage id).
 
@@ -265,23 +268,40 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | `getMap` / `updateMap`                      | `GET/PUT`        | `/maps/:mapId`                                    |
 | `get/updateTimelineLayout`                  | `GET/PUT`        | `/layout/timeline`                                |
 | `get/updateChapterLayout`                   | `GET/PUT`        | `/layout/chapters/:chapterId`                     |
+| `getGit`                                    | `GET`            | `/git` (`TGitDto`; write access)                  |
+| `setupGit`                                  | `POST`           | `/git/setup` (`initial`: `push`/`pull`, 201)      |
+| `updateGitConfig` / `deleteGitConfig`       | `PUT/DELETE`     | `/git/config` (`DELETE`: `removeRepo`, 204)       |
+| `gitFetch`                                  | `POST`           | `/git/fetch` (`TGitStatusDto`)                    |
+| `gitCommit`                                 | `POST`           | `/git/commit` (`{ message, push }`)               |
+| `gitPush`                                   | `POST`           | `/git/push`                                       |
+| `gitPull`                                   | `POST`           | `/git/pull` (fetch + merge)                       |
+| `gitCheckout`                               | `POST`           | `/git/checkout` (`{ branch, create }`)            |
+| `getGitLog`                                 | `GET`            | `/git/log?limit&before` (write access)            |
 
-**Errors** (`dto/errors.ts`): every non-2xx answer is `{ error, message?, diagnostics?, references?, current? }`.
+**Errors** (`dto/errors.ts`): every non-2xx answer is `{ error, message?, diagnostics?, references?, current?, files? }`.
 
-| Status | `error`             | Meaning                                                                            |
-| ------ | ------------------- | ---------------------------------------------------------------------------------- |
-| 400    | `bad_request`       | malformed JSON, missing or invalid fields, bad id                                  |
-| 401    | `unauthorized`      | no grant for the story (log in), or a wrong password                               |
-| 403    | `forbidden`         | a mutation from a foreign `Origin`; deleting an extendable or engine type          |
-| 404    | `not_found`         | no such route or resource                                                          |
-| 409    | `stale`             | `version` is not the one on disk; `current` is the fresh DTO (or `null`)           |
-| 409    | `referenced`        | delete refused; `references` lists file, line and text of each reference           |
-| 409    | `exists`            | create refused, the id is taken (chapter, passage, entity, type, …)                |
-| 422    | `invalid`           | the edit does not type-check (`diagnostics`, with a `field` path); nothing written |
-| 429    | `too_many_requests` | too many wrong passwords                                                           |
-| 500    | `internal`          | bug                                                                                |
+| Status | `error`                 | Meaning                                                                                     |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------- |
+| 400    | `bad_request`           | malformed JSON, missing or invalid fields, bad id                                           |
+| 401    | `unauthorized`          | no grant for the story (log in), or a wrong password                                        |
+| 403    | `forbidden`             | a mutation from a foreign `Origin`; deleting an extendable or engine type                   |
+| 404    | `not_found`             | no such route or resource                                                                   |
+| 409    | `stale`                 | `version` is not the one on disk; `current` is the fresh DTO (or `null`)                    |
+| 409    | `referenced`            | delete refused; `references` lists file, line and text of each reference                    |
+| 409    | `exists`                | create refused, the id is taken (chapter, passage, entity, type, …)                         |
+| 422    | `invalid`               | the edit does not type-check (`diagnostics`, with a `field` path); nothing written          |
+| 409    | `git_not_configured`    | the story is not connected to git (or its `.git` is gone)                                   |
+| 409    | `git_dirty`             | pull or branch switch with uncommitted changes                                              |
+| 409    | `git_conflict`          | the pull's merge conflicted and was aborted; `files` lists the paths                        |
+| 409    | `git_rejected`          | push rejected, the remote is ahead: pull first                                              |
+| 409    | `git_auth`              | the remote refused the token, or it must be re-entered (not `401`: the story is not locked) |
+| 409    | `git_nothing_to_commit` | commit on a clean tree                                                                      |
+| 429    | `too_many_requests`     | too many wrong passwords                                                                    |
+| 500    | `internal`              | bug                                                                                         |
+| 502    | `git_remote`            | network or other remote error (token scrubbed)                                              |
+| 503    | `git_unavailable`       | git is off on this server or for this story                                                 |
 
-**Events** (`dto/events.ts`): a story's `GET /api/stories/:storyId/events` sends `hello` on connect, then an `event: change` with `{ kind, id, version, op?, chapterId? }` for each change. `kind` is one of `chapter | passage | trigger | entity | map | layout | project | structure | catalog`, and `version` is `null` for a deletion. One server operation is one event, however many files it writes. Hand edits are batched over about 150 ms. An id ending in `*` is a wildcard: `trigger` `*` for a hand edit of `triggers.ts`, `entity` `items/*` for an items file, `catalog` `races/*` for a hand edit of a catalog file. `structure` (id `structure`) follows every change under `types/`, of a catalog file or of an items file; a catalog entry's id is `<catalog>/<id>`.
+**Events** (`dto/events.ts`): a story's `GET /api/stories/:storyId/events` sends `hello` on connect, then an `event: change` with `{ kind, id, version, op?, chapterId? }` for each change. `kind` is one of `chapter | passage | trigger | entity | map | layout | project | structure | catalog`, and `version` is `null` for a deletion. One server operation is one event, however many files it writes. Hand edits are batched over about 150 ms. An id ending in `*` is a wildcard: `trigger` `*` for a hand edit of `triggers.ts`, `entity` `items/*` for an items file, `catalog` `races/*` for a hand edit of a catalog file. `structure` (id `structure`) follows every change under `types/`, of a catalog file or of an items file; a catalog entry's id is `<catalog>/<id>`. After a git pull, branch switch or setup pull, an `event: story` with `{ type: "story", reason: "git" }` says the whole story changed: the client refetches every store, as after a reconnect.
 
 ## Adding or changing a feature
 

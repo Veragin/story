@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import {
     buildPath,
     EMPTY_VERSION,
@@ -10,7 +9,7 @@ import {
 } from '@story/protocol';
 import { version } from '../events/version';
 import { HttpError } from '../common/HttpError';
-import { isMissingFileError } from '../json/atomicWrite';
+import { readBytesOrNull } from '../json/atomicWrite';
 import { findEntitySource } from './readers/entities';
 import type { SourceProject } from './SourceProject';
 import { findPassageFile } from './story';
@@ -22,15 +21,6 @@ const imageFile = (sp: SourceProject, owner: TImageOwner, id: string): string =>
     const tsFile =
         owner === 'passages' ? findPassageFile(sp, id).getFilePath() : findEntitySource(sp, owner, id).sf.getFilePath();
     return siblingPng(tsFile);
-};
-
-const readBytesOrNull = async (file: string): Promise<Buffer | null> => {
-    try {
-        return await readFile(file);
-    } catch (e) {
-        if (isMissingFileError(e)) return null;
-        throw e;
-    }
 };
 
 const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, bytes: Uint8Array | null): TImageDto => {

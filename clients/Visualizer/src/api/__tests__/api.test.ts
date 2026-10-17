@@ -420,6 +420,41 @@ describe('httpApi', () => {
     });
 });
 
+describe('git over http and SSE', () => {
+    it('sends the log query, and reports story writes but not git calls', async () => {
+        const fetch = vi.fn<typeof globalThis.fetch>(() => Promise.resolve(new Response('[]', { status: 200 })));
+        const onStoryWrite = vi.fn();
+        const api = createHttpApi({ storyId: 'example', fetch, onStoryWrite });
+
+        await api.getGitLog({ limit: 20, before: 'abc' });
+        expect(fetch).toHaveBeenLastCalledWith(
+            '/api/stories/example/git/log?limit=20&before=abc',
+            expect.objectContaining({ method: 'GET' })
+        );
+        await api.gitPull();
+        expect(fetch).toHaveBeenLastCalledWith(
+            '/api/stories/example/git/pull',
+            expect.objectContaining({ method: 'POST', headers: { 'content-type': 'application/json' } })
+        );
+        expect(onStoryWrite).not.toHaveBeenCalled();
+        await api.updateChapter('village', { version: 'v1', title: 'x' });
+        expect(onStoryWrite).toHaveBeenCalledTimes(1);
+    });
+
+    it('turns the story event into a resync', () => {
+        const target = new EventTarget();
+        const events = new ApiEvents({
+            // the DOM listener types are invariant in the event type; the other stream tests stub it the same way
+            createEventSource: () => Object.assign(target, { readyState: 0, onerror: null, close: () => {} }) as never,
+        });
+        const resync = vi.fn();
+        events.onResync(resync);
+        events.subscribe('*', () => {});
+        target.dispatchEvent(new MessageEvent('story', { data: JSON.stringify({ type: 'story', reason: 'git' }) }));
+        expect(resync).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('mockApi', () => {
     it('serves the sample story with versions and edges', async () => {
         const api = createMockApi();

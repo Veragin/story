@@ -6,14 +6,17 @@ import { GRANT_TTL_MS } from '../src/auth/authOptions';
 import { storyGrantOf } from '../src/auth/storyGrant';
 import { ProtocolRoute } from '../src/common/ProtocolRoute';
 import { ProjectInfoModule } from '../src/editor/projectInfo/ProjectInfoModule';
+import { TEST_GIT_OPTIONS } from './helpers/git';
 import { login, requestJson, type TAny } from './helpers/http';
 import { createTestApp, type TModuleOverride, type TTestApp } from './helpers/testApp';
 
 let app: TTestApp | undefined;
 
 const start = async (overrideModules: readonly TModuleOverride[] = []) => {
+    // with a key, the git routes reach their handlers instead of answering 503
     app = await createTestApp({
         overrideModules,
+        git: TEST_GIT_OPTIONS,
         stories: [
             { id: 'open', public: true },
             { id: 'closed', public: false },

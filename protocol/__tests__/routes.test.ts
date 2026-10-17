@@ -10,6 +10,7 @@ import {
     STORY_ROUTES,
     templateParams,
     type TRouteAccess,
+    type TStoryRouteName,
 } from '../src';
 
 const PUBLIC_ROUTES = [
@@ -22,6 +23,8 @@ const PUBLIC_ROUTES = [
     'getSession',
     'getStoryAccess',
 ];
+
+const WRITE_GETS: readonly TStoryRouteName[] = ['getGit', 'getGitLog'];
 
 const ACCESS_LEVELS: readonly TRouteAccess[] = ['public', 'read', 'write'];
 
@@ -36,10 +39,11 @@ describe('route access levels (D3)', () => {
         expect(new Set(GLOBAL_ROUTE_NAMES)).toEqual(new Set(PUBLIC_ROUTES));
     });
 
-    it('needs read access for story GETs and write access for story mutations', () => {
+    it('needs write access for story mutations and for the editor-only GETs, read access for other GETs', () => {
         for (const route of STORY_ROUTE_NAMES) {
             const { method, access } = STORY_ROUTES[route];
-            expect([route, access]).toEqual([route, method === 'GET' ? 'read' : 'write']);
+            const expected = method !== 'GET' || WRITE_GETS.includes(route) ? 'write' : 'read';
+            expect([route, access]).toEqual([route, expected]);
         }
     });
 });

@@ -16,6 +16,27 @@ const originList = optionalText.transform((value) => (value ?? '').split(',').ma
 
 const port = z.coerce.number().int().min(1).max(65535);
 
+const list = (fallback: readonly string[]) =>
+    optionalText.transform((value) =>
+        value === undefined
+            ? [...fallback]
+            : value
+                  .split(',')
+                  .map((item) => item.trim().toLowerCase())
+                  .filter(Boolean)
+    );
+
+const GIT_TOKEN_KEY_BYTES = 32;
+
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+const gitTokenKey = optionalText
+    .refine(
+        (value) => !value || (BASE64.test(value) && Buffer.from(value, 'base64').length === GIT_TOKEN_KEY_BYTES),
+        `must be ${GIT_TOKEN_KEY_BYTES} bytes in base64 (openssl rand -base64 ${GIT_TOKEN_KEY_BYTES})`
+    )
+    .transform((value) => (value ? Buffer.from(value, 'base64') : null));
+
 export const ENV_SCHEMA = z.object({
     PORT: port.default(DEFAULT_PORT),
     STORIES_ROOT: optionalText.transform((value) => path.resolve(REPO_ROOT, value || 'stories')),
@@ -27,6 +48,10 @@ export const ENV_SCHEMA = z.object({
     COOKIE_SECURE: flag,
     TRUST_PROXY: flag,
     ALLOWED_ORIGINS: originList,
+    GIT_TOKEN_KEY: gitTokenKey,
+    GIT_ALLOWED_HOSTS: list([]),
+    GIT_DISABLED_STORIES: list(['example']),
+    GIT_ALLOW_FILE_REMOTES: flag,
 });
 
 export type TEnv = z.infer<typeof ENV_SCHEMA>;

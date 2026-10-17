@@ -1,26 +1,12 @@
 import { STORY_LIMITS, type TMapSizeDto } from '@story/protocol';
 import { hashPassword } from '../auth/password';
+import { flagField, rejectUnknownFields, textField } from '../common/fields';
 import { errorMessage, HttpError } from '../common/HttpError';
 import { isPlainObject } from '../common/isPlainObject';
 import { decodeMapFile, MAP_FILE } from '../json/mapFile';
 import type { TStoryFile } from './storyFile';
 
 const L = STORY_LIMITS;
-
-const text = (body: Record<string, unknown>, field: string, max: number, { required = false, trim = true } = {}) => {
-    const value = body[field];
-    if (typeof value !== 'string') throw HttpError.badRequest(`Field "${field}" must be a string`);
-    const out = trim ? value.trim() : value;
-    if (required && out === '') throw HttpError.badRequest(`Field "${field}" must not be empty`);
-    if (out.length > max) throw HttpError.badRequest(`Field "${field}" is longer than ${max} characters`);
-    return out;
-};
-
-const flag = (body: Record<string, unknown>, field: string) => {
-    const value = body[field];
-    if (typeof value !== 'boolean') throw HttpError.badRequest(`Field "${field}" must be true or false`);
-    return value;
-};
 
 const password = (value: unknown) => {
     if (typeof value !== 'string') throw HttpError.badRequest('Field "password" must be a string');
@@ -49,12 +35,12 @@ const parseNewStory = async (body: Record<string, unknown>, size: () => TMapSize
     const withDefaults = { author: '', description: '', public: false, ...body };
     const plain = password(body.password);
     return {
-        name: text(withDefaults, 'name', L.nameMaxLength, { required: true }),
-        author: text(withDefaults, 'author', L.authorMaxLength),
+        name: textField(withDefaults, 'name', L.nameMaxLength, { required: true }),
+        author: textField(withDefaults, 'author', L.authorMaxLength),
         password: await hashPassword(plain),
         mapSize: size(),
-        description: text(withDefaults, 'description', L.descriptionMaxLength, { trim: false }),
-        public: flag(withDefaults, 'public'),
+        description: textField(withDefaults, 'description', L.descriptionMaxLength, { trim: false }),
+        public: flagField(withDefaults, 'public'),
     };
 };
 
@@ -77,23 +63,25 @@ const formBody = (fields: unknown): Record<string, unknown> => {
 export const parseImportStoryBody = (fields: unknown, size: TMapSizeDto): Promise<TStoryFile> =>
     parseNewStory(formBody(fields), () => size);
 
-export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto => {
-    const bytes = files.get(MAP_FILE);
-    if (!bytes) throw HttpError.badRequest(`The zip has no ${MAP_FILE}: its map size is the story's`);
+export const storyMapSize = (bytes: Uint8Array | undefined, source: string): TMapSizeDto => {
+    if (!bytes) throw HttpError.badRequest(`The ${source} has no ${MAP_FILE}: its map size is the story's`);
     let size: TMapSizeDto;
     try {
         const { width, height } = decodeMapFile(JSON.parse(new TextDecoder().decode(bytes)));
         size = { width, height };
     } catch (e) {
-        throw HttpError.badRequest(`The zip's ${MAP_FILE} is not valid: ${errorMessage(e)}`);
+        throw HttpError.badRequest(`The ${source}'s ${MAP_FILE} is not valid: ${errorMessage(e)}`);
     }
     if (!isMapSide(size.width) || !isMapSide(size.height)) {
         throw HttpError.badRequest(
-            `The zip's ${MAP_FILE} is ${size.width}x${size.height} tiles; each side must be ${L.mapSizeMin} to ${L.mapSizeMax}`
+            `The ${source}'s ${MAP_FILE} is ${size.width}x${size.height} tiles; each side must be ${L.mapSizeMin} to ${L.mapSizeMax}`
         );
     }
     return size;
 };
+
+export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto =>
+    storyMapSize(files.get(MAP_FILE), 'zip');
 
 const UPDATE_FIELDS = ['version', 'id', 'name', 'author', 'description', 'public', 'password', 'mapSize'];
 
@@ -118,8 +106,7 @@ export const applyUpdateStoryBody = (
     body: Record<string, unknown>,
     passwordHash: TPasswordHash
 ): TStoryFile => {
-    const unknown = Object.keys(body).filter((k) => !UPDATE_FIELDS.includes(k));
-    if (unknown.length > 0) throw HttpError.badRequest(`Unknown field(s): ${unknown.join(', ')}`);
+    rejectUnknownFields(body, UPDATE_FIELDS);
     if (body.id !== undefined && body.id !== storyId) throw HttpError.badRequest('Field "id" is read-only');
     if (body.mapSize !== undefined) {
         const size = isPlainObject(body.mapSize) ? body.mapSize : {};
@@ -128,12 +115,12 @@ export const applyUpdateStoryBody = (
         }
     }
     const next = { ...current };
-    if (body.name !== undefined) next.name = text(body, 'name', L.nameMaxLength, { required: true });
-    if (body.author !== undefined) next.author = text(body, 'author', L.authorMaxLength);
+    if (body.name !== undefined) next.name = textField(body, 'name', L.nameMaxLength, { required: true });
+    if (body.author !== undefined) next.author = textField(body, 'author', L.authorMaxLength);
     if (body.description !== undefined) {
-        next.description = text(body, 'description', L.descriptionMaxLength, { trim: false });
+        next.description = textField(body, 'description', L.descriptionMaxLength, { trim: false });
     }
-    if (body.public !== undefined) next.public = flag(body, 'public');
+    if (body.public !== undefined) next.public = flagField(body, 'public');
     const hash = passwordHash();
     if (hash !== undefined) next.password = hash;
     return next;

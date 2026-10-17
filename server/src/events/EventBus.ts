@@ -1,6 +1,7 @@
-import { readdir, readFile, rm } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import type { TChangeEvent } from '@story/protocol';
+import type { TChangeEvent, TStoryEvent } from '@story/protocol';
+import { listFilesRecursive } from '../common/listFiles';
 import { atomicWrite } from '../json/atomicWrite';
 import type { ProjectRoot } from '../project/ProjectRoot';
 import { passageLocalIdOf } from './passageLocalId';
@@ -8,6 +9,7 @@ import { localIdFromPassageFile, pathToResources, resourceKey, type TResourceRef
 import { version } from './version';
 
 type TChangeListener = (event: TChangeEvent) => void;
+type TStoryListener = (event: TStoryEvent) => void;
 
 export type TTransaction = {
     readonly project: ProjectRoot;
@@ -15,7 +17,7 @@ export type TTransaction = {
     deleteFile(file: string): Promise<void>;
     deleteDir(dir: string): Promise<void>;
     // for files saved by something else (e.g. a library), so the watcher ignores them
-    expect(file: string, contents: string | null): void;
+    expect(file: string, contents: string | Uint8Array | null): void;
     // replaces any earlier call: a transaction emits at most one event
     setEvent(event: TChangeEvent): void;
 };
@@ -34,6 +36,7 @@ export class EventBus {
     private readonly suppressMs: number;
 
     private listeners = new Set<TChangeListener>();
+    private storyListeners = new Set<TStoryListener>();
     private suppressed = new Map<string, TSuppression>();
     private pending = new Map<string, 'add' | 'change' | 'unlink'>();
     private batchTimer: NodeJS.Timeout | null = null;
@@ -56,6 +59,11 @@ export class EventBus {
         return () => this.listeners.delete(listener);
     }
 
+    onStory(listener: TStoryListener): () => void {
+        this.storyListeners.add(listener);
+        return () => this.storyListeners.delete(listener);
+    }
+
     get listenerCount() {
         return this.listeners.size;
     }
@@ -66,6 +74,16 @@ export class EventBus {
                 listener(event);
             } catch (e) {
                 console.error('[server] event listener failed', e);
+            }
+        }
+    }
+
+    emitStory(event: TStoryEvent) {
+        for (const listener of this.storyListeners) {
+            try {
+                listener(event);
+            } catch (e) {
+                console.error('[server] story event listener failed', e);
             }
         }
     }
@@ -200,6 +218,7 @@ export class EventBus {
         if (this.batchTimer) clearTimeout(this.batchTimer);
         this.batchTimer = null;
         this.listeners.clear();
+        this.storyListeners.clear();
         await this.flushing;
     }
 }
@@ -212,20 +231,4 @@ const toEvent = (ref: TResourceRef, hash: string | null, change: 'add' | 'change
     }
     if (hash === null) return { ...rest, version: null, op: 'deleted' };
     return { ...rest, version: hash, op: change === 'add' ? 'created' : 'updated' };
-};
-
-const listFilesRecursive = async (dir: string): Promise<string[]> => {
-    let entries;
-    try {
-        entries = await readdir(dir, { withFileTypes: true });
-    } catch {
-        return [];
-    }
-    const files: string[] = [];
-    for (const entry of entries) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) files.push(...(await listFilesRecursive(full)));
-        else files.push(full);
-    }
-    return files;
 };

@@ -31,6 +31,7 @@ import { clone, fail, notFound } from './mockHelpers';
 import type { ApiEvents } from './events';
 import { createMockSeed, type TMockSeed } from './mockData';
 import { type TMockHolder } from './mockInstances';
+import { createMockGitApi, type TMockRemoteCommit } from './mockGitApi';
 import { createMockStructureApi } from './mockStructureApi';
 import type { TVisualizerApi } from './types';
 
@@ -38,10 +39,12 @@ export type TMockApiOptions = {
     seed?: TMockSeed;
     events?: ApiEvents;
     latencyMs?: number;
+    gitAvailable?: boolean;
 };
 
 export type TMockApi = TVisualizerApi & {
     simulateExternalChange(kind: TChangeEvent['kind'], id: string): void;
+    simulateRemoteGitCommit(commit?: TMockRemoteCommit): void;
     reset(): void;
 };
 
@@ -110,7 +113,7 @@ export const extractEdges = (
     return edges;
 };
 
-export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions = {}): TMockApi => {
+export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true }: TMockApiOptions = {}): TMockApi => {
     let counter = 0;
     const nextVersion = (): TVersion => `mock-${++counter}`;
 
@@ -160,9 +163,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
     };
 
     const emit = (event: TChangeEvent, { markSaved = true } = {}) => {
+        git.touch(event);
         if (!events) return;
         if (event.version && markSaved) events.markSaved(event.version);
         setTimeout(() => events.dispatch(event), 0);
+        if (markSaved) events.notifyWrite();
     };
 
     const delay = async () => {
@@ -178,6 +183,18 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
         const actual = current?.version ?? '';
         if (actual !== version) fail(409, { error: 'stale', message: 'Changed on disk', current: current ?? null });
     };
+
+    const git = createMockGitApi({
+        storyId: MOCK_STORY.id,
+        storyAuthor: MOCK_STORY.author,
+        available: gitAvailable,
+        nextVersion,
+        reply,
+        checkVersion,
+        emitStory: () => {
+            if (events) setTimeout(() => events.storyChanged(), 0);
+        },
+    });
 
     const get = <T>(map: Map<string, T>, id: string, what: string): T => map.get(id) ?? notFound(`${what} "${id}"`);
 
@@ -313,9 +330,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                 storiesRoot: '(mock)',
                 watching: false,
                 database: 'up' as const,
+                git: gitAvailable ? ('up' as const) : ('unavailable' as const),
             })),
         login: () => reply(() => undefined),
         getStoryInfo: () => reply(() => MOCK_STORY),
+        getStoryAccess: () => reply(() => ({ canEdit: true, canPlay: true })),
 
         getProject: () =>
             reply(
@@ -527,6 +546,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
             }),
 
         ...structureApi.routes,
+        ...git.routes,
 
         getSource: (owner, id) => reply(() => sourceOf(owner, id)),
         updateSource: (owner, id, { version, text }) =>
@@ -729,7 +749,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0 }: TMockApiOptions =
                             : `mock-${++counter}`;
             if (events) setTimeout(() => events.dispatch({ kind, id, version, op: 'updated' }), 0);
         },
-        reset: () => load(seed ?? createMockSeed()),
+        simulateRemoteGitCommit: git.simulateRemoteCommit,
+        reset: () => {
+            git.reset();
+            load(seed ?? createMockSeed());
+        },
     };
     return api;
 };

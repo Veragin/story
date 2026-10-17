@@ -30,4 +30,6 @@ export type THealthDto = {
     watching: boolean;
     /** The database answered a ping (otherwise the response is 503). */
     database: 'up';
+    /** `unavailable` without `GIT_TOKEN_KEY` or `git` on the server. */
+    git: 'up' | 'unavailable';
 };

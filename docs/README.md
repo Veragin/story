@@ -86,13 +86,17 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 | `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                    |
 
 ```bash
-cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD
+cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD (and GIT_TOKEN_KEY for git)
 make prod-up SITE_ADDRESS=stories.example.com   # on the host; DNS must point at it for the certificate
 make prod-logs
 make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes. The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain. Build variables:
+`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
+
+Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
+
+The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain. Build variables:
 
 | Env var                | Where        | Default | Meaning                                                                                                                                                                      |
 | ---------------------- | ------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -22,6 +22,8 @@ export const SSE_EVENT = {
     change: 'change',
     /** Sent once on connect; `data` is a `THelloEvent`. */
     hello: 'hello',
+    /** `data` is a `TStoryEvent`. */
+    story: 'story',
 } as const;
 
 /**
@@ -50,6 +52,13 @@ export type TChangeEvent = {
 };
 
 export type THelloEvent = { connectedAt: string };
+
+/** `git`: a pull or checkout rewrote the story's files in bulk. */
+export const STORY_EVENT_REASONS = ['git'] as const;
+export type TStoryEventReason = (typeof STORY_EVENT_REASONS)[number];
+
+/** The whole story changed: refetch everything. */
+export type TStoryEvent = { type: 'story'; reason: TStoryEventReason };
 
 export const eventIds = {
     entity: (kind: string, id: string) => `${kind}/${id}`,

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { THealthDto } from '@story/protocol';
 import type { TEnv } from '../config/env';
 import { DatabaseService } from '../database/DatabaseService';
+import { GitAvailability } from '../git/GitAvailability';
 import { STORY_CONTEXTS_OPTIONS, type TStoryContextsOptions } from '../storyContext/storyContextsOptions';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class HealthService {
     constructor(
         private readonly config: ConfigService<TEnv, true>,
         private readonly database: DatabaseService,
+        private readonly git: GitAvailability,
         @Inject(STORY_CONTEXTS_OPTIONS) private readonly contexts: TStoryContextsOptions
     ) {}
 
@@ -21,6 +23,7 @@ export class HealthService {
             storiesRoot: this.config.get('STORIES_ROOT', { infer: true }),
             watching: this.contexts.watch,
             database: 'up',
+            git: this.git.available ? 'up' : 'unavailable',
         };
     }
 

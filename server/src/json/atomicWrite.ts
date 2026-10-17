@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const TMP_SUFFIX = '.vistmp';
+export const TMP_SUFFIX = '.vistmp';
 export const isTempFile = (file: string) => file.includes(TMP_SUFFIX);
 
 export const isMissingFileError = (e: unknown) =>
@@ -25,6 +25,15 @@ export const atomicWrite = async (file: string, contents: string | Uint8Array): 
 export const readTextOrNull = async (file: string): Promise<string | null> => {
     try {
         return await readFile(file, 'utf8');
+    } catch (e) {
+        if (isMissingFileError(e)) return null;
+        throw e;
+    }
+};
+
+export const readBytesOrNull = async (file: string): Promise<Buffer | null> => {
+    try {
+        return await readFile(file);
     } catch (e) {
         if (isMissingFileError(e)) return null;
         throw e;

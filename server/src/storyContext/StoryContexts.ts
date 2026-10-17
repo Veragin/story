@@ -15,6 +15,7 @@ export type TStoryLease = { ctx: TServerContext; release: () => void };
 
 type TEntry = {
     ready: Promise<TServerContext>;
+    loaded: TLoaded;
     ctx: TServerContext | null;
     close: () => Promise<void>;
     active: number;
@@ -80,6 +81,22 @@ export class StoryContexts implements OnApplicationShutdown {
         return this.entries.get(storyId)?.active ?? 0;
     }
 
+    // after a bulk rewrite of the files (git): reruns the load-time migrations and rewatches the folder, which may be
+    // a new one. New requests wait for it; requests holding the context, the caller's included, are not waited for
+    async reload(storyId: string): Promise<void> {
+        const entry = this.entries.get(storyId);
+        if (!entry) return;
+        const previous = entry.ready;
+        const refreshed = (async () => this.refresh(await previous, entry.loaded))();
+        entry.ready = refreshed;
+        try {
+            await refreshed;
+        } catch (e) {
+            if (this.entries.get(storyId) === entry) await this.evict(storyId);
+            throw e;
+        }
+    }
+
     async evictIdle(now = Date.now()): Promise<string[]> {
         const idle = [...this.entries].filter(
             ([, e]) =>
@@ -110,15 +127,15 @@ export class StoryContexts implements OnApplicationShutdown {
         if (existing) return existing;
 
         const loaded: TLoaded = { watcher: null, bus: null };
-        const ready = this.load(storyId, loaded);
         const entry: TEntry = {
-            ready,
+            ready: this.load(storyId, loaded),
+            loaded,
             ctx: null,
             active: 0,
             lastUsed: Date.now(),
             close: async () => {
                 // wait for a load in progress, so its watcher is not left running
-                await ready.catch(() => undefined);
+                await entry.ready.catch(() => undefined);
                 await loaded.watcher?.close();
                 loaded.watcher = null;
                 await loaded.bus?.close();
@@ -148,5 +165,16 @@ export class StoryContexts implements OnApplicationShutdown {
         sp.onFirstRun(() => migrateStructureLayout(sp, bus));
         if (this.options.watch) loaded.watcher = await startWatcher(bus);
         return { storyId, project, sp, bus, watching: () => loaded.watcher !== null };
+    }
+
+    // the same context, so open event streams keep their bus; SourceProject re-reads changed files by itself
+    private async refresh(ctx: TServerContext, loaded: TLoaded): Promise<TServerContext> {
+        await migrateStoryTsconfig(ctx.project.root);
+        ctx.sp.onFirstRun(() => migrateStructureLayout(ctx.sp, ctx.bus));
+        if (loaded.watcher) {
+            await loaded.watcher.close();
+            loaded.watcher = await startWatcher(ctx.bus);
+        }
+        return ctx;
     }
 }

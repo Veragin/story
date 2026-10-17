@@ -10,6 +10,7 @@ import { AUTH_OPTIONS, GRANT_TTL_MS, type TAuthOptions } from '../../src/auth/au
 import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
 import { SessionService } from '../../src/auth/SessionService';
 import { configureExpressApp, EXPRESS_APP_OPTIONS } from '../../src/common/expressApp';
+import { GIT_OPTIONS, type TGitOptions } from '../../src/git/gitOptions';
 import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
 import type { TStoryFile } from '../../src/stories/storyFile';
 import { readStorySeed } from '../../src/stories/storySeed';
@@ -33,6 +34,7 @@ export type TTestAppOptions = {
     controllers?: Type[];
     overrideModules?: readonly TModuleOverride[];
     auth?: Partial<TAuthOptions>;
+    git?: Partial<TGitOptions>;
     truncate?: boolean;
     storiesRoot?: string;
     stories?: readonly TTestStory[];
@@ -56,6 +58,13 @@ export type TTestApp = {
     close: () => Promise<void>;
 };
 
+const TEST_GIT_OPTIONS: TGitOptions = {
+    tokenKey: null,
+    allowedHosts: [],
+    disabledStories: ['example'],
+    allowFileRemotes: false,
+};
+
 const TEST_AUTH_OPTIONS: TAuthOptions = {
     grantTtlMs: GRANT_TTL_MS,
     cookieSecure: false,
@@ -74,11 +83,12 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // A fresh app on the shared `story_test` database; `truncate: false` keeps the rows of an earlier app.
 // Without `storiesRoot` the app gets an empty temp root, removed on close. Each of `stories` gets a
 // copy of the example (unless its folder exists) and a row with the example's metadata (password `example`).
-// The story contexts do not watch the files unless `watch: true`.
+// The story contexts do not watch the files unless `watch: true`. Git is unavailable unless `git.tokenKey` is set.
 export const createTestApp = async ({
     controllers = [],
     overrideModules = [],
     auth = {},
+    git = {},
     truncate = true,
     storiesRoot,
     stories = [],
@@ -97,6 +107,8 @@ export const createTestApp = async ({
     const moduleRef = await builder
         .overrideProvider(AUTH_OPTIONS)
         .useValue({ ...TEST_AUTH_OPTIONS, ...auth })
+        .overrideProvider(GIT_OPTIONS)
+        .useValue({ ...TEST_GIT_OPTIONS, ...git })
         .overrideProvider(STORIES_ROOT)
         .useValue(root)
         .overrideProvider(STORY_CONTEXTS_OPTIONS)

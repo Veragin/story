@@ -34,6 +34,7 @@ describe('GET /api/health', () => {
             storiesRoot: expect.any(String),
             watching: true,
             database: 'up',
+            git: 'unavailable',
         };
         expect(await response.json()).toEqual(expected);
     });
