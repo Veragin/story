@@ -1,9 +1,9 @@
-# The one public origin of the production setup (docker-compose.prod.yml, multiple stories phase 11).
+# The one public origin of the production setup (docker/docker-compose.prod.yml, multiple stories phase 11).
 #
 #   /             landing page     static build (/srv/landing)
 #   /visualizer/  Visualizer       static build (/srv/visualizer), Vite base /visualizer/
 #   /play/        SingleEngine     Vite dev server (engine:8100), base /play/, path passed unstripped
-#   /api/         Visualizer API   node server (server:8123)
+#   /api/         the API          the server (server:8123, `server/`)
 #
 # SITE_ADDRESS is a host name (`stories.example.com`): Caddy then gets and renews a certificate for
 # it and redirects http to https. `localhost` gets a certificate from Caddy's local CA.

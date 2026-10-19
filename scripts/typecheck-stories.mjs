@@ -20,10 +20,7 @@ const stories = existsSync(storiesRoot)
           .sort()
     : [];
 
-const folders = [
-    ...stories.map((id) => `stories/${id}`),
-    'Visualizer/server/template',
-];
+const folders = [...stories.map((id) => `stories/${id}`), 'server/template'];
 
 const failed = [];
 for (const folder of folders) {

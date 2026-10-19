@@ -1,5 +1,5 @@
 resume ?=
-COMPOSE = docker compose
+COMPOSE = docker compose -f docker/docker-compose.yml
 
 # Git author for commits made inside the container. Read from the host's git
 # config unless already set in the environment.
@@ -60,14 +60,15 @@ DEV_EXEC = $(COMPOSE) exec $(DEV_EXEC_FLAGS) story-template
 DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 
 # Where `make start` parks the output of the detached `yarn dev`. The dev servers are not
-# PID 1 (see the note in docker-compose.yml), so `docker compose logs` cannot show them.
+# PID 1 (the container's command is an idle `tail`), so `docker compose logs` cannot show them.
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-visualizer-server dev-landing-page dev-multi-engine dev-multi-engine-server logs prod-up prod-down prod-logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
 
 # The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
-# 8102 MultiEngine client, 8103 landing page, 8123 Visualizer server, 8124 MultiEngine server).
+# 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
+# start it seeds the example story's database row when missing (server/scripts/dev.ts).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
 # server that dies cannot take `make ai` / `make bash` down with it.
 start: stop
@@ -77,14 +78,13 @@ start: stop
 	@echo "  Stories (landing)   http://localhost:8103  (start here: create, open, play, export)"
 	@echo "  SingleEngine        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
-	@echo "  Visualizer server   http://localhost:8123  (/api/health, /api/stories …)"
+	@echo "  Server (NestJS)     http://localhost:8123  (/api/health, /api/stories …; needs MySQL)"
 	@echo "  MultiEngine client  http://localhost:8102"
-	@echo "  MultiEngine server  http://localhost:8124  (scaffold — every route answers 501)"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-engine"
 
 # The container without the services. Use this when you want a single service — `make start`
-# already holds all six ports, and vite is `strictPort`, so it would refuse rather than
+# already holds all five ports, and vite is `strictPort`, so it would refuse rather than
 # silently pick another one.
 up:
 	$(COMPOSE) up -d --build --remove-orphans
@@ -126,9 +126,9 @@ dev-engine:
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
 
-# The Visualizer's node server on :8123. The client (dev-visualizer) proxies /api to it.
-dev-visualizer-server:
-	$(DEV_EXEC) yarn dev:visualizer-server
+# The NestJS server on :8123 (needs the mysql service). Every client proxies /api to it.
+dev-server:
+	$(DEV_EXEC) yarn dev:server
 
 # The landing page (story list) on :8103. Like the client, it proxies /api to the server.
 dev-landing-page:
@@ -137,14 +137,12 @@ dev-landing-page:
 dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
 
-dev-multi-engine-server:
-	$(DEV_EXEC) yarn dev:multi-engine-server
-
-# Production (multiple stories, phase 11): Caddy on 80/443 in front of the Visualizer server and
-# SingleEngine, one origin (docker-compose.prod.yml). Run on the host, not inside the dev
-# container. SITE_ADDRESS is the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com`
-# (default localhost). `prod-down` keeps the volumes (the stories, Caddy's certificates).
-PROD_COMPOSE = $(COMPOSE) -f docker-compose.prod.yml
+# Production (multiple stories, phase 11): Caddy on 80/443 in front of the server and
+# SingleEngine, one origin (docker/docker-compose.prod.yml). Run on the host, not inside the dev
+# container. Needs `docker/.env` (copy `docker/.env.example`, set the DB passwords). SITE_ADDRESS is
+# the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com` (default localhost).
+# `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).
+PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
 prod-up:
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans

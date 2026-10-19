@@ -20,3 +20,5 @@ export type TItem<I extends TItemId> = {
 } & DeepWriteable<(typeof itemInfo)[I]>;
 
 export type TItemPartial<I extends TItemId> = { id: I } & Partial<TItem<I>>;
+
+export type TInitInventory = { inventory: TItemPartial<TItemId>[] };

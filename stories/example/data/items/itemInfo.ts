@@ -20,13 +20,8 @@ export const itemInfo = {
         damage: 10,
         asd: { asd: 'asdas', time: false },
     },
-} as const;
+} as const satisfies Record<string, TItemInfo & Record<string, unknown>>;
 
 export type TItemType = 'value' | 'resource' | 'tool' | 'food' | 'weapon';
 
-type TItemInfo = {
-    name: string;
-    type: TItemType;
-};
-// test
-Object.values(itemInfo).forEach((item: TItemInfo) => void item);
+export type TItemInfo = { name: string; type: TItemType };

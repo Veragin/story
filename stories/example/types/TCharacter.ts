@@ -1,7 +1,7 @@
 import type { TWorldState } from '@story/data';
 import { TLocationId } from './TLocation';
-import { TItem, TItemId, TItemPartial } from './TItem';
-import { TCharacterId, TCharacterPassageId, TNpcId } from './ids';
+import { TItem, TItemId, TInitInventory } from './TItem';
+import { TCharacterId, TCharacterPassageId } from './ids';
 
 export type TCharacter<Ch extends TCharacterId> = {
     id: Ch;
@@ -18,20 +18,3 @@ export type TCharacterData = {
     health: number;
     inventory: TItem<TItemId>[];
 };
-
-export type TNpc<Ch extends TNpcId> = {
-    id: Ch;
-    name: string;
-    description: string;
-    image?: string;
-
-    init: Omit<TWorldState['npcs'][Ch], 'inventory' | 'ref'> & TInitInventory;
-};
-
-export type TNpcData = {
-    location: TLocationId | undefined;
-    inventory: TItem<TItemId>[];
-    isDead: boolean;
-};
-
-type TInitInventory = { inventory: TItemPartial<TItemId>[] };

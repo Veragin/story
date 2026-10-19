@@ -1,0 +1,19 @@
+{
+    /* Its own program (plan R2): Nest needs decorator metadata and node libs, the root program is
+       browser-lib. Also read by the swc loader (`@swc-node/register`) for its transpile options. */
+    "extends": "../tsconfig.base.json",
+    "compilerOptions": {
+        "target": "ES2022",
+        "lib": ["ES2022"],
+        "types": ["node"],
+        "jsx": "preserve",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "useDefineForClassFields": false,
+        // TypeORM fills entity columns itself; the alternative is a `!` on every column
+        "strictPropertyInitialization": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+    },
+    "include": ["src", "__tests__", "scripts"]
+}

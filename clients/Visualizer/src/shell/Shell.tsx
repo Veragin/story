@@ -1,0 +1,88 @@
+import { lazy, Suspense, useEffect } from 'react';
+import { CircularProgress, styled } from '@mui/material';
+import { Column } from '@story/ui';
+import { observer } from 'mobx-react-lite';
+import { router, TRoute } from './router';
+import { TopBar } from './TopBar';
+import { ModalHost } from './ModalHost';
+import { LoginPrompt } from './LoginPrompt';
+import { MapPage } from '../pages/Map';
+import { TimelinePage } from '../pages/Timeline';
+import { ChapterPage } from '../pages/Chapter/ChapterPage';
+import { EntitiesPage } from '../pages/Entities';
+import { StructurePage } from '../pages/Structure/StructurePage';
+import { StructureContext } from '../components/inputs/structureContext';
+import { structureStore } from '../context';
+
+// dev-only, kept out of the main bundle
+const CanvasPlayground = lazy(async () => ({
+    default: (await import('../canvas/playground/CanvasPlayground'))
+        .CanvasPlayground,
+}));
+const InputsPlayground = lazy(async () => ({
+    default: (await import('../components/inputs/playground/InputsPlayground'))
+        .InputsPlayground,
+}));
+
+const renderPage = (route: TRoute) => {
+    switch (route.page) {
+        case 'map':
+            return <MapPage />;
+        case 'timeline':
+            return <TimelinePage />;
+        case 'chapter':
+            return (
+                <ChapterPage
+                    key={route.chapterId}
+                    chapterId={route.chapterId}
+                />
+            );
+        case 'entities':
+            return <EntitiesPage kind={route.kind} id={route.id} />;
+        case 'catalog':
+            return <EntitiesPage catalog={route.catalog} id={route.id} />;
+        case 'structure':
+            return <StructurePage section={route.section} name={route.name} />;
+        case 'canvas':
+            return <CanvasPlayground />;
+        case 'inputs':
+            return <InputsPlayground />;
+    }
+};
+
+export const Shell = observer(() => {
+    useEffect(() => {
+        router.start();
+        return () => router.stop();
+    }, []);
+
+    return (
+        <SRoot>
+            <TopBar />
+            <StructureContext.Provider value={structureStore}>
+                <SPage>
+                    <Suspense fallback={<CircularProgress />}>
+                        {renderPage(router.route)}
+                    </Suspense>
+                </SPage>
+                <ModalHost />
+            </StructureContext.Provider>
+            <LoginPrompt />
+        </SRoot>
+    );
+});
+
+const SRoot = styled(Column)`
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+`;
+
+const SPage = styled(Column)`
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    align-items: stretch;
+`;

@@ -7,7 +7,9 @@ import tseslint from 'typescript-eslint';
 
 // shared → types → { ui, core } → data → services. `types ⇄ data` and `core → data` are allowed
 // here because they are type-only (the latter enforced by `no-restricted-imports` below).
-const SERVICES = ['SingleEngine', 'Visualizer', 'MultiEngine'];
+const SERVER = 'server';
+const PROTOCOL = 'protocol';
+const SERVICES = ['clients/SingleEngine', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
 
 // globs only: a zone mixing globs and plain paths flags every import in its target
 const tree = (dir) => `./${dir}/**`;
@@ -17,9 +19,9 @@ const zone = (target, from, message) => ({ target, from, message });
 const PACKAGE_DIRS = {
     types: 'stories/*/types',
     data: 'stories/*/data',
-    shared: 'shared',
-    ui: 'ui',
-    core: 'core',
+    shared: 'clients/shared/utils',
+    ui: 'clients/shared/ui',
+    core: 'clients/shared/core',
 };
 const pkg = (name) => tree(PACKAGE_DIRS[name]);
 
@@ -29,12 +31,13 @@ const packagesExcept = (...allowed) =>
         .map(pkg);
 
 const services = (list = SERVICES) => list.map(tree);
+const servicesAndProtocol = () => [...services(), tree(PROTOCOL)];
 
 const boundaryZones = [
     zone(
         pkg('shared'),
         packagesExcept('shared'),
-        'shared/ is the bottom of the layering and may not import any other @story package.'
+        '@story/shared is the bottom of the layering and may not import any other @story package.'
     ),
 
     zone(
@@ -59,20 +62,20 @@ const boundaryZones = [
 
     zone(
         pkg('types'),
-        services(),
-        'types/ is author-edited and must never import from a service (SingleEngine, Visualizer, MultiEngine).'
+        servicesAndProtocol(),
+        'types/ is author-edited and must never import from a service (the clients, the server) or the protocol.'
     ),
     zone(
         pkg('data'),
-        services(),
-        'data/ is author-edited and must never import from a service (SingleEngine, Visualizer, MultiEngine).'
+        servicesAndProtocol(),
+        'data/ is author-edited and must never import from a service (the clients, the server) or the protocol.'
     ),
 
     ...['shared', 'ui', 'core'].map((p) =>
         zone(
             pkg(p),
-            services(),
-            `${p}/ is a shared package and may not import from a service — the dependency arrow points the other way.`
+            servicesAndProtocol(),
+            `@story/${p} is a shared package and may not import from a service or the protocol — the dependency arrow points the other way.`
         )
     ),
 
@@ -81,66 +84,40 @@ const boundaryZones = [
             zone(
                 tree(target),
                 tree(other),
-                `${target}/ must not import from ${other}/ — no service may depend on another service. Extract the shared piece into a package.`
+                `${target}/ must not import from ${other}/ — no service may depend on another service. Share it through @story/protocol or a package.`
             )
         )
     ),
 
+    zone(tree(PROTOCOL), services(), 'protocol/ is the client/server contract and may not import any service code.'),
     zone(
-        tree('Visualizer/protocol'),
-        services([
-            ...SERVICES.filter((s) => s !== 'Visualizer'),
-            'Visualizer/client',
-            'Visualizer/server',
-            'Visualizer/landing-page',
-        ]),
-        'Visualizer/protocol is the client/server contract and may not import any service code.'
-    ),
-    zone(
-        tree('Visualizer/protocol'),
+        tree(PROTOCOL),
         packagesExcept('shared', 'types'),
-        'Visualizer/protocol may import only @story/shared (and @story/types, type-only).'
+        'protocol/ may import only @story/shared (and @story/types, type-only).'
     ),
     zone(
-        tree('Visualizer/client'),
-        tree('Visualizer/server'),
-        'Visualizer/client must not import Visualizer/server — share it through @story/visualizer-protocol.'
-    ),
-    zone(
-        tree('Visualizer/server'),
-        tree('Visualizer/client'),
-        'Visualizer/server must not import Visualizer/client — share it through @story/visualizer-protocol.'
-    ),
-    zone(
-        tree('Visualizer/landing-page'),
-        [tree('Visualizer/client'), tree('Visualizer/server'), pkg('data'), pkg('types'), pkg('core')],
-        'Visualizer/landing-page may import only @story/visualizer-protocol, @story/ui and @story/shared — it talks to the server over HTTP and never imports a story or another Visualizer app.'
-    ),
-    zone(
-        [tree('Visualizer/client'), tree('Visualizer/server')],
-        tree('Visualizer/landing-page'),
-        'Nothing imports Visualizer/landing-page: it is an app. Move what both need into a package.'
+        tree('clients/LandingPage'),
+        [pkg('data'), pkg('types'), pkg('core')],
+        'clients/LandingPage may import only @story/protocol, @story/ui and @story/shared — it talks to the server over HTTP and never imports a story.'
     ),
     // the server reads the story as source text; importing it would run it
     zone(
-        tree('Visualizer/server'),
+        tree(SERVER),
         [pkg('data'), pkg('core'), pkg('ui')],
-        'Visualizer/server reads data/ as source and must not import @story/data, @story/core or @story/ui.'
+        `${SERVER} reads data/ as source and must not import @story/data, @story/core or @story/ui.`
     ),
 ];
 
 // the template lies under the server but is a story, so it gets a story's zones
-const TEMPLATE = 'Visualizer/server/template';
 const templateZones = [
     zone(
-        tree(TEMPLATE),
+        tree(`${SERVER}/template`),
         [
             pkg('ui'),
             tree('stories'),
-            ...services(SERVICES.filter((s) => s !== 'Visualizer')),
-            ...['client', 'protocol', 'landing-page', 'server/src', 'server/__tests__'].map((p) =>
-                tree(`Visualizer/${p}`)
-            ),
+            tree(PROTOCOL),
+            ...services(SERVICES.filter((s) => s !== SERVER)),
+            ...['src', '__tests__'].map((p) => tree(`${SERVER}/${p}`)),
         ],
         'The story template is a story: it may import only @story/shared, @story/core and its own types/ and data/ — no @story/ui, no service, no other story.'
     ),
@@ -191,7 +168,7 @@ export default tseslint.config(
     },
     {
         // a runtime story import would pull `data/` into Vite's graph and full-reload on every edit
-        files: ['Visualizer/client/**/*.{ts,tsx}'],
+        files: ['clients/Visualizer/**/*.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
@@ -199,14 +176,14 @@ export default tseslint.config(
                     paths: ['@story/data', '@story/core'].map((name) => ({
                         name,
                         allowTypeImports: true,
-                        message: `Visualizer/client must not import ${name} at runtime — load story data through src/api. \`import type\` is fine.`,
+                        message: `clients/Visualizer must not import ${name} at runtime — load story data through src/api. \`import type\` is fine.`,
                     })),
                     patterns: [
                         {
                             group: ['@story/data/*', '@story/core/*'],
                             allowTypeImports: true,
                             message:
-                                'Visualizer/client must not import the story at runtime — load it through src/api. `import type` is fine.',
+                                'clients/Visualizer must not import the story at runtime — load it through src/api. `import type` is fine.',
                         },
                     ],
                 },
@@ -214,7 +191,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['SingleEngine/src/**/*.{ts,tsx}'],
+        files: ['clients/SingleEngine/src/**/*.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
@@ -237,7 +214,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['core/src/**/*.ts'],
+        files: ['clients/shared/core/src/**/*.ts'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
@@ -264,10 +241,10 @@ export default tseslint.config(
     },
     {
         // `{}` data types: the server generates `export type T<Id>Data = {}`
-        files: [`${TEMPLATE}/**/*.ts`],
+        files: [`${SERVER}/template/**/*.ts`],
         settings: {
             'import/resolver': {
-                typescript: { project: `./${TEMPLATE}/tsconfig.json` },
+                typescript: { project: `./${SERVER}/template/tsconfig.json` },
             },
         },
         rules: {
