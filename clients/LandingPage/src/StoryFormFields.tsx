@@ -1,4 +1,5 @@
 import {
+    Divider,
     FormControlLabel,
     Stack,
     Switch,
@@ -10,6 +11,7 @@ import type {
     TStoryFormErrors,
     TStoryFormMode,
     TStoryFormValue,
+    TStoryGitState,
 } from './storyForm';
 
 type TProps = {
@@ -17,6 +19,7 @@ type TProps = {
     onChange: (value: TStoryFormValue) => void;
     errors: TStoryFormErrors;
     mode: TStoryFormMode;
+    git: TStoryGitState;
     disabled?: boolean;
 };
 
@@ -25,6 +28,7 @@ export const StoryFormFields = ({
     onChange,
     errors,
     mode,
+    git,
     disabled,
 }: TProps) => {
     const field = (
@@ -47,6 +51,9 @@ export const StoryFormFields = ({
         mode === 'edit'
             ? _('Leave empty to keep the current password')
             : _('At least %d characters', STORY_LIMITS.passwordMinLength);
+    const gitTokenHint = git?.config?.hasToken
+        ? _('Leave empty to keep the current token')
+        : _('Leave empty for a public repository');
 
     return (
         <Stack spacing={2} sx={{ pt: 1 }}>
@@ -111,6 +118,27 @@ export const StoryFormFields = ({
                 }
                 label={_('Public: anyone may play it without the password')}
             />
+            {git && (
+                <>
+                    <Divider textAlign="left">{_('Git repository')}</Divider>
+                    {field('gitRemoteUrl', {
+                        label: _('Repository URL'),
+                        placeholder: 'https://github.com/me/story.git',
+                        helperText: git.config
+                            ? _('Branch %s', git.config.branch)
+                            : _('Optional: the story is pushed there'),
+                    })}
+                    {field('gitToken', {
+                        label: _('Access token'),
+                        type: 'password',
+                        autoComplete: 'new-password',
+                        helperText: _(
+                            '%s. Stored encrypted; use a token limited to this repository.',
+                            gitTokenHint
+                        ),
+                    })}
+                </>
+            )}
         </Stack>
     );
 };

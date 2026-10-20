@@ -22,6 +22,8 @@ services:
       DB_USER: story
       DB_PASSWORD: story
       DB_NAME: story
+      # dev only: encrypts the stored git tokens; production sets its own in docker/.env
+      GIT_TOKEN_KEY: L+dnTukTcCDqLBNIOfteI4CzvsvD7tucPgyOafLIREw=
     depends_on:
       mysql:
         condition: service_healthy

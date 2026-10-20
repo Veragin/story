@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button } from '@mui/material';
-import type { TStoryInfoDto } from '@story/protocol';
+import type { TGitDto, TStoryInfoDto } from '@story/protocol';
 import { errorMessage, isApiError } from './api';
 import type { StoriesStore } from './StoriesStore';
 import { StoryFormDialog } from './StoryFormDialog';
 import {
     hasErrors,
     storyFormOf,
+    toGitChange,
     toUpdateBody,
     validateStoryForm,
     type TStoryFormValue,
+    type TStoryGitState,
 } from './storyForm';
+
+const gitStateOf = (dto: TGitDto): TStoryGitState =>
+    dto.available ? { config: dto.config } : null;
 
 type TProps = {
     store: StoriesStore;
@@ -20,6 +25,7 @@ type TProps = {
 
 export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
     const [info, setInfo] = useState<TStoryInfoDto | null>(null);
+    const [git, setGit] = useState<TStoryGitState>(null);
     const [value, setValue] = useState<TStoryFormValue | null>(null);
     const [submitted, setSubmitted] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -33,8 +39,12 @@ export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
                 const loaded = await store.loadInfo(storyId);
                 if (!live) return;
                 if (!loaded) return onClose(); // the password prompt was cancelled
+                const loadedGit = await store.loadGit(storyId);
+                if (!live) return;
+                const gitState = loadedGit && gitStateOf(loadedGit);
                 setInfo(loaded);
-                setValue(storyFormOf(loaded));
+                setGit(gitState);
+                setValue(storyFormOf(loaded, gitState));
             } catch (e) {
                 if (live) setError(errorMessage(e));
             }
@@ -46,8 +56,20 @@ export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
     }, [store, storyId, onClose]);
 
     const errors = value
-        ? validateStoryForm(value, { passwordRequired: false })
+        ? validateStoryForm(value, { passwordRequired: false, git })
         : {};
+
+    // git first: a failed push must not leave the other fields saved and the form stale
+    const saveGit = async (current: TStoryFormValue) => {
+        const change = toGitChange(current, git);
+        if (!change) return current;
+        const saved = await store.saveGit(storyId, change);
+        if (!saved) return null;
+        setGit(gitStateOf(saved));
+        const next = { ...current, gitToken: '' };
+        setValue(next);
+        return next;
+    };
 
     const save = async () => {
         if (!info || !value) return;
@@ -56,9 +78,11 @@ export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
         setSaving(true);
         setError(null);
         try {
+            const current = await saveGit(value);
+            if (!current) return setSaving(false);
             const saved = await store.saveInfo(
                 storyId,
-                toUpdateBody(value, info.version)
+                toUpdateBody(current, info.version)
             );
             if (saved) return onClose();
         } catch (e) {
@@ -74,7 +98,7 @@ export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
     const reload = () => {
         if (!conflict) return;
         setInfo(conflict);
-        setValue(storyFormOf(conflict));
+        setValue(storyFormOf(conflict, git));
         setConflict(null);
     };
 
@@ -88,6 +112,7 @@ export const EditStoryDialog = ({ store, storyId, onClose }: TProps) => {
         <StoryFormDialog
             title={_('Edit %s', store.story(storyId)?.name ?? storyId)}
             mode="edit"
+            git={git}
             value={value}
             onChange={setValue}
             errors={errors}

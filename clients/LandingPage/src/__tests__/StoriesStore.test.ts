@@ -24,7 +24,7 @@ const json = (status: number, body?: unknown) =>
 type TCall = { method: string; url: string; headers: Record<string, string>; body: unknown };
 
 // every story's password is `secret`
-const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
+const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {}) => {
     const stories = [story('locked'), story('open', { unlocked: true }), story('pub', { public: true })];
     const calls: TCall[] = [];
     const infoAnswers = [...infoStatus];
@@ -52,6 +52,15 @@ const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
             return json(200, info);
         }
         if (method === 'POST' && url === '/api/stories/import') return json(201, story('copy'));
+        if (method === 'GET' && url === '/api/health') return json(200, { ok: true, git: 'up' });
+        if (method === 'POST' && url === '/api/stories') {
+            stories.push(story('fresh', { unlocked: true }));
+            return json(201, story('fresh'));
+        }
+        if (method === 'POST' && url === '/api/stories/fresh/git/setup') {
+            if (gitSetupStatus !== 200) return json(gitSetupStatus, { error: 'git_auth', message: 'Bad token' });
+            return json(200, { available: true, config: null, status: null });
+        }
         return json(404, { error: 'not_found' });
     };
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(answer(input, init)));
@@ -179,5 +188,49 @@ describe('StoriesStore', () => {
             public: 'true',
         });
         expect(form.get('zip')).toBeInstanceOf(Blob);
+    });
+
+    it('reads from the health check whether the server has git', async () => {
+        const { store } = setup();
+        expect(store.gitAvailable).toBe(false);
+        await store.checkGit();
+        expect(store.gitAvailable).toBe(true);
+    });
+
+    const createBody = {
+        name: 'Fresh',
+        author: 'Me',
+        password: 'secret-1',
+        description: '',
+        mapSize: { width: 40, height: 30 },
+        public: false,
+    };
+    const gitBody = {
+        remoteUrl: 'https://example.com/me/fresh.git',
+        branch: 'main',
+        initial: 'push' as const,
+        token: 'tkn',
+    };
+
+    it('connects a created story to its repository', async () => {
+        const { store, calls } = setup();
+        const result = await store.create(createBody, gitBody);
+        expect(result).toEqual({ story: story('fresh'), gitError: null });
+        const call = calls.find((c) => c.url === '/api/stories/fresh/git/setup')!;
+        expect(call.method).toBe('POST');
+        expect(call.body).toEqual(gitBody);
+    });
+
+    it('keeps a created story when connecting it to git fails', async () => {
+        const { store } = setup({ gitSetupStatus: 400 });
+        const result = await store.create(createBody, gitBody);
+        expect(result).toEqual({ story: story('fresh'), gitError: 'Bad token' });
+        expect(store.story('fresh')).toBeDefined();
+    });
+
+    it('creates without a git call when no repository is given', async () => {
+        const { store, calls } = setup();
+        await store.create(createBody, null);
+        expect(calls.some((c) => c.url.includes('/git/'))).toBe(false);
     });
 });
