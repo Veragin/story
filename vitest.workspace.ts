@@ -51,8 +51,8 @@ export default defineWorkspace([
     },
     {
         test: {
-            name: 'single-engine',
-            root: './clients/SingleEngine',
+            name: 'single-player',
+            root: './clients/SinglePlayer',
             environment: 'node',
             include: ['vite/__tests__/**/*.test.ts'],
         },

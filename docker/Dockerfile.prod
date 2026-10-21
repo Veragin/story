@@ -1,7 +1,7 @@
 # Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
 #
 #   app    the repo with its dependencies installed: runs the server (`server/`, through the swc
-#          loader) and, until the per-story engine build lands (plan D7), the SingleEngine Vite dev server
+#          loader) and, until the per-story engine build lands (plan D7), the SinglePlayer Vite dev server
 #   web    `app` plus the static builds of the landing page (base `/`) and the Visualizer client
 #          (base `/visualizer/`); only a build stage, nothing runs it
 #   proxy  Caddy with `docker/Caddyfile` and the two builds from `web`: the one public origin

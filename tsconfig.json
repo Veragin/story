@@ -37,7 +37,7 @@
         "clients/shared/ui",
         "clients/shared/core",
         "stories/example/data",
-        "clients/SingleEngine/src",
+        "clients/SinglePlayer/src",
         "clients/Visualizer/src",
         "clients/LandingPage/src",
         "clients/MultiEngine/src",
@@ -52,7 +52,7 @@
         "dist",
 
         /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
-        "clients/SingleEngine/vite.config.ts",
+        "clients/SinglePlayer/vite.config.ts",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

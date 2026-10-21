@@ -27,7 +27,7 @@ export type TStoryDto = {
     author: string;
     description: string;
     mapSize: TMapSizeDto;
-    /** Playable in SingleEngine without the password; editing still needs it. */
+    /** Playable in SinglePlayer without the password; editing still needs it. */
     public: boolean;
 };
 

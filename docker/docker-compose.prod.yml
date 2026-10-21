@@ -2,7 +2,7 @@
 #   SITE_ADDRESS=stories.example.com docker compose -f docker/docker-compose.prod.yml up -d --build
 #
 # One public origin, served by Caddy (`docker/Caddyfile`) on 80/443:
-#   /  landing page · /visualizer/  Visualizer client · /play/  SingleEngine · /api/  the server (server/)
+#   /  landing page · /visualizer/  Visualizer client · /play/  SinglePlayer · /api/  the server (server/)
 #
 # Only Caddy publishes ports. The server and the engine are reachable only through it, which is what
 # makes `TRUST_PROXY=1` (the login limiter trusts X-Forwarded-For) and `ENGINE_ALLOWED_HOSTS=*` safe.
@@ -67,11 +67,11 @@ services:
       retries: 3
       start_period: 30s
 
-  # SingleEngine as a Vite dev server under /play/ until the per-story build lands (plan D7). It
+  # SinglePlayer as a Vite dev server under /play/ until the per-story build lands (plan D7). It
   # serves the story files out of the same volume, each behind the server's access check.
   engine:
     <<: *app
-    working_dir: /app/clients/SingleEngine
+    working_dir: /app/clients/SinglePlayer
     command: ['/app/node_modules/.bin/vite']
     environment:
       STORIES_ROOT: /app/stories

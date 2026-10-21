@@ -20,7 +20,7 @@ That makes exactly two folders the author's working surface: **`stories/<id>/typ
 
 Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
-Every story is behind its password: the Visualizer asks for it, and so does SingleEngine unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
+Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
 Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui}` packages), `protocol/`, `server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
 
@@ -31,7 +31,7 @@ The split is also what keeps an engine upgrade safe for every story at once: aut
 ```
 stories/        the stories (only example/ is committed); see above
 clients/
-  SingleEngine/   @story/single-engine            plays one story, Vite :8100
+  SinglePlayer/   @story/single-player            plays one story, Vite :8100
   Visualizer/     @story/visualizer-client        the author's editor, Vite :8101
   MultiEngine/    @story/multi-engine-client      scaffold, Vite :8102
   LandingPage/    @story/visualizer-landing-page  the story list, Vite :8103
@@ -58,7 +58,7 @@ Outside docker, run a MySQL 8 with the compose credentials (user `story`/`story`
 - **Migrations** run on their own: the server applies pending ones on boot. By hand: `yarn workspace @story/server migration:show|run|revert`; new ones: [`Server.md`](Server.md#database-and-migrations).
 - **Seeding**: on every start, the dev server runs `stories:import-files --seed stories/example`, which inserts the example's row from `server/seed/example.story.json` when it is missing (password `example`).
 
-Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SingleEngine all need the server.
+Single service, either way: `yarn dev:player` / `yarn dev:visualizer` / `yarn dev:server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-player` / `make dev-visualizer` / `make dev-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SinglePlayer all need the server.
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, `yarn pretty:check`.
 
@@ -66,7 +66,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 | Service                   | Port | Status                              |
 | ------------------------- | ---- | ----------------------------------- |
-| SingleEngine (vite)       | 8100 | implemented; proxies `/api` to 8123 |
+| SinglePlayer (vite)       | 8100 | implemented; proxies `/api` to 8123 |
 | Visualizer client (vite)  | 8101 | implemented; proxies `/api` to 8123 |
 | MultiEngine client (vite) | 8102 | scaffold                            |
 | Landing page (vite)       | 8103 | implemented; proxies `/api` to 8123 |
@@ -82,7 +82,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 | -------------- | -------------------------------------------------------------------------------------------- |
 | `/`            | the landing page, static build                                                               |
 | `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                             |
-| `/play/`       | SingleEngine, still a Vite dev server (`base` `/play/`) until the per-story build lands (D7) |
+| `/play/`       | SinglePlayer, still a Vite dev server (`base` `/play/`) until the per-story build lands (D7) |
 | `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                    |
 
 ```bash
@@ -102,8 +102,8 @@ The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE
 | ---------------------- | ------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VISUALIZER_BASE`      | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change.                             |
 | `LANDING_BASE`         | landing page | `/`     | Vite `base` of the build.                                                                                                                                                    |
-| `ENGINE_BASE`          | SingleEngine | `/`     | Vite `base` of the dev server (`/play/`): pages, modules (`/play/@fs/…`, `/play/@id/…`, which the story guard checks with the base taken off) and the HMR websocket.         |
-| `ENGINE_ALLOWED_HOSTS` | SingleEngine | (Vite)  | Comma-separated host names the dev server answers (Vite's `server.allowedHosts`), or `*` for any. The production compose sets `*`: the port is reachable only through Caddy. |
+| `ENGINE_BASE`          | SinglePlayer | `/`     | Vite `base` of the dev server (`/play/`): pages, modules (`/play/@fs/…`, `/play/@id/…`, which the story guard checks with the base taken off) and the HMR websocket.         |
+| `ENGINE_ALLOWED_HOSTS` | SinglePlayer | (Vite)  | Comma-separated host names the dev server answers (Vite's `server.allowedHosts`), or `*` for any. The production compose sets `*`: the port is reachable only through Caddy. |
 
 ## Data structure
 
@@ -208,16 +208,16 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
     - the bottom of the stack: depends on nothing
 
 - ui
-    - the React pieces the front-ends need: theme, layout primitives, toasts, the global stylesheet, and `PasswordDialog` (the story password prompt of the landing page, the Visualizer and SingleEngine)
-    - exists so SingleEngine, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
+    - the React pieces the front-ends need: theme, layout primitives, toasts, the global stylesheet, and `PasswordDialog` (the story password prompt of the landing page, the Visualizer and SinglePlayer)
+    - exists so SinglePlayer, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
 
 - core
     - the headless story runtime: engine, story, processor, history, inventory, world state
-    - no React, no rendering — it is the same runtime whether it runs in a browser tab (SingleEngine), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
+    - no React, no rendering — it is the same runtime whether it runs in a browser tab (SinglePlayer), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
 
 ### Services
 
-- SingleEngine
+- SinglePlayer
     - a service that can play the story for single player
     - only client implementation
     - fully implemented

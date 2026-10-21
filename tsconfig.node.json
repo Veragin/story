@@ -25,10 +25,10 @@
        themselves are *not* here: they are ordinary package source and are covered by
        `tsconfig.json`'s `clients/shared/core` / `stories/example/data` entries. */
     "include": [
-        "clients/SingleEngine/vite.config.ts",
-        /* SingleEngine's Vite plugin (`storiesPlugin`, multiple stories phase 9) and its tests:
+        "clients/SinglePlayer/vite.config.ts",
+        /* SinglePlayer's Vite plugin (`storiesPlugin`, multiple stories phase 9) and its tests:
            node-land too, imported by the config above. */
-        "clients/SingleEngine/vite",
+        "clients/SinglePlayer/vite",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

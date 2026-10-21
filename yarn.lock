@@ -2119,9 +2119,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@story/single-engine@workspace:clients/SingleEngine":
+"@story/single-player@workspace:clients/SinglePlayer":
   version: 0.0.0-use.local
-  resolution: "@story/single-engine@workspace:clients/SingleEngine"
+  resolution: "@story/single-player@workspace:clients/SinglePlayer"
   dependencies:
     "@mui/icons-material": "npm:^6.1.0"
     "@mui/material": "npm:^6.1.0"

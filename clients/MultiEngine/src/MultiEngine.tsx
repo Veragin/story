@@ -17,7 +17,7 @@ export const MultiEngine = () => (
                 character picking, no world-state sync, and no waiting for the
                 other players before a passage advances.
             </Text>
-            <Text>Play the story in SingleEngine on port 8100.</Text>
+            <Text>Play the story in SinglePlayer on port 8100.</Text>
         </Column>
     </WholeContainer>
 );

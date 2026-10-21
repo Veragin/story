@@ -64,9 +64,9 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-engine dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
+.PHONY: start up stop bash destroy ai build rebuild dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
 
-# The Phase 11 gate: brings up every service (8100 SingleEngine, 8101 Visualizer client,
+# The Phase 11 gate: brings up every service (8100 SinglePlayer, 8101 Visualizer client,
 # 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
 # start it seeds the example story's database row when missing (server/scripts/dev.ts).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
@@ -76,12 +76,12 @@ start: stop
 	$(DEV_EXEC_DETACHED) bash -c 'yarn dev > $(DEV_LOG) 2>&1'
 	@echo ""
 	@echo "  Stories (landing)   http://localhost:8103  (start here: create, open, play, export)"
-	@echo "  SingleEngine        http://localhost:8100"
+	@echo "  SinglePlayer        http://localhost:8100"
 	@echo "  Visualizer client   http://localhost:8101"
 	@echo "  Server (NestJS)     http://localhost:8123  (/api/health, /api/stories …; needs MySQL)"
 	@echo "  MultiEngine client  http://localhost:8102"
 	@echo ""
-	@echo "  logs: make logs     one service instead: make up, then make dev-engine"
+	@echo "  logs: make logs     one service instead: make up, then make dev-player"
 
 # The container without the services. Use this when you want a single service — `make start`
 # already holds all five ports, and vite is `strictPort`, so it would refuse rather than
@@ -120,8 +120,8 @@ logs:
 dev:
 	$(DEV_EXEC) yarn dev
 
-dev-engine:
-	$(DEV_EXEC) yarn dev:engine
+dev-player:
+	$(DEV_EXEC) yarn dev:player
 
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
@@ -138,7 +138,7 @@ dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
 
 # Production (multiple stories, phase 11): Caddy on 80/443 in front of the server and
-# SingleEngine, one origin (docker/docker-compose.prod.yml). Run on the host, not inside the dev
+# SinglePlayer, one origin (docker/docker-compose.prod.yml). Run on the host, not inside the dev
 # container. Needs `docker/.env` (copy `docker/.env.example`, set the DB passwords). SITE_ADDRESS is
 # the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com` (default localhost).
 # `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).

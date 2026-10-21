@@ -35,7 +35,7 @@ describe('linkSummary', () => {
         expect(summary({ cost: { seconds: 0 } }).details).toBe('village-thomas-forest');
     });
 
-    it('shows time, items and tools in the SingleEngine format, with item names', () => {
+    it('shows time, items and tools in the SinglePlayer format, with item names', () => {
         const cost = {
             time: { seconds: 600 },
             items: [

@@ -1,6 +1,6 @@
 # Server
 
-`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SingleEngine all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
+`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
 
 It runs from source, no build step: `node --import @swc-node/register/esm-register` (swc emits the decorator metadata Nest's DI needs; tsx/esbuild cannot). Vitest uses `unplugin-swc` for the same reason.
 
@@ -189,7 +189,7 @@ From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot w
 | Variable               | Default       | Meaning                                                                                                                                            |
 | ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PORT`                 | `8123`        | Listen port (on `0.0.0.0`).                                                                                                                        |
-| `STORIES_ROOT`         | `stories`     | One folder per story; relative paths resolve against the repo root. SingleEngine's dev server reads the same variable: keep them equal.            |
+| `STORIES_ROOT`         | `stories`     | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.            |
 | `DB_HOST`              | `mysql`       | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                  |
 | `DB_PORT`              | `3306`        |                                                                                                                                                    |
 | `DB_USER`              | `story`       |                                                                                                                                                    |

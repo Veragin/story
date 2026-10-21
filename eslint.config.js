@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint';
 // here because they are type-only (the latter enforced by `no-restricted-imports` below).
 const SERVER = 'server';
 const PROTOCOL = 'protocol';
-const SERVICES = ['clients/SingleEngine', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
+const SERVICES = ['clients/SinglePlayer', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
 
 // globs only: a zone mixing globs and plain paths flags every import in its target
 const tree = (dir) => `./${dir}/**`;
@@ -191,7 +191,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['clients/SingleEngine/src/**/*.{ts,tsx}'],
+        files: ['clients/SinglePlayer/src/**/*.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
@@ -199,14 +199,14 @@ export default tseslint.config(
                     paths: ['@story/data', '@story/types'].map((name) => ({
                         name,
                         allowTypeImports: true,
-                        message: `SingleEngine/src must not import ${name} at runtime — the story is loaded by \`loadStory\` and reached through the engine (\`engine.storyModule\`). \`import type\` is fine.`,
+                        message: `SinglePlayer/src must not import ${name} at runtime — the story is loaded by \`loadStory\` and reached through the engine (\`engine.storyModule\`). \`import type\` is fine.`,
                     })),
                     patterns: [
                         {
                             group: ['@story/data/*', '@story/types/*'],
                             allowTypeImports: true,
                             message:
-                                'SingleEngine/src must not import the story at runtime — it is loaded by `loadStory`. `import type` is fine.',
+                                'SinglePlayer/src must not import the story at runtime — it is loaded by `loadStory`. `import type` is fine.',
                         },
                     ],
                 },

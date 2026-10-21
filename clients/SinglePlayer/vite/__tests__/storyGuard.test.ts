@@ -6,9 +6,9 @@ const EXISTING = new Set([
     '/',
     '/app',
     '/app/clients',
-    '/app/clients/SingleEngine',
-    '/app/clients/SingleEngine/src',
-    '/app/clients/SingleEngine/src/main.tsx',
+    '/app/clients/SinglePlayer',
+    '/app/clients/SinglePlayer/src',
+    '/app/clients/SinglePlayer/src/main.tsx',
     '/app/clients/shared',
     '/app/clients/shared/core',
     '/app/stories',
@@ -34,7 +34,7 @@ const realpath = (p: string): string => {
     return p;
 };
 
-const ctx: TStoryRequestContext = { root: '/app/clients/SingleEngine', storiesRoot: '/app/stories', realpath };
+const ctx: TStoryRequestContext = { root: '/app/clients/SinglePlayer', storiesRoot: '/app/stories', realpath };
 const classify = (url: string) => classifyStoryRequest(url, ctx);
 const story = (storyId: string) => ({ kind: 'story', storyId });
 
@@ -74,7 +74,7 @@ describe('classifyStoryRequest', () => {
         ['/@id/%00virtual:story/secret', 'secret'],
         // relative to root, and `..` in every form
         ['/../../stories/secret/data/index.ts', 'secret'],
-        ['/@fs/app/clients/SingleEngine/../../stories/secret/data/index.ts', 'secret'],
+        ['/@fs/app/clients/SinglePlayer/../../stories/secret/data/index.ts', 'secret'],
         ['/@fs/app/stories/example/../secret/data/index.ts', 'secret'],
         ['/@fs/../app/stories/secret/data/index.ts', 'secret'],
         ['/%2e%2e/%2e%2e/stories/secret/data/index.ts', 'secret'],
