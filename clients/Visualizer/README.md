@@ -18,17 +18,17 @@ Open a story from the landing page (http://localhost:8103): the client runs on h
 
 **Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`clients/Visualizer/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
 
-| Env var               | Where        | Default                 | Meaning                                                                                                                |
-| --------------------- | ------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                       |
-| `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                       |
-| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash).  |
-| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                        |
-| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                     |
-| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                                |
-| `STORIES_ROOT`        | SinglePlayer | `stories`               | Where the engine's dev server finds the stories it serves (`vite/storiesPlugin.ts`). Keep it the same as the server's. |
-| `STORY_SERVER`        | SinglePlayer | `http://localhost:8123` | Target of SinglePlayer's Vite `/api` proxy, and the server its story guard asks `GET /api/stories/<id>/access`.        |
-| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8103    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                        |
+| Env var               | Where        | Default                 | Meaning                                                                                                               |
+| --------------------- | ------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                      |
+| `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                      |
+| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
+| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                       |
+| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
+| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
+| `VITE_PLAYER_URL`     | client       | this host, port 8100    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
+| `STORY_SERVER`        | SinglePlayer | `http://localhost:8123` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
+| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8103    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
 
 The server's variables are in [`docs/Server.md`](../../docs/Server.md#environment); the production build variables in [`docs/README.md`](../../docs/README.md#production).
 
@@ -110,7 +110,7 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 
 In the client, `clients/Visualizer/src/components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
-The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`clients/SinglePlayer/vite/storiesPlugin.ts`, read by `clients/SinglePlayer/src/images.ts`), so there too a missing `.png` just means no picture.
+The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
 
 ## Live refresh
 

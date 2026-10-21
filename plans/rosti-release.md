@@ -6,11 +6,13 @@ Research date: 2026-10-19. Source: Roští's public pages (links at the end). It
 
 ## Where user data lives
 
-| Data                                         | Where      | Volume (prod compose)                                     |
-| -------------------------------------------- | ---------- | --------------------------------------------------------- |
-| Story metadata, logins, encrypted git tokens | MySQL      | `mysql` → `/var/lib/mysql`                                |
-| Story files                                  | filesystem | `stories` → `/app/stories` (shared by `server`, `engine`) |
-| TLS certificates                             | Caddy      | `caddy_data`, `caddy_config` (not needed on Roští)        |
+| Data                                         | Where      | Volume (prod compose)                              |
+| -------------------------------------------- | ---------- | -------------------------------------------------- |
+| Story metadata, logins, encrypted git tokens | MySQL      | `mysql` → `/var/lib/mysql`                         |
+| Story files                                  | filesystem | `stories` → `/app/stories` (used by `server` only) |
+| TLS certificates                             | Caddy      | `caddy_data`, `caddy_config` (not needed on Roští) |
+
+The stack has three containers: `server`, `mysql` and `caddy` (which also serves the static builds of the landing page, the Visualizer and SinglePlayer).
 
 A release replaces images and the compose file and recreates containers (`docker compose up -d`); volumes are not touched. `docker/prod-entrypoint.sh` is release-safe: it applies migrations every start and seeds the example story only into an empty database.
 

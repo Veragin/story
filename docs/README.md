@@ -22,7 +22,7 @@ Only `stories/example/` is committed; every other folder under `stories/` is git
 
 Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
-Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui}` packages), `protocol/`, `server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
+Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui,storyLoader}` packages), `protocol/`, `server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
 
 The split is also what keeps an engine upgrade safe for every story at once: author edits land in `types/`/`data/`, and engine changes land everywhere else. **Nothing in `types/` or `data/` may import from a service**; `yarn lint` enforces it for every story (`import/no-restricted-paths` in `eslint.config.js`).
 
@@ -78,12 +78,12 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 `docker/docker-compose.prod.yml` runs everything behind one origin, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443:
 
-| Path           | Served by                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------- |
-| `/`            | the landing page, static build                                                               |
-| `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                             |
-| `/play/`       | SinglePlayer, still a Vite dev server (`base` `/play/`) until the per-story build lands (D7) |
-| `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                    |
+| Path           | Served by                                                                                          |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| `/`            | the landing page, static build                                                                     |
+| `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                                   |
+| `/play/`       | SinglePlayer, static build (Vite `base` `/play/`); it fetches the story's source from the play API |
+| `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                          |
 
 ```bash
 cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD (and GIT_TOKEN_KEY for git)
@@ -96,14 +96,13 @@ make prod-down                                  # keeps the volumes (stories, da
 
 Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) lets an author give a repository URL and access token when creating or editing a story on the landing page (a new connection pushes the story to `main`; branch, author and disconnect are in the Visualizer's git settings). It needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
 
-The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain. Build variables:
+The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`, `VITE_PLAYER_URL=/play`), so they do not depend on the domain. Build variables:
 
-| Env var                | Where        | Default | Meaning                                                                                                                                                                      |
-| ---------------------- | ------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VISUALIZER_BASE`      | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change.                             |
-| `LANDING_BASE`         | landing page | `/`     | Vite `base` of the build.                                                                                                                                                    |
-| `ENGINE_BASE`          | SinglePlayer | `/`     | Vite `base` of the dev server (`/play/`): pages, modules (`/play/@fs/…`, `/play/@id/…`, which the story guard checks with the base taken off) and the HMR websocket.         |
-| `ENGINE_ALLOWED_HOSTS` | SinglePlayer | (Vite)  | Comma-separated host names the dev server answers (Vite's `server.allowedHosts`), or `*` for any. The production compose sets `*`: the port is reachable only through Caddy. |
+| Env var           | Where        | Default | Meaning                                                                                                                                          |
+| ----------------- | ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `VISUALIZER_BASE` | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change. |
+| `LANDING_BASE`    | landing page | `/`     | Vite `base` of the build.                                                                                                                        |
+| `PLAYER_BASE`     | SinglePlayer | `/`     | Vite `base` of the build (`/play/`). API calls are the absolute `/api/…`, so only asset URLs change.                                             |
 
 ## Data structure
 
@@ -215,15 +214,19 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
     - the headless story runtime: engine, story, processor, history, inventory, world state
     - no React, no rendering — it is the same runtime whether it runs in a browser tab (SinglePlayer), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
 
+- storyLoader (`@story/story-loader`)
+    - runs a story's TypeScript source in the browser: fetches the files from a `TStorySource`, transpiles them (sucrase), runs them as CommonJS and loads `import()`ed chapters lazily; the story's `@story/shared` / `@story/core` are the app's own instances
+    - used by SinglePlayer (and its standalone build); its limits are in `clients/shared/storyLoader/README.md`
+
 ### Services
 
 - SinglePlayer
     - a service that can play the story for single player
     - only client implementation
     - fully implemented
-    - plays the story named by `?story=<id>` (the landing page's **Play as single**; without it, it goes to the landing page, `VITE_LANDING_URL`, default this host on 8103). `src/main.tsx` asks the server `GET /api/stories/<id>/access`, shows the password dialog for a private story it may not play yet, then imports the story's virtual module `virtual:story/<id>` (its `data/index.ts` plus the URL of every `.png`) and starts the engine on it
-    - `vite/storiesPlugin.ts` (`story:stories`) serves the stories from `STORIES_ROOT` (the server's, default `stories/`): `@story/types` / `@story/data` imported from inside `stories/<id>/` mean that story's folders, and every request for a story file (or its virtual module) is checked against `GET /api/stories/<id>/access` with the browser's cookie (cached 30 s) and answered `403` unless the story may be played. So the server has to run too
-    - the stories are served by the Vite dev server (plan D7); a per-story production build is future work
+    - plays the story named by `?story=<id>` (the landing page's **Play as single**, the Visualizer's **Play**); without it, a `play.json` next to the page (a standalone export, `src/source/StaticStorySource.ts`), else it goes to the landing page (`VITE_LANDING_URL`, default this host on 8103)
+    - `src/main.tsx` loads the play manifest (`GET /api/stories/<id>/play`, `src/source/ServerStorySource.ts`); a private story answers `401` until the session holds its grant, so it shows the password dialog, logs in and retries (an editor coming from the Visualizer already has the grant). Then it sets the title and favicon, loads the story with `@story/story-loader` and starts the engine on it. A missing story shows an error with a link back to the landing page
+    - one static build plays every story (plan D7 done): the story's TypeScript is fetched file by file from `GET /api/stories/<id>/play/<file>` and run in the browser; a chapter's passages are fetched when the chapter is first played. Images are the manifest's `.png` files, served by the same route
 
 - MultiEngine
     - a service that can play the story for multiple players

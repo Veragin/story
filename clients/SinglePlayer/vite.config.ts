@@ -1,50 +1,44 @@
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { storiesPlugin } from './vite/storiesPlugin';
 
 const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-const repoRoot = at('../..');
+const REPO_ROOT = at('../..');
 
-// same default and resolution as the server's `STORIES_ROOT`
-const storiesRoot = path.resolve(repoRoot, process.env.STORIES_ROOT ?? 'stories');
+// no `data/` or `types/`: stories are fetched at run time through the play API (`@story/story-loader`)
+const SIBLING_PACKAGES = [
+    '../shared/utils',
+    '../shared/ui',
+    '../shared/core',
+    '../shared/storyLoader',
+    '../../protocol',
+].map(at);
 
-const storyServer = process.env.STORY_SERVER ?? 'http://localhost:8123';
-
-const siblingPackages = ['../shared/utils', '../shared/ui', '../shared/core'].map(at);
-
-// Vite only watches `root` up front; files outside it are seen lazily, so new ones would be missed.
+// Vite watches outside `root` only lazily, so new files in sibling packages would go unseen
 const watchSiblingPackages = () => ({
     name: 'story:watch-sibling-packages',
     configureServer(server: { watcher: { add: (paths: string[]) => void } }) {
-        server.watcher.add(siblingPackages);
+        server.watcher.add(SIBLING_PACKAGES);
     },
 });
 
-const allowedHostsFromEnv = (value: string | undefined): true | string[] | undefined => {
-    const hosts = (value ?? '')
-        .split(',')
-        .map((h) => h.trim())
-        .filter(Boolean);
-    if (hosts.includes('*')) return true;
-    return hosts.length > 0 ? hosts : undefined;
-};
-
 export default defineConfig({
-    base: process.env.ENGINE_BASE || '/',
-    assetsInclude: ['**/*.png', '**/*.jpg'],
+    // `/play/` in production; API calls are absolute `/api/…`
+    base: process.env.PLAYER_BASE || '/',
     publicDir: false,
-    plugins: [react(), watchSiblingPackages(), storiesPlugin({ storiesRoot, storyServer })],
+    plugins: [react(), watchSiblingPackages()],
     resolve: {
-        // string `find` is a prefix match: subpaths must precede their bare package name
+        // a string `find` is a prefix match, so each subpath must precede its bare package name
         alias: [
             { find: '@story/ui/index.css', replacement: at('../shared/ui/src/index.css') },
             { find: '@story/ui', replacement: at('../shared/ui/src/index.ts') },
 
-            // `@story/data` / `@story/types` differ per story: `storiesPlugin` resolves them
+            // no `@story/data` / `@story/types`: type-only imports, the story itself comes through the loader
+
             { find: '@story/core', replacement: at('../shared/core/src/index.ts') },
+            { find: '@story/story-loader', replacement: at('../shared/storyLoader/src/index.ts') },
+            { find: '@story/protocol', replacement: at('../../protocol/src/index.ts') },
             { find: '@story/shared', replacement: at('../shared/utils/src/index.ts') },
         ],
     },
@@ -52,21 +46,16 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 8100,
         strictPort: true,
-        allowedHosts: allowedHostsFromEnv(process.env.ENGINE_ALLOWED_HOSTS),
         fs: {
-            allow: [repoRoot, storiesRoot],
+            // every internal package lives outside `root`
+            allow: [REPO_ROOT],
         },
         watch: {
             ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
         },
-        // same origin so the `story_session` cookie reaches the story guard; Host passes through for CSRF
+        // same origin so the session cookie reaches the play API; no `changeOrigin`: CSRF checks `Origin` against `Host`
         proxy: {
-            '/api': { target: storyServer },
-        },
-    },
-    esbuild: {
-        supported: {
-            'top-level-await': true,
+            '/api': { target: process.env.STORY_SERVER ?? 'http://localhost:8123' },
         },
     },
 });

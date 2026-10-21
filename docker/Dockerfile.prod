@@ -1,10 +1,9 @@
 # Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
 #
-#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc
-#          loader) and, until the per-story engine build lands (plan D7), the SinglePlayer Vite dev server
-#   web    `app` plus the static builds of the landing page (base `/`) and the Visualizer client
-#          (base `/visualizer/`); only a build stage, nothing runs it
-#   proxy  Caddy with `docker/Caddyfile` and the two builds from `web`: the one public origin
+#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc loader)
+#   web    `app` plus the static builds of the landing page (base `/`), the Visualizer client
+#          (base `/visualizer/`) and SinglePlayer (base `/play/`); only a build stage, nothing runs it
+#   proxy  Caddy with `docker/Caddyfile` and the three builds from `web`: the one public origin
 #
 # The cross-app links are baked into the static builds as paths, not origins (`/`, `/visualizer`,
 # `/play`), so the images do not depend on the domain; `SITE_ADDRESS` is read at run time.
@@ -25,10 +24,13 @@ ENTRYPOINT ["/app/docker/prod-entrypoint.sh"]
 FROM app AS web
 RUN LANDING_BASE=/ VITE_VISUALIZER_URL=/visualizer VITE_ENGINE_URL=/play \
         yarn workspace @story/visualizer-landing-page build \
-    && VISUALIZER_BASE=/visualizer/ VITE_LANDING_URL=/ \
-        yarn workspace @story/visualizer-client build
+    && VISUALIZER_BASE=/visualizer/ VITE_LANDING_URL=/ VITE_PLAYER_URL=/play \
+        yarn workspace @story/visualizer-client build \
+    && PLAYER_BASE=/play/ VITE_LANDING_URL=/ \
+        yarn workspace @story/single-player build
 
 FROM caddy:2 AS proxy
 COPY docker/Caddyfile /etc/caddy/Caddyfile
 COPY --from=web /app/clients/LandingPage/dist /srv/landing
 COPY --from=web /app/clients/Visualizer/dist /srv/visualizer
+COPY --from=web /app/clients/SinglePlayer/dist /srv/play

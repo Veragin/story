@@ -5,7 +5,6 @@
 # the database migrations, moves every legacy `story.json` of the `stories` volume into the
 # database, rewrites stale story tsconfigs and seeds the example story: its folder is copied from the
 # image when the database holds no story yet, and its row comes from `server/seed/example.story.json`.
-# The engine service only reads the volume.
 set -e
 root="${STORIES_ROOT:-/app/stories}"
 seed=/app/.seed/example

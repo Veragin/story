@@ -26,9 +26,6 @@
        `tsconfig.json`'s `clients/shared/core` / `stories/example/data` entries. */
     "include": [
         "clients/SinglePlayer/vite.config.ts",
-        /* SinglePlayer's Vite plugin (`storiesPlugin`, multiple stories phase 9) and its tests:
-           node-land too, imported by the config above. */
-        "clients/SinglePlayer/vite",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

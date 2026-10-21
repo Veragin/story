@@ -15,6 +15,15 @@ export const setStoryImages = (files: Record<string, string>) => {
     );
 };
 
+const DATA_DIR = 'data/';
+
+export const storyImageFiles = (files: readonly string[], fileUrl: (path: string) => string): Record<string, string> =>
+    Object.fromEntries(
+        files
+            .filter((file) => file.startsWith(DATA_DIR) && file.endsWith('.png'))
+            .map((file) => [file.slice(DATA_DIR.length), fileUrl(file)])
+    );
+
 export const storyIcon = (): string | undefined => images['assets/story'];
 
 export const passageImage = (passage: { chapterId: string; characterId: string; id: string }): string | undefined =>

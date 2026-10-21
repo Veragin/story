@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { Button, styled, Tab, Tabs, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
-import { landingUrl, STORY_ID } from '../api';
+import { landingUrl, playerUrl, STORY_ID } from '../api';
 import { GitButton } from './GitButton';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
@@ -79,6 +80,17 @@ export const TopBar = observer(() => {
                     />
                 ))}
             </STabs>
+            <Button
+                color="inherit"
+                size="small"
+                startIcon={<PlayArrowIcon />}
+                href={playerUrl(STORY_ID)}
+                target="_blank"
+                rel="noopener"
+                sx={{ flexShrink: 0, textTransform: 'none' }}
+            >
+                {_('Play')}
+            </Button>
             <GitButton />
             <SControlBar ref={shell.setControlBarEl} />
         </SBar>

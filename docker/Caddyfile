@@ -2,7 +2,7 @@
 #
 #   /             landing page     static build (/srv/landing)
 #   /visualizer/  Visualizer       static build (/srv/visualizer), Vite base /visualizer/
-#   /play/        SinglePlayer     Vite dev server (engine:8100), base /play/, path passed unstripped
+#   /play/        SinglePlayer     static build (/srv/play), Vite base /play/; stories come from /api/
 #   /api/         the API          the server (server:8123, `server/`)
 #
 # SITE_ADDRESS is a host name (`stories.example.com`): Caddy then gets and renews a certificate for
@@ -17,11 +17,15 @@
 		reverse_proxy server:8123
 	}
 
-	# SinglePlayer: its dev server answers under /play/ itself, HMR websocket included, so the path
-	# goes through as it is. Every story file it serves passes its story guard.
+	# SinglePlayer: one page for every story (`?story=<id>`); the story's files come from the play
+	# API, which checks access.
 	redir /play /play/ 308
-	handle /play/* {
-		reverse_proxy engine:8100
+	handle_path /play/* {
+		root * /srv/play
+		encode zstd gzip
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
 	}
 
 	# The Visualizer client: hash routing (`#/map`), so every page is index.html.

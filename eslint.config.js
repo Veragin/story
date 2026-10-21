@@ -22,6 +22,7 @@ const PACKAGE_DIRS = {
     shared: 'clients/shared/utils',
     ui: 'clients/shared/ui',
     core: 'clients/shared/core',
+    storyLoader: 'clients/shared/storyLoader',
 };
 const pkg = (name) => tree(PACKAGE_DIRS[name]);
 
@@ -60,6 +61,13 @@ const boundaryZones = [
 
     zone(pkg('data'), packagesExcept('shared', 'types', 'core', 'data'), 'data/ may not import @story/ui.'),
 
+    // its tests run the example story, so they hand it @story/core as a host module
+    zone(
+        pkg('storyLoader'),
+        packagesExcept('shared', 'core', 'storyLoader'),
+        '@story/story-loader may import only @story/shared (the story reaches the rest through its host modules).'
+    ),
+
     zone(
         pkg('types'),
         servicesAndProtocol(),
@@ -71,7 +79,7 @@ const boundaryZones = [
         'data/ is author-edited and must never import from a service (the clients, the server) or the protocol.'
     ),
 
-    ...['shared', 'ui', 'core'].map((p) =>
+    ...['shared', 'ui', 'core', 'storyLoader'].map((p) =>
         zone(
             pkg(p),
             servicesAndProtocol(),

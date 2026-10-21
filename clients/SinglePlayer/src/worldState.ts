@@ -1,17 +1,18 @@
-import { createWorldState, type TStoryModule } from '@story/core';
+import * as core from '@story/core';
+import { createWorldState, isStoryModule, type TStoryModule } from '@story/core';
+import * as shared from '@story/shared';
+import { StoryLoader, type TStorySource } from '@story/story-loader';
 
-export type TStoryEntry = TStoryModule & { images: Record<string, string> };
+// the engine's own instances: `instanceof DeltaTime` must hold for story values
+const HOST_MODULES = { '@story/shared': shared, '@story/core': core };
 
-// the `/@id/` URL keeps every story out of the app's static module graph
-const storyEntryUrl = (storyId: string) =>
-    `${import.meta.env.BASE_URL}@id/__x00__virtual:story/${encodeURIComponent(storyId)}`;
-
-export const loadStory = async (storyId: string): Promise<TStoryEntry> => {
-    const story: TStoryEntry = await import(/* @vite-ignore */ storyEntryUrl(storyId));
+export const loadStory = async (source: TStorySource, files: readonly string[]): Promise<TStoryModule> => {
+    const story = await new StoryLoader({ source, files, hostModules: HOST_MODULES }).import('@story/data');
+    if (!isStoryModule(story)) throw new Error(_('data/index.ts must export `register` and `itemInfo`.'));
     return story;
 };
 
-export const startStory = (story: TStoryEntry, storyId: string) => {
+export const startStory = (story: TStoryModule, storyId: string) => {
     const { s, e } = createWorldState(story.register, story.itemInfo, storyId);
 
     window.s = s;

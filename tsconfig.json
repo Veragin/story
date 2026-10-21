@@ -13,6 +13,7 @@
             "@story/shared": ["clients/shared/utils/src/index.ts"],
             "@story/ui": ["clients/shared/ui/src/index.ts"],
             "@story/core": ["clients/shared/core/src/index.ts"],
+            "@story/story-loader": ["clients/shared/storyLoader/src/index.ts"],
             "@story/data": ["stories/example/data/index.ts"],
             "@story/data/*": ["stories/example/data/*"],
             "@story/protocol": ["protocol/src/index.ts"]
@@ -36,6 +37,7 @@
         "clients/shared/utils",
         "clients/shared/ui",
         "clients/shared/core",
+        "clients/shared/storyLoader",
         "stories/example/data",
         "clients/SinglePlayer/src",
         "clients/Visualizer/src",
