@@ -1,6 +1,7 @@
 import { Body, Controller, Res } from '@nestjs/common';
 import { STORY_ZIP_CONTENT_TYPE, type TStoryInfoDto } from '@story/protocol';
 import type { Response } from 'express';
+import { sendAttachment } from '../common/attachment';
 import { jsonObjectBody } from '../common/body';
 import { HttpError } from '../common/HttpError';
 import { ProtocolRoute } from '../common/ProtocolRoute';
@@ -48,12 +49,6 @@ export class StoryInfoController {
         const story = await this.stories.read(storyId);
         if (!story) throw HttpError.noStory(storyId);
         const zip = await this.folders.exportZip(storyId, story.mapSize);
-        res.writeHead(200, {
-            'content-type': STORY_ZIP_CONTENT_TYPE,
-            'content-disposition': `attachment; filename="${storyId}.zip"`,
-            'content-length': zip.byteLength,
-            'cache-control': 'no-store',
-        });
-        res.end(zip);
+        sendAttachment(res, `${storyId}.zip`, STORY_ZIP_CONTENT_TYPE, zip);
     }
 }

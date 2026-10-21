@@ -26,6 +26,7 @@
        `tsconfig.json`'s `clients/shared/core` / `stories/example/data` entries. */
     "include": [
         "clients/SinglePlayer/vite.config.ts",
+        "clients/SinglePlayer/vite.standalone.config.ts",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

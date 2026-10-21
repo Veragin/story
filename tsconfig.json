@@ -40,6 +40,7 @@
         "clients/shared/storyLoader",
         "stories/example/data",
         "clients/SinglePlayer/src",
+        "clients/SinglePlayer/__tests__",
         "clients/Visualizer/src",
         "clients/LandingPage/src",
         "clients/MultiEngine/src",
@@ -55,6 +56,7 @@
 
         /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
         "clients/SinglePlayer/vite.config.ts",
+        "clients/SinglePlayer/vite.standalone.config.ts",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build:standalone": "vite build --config vite.standalone.config.ts",
         "preview": "vite preview"
     },
     "dependencies": {
@@ -27,6 +28,7 @@
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
         "@vitejs/plugin-react": "^4.3.2",
-        "vite": "^5.4.9"
+        "vite": "^5.4.9",
+        "vite-plugin-singlefile": "2.3.0"
     }
 }

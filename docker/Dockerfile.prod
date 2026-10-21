@@ -1,6 +1,7 @@
 # Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
 #
-#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc loader)
+#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc loader);
+#          also holds the standalone SinglePlayer build (base `./`) that the server zips for "Export for web"
 #   web    `app` plus the static builds of the landing page (base `/`), the Visualizer client
 #          (base `/visualizer/`) and SinglePlayer (base `/play/`); only a build stage, nothing runs it
 #   proxy  Caddy with `docker/Caddyfile` and the three builds from `web`: the one public origin
@@ -16,6 +17,9 @@ RUN chown node:node /app
 USER node
 COPY --chown=node:node . .
 RUN yarn install --immutable
+# one self-contained `index.html` with no URL baked in: the web export runs on any static host
+RUN yarn workspace @story/single-player build:standalone
+ENV SINGLE_PLAYER_STANDALONE_HTML=/app/clients/SinglePlayer/dist-standalone/index.html
 # The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
 # `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
 RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/example && chmod +x docker/prod-entrypoint.sh

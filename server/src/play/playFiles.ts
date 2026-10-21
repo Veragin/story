@@ -1,8 +1,9 @@
 import path from 'node:path';
-import { LANDING_IMAGE_FILE } from '@story/protocol';
+import { LANDING_IMAGE_FILE, type TPlayManifestDto } from '@story/protocol';
 import { lstatOrNull } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import type { TVersionedFile } from '../common/versionedFile';
+import type { TVersionedStoryFile } from '../database/repositories/StoryRepository';
 import { version } from '../events/version';
 import { isTempFile, readBytesOrNull } from '../json/atomicWrite';
 import { listStoryDirFiles, STORY_TOP_DIRS } from '../stories/storyFiles';
@@ -21,6 +22,21 @@ export const listPlayFiles = async (storyDir: string): Promise<string[]> =>
 
 export const hasLandingImage = async (storyDir: string): Promise<boolean> =>
     (await lstatOrNull(path.join(storyDir, LANDING_IMAGE_FILE)))?.isFile() ?? false;
+
+// picks the fields one by one: the row also holds the password hash
+export const buildPlayManifest = async (
+    storyId: string,
+    { file: { name, author, description }, version: storyVersion }: TVersionedStoryFile,
+    storyDir: string
+): Promise<TPlayManifestDto> => ({
+    id: storyId,
+    name,
+    author,
+    description,
+    version: storyVersion,
+    hasLandingImage: await hasLandingImage(storyDir),
+    files: await listPlayFiles(storyDir),
+});
 
 const isPlainSegment = (segment: string) =>
     segment !== '' && segment !== '.' && segment !== '..' && !segment.includes('\\') && !segment.includes('\0');

@@ -56,7 +56,7 @@ const SImg = styled('img')`
     width: 50%;
     object-fit: cover;
     aspect-ratio: 1;
-    pointer-chapters: none;
+    pointer-events: none;
     user-select: none;
 `;
 

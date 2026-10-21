@@ -1,12 +1,13 @@
 import { Avatar, Button, styled, Tooltip } from '@mui/material';
 import { Modal, Row, spacingCss, Text } from '@story/ui';
 import { useState } from 'react';
-import { Inventory } from './Inventory';
+import { Inventory } from './Inventory/Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { observer } from 'mobx-react-lite';
 import { useEngine, useWorldState } from '../../context';
 import { characterImage } from '../../images';
+import { restartGame } from '../../restartGame';
 
 export const StatusBar = observer(() => {
     const e = useEngine();
@@ -57,13 +58,7 @@ export const StatusBar = observer(() => {
                 >
                     Save
                 </Button>
-                <Button
-                    color="error"
-                    onClick={() => {
-                        e.clearStateFromLocalStorage();
-                        window.location.reload();
-                    }}
-                >
+                <Button color="error" onClick={() => restartGame(e)}>
                     Reset
                 </Button>
             </SButtons>
@@ -76,6 +71,8 @@ export const SRow = styled(Row)`
     padding: ${spacingCss(0.5)} ${spacingCss(1)};
     border-bottom: solid 1px grey;
     align-items: center;
+    flex-wrap: wrap;
+    row-gap: ${spacingCss(0.5)};
 `;
 
 export const SCharacter = styled(Row)`

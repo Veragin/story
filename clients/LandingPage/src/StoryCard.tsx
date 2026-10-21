@@ -15,6 +15,7 @@ import {
     Edit,
     ExpandLess,
     ExpandMore,
+    Language,
     Lock,
     LockOpen,
     OpenInNew,
@@ -29,6 +30,7 @@ type TProps = {
     onOpen: () => void;
     onPlay: () => void;
     onExport: () => void;
+    onExportWeb: () => void;
 };
 
 export const StoryCard = ({
@@ -37,6 +39,7 @@ export const StoryCard = ({
     onOpen,
     onPlay,
     onExport,
+    onExportWeb,
 }: TProps) => {
     const [expanded, setExpanded] = useState(false);
     const hasDescription = story.description.trim() !== '';
@@ -112,6 +115,19 @@ export const StoryCard = ({
                 >
                     {_('Export')}
                 </Button>
+                <Tooltip
+                    title={_(
+                        'A zip to upload to any web host: players open its index.html'
+                    )}
+                >
+                    <Button
+                        size="small"
+                        startIcon={<Language />}
+                        onClick={onExportWeb}
+                    >
+                        {_('Export for web')}
+                    </Button>
+                </Tooltip>
             </CardActions>
         </Card>
     );

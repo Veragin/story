@@ -22,6 +22,7 @@
  * | 500    | `internal`              | `message`     | bug                                                  |
  * | 502    | `git_remote`            | `message`     | network or unknown remote error, token scrubbed      |
  * | 503    | `git_unavailable`       | `message`     | no `GIT_TOKEN_KEY` or no `git` on the server         |
+ * | 503    | `unavailable`           | `message`     | the server lacks a build it needs (the standalone player) |
  */
 export type TApiErrorCode =
     | 'bad_request'
@@ -35,6 +36,7 @@ export type TApiErrorCode =
     | 'too_many_requests'
     | 'not_implemented'
     | 'internal'
+    | 'unavailable'
     | 'git_unavailable'
     | 'git_not_configured'
     | 'git_dirty'
@@ -89,6 +91,7 @@ export const ERROR_STATUS: Record<TApiErrorCode, number> = {
     too_many_requests: 429,
     not_implemented: 501,
     internal: 500,
+    unavailable: 503,
     git_unavailable: 503,
     git_not_configured: 409,
     git_dirty: 409,

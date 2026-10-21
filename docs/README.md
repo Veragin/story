@@ -18,7 +18,7 @@ stories/
 
 That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). A story's metadata (name, author, password hash, map size, description, public) is not in its folder: it is a row in the server's MySQL database, edited from the landing page (the example's row is seeded from `server/seed/example.story.json`).
 
-Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
+Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
 Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
@@ -39,7 +39,7 @@ clients/
 protocol/       @story/protocol   the wire contract: routes (with access levels), DTOs, errors
 server/         @story/server     NestJS + MySQL on :8123, the only server; see Server.md
 docker/         docker-compose.yml (dev, + mysql), docker-compose.prod.yml, Dockerfiles, Caddyfile, prod-entrypoint.sh, mysql/init/
-docs/           this file, Server.md, Visualizer.md
+docs/           this file, Server.md, Visualizer.md, SinglePlayerStandalone.md
 scripts/        typecheck-stories.mjs
 ```
 
@@ -103,6 +103,8 @@ The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE
 | `VISUALIZER_BASE` | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change. |
 | `LANDING_BASE`    | landing page | `/`     | Vite `base` of the build.                                                                                                                        |
 | `PLAYER_BASE`     | SinglePlayer | `/`     | Vite `base` of the build (`/play/`). API calls are the absolute `/api/…`, so only asset URLs change.                                             |
+
+The app image also builds the standalone player (`build:standalone`, one self-contained `index.html` with `base` `./`) and sets `SINGLE_PLAYER_STANDALONE_HTML` to it, so **Export for web** works ([`SinglePlayerStandalone.md`](SinglePlayerStandalone.md)).
 
 ## Data structure
 

@@ -10,6 +10,7 @@ import { setStoryImages, storyIcon, storyImageFiles } from './images';
 import { toLanding } from './links';
 import { ServerStorySource } from './source/ServerStorySource';
 import { StaticStorySource } from './source/StaticStorySource';
+import { IS_STANDALONE, standaloneProblem } from './standalone';
 import type { TPlaySource } from './source/TPlaySource';
 import { getStoryName, login, StoryApiError } from './storyApi';
 import { Wrapper } from './Wrapper';
@@ -93,7 +94,11 @@ const setFavicon = (href: string | undefined) => {
 
 const boot = async (storyId: string | null) => {
     const opened = await openStory(storyId);
-    if (opened === null) return toLanding();
+    if (opened === null) {
+        return IS_STANDALONE
+            ? render(<ErrorScreen message={standaloneProblem()} />)
+            : toLanding();
+    }
     const { source, manifest } = opened;
 
     document.title = manifest.name;
@@ -108,7 +113,7 @@ const boot = async (storyId: string | null) => {
 
     render(
         <Wrapper s={s} e={e}>
-            <Engine />
+            <Engine manifest={manifest} />
         </Wrapper>
     );
 };
@@ -130,4 +135,9 @@ const start = async (storyId: string | null) => {
     }
 };
 
-void start(new URLSearchParams(window.location.search).get('story'));
+// a static host has no play API behind `?story=`
+void start(
+    IS_STANDALONE
+        ? null
+        : new URLSearchParams(window.location.search).get('story')
+);

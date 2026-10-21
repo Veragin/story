@@ -112,6 +112,7 @@ export const STORY_ROUTES = {
     getStoryInfo: { method: 'GET', path: '/info', access: 'read' },
     updateStoryInfo: { method: 'PUT', path: '/info', access: 'write' },
     exportStory: { method: 'GET', path: '/export', access: 'read' },
+    exportPlayable: { method: 'GET', path: '/export/web', access: 'read' },
 
     createChapter: { method: 'POST', path: '/chapters', access: 'write' },
     getChapter: { method: 'GET', path: '/chapters/:chapterId', access: 'read' },
@@ -281,6 +282,8 @@ export type TApiSpec = {
     updateStoryInfo: { body: TUpdateStoryBody; response: TStoryInfoDto };
     /** A `<storyId>.zip` attachment, not JSON. */
     exportStory: { body: undefined; response: never };
+    /** A `<storyId>-web.zip` attachment, not JSON: the standalone player, `play.json`, `data/` and `types/`. */
+    exportPlayable: { body: undefined; response: never };
 
     createChapter: { body: TCreateChapterBody; response: TChapterDto };
     getChapter: { body: undefined; response: TChapterDto };

@@ -132,7 +132,7 @@ const templateZones = [
 ];
 
 export default tseslint.config(
-    { ignores: ['dist', '**/dist/**', 'node_modules'] },
+    { ignores: ['dist', '**/dist/**', '**/dist-standalone/**', 'node_modules'] },
     {
         // the typescript resolver maps `@story/*` to source paths so the repo-relative zones match
         files: ['**/*.{ts,tsx}'],

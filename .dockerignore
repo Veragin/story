@@ -4,6 +4,7 @@
 **/node_modules
 **/dist
 **/dist-ssr
+**/dist-standalone
 
 # TypeScript incremental build cache. Copying a stale one in would make `tsc`
 # think the sources are already up to date and skip emitting -> empty/partial dist.

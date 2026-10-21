@@ -1,24 +1,32 @@
-import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { buildPath, LANDING_IMAGE_FILE, PNG_SIGNATURE } from '@story/protocol';
+import { buildPath, LANDING_IMAGE_FILE, PLAY_MANIFEST_FILE, PNG_SIGNATURE } from '@story/protocol';
+import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TMP_SUFFIX } from '../src/json/atomicWrite';
 import { login, requestJson } from './helpers/http';
 import { createTestApp, readExampleStoryFile, type TTestApp } from './helpers/testApp';
 
 let app: TTestApp;
+let playerDir: string;
+
+const playerHtml = () => path.join(playerDir, 'index.html');
 
 beforeEach(async () => {
+    playerDir = await mkdtemp(path.join(tmpdir(), 'standalone-player-'));
     app = await createTestApp({
         stories: [
             { id: 'open', public: true },
             { id: 'closed', public: false },
         ],
+        standalonePlayerHtml: playerHtml(),
     });
 });
 
 afterEach(async () => {
     await app.close();
+    await rm(playerDir, { recursive: true, force: true });
 });
 
 const abs = (storyId: string, rel: string) => path.join(app.project(storyId).root, rel);
@@ -139,5 +147,58 @@ describe('getPlayFile', () => {
     it('404s a missing file', async () => {
         expect((await playFile('open', 'data/missing.ts')).status).toBe(404);
         expect((await playFile('open', 'data/missing/deeper.png')).status).toBe(404);
+    });
+});
+
+const exportPlayable = (storyId: string, cookie?: string) =>
+    fetch(app.base + buildPath(storyId, 'exportPlayable', {}), { headers: cookie ? { cookie } : {} });
+
+describe('exportPlayable', () => {
+    const PLAYER_HTML = '<!doctype html><title>player</title>';
+
+    it('zips the standalone player, the manifest and the story files', async () => {
+        await writeFile(playerHtml(), PLAYER_HTML);
+        const res = await exportPlayable('open');
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toBe('application/zip');
+        expect(res.headers.get('content-disposition')).toBe('attachment; filename="open-web.zip"');
+
+        const zip = unzipSync(new Uint8Array(await res.arrayBuffer()));
+        const text = (name: string) => new TextDecoder().decode(zip[name]);
+        expect(text('index.html')).toBe(PLAYER_HTML);
+        expect(JSON.parse(text(PLAY_MANIFEST_FILE))).toEqual((await manifest('open')).body);
+        const { files }: { files: string[] } = JSON.parse(text(PLAY_MANIFEST_FILE));
+        for (const file of files) {
+            expect(Buffer.from(zip[file]).equals(await readFile(abs('open', file))), file).toBe(true);
+        }
+        expect(
+            Object.keys(zip).every((name) => /^(index\.html|play\.json|tsconfig\.json|(data|types)\/.+)$/.test(name))
+        ).toBe(true);
+    });
+
+    it('never carries the password', async () => {
+        await writeFile(playerHtml(), PLAYER_HTML);
+        const stored = await app.stories.read('open');
+        const zip = unzipSync(new Uint8Array(await (await exportPlayable('open')).arrayBuffer()));
+        const manifestText = new TextDecoder().decode(zip[PLAY_MANIFEST_FILE]);
+        expect(manifestText).not.toContain('password');
+        expect(manifestText).not.toContain(stored?.password ?? '?');
+        expect(Object.keys(zip)).not.toContain('story.json');
+    });
+
+    it('needs the story`s grant like the story export', async () => {
+        await writeFile(playerHtml(), PLAYER_HTML);
+        expect((await exportPlayable('closed')).status).toBe(401);
+        const cookie = await login(app.base, 'closed');
+        expect((await exportPlayable('closed', cookie)).status).toBe(200);
+        expect((await exportPlayable('nope')).status).toBe(404);
+    });
+
+    it('answers 503 while the standalone player is not built', async () => {
+        const res = await exportPlayable('open');
+        expect(res.status).toBe(503);
+        const body: { error: string; message: string } = await res.json();
+        expect(body.error).toBe('unavailable');
+        expect(body.message).toMatch(/standalone player is not built/);
     });
 });

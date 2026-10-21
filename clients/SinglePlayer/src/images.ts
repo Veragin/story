@@ -32,3 +32,5 @@ export const passageImage = (passage: { chapterId: string; characterId: string; 
 export const characterImage = (id: TCharacterId): string | undefined => images[`characters/${lowerFirst(id)}`];
 
 export const npcImage = (id: TNpcId): string | undefined => images[`npcs/${lowerFirst(id)}`];
+
+export const landingImage = (): string | undefined => images['assets/landing'];

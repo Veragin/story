@@ -25,7 +25,7 @@
         "dev:landing-page": "yarn workspace @story/visualizer-landing-page dev",
         "dev:multi-engine": "yarn workspace @story/multi-engine-client dev",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p server/tsconfig.json && node scripts/typecheck-stories.mjs",
-        "build": "yarn typecheck && yarn workspace @story/single-player build && yarn workspace @story/visualizer-client build && yarn workspace @story/visualizer-landing-page build && yarn workspace @story/multi-engine-client build",
+        "build": "yarn typecheck && yarn workspace @story/single-player build && yarn workspace @story/single-player build:standalone && yarn workspace @story/visualizer-client build && yarn workspace @story/visualizer-landing-page build && yarn workspace @story/multi-engine-client build",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",

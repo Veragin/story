@@ -11,3 +11,5 @@ export const engineUrl = (storyId: string) => `${engineBase()}/?story=${encodeUR
 
 // same-origin via the `/api` proxy so the session cookie is sent
 export const exportUrl = (storyId: string) => buildPath(storyId, 'exportStory', {});
+
+export const exportWebUrl = (storyId: string) => buildPath(storyId, 'exportPlayable', {});

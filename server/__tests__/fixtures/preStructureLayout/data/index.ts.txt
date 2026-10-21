@@ -34,7 +34,7 @@ export type * from './TWorldState';
 export * from './items/itemInfo';
 
 /* No art here: an image is the `.png` next to the passage / character / npc file it belongs
-   to, found by convention (SinglePlayer's `src/images.ts` globs them). Nothing under `data/`
+   to, found by convention (SinglePlayer's `src/images.ts` reads them from the play manifest). Nothing under `data/`
    uses `import.meta.glob`, so this barrel — which the MultiEngine server imports to hand
    `register` / `itemInfo` to `@story/core` — stays runnable under plain node (§2). `data/assets/story.png` is only the
    apps' favicon. */

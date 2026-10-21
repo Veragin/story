@@ -132,6 +132,20 @@ describe('StoriesStore', () => {
         expect(navigate).toHaveBeenCalledWith('/api/stories/open/export');
     });
 
+    it('exports for the web through the same-origin /api path once unlocked', async () => {
+        const { store, navigate } = setup();
+        await store.load();
+        await store.exportForWeb('open');
+        expect(navigate).toHaveBeenCalledWith('/api/stories/open/export/web');
+
+        const exporting = store.exportForWeb('locked');
+        await tick();
+        expect(store.prompt?.id).toBe('locked');
+        store.cancelPassword();
+        await exporting;
+        expect(navigate).toHaveBeenCalledTimes(1);
+    });
+
     it('plays a public story without the password, and asks for a private one', async () => {
         const { store, navigate } = setup();
         await store.load();

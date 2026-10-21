@@ -219,7 +219,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 - **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations, and the editor-only `GET`s `getGit` and `getGitLog`, always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
 - **Stories** (`server/src/stories/`): anyone may list, create or import a story. Create copies the template, writes a `tsconfig.json` and an empty `map.json` of `mapSize`, inserts the story's row (scrypt hash) and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. Export and import (multipart: the zip + the metadata fields) are in [`Server.md`](Server.md#stories). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
 - **Zips** (`server/src/stories/zip.ts`): a story zip holds `tsconfig.json`, `data/`, `types/` at its root, no metadata. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes.
-- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `getPlayFile` (a story file), `exportStory` (the zip) and the body of `importStory` (`multipart/form-data`).
+- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `getPlayFile` (a story file), `exportStory` / `exportPlayable` (the zips) and the body of `importStory` (`multipart/form-data`).
 - A `PUT` or `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
 - `PUT` bodies are **partial** (`{ version, ...changedFields }`; an omitted field is left untouched). The map and the two layouts are the exception: their `PUT` replaces the whole document.
 - `create*` routes, `importStory`, `addChapterCharacter` and `setupGit` answer `201`; `login`, `logout` and `deleteGitConfig` answer `204`; everything else answers `200`.
@@ -241,6 +241,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | `getProject`                                | `GET`            | `/project` (id/title lists of everything)         |
 | `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (the story's row without the password)    |
 | `exportStory`                               | `GET`            | `/export` (`<storyId>.zip`, an attachment)        |
+| `exportPlayable`                            | `GET`            | `/export/web` (`<storyId>-web.zip`, standalone)   |
 | `createChapter`                             | `POST`           | `/chapters`                                       |
 | `get/update/deleteChapter`                  | `GET/PUT/DELETE` | `/chapters/:chapterId`                            |
 | `addChapterCharacter`                       | `POST`           | `/chapters/:chapterId/characters`                 |

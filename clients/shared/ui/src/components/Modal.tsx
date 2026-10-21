@@ -41,8 +41,8 @@ const SCont = styled(Column)`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 800px;
-    max-height: 600px;
+    width: min(800px, 92vw);
+    max-height: 85vh;
     background-color: black;
     border-radius: 12px;
     gap: ${spacingCss(2)};
@@ -51,6 +51,7 @@ const SCont = styled(Column)`
 `;
 
 const SHeader = styled(Row)`
+    flex-shrink: 0;
     background-color: #686868;
     padding: ${spacingCss(2)};
     justify-content: space-between;
@@ -62,5 +63,6 @@ const SBody = styled(Column)`
     padding: ${spacingCss(2)};
     gap: ${spacingCss(1)};
     flex: 1;
+    min-height: 0;
     overflow: auto;
 `;

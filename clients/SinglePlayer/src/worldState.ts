@@ -18,6 +18,5 @@ export const startStory = (story: TStoryModule, storyId: string) => {
     window.s = s;
     window.e = e;
 
-    void e.handleAutoStart();
     return { s, e };
 };

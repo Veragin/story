@@ -10,7 +10,7 @@ import type {
     TUpdateStoryBody,
 } from '@story/protocol';
 import { errorMessage, isApiError, type TLandingApi } from './api';
-import { engineUrl, exportUrl, visualizerUrl } from './links';
+import { engineUrl, exportUrl, exportWebUrl, visualizerUrl } from './links';
 import type { TGitChange } from './storyForm';
 
 /** `gitError`: the story was created, connecting it to the repository failed. */
@@ -123,6 +123,10 @@ export class StoriesStore {
 
     async exportStory(id: string) {
         if (await this.requireUnlocked(id)) this.navigate(exportUrl(id));
+    }
+
+    async exportForWeb(id: string) {
+        if (await this.requireUnlocked(id)) this.navigate(exportWebUrl(id));
     }
 
     async create(body: TCreateStoryBody, git: TSetupGitBody | null): Promise<TCreateResult> {
