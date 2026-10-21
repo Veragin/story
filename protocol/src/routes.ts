@@ -43,6 +43,7 @@ import type {
     TUpdatePassageBody,
 } from './dto/passage';
 import type { TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type { TPlayManifestDto } from './dto/play';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
 import type {
@@ -159,6 +160,9 @@ export const STORY_ROUTES = {
     getImage: { method: 'GET', path: '/images/:owner/:id', access: 'read' },
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
+
+    getPlayManifest: { method: 'GET', path: '/play', access: 'read' },
+    getPlayFile: { method: 'GET', path: '/play/:file', access: 'read' },
 
     getMap: { method: 'GET', path: '/maps/:mapId', access: 'read' },
     updateMap: { method: 'PUT', path: '/maps/:mapId', access: 'write' },
@@ -339,6 +343,13 @@ export type TApiSpec = {
     /** The PNG itself, not JSON. Use `TImageDto.url`. */
     getImageFile: { body: undefined; response: never };
     uploadImage: { body: TUploadImageBody; response: TImageDto };
+
+    getPlayManifest: { body: undefined; response: TPlayManifestDto };
+    /**
+     * A file of `TPlayManifestDto.files`, not JSON; `:file` is its story-relative path. `ETag` is its
+     * version, `cache-control: no-cache` (stories are edited live).
+     */
+    getPlayFile: { body: undefined; response: never };
 
     getMap: { body: undefined; response: TMapDto };
     updateMap: { body: TUpdateMapBody; response: TMapDto };

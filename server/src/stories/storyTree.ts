@@ -5,7 +5,7 @@ import { HttpError } from '../common/HttpError';
 import { readBytesOrNull } from '../json/atomicWrite';
 import { MAP_FILE } from '../json/mapFile';
 import { storyMapSize } from './storyInput';
-import { STORY_TOP_DIRS, STORY_TOP_FILES } from './zip';
+import { STORY_TOP_DIRS, STORY_TOP_FILES } from './storyFiles';
 
 const STORY_ENTRIES = [...STORY_TOP_FILES, ...STORY_TOP_DIRS.map((d) => `${d}/`)].join(', ');
 

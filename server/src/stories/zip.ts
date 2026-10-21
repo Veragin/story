@@ -1,13 +1,10 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
 import { lstatOrNull } from '../common/fileStat';
 import { errorMessage, HttpError } from '../common/HttpError';
-import { isTempFile } from '../json/atomicWrite';
 import { STORY_FILE } from './storyFile';
-
-export const STORY_TOP_FILES = ['tsconfig.json'];
-export const STORY_TOP_DIRS = ['data', 'types'];
+import { listStoryDirFiles, STORY_TOP_DIRS, STORY_TOP_FILES } from './storyFiles';
 
 const MAX_ENTRIES = 10_000;
 const MAX_UNPACKED_BYTES = 200 * 1024 * 1024;
@@ -15,28 +12,12 @@ const MAX_UNPACKED_BYTES = 200 * 1024 * 1024;
 // fixed so an export depends only on content; DOS time is local and starts in 1980
 const ZIP_MTIME = new Date(1980, 0, 2);
 
-const exportedFiles = async (storyDir: string): Promise<[string, string][]> => {
-    const out: [string, string][] = [];
-    const walk = async (rel: string) => {
-        const entries = await readdir(path.join(storyDir, rel), { withFileTypes: true });
-        for (const e of entries) {
-            const childRel = `${rel}/${e.name}`;
-            if (e.isDirectory()) {
-                if (e.name !== 'node_modules') await walk(childRel);
-            } else if (e.isFile() && !isTempFile(e.name)) {
-                out.push([childRel, path.join(storyDir, childRel)]);
-            }
-            // anything else (a symlink, a socket) is not part of a story
-        }
-    };
+const exportedFiles = async (storyDir: string): Promise<string[]> => {
+    const topFiles: string[] = [];
     for (const name of STORY_TOP_FILES) {
-        const abs = path.join(storyDir, name);
-        if ((await lstatOrNull(abs))?.isFile()) out.push([name, abs]);
+        if ((await lstatOrNull(path.join(storyDir, name)))?.isFile()) topFiles.push(name);
     }
-    for (const name of STORY_TOP_DIRS) {
-        if ((await lstatOrNull(path.join(storyDir, name)))?.isDirectory()) await walk(name);
-    }
-    return out;
+    return [...topFiles, ...(await listStoryDirFiles(storyDir))];
 };
 
 // `added` fills in files the folder lacks; a file on disk wins
@@ -45,7 +26,9 @@ export const zipStory = async (
     added: ReadonlyMap<string, Uint8Array> = new Map()
 ): Promise<Uint8Array> => {
     const entries = new Map(added);
-    for (const [rel, abs] of await exportedFiles(storyDir)) entries.set(rel, new Uint8Array(await readFile(abs)));
+    for (const rel of await exportedFiles(storyDir)) {
+        entries.set(rel, new Uint8Array(await readFile(path.join(storyDir, rel))));
+    }
     const files: Zippable = {};
     for (const [rel, bytes] of [...entries].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) files[rel] = bytes;
     return zipSync(files, { level: 6, mtime: ZIP_MTIME });
