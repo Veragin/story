@@ -1,13 +1,24 @@
 import { useEffect } from 'react';
-import { Button, styled, Tab, Tabs, Typography } from '@mui/material';
+import {
+    Button,
+    IconButton,
+    styled,
+    Tab,
+    Tabs,
+    Tooltip,
+    Typography,
+} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, playerUrl, STORY_ID } from '../api';
 import { GitButton } from './GitButton';
+import { modals } from './modals';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
+import { StorySettingsDialog } from './StorySettingsDialog';
 import { storyInfo } from './storyInfoStore';
 
 type TTab = {
@@ -46,6 +57,11 @@ const TABS: TTab[] = [
 
 const TOP_BAR_HEIGHT = 48;
 
+const openStorySettings = () =>
+    modals.open((close) => (
+        <StorySettingsDialog store={storyInfo} onClose={close} />
+    ));
+
 export const TopBar = observer(() => {
     const active =
         TABS.find((t) => t.pages.includes(router.route.page))?.value ?? false;
@@ -65,6 +81,17 @@ export const TopBar = observer(() => {
             <SStoryName variant="subtitle2" title={STORY_ID}>
                 {storyInfo.info?.name ?? STORY_ID}
             </SStoryName>
+            <Tooltip title={_('Story settings')}>
+                <SSettings
+                    color="inherit"
+                    size="small"
+                    aria-label={_('Story settings')}
+                    data-action="story-settings"
+                    onClick={openStorySettings}
+                >
+                    <SettingsIcon fontSize="small" />
+                </SSettings>
+            </Tooltip>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -122,6 +149,12 @@ const SStoryName = styled(Typography)`
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 600;
+`;
+
+const SSettings = styled(IconButton)`
+    flex-shrink: 0;
+    margin-left: -${spacingCss(1.5)};
+    opacity: 0.8;
 `;
 
 const STabs = styled(Tabs)`

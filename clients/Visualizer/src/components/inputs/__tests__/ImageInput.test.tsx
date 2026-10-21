@@ -99,6 +99,28 @@ describe('ImageInput', () => {
         expect(onChange).toHaveBeenCalledWith('Annie at the well');
     });
 
+    it('has no description without onDescriptionChange', async () => {
+        await mountAsync(
+            <ImageInput
+                api={fakeApi(image('data:image/png;base64,AAAA'))}
+                owner="characters"
+                id="annie"
+            />
+        );
+        expect($('[data-action="toggle-description"]')).toBeNull();
+        expect($('[data-action="remove-image"]')).not.toBeNull();
+        unmount();
+        await mountAsync(
+            <ImageInput
+                api={fakeApi(image(null))}
+                owner="characters"
+                id="annie"
+            />
+        );
+        expect(textarea()).toBeNull();
+        expect($('[data-action="upload-image"]')).not.toBeNull();
+    });
+
     it('converts code that is not a plain string to its source text', async () => {
         const onChange = await render(image('data:image/png;base64,AAAA'), {
             code: 's.name + "!"',

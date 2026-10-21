@@ -1,11 +1,12 @@
 import path from 'node:path';
-import { LANDING_IMAGE_FILE, type TPlayManifestDto } from '@story/protocol';
+import type { TPlayManifestDto } from '@story/protocol';
 import { lstatOrNull } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import type { TVersionedFile } from '../common/versionedFile';
 import type { TVersionedStoryFile } from '../database/repositories/StoryRepository';
 import { version } from '../events/version';
 import { isTempFile, readBytesOrNull } from '../json/atomicWrite';
+import { hasLandingImage } from '../stories/landingImage';
 import { listStoryDirFiles, STORY_TOP_DIRS } from '../stories/storyFiles';
 
 const PLAY_CONTENT_TYPES = new Map([
@@ -19,9 +20,6 @@ const contentTypeOf = (rel: string) => PLAY_CONTENT_TYPES.get(path.posix.extname
 
 export const listPlayFiles = async (storyDir: string): Promise<string[]> =>
     (await listStoryDirFiles(storyDir, PLAY_SKIPPED_DIRS)).filter((rel) => contentTypeOf(rel) !== undefined).sort();
-
-export const hasLandingImage = async (storyDir: string): Promise<boolean> =>
-    (await lstatOrNull(path.join(storyDir, LANDING_IMAGE_FILE)))?.isFile() ?? false;
 
 // picks the fields one by one: the row also holds the password hash
 export const buildPlayManifest = async (

@@ -1,15 +1,21 @@
 import type { TVersion, TVersionedBody } from './common';
 
-/** An owner's image is the `.png` next to its `.ts` file, same basename. PNG only. */
-export const IMAGE_OWNERS = ['passages', 'characters', 'npcs'] as const;
+/**
+ * An owner's image is the `.png` next to its `.ts` file, same basename. PNG only. The `story` owner has one image,
+ * `STORY_LANDING_IMAGE_ID`, at `LANDING_IMAGE_FILE`.
+ */
+export const IMAGE_OWNERS = ['passages', 'characters', 'npcs', 'story'] as const;
 export type TImageOwner = (typeof IMAGE_OWNERS)[number];
 
 export const isImageOwner = (value: string): value is TImageOwner =>
     (IMAGE_OWNERS as readonly string[]).includes(value);
 
+/** The id of the `story` owner's only image. */
+export const STORY_LANDING_IMAGE_ID = 'landing';
+
 export type TImageDto = {
     owner: TImageOwner;
-    /** A full passage id, or a character / npc id. */
+    /** A full passage id, a character / npc id, or `STORY_LANDING_IMAGE_ID`. */
     id: string;
     /** Where the `.png` is or an upload would go. */
     file: string;
@@ -24,6 +30,9 @@ export type TUploadImageBody = TVersionedBody & {
     /** Base64, no `data:` prefix. */
     data: string;
 };
+
+/** `version` is the image's current one. */
+export type TDeleteImageBody = TVersionedBody;
 
 /** Its base64 still fits the server's JSON body limit. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;

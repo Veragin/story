@@ -197,6 +197,7 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
 
         getImage: (owner, id) => request('getImage', { owner, id }),
         uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),
+        deleteImage: (owner, id, body) => request('deleteImage', { owner, id }, body),
 
         getMap: (mapId) => request('getMap', { mapId }),
         updateMap: (mapId, body) => request('updateMap', { mapId }, body),

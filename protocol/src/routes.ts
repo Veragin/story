@@ -42,7 +42,7 @@ import type {
     TPassageDto,
     TUpdatePassageBody,
 } from './dto/passage';
-import type { TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type { TDeleteImageBody, TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
 import type { TPlayManifestDto } from './dto/play';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
@@ -161,6 +161,7 @@ export const STORY_ROUTES = {
     getImage: { method: 'GET', path: '/images/:owner/:id', access: 'read' },
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
+    deleteImage: { method: 'DELETE', path: '/images/:owner/:id', access: 'write' },
 
     getPlayManifest: { method: 'GET', path: '/play', access: 'read' },
     getPlayFile: { method: 'GET', path: '/play/:file', access: 'read' },
@@ -346,6 +347,8 @@ export type TApiSpec = {
     /** The PNG itself, not JSON. Use `TImageDto.url`. */
     getImageFile: { body: undefined; response: never };
     uploadImage: { body: TUploadImageBody; response: TImageDto };
+    /** Answers the image as it is now: none. Deleting a missing image (`version: ''`) changes nothing. */
+    deleteImage: { body: TDeleteImageBody; response: TImageDto };
 
     getPlayManifest: { body: undefined; response: TPlayManifestDto };
     /**

@@ -15,6 +15,11 @@ export class StoryInfoStore {
         return this.loading;
     };
 
+    reload = (): Promise<void> => {
+        this.loading = this.fetchInfo();
+        return this.loading;
+    };
+
     private fetchInfo = async () => {
         try {
             const info = await this.api.getStoryInfo();

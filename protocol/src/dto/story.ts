@@ -33,7 +33,11 @@ export type TStoryDto = {
 
 export type TStoryListItemDto = TStoryDto & { unlocked: boolean };
 
-export type TStoryInfoDto = TStoryDto & TVersioned;
+export type TStoryInfoDto = TStoryDto &
+    TVersioned & {
+        /** `LANDING_IMAGE_FILE` exists; derived from the file, not stored. Upload it as the `story` owner's image. */
+        hasLandingImage: boolean;
+    };
 
 /** `password` is plain; the server stores only its hash. */
 export type TCreateStoryBody = Omit<TStoryDto, 'id'> & { password: string };

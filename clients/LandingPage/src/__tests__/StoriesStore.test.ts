@@ -47,7 +47,11 @@ const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {
         if (method === 'GET' && url === '/api/stories/open/info') {
             const status = infoAnswers.shift() ?? 200;
             if (status === 401) return json(401, { error: 'unauthorized', message: 'locked' });
-            const info: TStoryInfoDto & { unlocked?: boolean } = { ...stories[1], version: 'v1' };
+            const info: TStoryInfoDto & { unlocked?: boolean } = {
+                ...stories[1],
+                version: 'v1',
+                hasLandingImage: false,
+            };
             delete info.unlocked;
             return json(200, info);
         }

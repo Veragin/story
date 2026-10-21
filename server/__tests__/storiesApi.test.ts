@@ -227,9 +227,22 @@ describe('list and info', () => {
         expect((await put({ version: info.body.version, color: 'red' })).status).toBe(400);
 
         // the whole DTO sent back: an unchanged mapSize and id are fine
-        const edited = await put({ ...info.body, name: 'Alpha 2', public: true, password: 'new-password' });
+        const edited = await put({
+            ...info.body,
+            name: 'Alpha 2',
+            public: true,
+            password: 'new-password',
+            hasLandingImage: true,
+        });
         expect(edited.status).toBe(200);
-        expect(edited.body).toMatchObject({ id, name: 'Alpha 2', public: true, author: 'Tester', version: '2' });
+        expect(edited.body).toMatchObject({
+            id,
+            name: 'Alpha 2',
+            public: true,
+            author: 'Tester',
+            version: '2',
+            hasLandingImage: false,
+        });
         expect(await rootEntries()).toContain('alpha'); // the id never changes on rename
 
         const stale = await put({ version: info.body.version, name: 'Lost' });

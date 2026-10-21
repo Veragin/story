@@ -4,7 +4,7 @@ import type { Request, Response } from 'express';
 import { ProtocolRoute } from '../../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../../common/RouteParams';
 import { sendVersionedFile } from '../../common/versionedFile';
-import { readImage, readImageFile, uploadImage } from '../../project/images';
+import { deleteImage, readImage, readImageFile, uploadImage } from '../../project/images';
 import type { TServerContext } from '../../storyContext/serverContext';
 import { StoryCtx } from '../../storyContext/StoryCtx';
 
@@ -36,5 +36,14 @@ export class ImagesController {
         @Body() body: TRouteBody<'uploadImage'>
     ): Promise<TRouteResponse<'uploadImage'>> {
         return uploadImage(ctx, owner, id, body);
+    }
+
+    @ProtocolRoute('deleteImage')
+    deleteImage(
+        @StoryCtx() ctx: TServerContext,
+        @RouteParams() { owner, id }: THandlerParams<'deleteImage'>,
+        @Body() body: TRouteBody<'deleteImage'>
+    ): Promise<TRouteResponse<'deleteImage'>> {
+        return deleteImage(ctx, owner, id, body);
     }
 }
