@@ -24,8 +24,8 @@ services:
       DB_NAME: story
       # dev only: encrypts the stored git tokens; production sets its own in docker/.env
       GIT_TOKEN_KEY: L+dnTukTcCDqLBNIOfteI4CzvsvD7tucPgyOafLIREw=
-      # "Export for web" zips this file: `yarn workspace @story/single-player build:standalone` first
-      SINGLE_PLAYER_STANDALONE_HTML: /app/clients/SinglePlayer/dist-standalone/index.html
+      # "Export for web" zips this folder: `yarn workspace @story/single-player build:standalone` first
+      SINGLE_PLAYER_STANDALONE_DIR: /app/clients/SinglePlayer/dist-standalone
     depends_on:
       mysql:
         condition: service_healthy

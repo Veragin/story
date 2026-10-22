@@ -47,8 +47,14 @@ export const ScreenTemplate = ({ passage }: Props) => {
 const SContainer = styled(Row)`
     width: 100%;
     flex: 1;
+    min-height: 0;
     gap: ${spacingCss(2)};
     overflow: hidden;
+
+    ${({ theme }) => theme.breakpoints.down('sm')} {
+        flex-direction: column;
+        overflow: auto;
+    }
 `;
 
 const SImg = styled('img')`
@@ -58,6 +64,13 @@ const SImg = styled('img')`
     aspect-ratio: 1;
     pointer-events: none;
     user-select: none;
+
+    ${({ theme }) => theme.breakpoints.down('sm')} {
+        flex-shrink: 0;
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+    }
 `;
 
 const SContent = styled('div')`
@@ -67,6 +80,12 @@ const SContent = styled('div')`
     flex: 1;
     gap: ${spacingCss(5)};
     overflow: auto;
+
+    ${({ theme }) => theme.breakpoints.down('sm')} {
+        padding: ${spacingCss(2)} 4%;
+        gap: ${spacingCss(3)};
+        overflow: visible;
+    }
 `;
 
 const SText = styled('div')`

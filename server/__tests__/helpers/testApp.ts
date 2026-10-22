@@ -11,7 +11,7 @@ import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
 import { SessionService } from '../../src/auth/SessionService';
 import { configureExpressApp, EXPRESS_APP_OPTIONS } from '../../src/common/expressApp';
 import { GIT_OPTIONS, type TGitOptions } from '../../src/git/gitOptions';
-import { STANDALONE_PLAYER_HTML } from '../../src/play/standalonePlayer';
+import { STANDALONE_PLAYER_DIR } from '../../src/play/standalonePlayer';
 import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
 import type { TStoryFile } from '../../src/stories/storyFile';
 import { readStorySeed } from '../../src/stories/storySeed';
@@ -39,7 +39,7 @@ export type TTestAppOptions = {
     truncate?: boolean;
     storiesRoot?: string;
     stories?: readonly TTestStory[];
-    standalonePlayerHtml?: string;
+    standalonePlayerDir?: string;
     watch?: boolean;
     batchMs?: number;
     idleMs?: number;
@@ -74,7 +74,7 @@ const TEST_AUTH_OPTIONS: TAuthOptions = {
     allowedOrigins: DEFAULT_ALLOWED_ORIGINS,
 };
 
-const STUB_STANDALONE_PLAYER_HTML = path.resolve(import.meta.dirname, '../fixtures/standalone-player.html');
+const STUB_STANDALONE_PLAYER_DIR = path.resolve(import.meta.dirname, '../fixtures/standalonePlayer');
 
 const exists = async (file: string) => (await stat(file).catch(() => null)) !== null;
 
@@ -87,7 +87,7 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // A fresh app on the shared `story_test` database; `truncate: false` keeps the rows of an earlier app.
 // Without `storiesRoot` the app gets an empty temp root, removed on close. Each of `stories` gets a
 // copy of the example (unless its folder exists) and a row with the example's metadata (password `example`).
-// The web export zips a stub player unless `standalonePlayerHtml` names another file.
+// The web export zips a stub player unless `standalonePlayerDir` names another folder.
 // The story contexts do not watch the files unless `watch: true`. Git is unavailable unless `git.tokenKey` is set.
 export const createTestApp = async ({
     controllers = [],
@@ -97,7 +97,7 @@ export const createTestApp = async ({
     truncate = true,
     storiesRoot,
     stories = [],
-    standalonePlayerHtml,
+    standalonePlayerDir,
     watch = false,
     batchMs,
     idleMs = DEFAULT_STORY_CONTEXTS_OPTIONS.idleMs,
@@ -119,8 +119,8 @@ export const createTestApp = async ({
         .useValue(root)
         .overrideProvider(STORY_CONTEXTS_OPTIONS)
         .useValue(contextsOptions)
-        .overrideProvider(STANDALONE_PLAYER_HTML)
-        .useValue(standalonePlayerHtml ?? STUB_STANDALONE_PLAYER_HTML)
+        .overrideProvider(STANDALONE_PLAYER_DIR)
+        .useValue(standalonePlayerDir ?? STUB_STANDALONE_PLAYER_DIR)
         .compile();
     const app = moduleRef.createNestApplication<NestExpressApplication>({ ...EXPRESS_APP_OPTIONS, logger: false });
     configureExpressApp(app);

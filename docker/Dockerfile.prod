@@ -17,9 +17,9 @@ RUN chown node:node /app
 USER node
 COPY --chown=node:node . .
 RUN yarn install --immutable
-# one self-contained `index.html` with no URL baked in: the web export runs on any static host
+# `index.html` + `player/` with no URL baked in: the web export runs on any static host
 RUN yarn workspace @story/single-player build:standalone
-ENV SINGLE_PLAYER_STANDALONE_HTML=/app/clients/SinglePlayer/dist-standalone/index.html
+ENV SINGLE_PLAYER_STANDALONE_DIR=/app/clients/SinglePlayer/dist-standalone
 # The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
 # `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
 RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/example && chmod +x docker/prod-entrypoint.sh

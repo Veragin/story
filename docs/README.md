@@ -107,7 +107,7 @@ The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE
 | `LANDING_BASE`    | landing page | `/`     | Vite `base` of the build.                                                                                                                        |
 | `PLAYER_BASE`     | SinglePlayer | `/`     | Vite `base` of the build (`/play/`). API calls are the absolute `/api/…`, so only asset URLs change.                                             |
 
-The app image also builds the standalone player (`build:standalone`, one self-contained `index.html` with `base` `./`) and sets `SINGLE_PLAYER_STANDALONE_HTML` to it, so **Export for web** works ([`SinglePlayerStandalone.md`](SinglePlayerStandalone.md)).
+The app image also builds the standalone player (`build:standalone`, `index.html` + `player/` with `base` `./`) and sets `SINGLE_PLAYER_STANDALONE_DIR` to it, so **Export for web** works ([`SinglePlayerStandalone.md`](SinglePlayerStandalone.md)).
 
 ## Data structure
 

@@ -12,8 +12,6 @@ import { createTestApp, readExampleStoryFile, type TTestApp } from './helpers/te
 let app: TTestApp;
 let playerDir: string;
 
-const playerHtml = () => path.join(playerDir, 'index.html');
-
 beforeEach(async () => {
     playerDir = await mkdtemp(path.join(tmpdir(), 'standalone-player-'));
     app = await createTestApp({
@@ -21,7 +19,7 @@ beforeEach(async () => {
             { id: 'open', public: true },
             { id: 'closed', public: false },
         ],
-        standalonePlayerHtml: playerHtml(),
+        standalonePlayerDir: playerDir,
     });
 });
 
@@ -194,10 +192,17 @@ const exportPlayable = (storyId: string, cookie?: string) =>
     fetch(app.base + buildPath(storyId, 'exportPlayable', {}), { headers: cookie ? { cookie } : {} });
 
 describe('exportPlayable', () => {
-    const PLAYER_HTML = '<!doctype html><title>player</title>';
+    const PLAYER_HTML = '<!doctype html><title>player</title><script type="module" src="./player/main.js"></script>';
+    const PLAYER_JS = 'export {};';
 
-    it('zips the standalone player, the manifest and the story files', async () => {
-        await writeFile(playerHtml(), PLAYER_HTML);
+    const buildPlayer = async () => {
+        await writeFile(path.join(playerDir, 'index.html'), PLAYER_HTML);
+        await mkdir(path.join(playerDir, 'player'));
+        await writeFile(path.join(playerDir, 'player', 'main.js'), PLAYER_JS);
+    };
+
+    it('zips the standalone player with its scripts, the manifest and the story files', async () => {
+        await buildPlayer();
         const res = await exportPlayable('open');
         expect(res.status).toBe(200);
         expect(res.headers.get('content-type')).toBe('application/zip');
@@ -206,18 +211,21 @@ describe('exportPlayable', () => {
         const zip = unzipSync(new Uint8Array(await res.arrayBuffer()));
         const text = (name: string) => new TextDecoder().decode(zip[name]);
         expect(text('index.html')).toBe(PLAYER_HTML);
+        expect(text('player/main.js')).toBe(PLAYER_JS);
         expect(JSON.parse(text(PLAY_MANIFEST_FILE))).toEqual((await manifest('open')).body);
         const { files }: { files: string[] } = JSON.parse(text(PLAY_MANIFEST_FILE));
         for (const file of files) {
             expect(Buffer.from(zip[file]).equals(await readFile(abs('open', file))), file).toBe(true);
         }
         expect(
-            Object.keys(zip).every((name) => /^(index\.html|play\.json|tsconfig\.json|(data|types)\/.+)$/.test(name))
+            Object.keys(zip).every((name) =>
+                /^(index\.html|play\.json|tsconfig\.json|(data|types|player)\/.+)$/.test(name)
+            )
         ).toBe(true);
     });
 
     it('never carries the password', async () => {
-        await writeFile(playerHtml(), PLAYER_HTML);
+        await buildPlayer();
         const stored = await app.stories.read('open');
         const zip = unzipSync(new Uint8Array(await (await exportPlayable('open')).arrayBuffer()));
         const manifestText = new TextDecoder().decode(zip[PLAY_MANIFEST_FILE]);
@@ -227,7 +235,7 @@ describe('exportPlayable', () => {
     });
 
     it('needs the story`s grant like the story export', async () => {
-        await writeFile(playerHtml(), PLAYER_HTML);
+        await buildPlayer();
         expect((await exportPlayable('closed')).status).toBe(401);
         const cookie = await login(app.base, 'closed');
         expect((await exportPlayable('closed', cookie)).status).toBe(200);

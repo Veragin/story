@@ -40,8 +40,8 @@ const gitTokenKey = optionalText
 export const ENV_SCHEMA = z.object({
     PORT: port.default(DEFAULT_PORT),
     STORIES_ROOT: optionalText.transform((value) => path.resolve(REPO_ROOT, value || 'stories')),
-    SINGLE_PLAYER_STANDALONE_HTML: optionalText.transform((value) =>
-        path.resolve(REPO_ROOT, value || 'clients/SinglePlayer/dist-standalone/index.html')
+    SINGLE_PLAYER_STANDALONE_DIR: optionalText.transform((value) =>
+        path.resolve(REPO_ROOT, value || 'clients/SinglePlayer/dist-standalone')
     ),
     DB_HOST: z.string().trim().min(1).default('mysql'),
     DB_PORT: port.default(3306),

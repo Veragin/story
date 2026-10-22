@@ -10,13 +10,13 @@ import { StoryRepository } from '../database/repositories/StoryRepository';
 import type { TServerContext } from '../storyContext/serverContext';
 import { StoryCtx } from '../storyContext/StoryCtx';
 import { buildPlayManifest, readPlayFile } from './playFiles';
-import { STANDALONE_PLAYER_HTML, zipPlayable } from './standalonePlayer';
+import { STANDALONE_PLAYER_DIR, zipPlayable } from './standalonePlayer';
 
 @Controller()
 export class PlayController {
     constructor(
         private readonly stories: StoryRepository,
-        @Inject(STANDALONE_PLAYER_HTML) private readonly standalonePlayerHtml: string
+        @Inject(STANDALONE_PLAYER_DIR) private readonly standalonePlayerDir: string
     ) {}
 
     private async manifest(storyId: string, storyDir: string): Promise<TPlayManifestDto> {
@@ -50,7 +50,7 @@ export class PlayController {
         @Res() res: Response
     ): Promise<void> {
         const manifest = await this.manifest(storyId, project.root);
-        const zip = await zipPlayable(project.root, manifest, this.standalonePlayerHtml);
+        const zip = await zipPlayable(project.root, manifest, this.standalonePlayerDir);
         sendAttachment(res, `${storyId}-web.zip`, STORY_ZIP_CONTENT_TYPE, zip);
     }
 }
