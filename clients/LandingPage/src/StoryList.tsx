@@ -33,7 +33,7 @@ export const StoryList = observer(({ store }: { store: StoriesStore }) => {
                     story={story}
                     onEdit={() => void edit(story.id)}
                     onOpen={() => void store.open(story.id)}
-                    onPlay={() => void store.play(story.id)}
+                    onPlay={() => store.play(story.id)}
                     onExport={() => void store.exportStory(story.id)}
                     onExportWeb={() => void store.exportForWeb(story.id)}
                 />

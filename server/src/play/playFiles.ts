@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { TPlayManifestDto } from '@story/protocol';
-import { lstatOrNull } from '../common/fileStat';
+import { isRegularFileWithin } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import type { TVersionedFile } from '../common/versionedFile';
 import type { TVersionedStoryFile } from '../database/repositories/StoryRepository';
@@ -50,16 +50,6 @@ const playFileOf = (rel: string): { segments: string[]; contentType: string } =>
         !isTempFile(rel);
     if (!playable) throw HttpError.badRequest(`Not a playable story file: ${JSON.stringify(rel)}`);
     return { segments, contentType };
-};
-
-// a symlink anywhere on the way could lead out of the story
-const isRegularFileWithin = async (storyDir: string, segments: readonly string[]): Promise<boolean> => {
-    for (let i = 1; i <= segments.length; i++) {
-        const stats = await lstatOrNull(path.join(storyDir, ...segments.slice(0, i)));
-        const ok = i < segments.length ? stats?.isDirectory() : stats?.isFile();
-        if (!ok) return false;
-    }
-    return true;
 };
 
 export const readPlayFile = async (storyDir: string, rel: string): Promise<TVersionedFile> => {

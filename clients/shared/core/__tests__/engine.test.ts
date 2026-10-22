@@ -4,7 +4,7 @@ import { createWorldState, type Engine, type TPassagesModule } from '@story/core
 import { itemInfo, register } from '@story/data';
 import type { TWorldState } from '@story/data';
 import type { TChapterId, TChapterPassage } from '@story/types';
-import { newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
+import { newSession, PAST_ANNIE_START, TEST_STORY_ID, waitForPassage } from './support/engine';
 
 // `Array.prototype.at` is ES2022; the libs target ES2020
 const last = <T>(items: T[]): T => items[items.length - 1];
@@ -126,7 +126,7 @@ describe('Engine turn loop', () => {
         const { e } = newSession();
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage('village-thomas-forest', PAST_ANNIE_START);
         await waitForPassage(e, 'village-thomas-forest');
 
         // Annie is auto-played; only the main character's passages reach the store
@@ -353,11 +353,11 @@ describe('History bookkeeping', () => {
     it('hands the turn to whichever character is furthest behind', () => {
         const { s, e } = newSession();
 
-        // Both characters start at the same second; the main character breaks the tie.
+        // Thomas's village starts before Annie's kingdom.
         expect(e.history.getTurn().passageId).toBe('village-thomas-intro');
 
-        // Book Thomas an hour into the future and Annie is now the one lagging.
-        e.history.addTurn({ passageId: 'village-thomas-forest', time: Time.fromS(s.time.s + 3600) });
+        // Book Thomas past Annie's start and she is now the one lagging.
+        e.history.addTurn({ passageId: 'village-thomas-forest', time: s.time.moveToFutureBy(PAST_ANNIE_START) });
         expect(e.history.getTurn().passageId).toBe('kingdom-annie-intro');
     });
 

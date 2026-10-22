@@ -8,6 +8,7 @@ export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVi
     characterId: 'thomas',
     id: 'forest',
 
+    /** Annie gets healed when she is weak. */
     execute: () => {
         if (s.characters.annie.health < 50) {
             s.characters.annie.health += 50;

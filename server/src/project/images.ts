@@ -10,9 +10,10 @@ import {
     type TUploadImageBody,
 } from '@story/protocol';
 import { version } from '../events/version';
+import { isRegularFileWithin } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import { readBytesOrNull } from '../json/atomicWrite';
-import { hasLandingImage, landingImagePath } from '../stories/landingImage';
+import { landingImagePath } from '../stories/landingImage';
 import { findEntitySource } from './readers/entities';
 import type { SourceProject } from './SourceProject';
 import { findPassageFile } from './story';
@@ -30,9 +31,8 @@ const imageFile = (sp: SourceProject, owner: TImageOwner, id: string): string =>
     return siblingPng(tsFile);
 };
 
-// the landing image counts only as a regular file, as in `hasLandingImage`
-const readImageBytes = async (sp: SourceProject, owner: TImageOwner, abs: string): Promise<Buffer | null> =>
-    owner === 'story' && !(await hasLandingImage(sp.root.root)) ? null : readBytesOrNull(abs);
+const readImageBytes = async (sp: SourceProject, abs: string): Promise<Buffer | null> =>
+    (await isRegularFileWithin(sp.root.root, sp.root.rel(abs).split('/'))) ? readBytesOrNull(abs) : null;
 
 const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, bytes: Uint8Array | null): TImageDto => {
     const v = bytes === null ? EMPTY_VERSION : version(bytes);
@@ -48,13 +48,13 @@ const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, b
 export const readImage = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<TImageDto> => {
         const abs = imageFile(sp, owner, id);
-        return toDto(sp, owner, id, abs, await readImageBytes(sp, owner, abs));
+        return toDto(sp, owner, id, abs, await readImageBytes(sp, abs));
     });
 
 export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string) =>
     sp.run(async (): Promise<{ bytes: Buffer; version: string }> => {
         const abs = imageFile(sp, owner, id);
-        const bytes = await readImageBytes(sp, owner, abs);
+        const bytes = await readImageBytes(sp, abs);
         if (bytes === null) throw HttpError.notFound(`No image ${sp.root.rel(abs)}`);
         return { bytes, version: version(bytes) };
     });
@@ -75,7 +75,7 @@ export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string
         if (!isPng(bytes)) throw HttpError.badRequest('Only PNG images are accepted');
 
         const abs = imageFile(sp, owner, id);
-        const current = toDto(sp, owner, id, abs, await readImageBytes(sp, owner, abs));
+        const current = toDto(sp, owner, id, abs, await readImageBytes(sp, abs));
         assertCurrentVersion(body, current);
         // no change event: images are not event resources and the owner's version is unchanged
         await bus.transaction((tx) => tx.writeFile(abs, bytes));
@@ -86,7 +86,7 @@ export const deleteImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string
     sp.run(async (): Promise<TImageDto> => {
         const body = asBody(rawBody);
         const abs = imageFile(sp, owner, id);
-        const current = toDto(sp, owner, id, abs, await readImageBytes(sp, owner, abs));
+        const current = toDto(sp, owner, id, abs, await readImageBytes(sp, abs));
         assertCurrentVersion(body, current);
         // no change event, as for an upload
         await bus.transaction((tx) => tx.deleteFile(abs));

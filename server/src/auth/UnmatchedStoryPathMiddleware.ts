@@ -1,8 +1,9 @@
-import { Injectable, type NestMiddleware } from '@nestjs/common';
+import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import { GLOBAL_ROUTES, matchRoute, splitStoryPath, STORY_ROUTES } from '@story/protocol';
 import type { Request, Response } from 'express';
 import { HttpError } from '../common/HttpError';
 import { StoryRepository } from '../database/repositories/StoryRepository';
+import { AUTH_OPTIONS, type TAuthOptions } from './authOptions';
 import { readSessionToken } from './cookie';
 import { SessionService } from './SessionService';
 
@@ -22,14 +23,15 @@ const unmatchedStoryId = (requestMethod: string, pathname: string): string | nul
 export class UnmatchedStoryPathMiddleware implements NestMiddleware {
     constructor(
         private readonly stories: StoryRepository,
-        private readonly sessions: SessionService
+        private readonly sessions: SessionService,
+        @Inject(AUTH_OPTIONS) private readonly options: TAuthOptions
     ) {}
 
     async use(req: Request, _res: Response, next: () => void): Promise<void> {
         const storyId = unmatchedStoryId(req.method, new URL(req.originalUrl, 'http://localhost').pathname);
         if (storyId !== null) {
             if (!(await this.stories.exists(storyId))) throw HttpError.noStory(storyId);
-            if ((await this.sessions.expiresAt(readSessionToken(req), storyId)) === null) {
+            if ((await this.sessions.expiresAt(readSessionToken(req, this.options.cookieSecure), storyId)) === null) {
                 throw HttpError.storyLocked(storyId);
             }
         }

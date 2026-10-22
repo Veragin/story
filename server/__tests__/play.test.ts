@@ -4,8 +4,9 @@ import path from 'node:path';
 import { buildPath, LANDING_IMAGE_FILE, PLAY_MANIFEST_FILE, PNG_SIGNATURE } from '@story/protocol';
 import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PLAY_SITE_HEADER } from '../src/auth/PlaySiteGuard';
 import { TMP_SUFFIX } from '../src/json/atomicWrite';
-import { login, requestJson } from './helpers/http';
+import { cookieOf, EXAMPLE_PASSWORD, login, requestJson } from './helpers/http';
 import { createTestApp, readExampleStoryFile, type TTestApp } from './helpers/testApp';
 
 let app: TTestApp;
@@ -55,6 +56,45 @@ describe('play access', () => {
 
     it('404s an unknown story', async () => {
         expect((await manifest('nope')).status).toBe(404);
+    });
+});
+
+describe('the play site', () => {
+    const PLAY_SITE = { [PLAY_SITE_HEADER]: '1' };
+    const get = (url: string, headers: Record<string, string> = {}) =>
+        requestJson(app.base + url, 'GET', { headers: { ...PLAY_SITE, ...headers } });
+
+    it("reaches the player's routes: the story list, a login and the play files", async () => {
+        expect((await get('/api/stories')).status).toBe(200);
+        expect((await manifest('open')).status).toBe(200);
+        expect((await playFile('open', 'data/register.ts', PLAY_SITE)).status).toBe(200);
+        const res = await requestJson(app.base + '/api/stories/closed/login', 'POST', {
+            body: { password: EXAMPLE_PASSWORD },
+            headers: PLAY_SITE,
+        });
+        expect(res.status).toBe(204);
+        expect((await get(buildPath('closed', 'getPlayManifest', {}), { cookie: cookieOf(res) })).status).toBe(200);
+    });
+
+    it('refuses every other route, even with a grant', async () => {
+        const cookie = await login(app.base, 'closed');
+        expect((await requestJson(app.base + '/api/stories/closed/info', 'GET', { headers: { cookie } })).status).toBe(
+            200
+        );
+        for (const url of ['/api/stories/closed/info', '/api/stories/open/info', '/api/session', '/api/health']) {
+            expect((await get(url, { cookie })).status, url).toBe(403);
+        }
+        const put = await requestJson(app.base + '/api/stories/closed/info', 'PUT', {
+            body: {},
+            headers: { ...PLAY_SITE, cookie },
+        });
+        expect(put.status).toBe(403);
+    });
+
+    it('keeps the API from being embedded by another origin', async () => {
+        const res = await playFile('open', 'data/register.ts');
+        expect(res.headers.get('cross-origin-resource-policy')).toBe('same-origin');
+        expect(res.headers.get('x-content-type-options')).toBe('nosniff');
     });
 });
 

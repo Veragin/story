@@ -248,7 +248,6 @@ export default tseslint.config(
         },
     },
     {
-        // `{}` data types: the server generates `export type T<Id>Data = {}`
         files: [`${SERVER}/template/**/*.ts`],
         settings: {
             'import/resolver': {
@@ -257,6 +256,12 @@ export default tseslint.config(
         },
         rules: {
             'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones }],
+        },
+    },
+    {
+        // `{}` data types: the server generates `export type T<Id>Data = {}` into every story
+        files: [`${SERVER}/template/**/*.ts`, `${PACKAGE_DIRS.data}/**/*.ts`],
+        rules: {
             '@typescript-eslint/no-empty-object-type': 'off',
         },
     }

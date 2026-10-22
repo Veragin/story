@@ -138,16 +138,18 @@ dev-multi-engine:
 	$(DEV_EXEC) yarn dev:multi-engine
 
 # Production (multiple stories, phase 11): Caddy on 80/443 in front of the server and
-# SinglePlayer, one origin (docker/docker-compose.prod.yml). Run on the host, not inside the dev
-# container. Needs `docker/.env` (copy `docker/.env.example`, set the DB passwords). SITE_ADDRESS is
-# the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com` (default localhost).
+# SinglePlayer, which gets an origin of its own (docker/docker-compose.prod.yml). Run on the host, not
+# inside the dev container. Needs `docker/.env` (copy `docker/.env.example`, set the DB passwords).
+# SITE_ADDRESS is the public host name, e.g. `make prod-up SITE_ADDRESS=stories.example.com` (default
+# localhost); the play site is `play.<SITE_ADDRESS>` unless PLAY_SITE_ADDRESS says otherwise.
 # `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).
 PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
 prod-up:
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans
 	@echo ""
-	@echo "  https://$(or $(SITE_ADDRESS),localhost)/   (/visualizer/, /play/, /api/)"
+	@echo "  https://$(or $(SITE_ADDRESS),localhost)/   (/visualizer/, /api/)"
+	@echo "  https://$(or $(PLAY_SITE_ADDRESS),play.$(or $(SITE_ADDRESS),localhost))/play/"
 
 prod-down:
 	$(PROD_COMPOSE) down

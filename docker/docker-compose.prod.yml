@@ -1,14 +1,18 @@
 # Production (multiple stories, phase 11): `make prod-up`, or
 #   SITE_ADDRESS=stories.example.com docker compose -f docker/docker-compose.prod.yml up -d --build
 #
-# One public origin, served by Caddy (`docker/Caddyfile`) on 80/443:
-#   /  landing page · /visualizer/  Visualizer client · /play/  SinglePlayer · /api/  the server (server/)
+# Two public origins, served by Caddy (`docker/Caddyfile`) on 80/443:
+#   SITE_ADDRESS       /  landing page · /visualizer/  Visualizer client · /api/  the server (server/)
+#   PLAY_SITE_ADDRESS  /play/  SinglePlayer · /api/  the server, the player's routes only
+# The player runs story code, so it gets an origin of its own.
 #
 # Only Caddy publishes ports. The server is reachable only through it, which is what makes
 # `TRUST_PROXY=1` (the login limiter trusts X-Forwarded-For) safe.
 #
 # SITE_ADDRESS: the public host name (default `localhost`, with a certificate from Caddy's local
 # CA). The public origin, `https://<SITE_ADDRESS>`, is the server's `ALLOWED_ORIGINS`.
+# PLAY_SITE_ADDRESS: the play site's host name (default `play.<SITE_ADDRESS>`); it needs its own DNS
+# record. Not in `ALLOWED_ORIGINS`: the play site posts only to itself.
 #
 # Secrets come from `.env` next to this file (`docker/.env`, copied from `.env.example`): `DB_PASSWORD`,
 # `MYSQL_ROOT_PASSWORD`. MySQL publishes no port; only the server reaches it. Optional: `GIT_TOKEN_KEY`
@@ -99,6 +103,7 @@ services:
       - 443:443/udp
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      PLAY_SITE_ADDRESS: ${PLAY_SITE_ADDRESS:-play.${SITE_ADDRESS:-localhost}}
     volumes:
       - caddy_data:/data
       - caddy_config:/config

@@ -76,14 +76,17 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 ### Production
 
-`docker/docker-compose.prod.yml` runs everything behind one origin, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443:
+`docker/docker-compose.prod.yml` runs everything behind two origins, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443. SinglePlayer runs story code, so it lives on a play site of its own (`PLAY_SITE_ADDRESS`, default `play.<SITE_ADDRESS>`): story code there cannot script the Visualizer or reach the editing session.
 
-| Path           | Served by                                                                                          |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| `/`            | the landing page, static build                                                                     |
-| `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                                   |
-| `/play/`       | SinglePlayer, static build (Vite `base` `/play/`); it fetches the story's source from the play API |
-| `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                          |
+| Site                | Path           | Served by                                                                                          |
+| ------------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| `SITE_ADDRESS`      | `/`            | the landing page, static build                                                                     |
+|                     | `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                                   |
+|                     | `/play/`       | a redirect to the play site                                                                        |
+|                     | `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                          |
+| `PLAY_SITE_ADDRESS` | `/play/`       | SinglePlayer, static build (Vite `base` `/play/`); it fetches the story's source from the play API |
+|                     | `/api/`        | the server, limited to the player's routes (story list, login, play manifest and files)            |
+|                     | anything else  | a redirect to `SITE_ADDRESS`                                                                       |
 
 ```bash
 cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD (and GIT_TOKEN_KEY for git)
@@ -92,7 +95,7 @@ make prod-logs
 make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
+`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The play site needs a DNS record too (`play.stories.example.com`, or set `PLAY_SITE_ADDRESS`); `play.localhost` works locally. The play site has its own login: a private story asks for its password there even when the editor is logged in to it. Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
 
 Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) lets an author give a repository URL and access token when creating or editing a story on the landing page (a new connection pushes the story to `main`; branch, author and disconnect are in the Visualizer's git settings). It needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
 
@@ -227,7 +230,7 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
     - only client implementation
     - fully implemented
     - plays the story named by `?story=<id>` (the landing page's **Play as single**, the Visualizer's **Play**); without it, a `play.json` next to the page (a standalone export, `src/source/StaticStorySource.ts`), else it goes to the landing page (`VITE_LANDING_URL`, default this host on 8103)
-    - `src/main.tsx` loads the play manifest (`GET /api/stories/<id>/play`, `src/source/ServerStorySource.ts`); a private story answers `401` until the session holds its grant, so it shows the password dialog, logs in and retries (an editor coming from the Visualizer already has the grant). Then it sets the title and favicon, loads the story with `@story/story-loader` and starts the engine on it. A missing story shows an error with a link back to the landing page
+    - `src/main.tsx` loads the play manifest (`GET /api/stories/<id>/play`, `src/source/ServerStorySource.ts`); a private story answers `401` until the session holds its grant, so it shows the password dialog, logs in and retries (in dev an editor coming from the Visualizer already has the grant; the production play site has its own session). Then it sets the title and favicon, loads the story with `@story/story-loader` and starts the engine on it. A missing story shows an error with a link back to the landing page
     - one static build plays every story (plan D7 done): the story's TypeScript is fetched file by file from `GET /api/stories/<id>/play/<file>` and run in the browser; a chapter's passages are fetched when the chapter is first played. Images are the manifest's `.png` files, served by the same route
 
 - MultiEngine

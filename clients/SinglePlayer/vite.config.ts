@@ -53,9 +53,13 @@ export default defineConfig({
         watch: {
             ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
         },
-        // same origin so the session cookie reaches the play API; no `changeOrigin`: CSRF checks `Origin` against `Host`
+        // same origin so the session cookie reaches the play API; no `changeOrigin`: CSRF checks `Origin` against `Host`.
+        // The header limits the API to the player's routes, as the production play site does (docker/Caddyfile).
         proxy: {
-            '/api': { target: process.env.STORY_SERVER ?? 'http://localhost:8123' },
+            '/api': {
+                target: process.env.STORY_SERVER ?? 'http://localhost:8123',
+                headers: { 'x-story-play-site': '1' },
+            },
         },
     },
 });

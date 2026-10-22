@@ -150,19 +150,14 @@ describe('StoriesStore', () => {
         expect(navigate).toHaveBeenCalledTimes(1);
     });
 
-    it('plays a public story without the password, and asks for a private one', async () => {
+    it('plays any story without asking: the player asks for a private one', async () => {
         const { store, navigate } = setup();
         await store.load();
-        await store.play('pub');
-        expect(store.prompt).toBeNull();
+        store.play('pub');
         expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=pub`);
-
-        const playing = store.play('locked');
-        await tick();
-        expect(store.prompt?.id).toBe('locked');
-        store.cancelPassword();
-        await playing;
-        expect(navigate).toHaveBeenCalledTimes(1);
+        store.play('locked');
+        expect(store.prompt).toBeNull();
+        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=locked`);
     });
 
     it('rejects with the 429 of too many attempts, worded by passwordErrorMessage', async () => {

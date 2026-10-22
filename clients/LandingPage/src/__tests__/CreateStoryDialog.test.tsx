@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import {
+    GIT_DEFAULT_BRANCH,
     STORY_LIMITS,
     type TCreateStoryBody,
     type TGitConfigDto,
@@ -97,7 +98,7 @@ describe('the git fields', () => {
             kind: 'setup',
             body: {
                 remoteUrl: 'https://e.com/x.git',
-                branch: 'main',
+                branch: GIT_DEFAULT_BRANCH,
                 initial: 'push',
                 token: 'tkn',
             },
@@ -108,7 +109,7 @@ describe('the git fields', () => {
             kind: 'setup',
             body: {
                 remoteUrl: 'https://e.com/x.git',
-                branch: 'main',
+                branch: GIT_DEFAULT_BRANCH,
                 initial: 'push',
             },
         });
@@ -328,7 +329,7 @@ describe('CreateStoryDialog', () => {
             expect.objectContaining({ name: 'My Story' }),
             {
                 remoteUrl: 'https://example.com/me/story.git',
-                branch: 'main',
+                branch: GIT_DEFAULT_BRANCH,
                 initial: 'push',
                 token: 'tkn',
             }

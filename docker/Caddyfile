@@ -1,12 +1,23 @@
-# The one public origin of the production setup (docker/docker-compose.prod.yml, multiple stories phase 11).
+# The two public origins of the production setup (docker/docker-compose.prod.yml, multiple stories phase 11).
 #
+# SITE_ADDRESS
 #   /             landing page     static build (/srv/landing)
 #   /visualizer/  Visualizer       static build (/srv/visualizer), Vite base /visualizer/
-#   /play/        SinglePlayer     static build (/srv/play), Vite base /play/; stories come from /api/
+#   /play/        redirects to the play site
 #   /api/         the API          the server (server:8123, `server/`)
 #
+# PLAY_SITE_ADDRESS (default `play.<SITE_ADDRESS>`)
+#   /play/        SinglePlayer     static build (/srv/play), Vite base /play/; stories come from /api/
+#   /api/         the API, limited to the player's routes (`server/src/auth/PlaySiteGuard.ts`)
+#   anything else redirects to SITE_ADDRESS (the player's links to the landing page are `/`)
+#
+# Story code runs in the player, so the player has an origin of its own: it cannot script the
+# Visualizer, and the editing session's host-only cookie never reaches it. The play site has its
+# own session (a story's password unlocks it there again).
+#
 # SITE_ADDRESS is a host name (`stories.example.com`): Caddy then gets and renews a certificate for
-# it and redirects http to https. `localhost` gets a certificate from Caddy's local CA.
+# it and redirects http to https. `localhost` gets a certificate from Caddy's local CA, and so does
+# `play.localhost`, which browsers resolve to the loopback address.
 #
 # X-Forwarded-For: Caddy trusts no upstream proxy here (no `trusted_proxies`), so it drops any
 # X-Forwarded-For the client sent and sets it to the peer's address. The server's `TRUST_PROXY=1`
@@ -17,16 +28,9 @@
 		reverse_proxy server:8123
 	}
 
-	# SinglePlayer: one page for every story (`?story=<id>`); the story's files come from the play
-	# API, which checks access.
-	redir /play /play/ 308
-	handle_path /play/* {
-		root * /srv/play
-		encode zstd gzip
-		header /assets/* Cache-Control "public, max-age=31536000, immutable"
-		try_files {path} /index.html
-		file_server
-	}
+	# SinglePlayer lives on the play site.
+	redir /play https://{$PLAY_SITE_ADDRESS}/play/ 308
+	redir /play/* https://{$PLAY_SITE_ADDRESS}{uri} 308
 
 	# The Visualizer client: hash routing (`#/map`), so every page is index.html.
 	redir /visualizer /visualizer/ 308
@@ -45,5 +49,29 @@
 		header /assets/* Cache-Control "public, max-age=31536000, immutable"
 		try_files {path} /index.html
 		file_server
+	}
+}
+
+{$PLAY_SITE_ADDRESS} {
+	# Set (not appended) on every request, so story code cannot drop it.
+	handle /api/* {
+		reverse_proxy server:8123 {
+			header_up X-Story-Play-Site 1
+		}
+	}
+
+	# SinglePlayer: one page for every story (`?story=<id>`); the story's files come from the play
+	# API, which checks access.
+	redir /play /play/ 308
+	handle_path /play/* {
+		root * /srv/play
+		encode zstd gzip
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle {
+		redir https://{$SITE_ADDRESS}{uri} 308
 	}
 }

@@ -116,9 +116,9 @@ export class StoriesStore {
         if (await this.requireUnlocked(id)) this.navigate(visualizerUrl(id));
     }
 
-    async play(id: string) {
-        const story = this.story(id);
-        if (story?.public || (await this.requireUnlocked(id))) this.navigate(engineUrl(id));
+    // the player asks for a private story's password itself: in production it is another site, with its own session
+    play(id: string) {
+        this.navigate(engineUrl(id));
     }
 
     async exportStory(id: string) {

@@ -4,13 +4,20 @@ import { GLOBAL_ROUTES, type THealthDto } from '@story/protocol';
 import { DataSource } from 'typeorm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/AppModule';
+import { GIT_OPTIONS, type TGitOptions } from '../src/git/gitOptions';
+
+const NO_GIT: TGitOptions = { tokenKey: null, allowedHosts: [], disabledStories: [], allowFileRemotes: false };
 
 describe('GET /api/health', () => {
     let app: INestApplication;
     let baseUrl: string;
 
     beforeAll(async () => {
-        const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+        // the shell's GIT_TOKEN_KEY would decide `git`
+        const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+            .overrideProvider(GIT_OPTIONS)
+            .useValue(NO_GIT)
+            .compile();
         app = moduleRef.createNestApplication();
         await app.listen(0, '127.0.0.1');
         baseUrl = await app.getUrl();

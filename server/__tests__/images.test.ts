@@ -104,6 +104,13 @@ describe('images', () => {
         expect(res.body.url).not.toBe(current.url);
     });
 
+    it('ignores a symlinked image, as the play files do', async () => {
+        await symlink(abs('data/chapters/village/thomas.passages/intro.png'), abs('data/characters/thomas.png'));
+        const res = await t.get('/api/stories/example/images/characters/thomas');
+        expect(res.body).toMatchObject({ file: 'data/characters/thomas.png', version: '', url: null });
+        expect((await fetchFile('/api/stories/example/images/characters/thomas/png')).status).toBe(404);
+    });
+
     it('deletes the image together with its passage', async () => {
         let res = await t.post('/api/stories/example/chapters/village/passages', {
             characterId: 'thomas',
