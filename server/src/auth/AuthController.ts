@@ -10,6 +10,7 @@ import { AUTH_OPTIONS, type TAuthOptions } from './authOptions';
 import { clearedSessionCookie, readSessionToken, sessionCookie } from './cookie';
 import { clientAddress, LoginLimiter, loginKey } from './LoginLimiter';
 import { verifyPassword } from './password';
+import { isPlaySite } from './PlaySiteGuard';
 import { SessionService } from './SessionService';
 
 @Controller()
@@ -44,7 +45,8 @@ export class AuthController {
             throw HttpError.unauthorized('Wrong password');
         }
         this.loginLimiter.succeed(key);
-        const { token } = await this.sessions.grant(this.tokenOf(req), storyId);
+        // every story's code shares the play site's origin: like one account at a time, a login there replaces the last
+        const { token } = await this.sessions.grant(this.tokenOf(req), storyId, { exclusive: isPlaySite(req) });
         res.setHeader('set-cookie', sessionCookie(token, this.options.cookieSecure));
     }
 

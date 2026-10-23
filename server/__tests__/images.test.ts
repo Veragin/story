@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, symlink } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LANDING_IMAGE_FILE, PNG_SIGNATURE } from '@story/protocol';
@@ -176,6 +177,20 @@ describe('the story landing image', () => {
         expect(await landingFlags()).toEqual({ info: false, manifest: false });
         expect((await t.get(LANDING)).body.url).toBeNull();
         expect((await fetchFile(`${LANDING}/png`)).status).toBe(404);
+    });
+
+    it('neither writes nor deletes through a symlinked directory', async () => {
+        const outside = await mkdtemp(path.join(tmpdir(), 'outside-assets-'));
+        try {
+            await writeFile(path.join(outside, 'landing.png'), fakePng(8));
+            await rm(path.dirname(abs(LANDING_IMAGE_FILE)), { recursive: true, force: true });
+            await symlink(outside, path.dirname(abs(LANDING_IMAGE_FILE)));
+            expect((await t.del(LANDING, { version: '' })).status).toBe(403);
+            expect((await t.put(LANDING, { version: '', data: fakePng(9).toString('base64') })).status).toBe(403);
+            expect((await readFile(path.join(outside, 'landing.png'))).equals(fakePng(8))).toBe(true);
+        } finally {
+            await rm(outside, { recursive: true, force: true });
+        }
     });
 });
 

@@ -15,3 +15,13 @@ export const isRegularFileWithin = async (root: string, segments: readonly strin
     }
     return true;
 };
+
+// a write must not follow a symlinked directory out of `root`; missing ones are created as real directories
+export const hasNoLinkedDirWithin = async (root: string, dirSegments: readonly string[]): Promise<boolean> => {
+    for (let i = 1; i <= dirSegments.length; i++) {
+        const stats = await lstatOrNull(path.join(root, ...dirSegments.slice(0, i)));
+        if (stats === null) return true;
+        if (!stats.isDirectory()) return false;
+    }
+    return true;
+};

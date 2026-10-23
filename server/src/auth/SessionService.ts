@@ -28,12 +28,13 @@ export class SessionService {
         @Inject(AUTH_OPTIONS) private readonly options: Pick<TAuthOptions, 'grantTtlMs'>
     ) {}
 
-    grant(token: string | undefined, storyId: string): Promise<TGrantResult> {
+    grant(token: string | undefined, storyId: string, { exclusive = false } = {}): Promise<TGrantResult> {
         return this.database.transaction(async (manager) => {
             const now = Date.now();
             const live = token === undefined ? null : await this.liveSession(token, now, manager);
             const session = live ?? (await this.createSession(manager));
             const expiresAt = now + this.options.grantTtlMs;
+            if (exclusive) await this.grants.deleteOtherStories(session.id, storyId, manager);
             await this.grants.upsert(session.id, storyId, new Date(expiresAt), manager);
             return { token: session.token, expiresAt };
         });

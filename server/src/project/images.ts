@@ -10,7 +10,7 @@ import {
     type TUploadImageBody,
 } from '@story/protocol';
 import { version } from '../events/version';
-import { isRegularFileWithin } from '../common/fileStat';
+import { hasNoLinkedDirWithin, isRegularFileWithin } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import { readBytesOrNull } from '../json/atomicWrite';
 import { landingImagePath } from '../stories/landingImage';
@@ -31,8 +31,19 @@ const imageFile = (sp: SourceProject, owner: TImageOwner, id: string): string =>
     return siblingPng(tsFile);
 };
 
+const segmentsOf = (sp: SourceProject, abs: string) => sp.root.rel(abs).split('/');
+
 const readImageBytes = async (sp: SourceProject, abs: string): Promise<Buffer | null> =>
-    (await isRegularFileWithin(sp.root.root, sp.root.rel(abs).split('/'))) ? readBytesOrNull(abs) : null;
+    (await isRegularFileWithin(sp.root.root, segmentsOf(sp, abs))) ? readBytesOrNull(abs) : null;
+
+// a linked image reads as none, but writing or deleting through a linked directory would leave the story
+const writableImageFile = async (sp: SourceProject, owner: TImageOwner, id: string): Promise<string> => {
+    const abs = imageFile(sp, owner, id);
+    if (!(await hasNoLinkedDirWithin(sp.root.root, segmentsOf(sp, abs).slice(0, -1)))) {
+        throw HttpError.forbidden(`${sp.root.rel(abs)} is behind a symlinked directory`);
+    }
+    return abs;
+};
 
 const toDto = (sp: SourceProject, owner: TImageOwner, id: string, abs: string, bytes: Uint8Array | null): TImageDto => {
     const v = bytes === null ? EMPTY_VERSION : version(bytes);
@@ -74,7 +85,7 @@ export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string
         }
         if (!isPng(bytes)) throw HttpError.badRequest('Only PNG images are accepted');
 
-        const abs = imageFile(sp, owner, id);
+        const abs = await writableImageFile(sp, owner, id);
         const current = toDto(sp, owner, id, abs, await readImageBytes(sp, abs));
         assertCurrentVersion(body, current);
         // no change event: images are not event resources and the owner's version is unchanged
@@ -85,7 +96,7 @@ export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string
 export const deleteImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string, rawBody: TDeleteImageBody) =>
     sp.run(async (): Promise<TImageDto> => {
         const body = asBody(rawBody);
-        const abs = imageFile(sp, owner, id);
+        const abs = await writableImageFile(sp, owner, id);
         const current = toDto(sp, owner, id, abs, await readImageBytes(sp, abs));
         assertCurrentVersion(body, current);
         // no change event, as for an upload

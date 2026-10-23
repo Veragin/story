@@ -18,6 +18,7 @@ beforeEach(async () => {
         stories: [
             { id: 'open', public: true },
             { id: 'closed', public: false },
+            { id: 'secret', public: false },
         ],
         standalonePlayerDir: playerDir,
     });
@@ -87,6 +88,32 @@ describe('the play site', () => {
             headers: { ...PLAY_SITE, cookie },
         });
         expect(put.status).toBe(403);
+    });
+
+    it('logs in to one story at a time: a login replaces the last one, public stories need none', async () => {
+        const playLogin = async (storyId: string, cookie = '') =>
+            cookieOf(
+                await requestJson(app.base + `/api/stories/${storyId}/login`, 'POST', {
+                    body: { password: EXAMPLE_PASSWORD },
+                    headers: { ...PLAY_SITE, cookie },
+                })
+            );
+        const playable = async (storyId: string, cookie: string) =>
+            (await get(buildPath(storyId, 'getPlayManifest', {}), { cookie })).status;
+
+        const cookie = await playLogin('closed');
+        expect(await playable('open', cookie)).toBe(200);
+        expect(await playable('closed', cookie)).toBe(200);
+        expect(await playLogin('secret', cookie)).toBe(cookie);
+        expect(await playable('secret', cookie)).toBe(200);
+        expect(await playable('closed', cookie)).toBe(401);
+    });
+
+    it("keeps every grant of an editing site's session", async () => {
+        const cookie = await login(app.base, 'closed');
+        await login(app.base, 'secret', { cookie });
+        expect((await manifest('closed', cookie)).status).toBe(200);
+        expect((await manifest('secret', cookie)).status).toBe(200);
     });
 
     it('keeps the API from being embedded by another origin', async () => {
