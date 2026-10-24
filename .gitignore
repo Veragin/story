@@ -43,3 +43,4 @@ stories/*
 
 # Secrets (docker/.env.example is the template)
 .env
+tmp
