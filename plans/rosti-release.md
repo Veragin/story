@@ -57,6 +57,7 @@ A release replaces images and the compose file and recreates containers (`docker
     docker build --platform linux/amd64 --target proxy -f docker/Dockerfile.prod -t ghcr.io/<org>/story-proxy:<tag> .
     ```
     `docker-compose.rosti.yml` then uses `image:` instead of `build:`, deployed with `rosticli stack push --no-build`.
+- **Email (password reset)**: the sender is hardcoded as `ENV MAIL_FROM=info@story.cz` in `docker/Dockerfile.prod` (temporary). Before going live, replace it with the real sender address. Also set `SMTP_URL` (without it the server only logs the reset mails) and `PUBLIC_URL=https://<domain>` (the base of the reset link). See `plans/storyEmail-implementation.md`.
 - **Secrets**: the compose file is uploaded as-is — find out how to pass `DB_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `GIT_TOKEN_KEY` without committing them.
 
 ## Open questions for Roští support (unconfirmed)
@@ -71,6 +72,7 @@ A release replaces images and the compose file and recreates containers (`docker
 - [ ] Get answers to the open questions
 - [ ] Write `docker/docker-compose.rosti.yml` (images from registry, port 80, stable volumes)
 - [ ] Caddyfile: `trusted_proxies`
+- [ ] Replace the hardcoded `MAIL_FROM=info@story.cz`; set `SMTP_URL` and `PUBLIC_URL`
 - [ ] GitHub Actions: build `app` + `proxy`, push to registry, `rosticli stack push --no-build`
 - [ ] Document backup/restore procedure
 

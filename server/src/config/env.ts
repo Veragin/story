@@ -6,6 +6,8 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 
 const DEFAULT_PORT = 8123;
 
+const DEFAULT_PUBLIC_URL = 'http://localhost:8103';
+
 const optionalText = z.string().trim().optional();
 
 const flag = optionalText.transform((value) => value === '1');
@@ -55,6 +57,9 @@ export const ENV_SCHEMA = z.object({
     GIT_ALLOWED_HOSTS: list([]),
     GIT_DISABLED_STORIES: list(['example']),
     GIT_ALLOW_FILE_REMOTES: flag,
+    PUBLIC_URL: optionalText.transform((value) => normalizeOrigin(value || DEFAULT_PUBLIC_URL)),
+    SMTP_URL: optionalText.transform((value) => value || null),
+    MAIL_FROM: z.string().trim().min(1),
 });
 
 export type TEnv = z.infer<typeof ENV_SCHEMA>;

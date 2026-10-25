@@ -1,9 +1,8 @@
 import { gitStore } from '../context';
-import { modals } from '../shell';
+import { modals, router } from '../shell';
 import { GitBranchDialog } from './GitBranchDialog';
 import { GitCommitDialog } from './GitCommitDialog';
 import { GitHistoryDialog } from './GitHistoryDialog';
-import { GitSettingsDialog } from './GitSettingsDialog';
 
 export const openGitCommitDialog = () =>
     modals.open((close) => (
@@ -20,7 +19,5 @@ export const openGitHistoryDialog = () =>
         <GitHistoryDialog store={gitStore} onClose={close} />
     ));
 
-export const openGitSettingsDialog = () =>
-    modals.open((close) => (
-        <GitSettingsDialog store={gitStore} onClose={close} />
-    ));
+export const openGitSettings = () =>
+    router.navigate({ page: 'settings', section: 'git' });

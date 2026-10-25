@@ -1,62 +1,49 @@
 import {
-    GIT_DEFAULT_BRANCH,
-    GIT_LIMITS,
+    isStoryEmail,
     STORY_LIMITS,
     type TCreateStoryBody,
-    type TGitConfigDto,
-    type TSetupGitBody,
-    type TStoryDto,
-    type TUpdateGitConfigBody,
+    type TEditStoryInfoDto,
     type TUpdateStoryBody,
 } from '@story/protocol';
-import { remoteUrlErrorMessage } from '@story/ui';
 
 export type TStoryFormMode = 'create' | 'edit';
 
 export type TStoryFormValue = {
     name: string;
     author: string;
+    email: string;
     password: string;
     passwordConfirm: string;
     description: string;
     mapWidth: string;
     mapHeight: string;
     public: boolean;
-    gitRemoteUrl: string;
-    gitToken: string;
 };
-
-/** `null` when the server has no git; `config` is `null` until the story is connected. */
-export type TStoryGitState = { config: TGitConfigDto | null } | null;
-
-export type TGitChange = { kind: 'setup'; body: TSetupGitBody } | { kind: 'update'; body: TUpdateGitConfigBody };
 
 export type TStoryFormErrors = Partial<Record<keyof TStoryFormValue, string>>;
 
 export const EMPTY_STORY_FORM: TStoryFormValue = {
     name: '',
     author: '',
+    email: '',
     password: '',
     passwordConfirm: '',
     description: '',
     mapWidth: '40',
     mapHeight: '30',
     public: false,
-    gitRemoteUrl: '',
-    gitToken: '',
 };
 
-export const storyFormOf = (story: TStoryDto, git: TStoryGitState): TStoryFormValue => ({
+export const storyFormOf = (story: TEditStoryInfoDto): TStoryFormValue => ({
     name: story.name,
     author: story.author,
+    email: story.email,
     password: '',
     passwordConfirm: '',
     description: story.description,
     mapWidth: String(story.mapSize.width),
     mapHeight: String(story.mapSize.height),
     public: story.public,
-    gitRemoteUrl: git?.config?.remoteUrl ?? '',
-    gitToken: '',
 });
 
 const L = STORY_LIMITS;
@@ -69,31 +56,26 @@ const mapSideError = (text: string) => {
     return undefined;
 };
 
-const gitErrors = (value: TStoryFormValue, git: TStoryGitState): TStoryFormErrors => {
-    if (!git) return {};
-    const remoteUrl = value.gitRemoteUrl.trim();
-    if (remoteUrl === '') {
-        if (git.config) return { gitRemoteUrl: _('Disconnect in the git settings of the editor') };
-        return value.gitToken === '' ? {} : { gitRemoteUrl: _('The token needs a repository URL') };
-    }
-    if (remoteUrl.length > GIT_LIMITS.remoteUrlMaxLength) {
-        return { gitRemoteUrl: _('At most %d characters', GIT_LIMITS.remoteUrlMaxLength) };
-    }
-    const urlError = remoteUrlErrorMessage(remoteUrl);
-    return urlError ? { gitRemoteUrl: urlError } : {};
+const emailError = (text: string) => {
+    const email = text.trim();
+    if (email === '') return undefined;
+    if (email.length > L.emailMaxLength) return _('At most %d characters', L.emailMaxLength);
+    return isStoryEmail(email) ? undefined : _('Not an email address');
 };
 
 export const validateStoryForm = (
     value: TStoryFormValue,
-    { passwordRequired, git = null }: { passwordRequired: boolean; git?: TStoryGitState }
+    { passwordRequired }: { passwordRequired: boolean }
 ): TStoryFormErrors => {
-    const errors: TStoryFormErrors = gitErrors(value, git);
+    const errors: TStoryFormErrors = {};
     const name = value.name.trim();
     if (name === '') errors.name = _('The name is required');
     else if (name.length > L.nameMaxLength) errors.name = _('At most %d characters', L.nameMaxLength);
     if (value.author.trim().length > L.authorMaxLength) {
         errors.author = _('At most %d characters', L.authorMaxLength);
     }
+    const email = emailError(value.email);
+    if (email) errors.email = email;
     if (value.description.length > L.descriptionMaxLength) {
         errors.description = _('At most %d characters', L.descriptionMaxLength);
     }
@@ -122,32 +104,15 @@ export const toCreateBody = (value: TStoryFormValue): TCreateStoryBody => ({
     description: value.description,
     public: value.public,
     mapSize: { width: Number(value.mapWidth), height: Number(value.mapHeight) },
+    ...(value.email.trim() !== '' && { email: value.email.trim() }),
 });
 
 export const toUpdateBody = (value: TStoryFormValue, version: string): TUpdateStoryBody => ({
     version,
     name: value.name.trim(),
     author: value.author.trim(),
+    email: value.email.trim(),
     description: value.description,
     public: value.public,
     ...(value.password !== '' && { password: value.password }),
 });
-
-// the token is sent only when typed: empty keeps the stored one
-export const toGitChange = (value: TStoryFormValue, git: TStoryGitState): TGitChange | null => {
-    const remoteUrl = value.gitRemoteUrl.trim();
-    const token = value.gitToken === '' ? {} : { token: value.gitToken };
-    if (!git || remoteUrl === '') return null;
-    if (!git.config) {
-        return { kind: 'setup', body: { remoteUrl, branch: GIT_DEFAULT_BRANCH, initial: 'push', ...token } };
-    }
-    if (remoteUrl === git.config.remoteUrl && value.gitToken === '') return null;
-    return {
-        kind: 'update',
-        body: {
-            version: git.config.version,
-            ...(remoteUrl !== git.config.remoteUrl && { remoteUrl }),
-            ...token,
-        },
-    };
-};

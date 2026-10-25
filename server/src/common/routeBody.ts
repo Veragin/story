@@ -14,7 +14,10 @@ export const takesJsonBody = (route: TRouteName): boolean =>
     !BODYLESS_ROUTES.includes(route) &&
     routeContentType(route) === JSON_CONTENT_TYPE;
 
+// replaces a resource that is not versioned: the reset token is what it is based on
+const UNVERSIONED_ROUTES: readonly TRouteName[] = ['resetPassword'];
+
 export const isVersionedRoute = (route: TRouteName): boolean => {
     const { method } = routeDef(route);
-    return method === 'PUT' || method === 'DELETE';
+    return (method === 'PUT' || method === 'DELETE') && !UNVERSIONED_ROUTES.includes(route);
 };

@@ -266,6 +266,71 @@ describe('list and info', () => {
     });
 });
 
+describe('email', () => {
+    const infoOf = (id: string, cookie?: string) => call('GET', `/api/stories/${id}/info`, { cookie });
+
+    it('creates with a trimmed email, or none; refuses an invalid or too long one', async () => {
+        const { id, cookie } = await create({ name: 'Mailed', email: ' Me@Example.com ' });
+        expect((await infoOf(id, cookie)).body).toMatchObject({ access: 'edit', email: 'Me@Example.com' });
+        const plain = await create({ name: 'Plain' });
+        expect((await infoOf(plain.id, plain.cookie)).body.email).toBe('');
+
+        const tooLong = `${'a'.repeat(STORY_LIMITS.emailMaxLength)}@example.com`;
+        for (const email of ['nope', 'a@b', 'a b@example.com', tooLong, 42]) {
+            const res = await call('POST', '/api/stories', { body: { ...NEW_STORY, name: 'Bad', email } });
+            expect([email, res.status, res.body.error]).toEqual([email, 400, 'bad_request']);
+        }
+    });
+
+    it('updates the email, keeps it when absent, clears it with an empty string', async () => {
+        const { id, cookie } = await create({ email: 'one@example.com' });
+        const put = (body: Record<string, unknown>) => call('PUT', `/api/stories/${id}/info`, { cookie, body });
+        const changed = await put({ version: '1', email: ' two@example.com' });
+        expect(changed.body).toMatchObject({ access: 'edit', email: 'two@example.com', version: '2' });
+        expect((await put({ version: '2', email: 'not an email' })).status).toBe(400);
+        expect((await put({ version: '2', name: 'Renamed' })).body.email).toBe('two@example.com');
+        expect((await put({ version: '3', email: '' })).body).toMatchObject({ email: '', version: '4' });
+        expect((await infoOf(id, cookie)).body.email).toBe('');
+    });
+
+    it('imports with the email from the form', async () => {
+        const { id, cookie } = await create();
+        const zip = (await exportZip(id, cookie)).bytes;
+        const imported = await importZip(zip, { email: 'copy@example.com' });
+        expect(imported.status).toBe(201);
+        expect((await infoOf(imported.body.id, cookieOf(imported))).body.email).toBe('copy@example.com');
+        expect((await importZip(zip, { name: 'Bad', email: 'bad' })).status).toBe(400);
+    });
+
+    it('answers a public story without a grant with its public info only, and with a grant in full', async () => {
+        const { id, cookie } = await create({ public: true, email: 'me@example.com' });
+        const open = await infoOf(id);
+        expect(open.status).toBe(200);
+        expect(open.body).toEqual({
+            access: 'public',
+            id,
+            name: NEW_STORY.name,
+            author: NEW_STORY.author,
+            description: NEW_STORY.description,
+        });
+        expect((await infoOf(id, cookie)).body).toEqual({
+            access: 'edit',
+            id,
+            name: NEW_STORY.name,
+            author: NEW_STORY.author,
+            description: NEW_STORY.description,
+            mapSize: NEW_STORY.mapSize,
+            public: true,
+            version: '1',
+            hasLandingImage: false,
+            email: 'me@example.com',
+        });
+        for (const story of (await call('GET', '/api/stories', { cookie })).body) {
+            expect(story).not.toHaveProperty('email');
+        }
+    });
+});
+
 describe('export', () => {
     it('zips tsconfig.json, data/ and types/ only, with the download headers', async () => {
         const { id, cookie } = await create();

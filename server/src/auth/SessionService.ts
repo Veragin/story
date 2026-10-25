@@ -5,6 +5,7 @@ import type { EntityManager } from 'typeorm';
 import { DatabaseService } from '../database/DatabaseService';
 import { SessionGrantRepository } from '../database/repositories/SessionGrantRepository';
 import { SessionRepository } from '../database/repositories/SessionRepository';
+import { StoryPasswordResetRepository } from '../database/repositories/StoryPasswordResetRepository';
 import { AUTH_OPTIONS, type TAuthOptions } from './authOptions';
 
 export const SESSION_PRUNE_JOB = 'session-prune';
@@ -15,7 +16,7 @@ type TSessionRef = { id: number; token: string };
 
 export type TGrantResult = { token: string; expiresAt: number };
 
-const newToken = () => randomBytes(32).toString('base64url');
+export const newToken = () => randomBytes(32).toString('base64url');
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -25,6 +26,7 @@ export class SessionService {
         private readonly database: DatabaseService,
         private readonly sessions: SessionRepository,
         private readonly grants: SessionGrantRepository,
+        private readonly resets: StoryPasswordResetRepository,
         @Inject(AUTH_OPTIONS) private readonly options: Pick<TAuthOptions, 'grantTtlMs'>
     ) {}
 
@@ -59,6 +61,7 @@ export class SessionService {
     async prune(now = Date.now()): Promise<void> {
         await this.grants.deleteExpired(new Date(now));
         await this.sessions.deleteWithoutGrants();
+        await this.resets.deleteExpired(new Date(now));
     }
 
     @Interval(SESSION_PRUNE_JOB, SESSION_PRUNE_MS)

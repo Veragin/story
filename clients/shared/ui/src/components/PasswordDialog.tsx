@@ -9,6 +9,7 @@ import {
     TextField,
 } from '@mui/material';
 import { passwordErrorMessage } from './passwordErrorMessage';
+import { PasswordResetRequestForm } from './PasswordResetRequestForm';
 
 type Props = {
     open: boolean;
@@ -18,6 +19,8 @@ type Props = {
     /** Resolve to close (caller sets `open` false); reject to keep it open showing the error. */
     onSubmit: (password: string) => Promise<void>;
     onCancel: () => void;
+    /** Offers "Forgotten password?": mails a reset link when `email` is the story's; reject to show the error. */
+    onRequestReset?: (email: string) => Promise<void>;
 };
 
 export const PasswordDialog = ({
@@ -27,16 +30,19 @@ export const PasswordDialog = ({
     message,
     onSubmit,
     onCancel,
+    onRequestReset,
 }: Props) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    const [resetting, setResetting] = useState(false);
 
     useEffect(() => {
         if (open) {
             setPassword('');
             setError(null);
             setBusy(false);
+            setResetting(false);
         }
     }, [open]);
 
@@ -62,41 +68,67 @@ export const PasswordDialog = ({
             maxWidth="xs"
             fullWidth
         >
-            <form onSubmit={(e) => void submit(e)}>
-                <DialogTitle>{title ?? _('Unlock %s', storyName)}</DialogTitle>
-                <DialogContent>
-                    {message && (
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                            {message}
-                        </Alert>
-                    )}
-                    <TextField
-                        type="password"
-                        label={_('Password')}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        error={error !== null}
-                        helperText={error ?? ' '}
-                        disabled={busy}
-                        autoComplete="current-password"
-                        autoFocus
-                        fullWidth
-                        margin="dense"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button color="inherit" onClick={onCancel} disabled={busy}>
-                        {_('Cancel')}
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={password === '' || busy}
-                    >
-                        {busy ? _('Unlocking…') : _('Unlock')}
-                    </Button>
-                </DialogActions>
-            </form>
+            <DialogTitle>
+                {resetting
+                    ? _('Forgotten password for %s', storyName)
+                    : (title ?? _('Unlock %s', storyName))}
+            </DialogTitle>
+            {resetting && onRequestReset ? (
+                <PasswordResetRequestForm
+                    onRequestReset={onRequestReset}
+                    onBack={() => setResetting(false)}
+                />
+            ) : (
+                <form onSubmit={(e) => void submit(e)}>
+                    <DialogContent>
+                        {message && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                {message}
+                            </Alert>
+                        )}
+                        <TextField
+                            type="password"
+                            label={_('Password')}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            error={error !== null}
+                            helperText={error ?? ' '}
+                            disabled={busy}
+                            autoComplete="current-password"
+                            autoFocus
+                            fullWidth
+                            margin="dense"
+                        />
+                        {onRequestReset && (
+                            <Button
+                                size="small"
+                                onClick={() => setResetting(true)}
+                                disabled={busy}
+                                data-action="forgotten-password"
+                                sx={{ textTransform: 'none', px: 0 }}
+                            >
+                                {_('Forgotten password?')}
+                            </Button>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            color="inherit"
+                            onClick={onCancel}
+                            disabled={busy}
+                        >
+                            {_('Cancel')}
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={password === '' || busy}
+                        >
+                            {busy ? _('Unlocking…') : _('Unlock')}
+                        </Button>
+                    </DialogActions>
+                </form>
+            )}
         </Dialog>
     );
 };

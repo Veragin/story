@@ -26,6 +26,9 @@ export class Story {
     @Column({ type: 'boolean' })
     isPublic: boolean;
 
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    email: string | null;
+
     @VersionColumn({ type: 'int', unsigned: true })
     version: number;
 

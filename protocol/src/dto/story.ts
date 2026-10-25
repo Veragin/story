@@ -13,12 +13,18 @@ export const STORY_LIMITS = {
     nameMaxLength: 100,
     authorMaxLength: 100,
     descriptionMaxLength: 5000,
+    emailMaxLength: 255,
     passwordMinLength: 6,
     passwordMaxLength: 256,
     /** Each side of the map, in whole tiles. */
     mapSizeMin: 1,
     mapSizeMax: 500,
 } as const;
+
+export const STORY_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const isStoryEmail = (value: unknown): value is string =>
+    typeof value === 'string' && STORY_EMAIL_PATTERN.test(value);
 
 /** A story's metadata (its database row) without the password hash. */
 export type TStoryDto = {
@@ -33,17 +39,28 @@ export type TStoryDto = {
 
 export type TStoryListItemDto = TStoryDto & { unlocked: boolean };
 
-export type TStoryInfoDto = TStoryDto &
+/** What `getStoryInfo` answers without a grant (a public story). */
+export type TPublicStoryInfoDto = { access: 'public' } & Pick<TStoryDto, 'id' | 'name' | 'author' | 'description'>;
+
+/** What `getStoryInfo` answers with a grant. */
+export type TEditStoryInfoDto = { access: 'edit' } & TStoryDto &
     TVersioned & {
         /** `LANDING_IMAGE_FILE` exists; derived from the file, not stored. Upload it as the `story` owner's image. */
         hasLandingImage: boolean;
+        /** `''` when none. */
+        email: string;
     };
 
-/** `password` is plain; the server stores only its hash. */
-export type TCreateStoryBody = Omit<TStoryDto, 'id'> & { password: string };
+export type TStoryInfoDto = TPublicStoryInfoDto | TEditStoryInfoDto;
 
-/** `mapSize` may be sent only unchanged; an absent or empty `password` keeps the current one. */
-export type TUpdateStoryBody = TVersionedBody & Partial<Omit<TStoryDto, 'id'> & { password: string }>;
+/** `password` is plain; the server stores only its hash. `email` is optional and checked by `isStoryEmail`. */
+export type TCreateStoryBody = Omit<TStoryDto, 'id'> & { password: string; email?: string };
+
+/**
+ * `mapSize` may be sent only unchanged; an absent or empty `password` keeps the current one.
+ * An absent `email` keeps the current one, `''` clears it.
+ */
+export type TUpdateStoryBody = TVersionedBody & Partial<Omit<TStoryDto, 'id'> & { password: string; email: string }>;
 
 /** The `importStory` form fields; the map size comes from the zip. */
 export type TImportStoryBody = Omit<TCreateStoryBody, 'mapSize'>;
@@ -64,6 +81,7 @@ export const storyImportForm = (zip: Blob, body: TImportStoryBody, fileName = 's
     form.set('name', body.name);
     form.set('author', body.author);
     form.set('description', body.description);
+    form.set('email', body.email ?? '');
     form.set('password', body.password);
     form.set('public', String(body.public));
     form.set(STORY_IMPORT_ZIP_FIELD, zip, fileName);
@@ -78,6 +96,15 @@ export const storyFilesForm = (zip: Blob, fileName = 'story.zip'): FormData => {
 };
 
 export type TLoginBody = { password: string };
+
+/** Compared to the story's email trimmed and case-insensitively. */
+export type TRequestPasswordResetBody = { email: string };
+
+/** `token` comes from the reset link; `password` is plain, with the `STORY_LIMITS` lengths. */
+export type TResetPasswordBody = { token: string; password: string };
+
+/** The reset link's query parameter with the token, next to `story` with the story id. */
+export const PASSWORD_RESET_TOKEN_PARAM = 'resetToken';
 
 export type TSessionDto = { storyIds: string[] };
 

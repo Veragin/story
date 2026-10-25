@@ -40,6 +40,10 @@ export class SessionGrantRepository {
         await manager.delete(SessionGrant, { sessionId, storyId: Not(storyId) });
     }
 
+    async deleteForStory(storyId: string, manager: EntityManager = this.dataSource.manager): Promise<void> {
+        await manager.delete(SessionGrant, { storyId });
+    }
+
     async deleteExpired(now: Date, manager: EntityManager = this.dataSource.manager): Promise<void> {
         await manager.delete(SessionGrant, { expiresAt: LessThanOrEqual(now) });
     }

@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite';
 import { spacingCss } from '@story/ui';
 import { gitStore } from '../context';
 import { GitMenu } from '../git/GitMenu';
-import { openGitSettingsDialog } from '../git/gitDialogs';
+import { openGitSettings } from '../git/gitDialogs';
 
 export const GitButton = observer(() => {
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -22,7 +22,7 @@ export const GitButton = observer(() => {
                 color="inherit"
                 size="small"
                 startIcon={<CallSplitIcon />}
-                onClick={openGitSettingsDialog}
+                onClick={openGitSettings}
             >
                 {_('Git')}
             </SButton>

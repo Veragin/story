@@ -10,11 +10,13 @@ describe('storyImportForm', () => {
             description: 'A tale.',
             password: 'secret-1',
             public: false,
+            email: 'me@example.com',
         });
         expect(Object.fromEntries([...form].filter(([key]) => key !== STORY_IMPORT_ZIP_FIELD))).toEqual({
             name: 'Tale',
             author: 'Me',
             description: 'A tale.',
+            email: 'me@example.com',
             password: 'secret-1',
             public: 'false',
         });

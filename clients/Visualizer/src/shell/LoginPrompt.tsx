@@ -9,5 +9,6 @@ export const LoginPrompt = observer(() => (
         message={_('This story is locked. Enter its password to edit it.')}
         onSubmit={auth.submit}
         onCancel={auth.cancel}
+        onRequestReset={auth.requestReset}
     />
 ));

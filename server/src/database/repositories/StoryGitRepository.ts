@@ -63,6 +63,19 @@ export class StoryGitRepository {
         return result.affected === 1 ? String(current + 1) : null;
     }
 
+    async setAuthorEmail(
+        storyId: string,
+        authorEmail: string,
+        manager: EntityManager = this.dataSource.manager
+    ): Promise<void> {
+        await manager
+            .createQueryBuilder()
+            .update(StoryGit)
+            .set({ authorEmail, version: () => '`version` + 1' })
+            .where('storyId = :storyId', { storyId })
+            .execute();
+    }
+
     async delete(storyId: string, expected: TVersion, manager: EntityManager = this.dataSource.manager) {
         const current = parseVersion(expected);
         if (current === null) return false;

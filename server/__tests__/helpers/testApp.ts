@@ -8,9 +8,11 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/AppModule';
 import { AUTH_OPTIONS, GRANT_TTL_MS, type TAuthOptions } from '../../src/auth/authOptions';
 import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
+import { PASSWORD_RESET_OPTIONS, type TPasswordResetOptions } from '../../src/auth/passwordReset';
 import { SessionService } from '../../src/auth/SessionService';
 import { configureExpressApp, EXPRESS_APP_OPTIONS } from '../../src/common/expressApp';
 import { GIT_OPTIONS, type TGitOptions } from '../../src/git/gitOptions';
+import { Mailer } from '../../src/mail/Mailer';
 import { STANDALONE_PLAYER_DIR } from '../../src/play/standalonePlayer';
 import { EXAMPLE_STORY_ROOT, ProjectRoot } from '../../src/project/ProjectRoot';
 import type { TStoryFile } from '../../src/stories/storyFile';
@@ -25,6 +27,7 @@ import {
     type TStoryContextsOptions,
 } from '../../src/storyContext/storyContextsOptions';
 import { truncateTables } from './database';
+import { FakeMailer } from './FakeMailer';
 import { copyExampleStory, makeTempStoriesRoot } from './storiesRoot';
 
 export type TTestStory = string | ({ id: string } & Partial<TStoryFile>);
@@ -54,6 +57,8 @@ export type TTestApp = {
     contexts: StoryContexts;
     stories: StoryRepository;
     sessions: SessionService;
+    mailer: FakeMailer;
+    wrongEmailDelays: () => number;
     project: (storyId: string) => ProjectRoot;
     story: (storyId: string) => Promise<TServerContext>;
     listen: () => Promise<number>;
@@ -74,6 +79,8 @@ const TEST_AUTH_OPTIONS: TAuthOptions = {
     allowedOrigins: DEFAULT_ALLOWED_ORIGINS,
 };
 
+export const TEST_PUBLIC_URL = 'http://story.test';
+
 const STUB_STANDALONE_PLAYER_DIR = path.resolve(import.meta.dirname, '../fixtures/standalonePlayer');
 
 const exists = async (file: string) => (await stat(file).catch(() => null)) !== null;
@@ -89,6 +96,7 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // copy of the example (unless its folder exists) and a row with the example's metadata (password `example`).
 // The web export zips a stub player unless `standalonePlayerDir` names another folder.
 // The story contexts do not watch the files unless `watch: true`. Git is unavailable unless `git.tokenKey` is set.
+// Mails go to `mailer`; the wrong-email delay of a password reset request is only counted.
 export const createTestApp = async ({
     controllers = [],
     overrideModules = [],
@@ -108,6 +116,15 @@ export const createTestApp = async ({
             ? await makeTempStoriesRoot()
             : { root: storiesRoot, cleanup: () => Promise.resolve() };
     const contextsOptions: TStoryContextsOptions = { watch, batchMs, idleMs, sweepMs };
+    const mailer = new FakeMailer();
+    let wrongEmailDelays = 0;
+    const passwordResetOptions: TPasswordResetOptions = {
+        publicUrl: TEST_PUBLIC_URL,
+        wrongEmailDelay: () => {
+            wrongEmailDelays++;
+            return Promise.resolve();
+        },
+    };
     const builder = Test.createTestingModule({ imports: [AppModule], controllers });
     for (const override of overrideModules) builder.overrideModule(override.replace).useModule(override.with);
     const moduleRef = await builder
@@ -121,6 +138,10 @@ export const createTestApp = async ({
         .useValue(contextsOptions)
         .overrideProvider(STANDALONE_PLAYER_DIR)
         .useValue(standalonePlayerDir ?? STUB_STANDALONE_PLAYER_DIR)
+        .overrideProvider(Mailer)
+        .useValue(mailer)
+        .overrideProvider(PASSWORD_RESET_OPTIONS)
+        .useValue(passwordResetOptions)
         .compile();
     const app = moduleRef.createNestApplication<NestExpressApplication>({ ...EXPRESS_APP_OPTIONS, logger: false });
     configureExpressApp(app);
@@ -147,6 +168,8 @@ export const createTestApp = async ({
         contexts,
         stories: app.get(StoryRepository),
         sessions: app.get(SessionService),
+        mailer,
+        wrongEmailDelays: () => wrongEmailDelays,
         project: (storyId) => new ProjectRoot(path.join(root, storyId), storyId),
         story: (storyId) => contexts.get(storyId),
         listen: () => Promise.resolve(portOf(server)),

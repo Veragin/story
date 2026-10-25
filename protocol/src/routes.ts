@@ -70,7 +70,10 @@ import type {
 import type {
     TCreateStoryBody,
     TImportStoryBody,
+    TEditStoryInfoDto,
     TLoginBody,
+    TRequestPasswordResetBody,
+    TResetPasswordBody,
     TSessionDto,
     TStoryAccessDto,
     TStoryDto,
@@ -82,8 +85,8 @@ import type { TCreateTriggerBody, TDeleteTriggerBody, TTriggerDto, TUpdateTrigge
 
 /**
  * `STORY_ROUTES` paths are relative to `storyApiPrefix(storyId)`. `GLOBAL_ROUTES` paths are
- * absolute and matched first, so a global route may live below a story (`login`, `getStoryAccess`:
- * the only ones there that need no grant).
+ * absolute and matched first, so a global route may live below a story (`login`, `getStoryAccess`,
+ * `requestPasswordReset`, `resetPassword`: the only ones there that need no grant).
  */
 export const API_PREFIX = '/api';
 
@@ -202,6 +205,8 @@ export const GLOBAL_ROUTES = {
     logout: { method: 'POST', path: '/api/logout', access: 'public' },
     getSession: { method: 'GET', path: '/api/session', access: 'public' },
     getStoryAccess: { method: 'GET', path: '/api/stories/:storyId/access', access: 'public' },
+    requestPasswordReset: { method: 'POST', path: '/api/stories/:storyId/password-reset', access: 'public' },
+    resetPassword: { method: 'PUT', path: '/api/stories/:storyId/password-reset', access: 'public' },
 } as const satisfies Record<
     string,
     { method: THttpMethod; path: `${typeof API_PREFIX}/${string}`; access: TRouteAccess }
@@ -282,13 +287,26 @@ export type TApiSpec = {
     getSession: { body: undefined; response: TSessionDto };
     /** Needs no grant. */
     getStoryAccess: { body: undefined; response: TStoryAccessDto };
+    /**
+     * Mails a link (`PASSWORD_RESET_TOKEN_PARAM`) valid for 12 h when `email` is the story's; a newer link
+     * replaces the older one. Otherwise, or when the story has no email, `400` after a 1 s delay.
+     * `429` after 5 requests per IP and story in 15 minutes; every request counts.
+     */
+    requestPasswordReset: { body: TRequestPasswordResetBody; response: undefined };
+    /**
+     * Sets the password, revokes every grant for the story and adds a grant like `login`.
+     * `400` for an unknown or expired token.
+     */
+    resetPassword: { body: TResetPasswordBody; response: undefined };
 
     /** An SSE stream, not JSON. */
     events: { body: undefined; response: never };
     getProject: { body: undefined; response: TProjectDto };
 
+    /** `TPublicStoryInfoDto` without a grant (a public story), else `TEditStoryInfoDto`. */
     getStoryInfo: { body: undefined; response: TStoryInfoDto };
-    updateStoryInfo: { body: TUpdateStoryBody; response: TStoryInfoDto };
+    /** `stale` carries a `TEditStoryInfoDto` as `current`. */
+    updateStoryInfo: { body: TUpdateStoryBody; response: TEditStoryInfoDto };
     /** A `<storyId>.zip` attachment, not JSON. */
     exportStory: { body: undefined; response: never };
     /** A `<storyId>-web.zip` attachment, not JSON: the standalone player, `play.json`, `data/` and `types/`. */
@@ -482,7 +500,13 @@ export const matchPath = (template: string, pathname: string): Record<string, st
 export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout', 'gitFetch', 'gitPush', 'gitPull'];
 
 /** `204 No Content`. */
-export const NO_CONTENT_ROUTES: readonly TRouteName[] = ['login', 'logout', 'deleteGitConfig'];
+export const NO_CONTENT_ROUTES: readonly TRouteName[] = [
+    'login',
+    'logout',
+    'requestPasswordReset',
+    'resetPassword',
+    'deleteGitConfig',
+];
 
 /** `201 Created`. */
 export const CREATED_ROUTES: readonly TRouteName[] = [

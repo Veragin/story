@@ -12,7 +12,6 @@ import {
     Typography,
 } from '@mui/material';
 import {
-    Edit,
     ExpandLess,
     ExpandMore,
     Lock,
@@ -26,7 +25,6 @@ import { StoryActionsMenu } from './StoryActionsMenu';
 
 type TProps = {
     story: TStoryListItemDto;
-    onEdit: () => void;
     onOpen: () => void;
     onPlay: () => void;
     onExport: () => void;
@@ -36,7 +34,6 @@ type TProps = {
 
 export const StoryCard = ({
     story,
-    onEdit,
     onOpen,
     onPlay,
     onExport,
@@ -101,9 +98,6 @@ export const StoryCard = ({
                 </Collapse>
             </CardContent>
             <CardActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-                <Button size="small" startIcon={<Edit />} onClick={onEdit}>
-                    {_('Edit')}
-                </Button>
                 <Button size="small" startIcon={<OpenInNew />} onClick={onOpen}>
                     {_('Open')}
                 </Button>

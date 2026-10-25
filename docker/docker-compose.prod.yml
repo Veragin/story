@@ -17,7 +17,9 @@
 # Secrets come from `.env` next to this file (`docker/.env`, copied from `.env.example`): `DB_PASSWORD`,
 # `MYSQL_ROOT_PASSWORD`. MySQL publishes no port; only the server reaches it. Optional: `GIT_TOKEN_KEY`
 # (`openssl rand -base64 32`; enables git for stories and encrypts their tokens, unset = git unavailable)
-# and `GIT_ALLOWED_HOSTS` (the hosts a story's git remote may point at).
+# and `GIT_ALLOWED_HOSTS` (the hosts a story's git remote may point at). `SMTP_URL` (e.g.
+# `smtps://user:password@smtp.example.com`) sends the password reset mails, unset = they are only logged;
+# their links start with `PUBLIC_URL`, `https://<SITE_ADDRESS>`. The sender is `MAIL_FROM` from the image.
 #
 # Story content lives in the `stories` volume, story metadata and logins in the database (`mysql`
 # volume), so a restart keeps everyone logged in. On start the server service (and only it:
@@ -57,6 +59,8 @@ services:
       DB_NAME: ${DB_NAME:-story}
       GIT_TOKEN_KEY: ${GIT_TOKEN_KEY:-}
       GIT_ALLOWED_HOSTS: ${GIT_ALLOWED_HOSTS:-}
+      PUBLIC_URL: https://${SITE_ADDRESS:-localhost}
+      SMTP_URL: ${SMTP_URL:-}
     depends_on:
       mysql:
         condition: service_healthy

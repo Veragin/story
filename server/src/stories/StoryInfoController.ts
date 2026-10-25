@@ -1,14 +1,16 @@
-import { Body, Controller, Res } from '@nestjs/common';
-import { STORY_ZIP_CONTENT_TYPE, type TStoryInfoDto } from '@story/protocol';
-import type { Response } from 'express';
+import { Body, Controller, Req, Res } from '@nestjs/common';
+import { STORY_ZIP_CONTENT_TYPE, type TEditStoryInfoDto, type TStoryInfoDto } from '@story/protocol';
+import type { Request, Response } from 'express';
+import { storyGrantOf } from '../auth/storyGrant';
 import { sendAttachment } from '../common/attachment';
 import { jsonObjectBody } from '../common/body';
 import { HttpError } from '../common/HttpError';
 import { ProtocolRoute } from '../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../common/RouteParams';
 import { StoryFolders } from './StoryFolders';
-import { buildStoryInfo } from './storyInfo';
+import { buildStoryInfo, publicStoryInfo } from './storyInfo';
 import { applyUpdateStoryBody, hashUpdatePassword } from './storyInput';
+import { StoryGitRepository } from '../database/repositories/StoryGitRepository';
 import { StoryRepository } from '../database/repositories/StoryRepository';
 import { StoryVersionConflictError } from './StoryVersionConflictError';
 
@@ -16,21 +18,27 @@ import { StoryVersionConflictError } from './StoryVersionConflictError';
 export class StoryInfoController {
     constructor(
         private readonly stories: StoryRepository,
+        private readonly storyGit: StoryGitRepository,
         private readonly folders: StoryFolders
     ) {}
 
     @ProtocolRoute('getStoryInfo')
-    async getStoryInfo(@RouteParams() { storyId }: THandlerParams<'getStoryInfo'>): Promise<TStoryInfoDto> {
+    async getStoryInfo(
+        @RouteParams() { storyId }: THandlerParams<'getStoryInfo'>,
+        @Req() req: Request
+    ): Promise<TStoryInfoDto> {
         const current = await this.stories.readVersioned(storyId);
         if (!current) throw HttpError.noStory(storyId);
-        return buildStoryInfo(storyId, current, this.folders.dir(storyId));
+        return storyGrantOf(req)
+            ? buildStoryInfo(storyId, current, this.folders.dir(storyId))
+            : publicStoryInfo(storyId, current.file);
     }
 
     @ProtocolRoute('updateStoryInfo')
     async updateStoryInfo(
         @RouteParams() { storyId }: THandlerParams<'updateStoryInfo'>,
         @Body() body: unknown
-    ): Promise<TStoryInfoDto> {
+    ): Promise<TEditStoryInfoDto> {
         const fields = jsonObjectBody(body);
         const passwordHash = await hashUpdatePassword(fields);
         const saved = await this.stories.exclusive(async (manager) => {
@@ -40,6 +48,9 @@ export class StoryInfoController {
             if (fields.version !== current.version) throw new StoryVersionConflictError(storyId);
             const file = applyUpdateStoryBody(storyId, current.file, fields, passwordHash);
             const version = await this.stories.write(storyId, file, current.version, manager);
+            if (file.email !== current.file.email && file.email !== '') {
+                await this.storyGit.setAuthorEmail(storyId, file.email, manager);
+            }
             return { file, version };
         });
         return buildStoryInfo(storyId, saved, this.folders.dir(storyId));

@@ -15,10 +15,8 @@ import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, playerUrl, STORY_ID } from '../api';
 import { GitButton } from './GitButton';
-import { modals } from './modals';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
-import { StorySettingsDialog } from './StorySettingsDialog';
 import { storyInfo } from './storyInfoStore';
 
 type TTab = {
@@ -63,11 +61,6 @@ const TABS: TTab[] = [
 
 const TOP_BAR_HEIGHT = 48;
 
-const openStorySettings = () =>
-    modals.open((close) => (
-        <StorySettingsDialog store={storyInfo} onClose={close} />
-    ));
-
 export const TopBar = observer(() => {
     const active =
         TABS.find((t) => t.pages.includes(router.route.page))?.value ?? false;
@@ -93,7 +86,8 @@ export const TopBar = observer(() => {
                     size="small"
                     aria-label={_('Story settings')}
                     data-action="story-settings"
-                    onClick={openStorySettings}
+                    href={router.href({ page: 'settings' })}
+                    data-active={router.route.page === 'settings'}
                 >
                     <SettingsIcon fontSize="small" />
                 </SSettings>
@@ -161,7 +155,12 @@ const SSettings = styled(IconButton)`
     flex-shrink: 0;
     margin-left: -${spacingCss(1.5)};
     opacity: 0.8;
-`;
+
+    &[data-active='true'] {
+        opacity: 1;
+        color: ${appTheme.palette.secondary.main};
+    }
+` as typeof IconButton;
 
 const STabs = styled(Tabs)`
     min-height: ${TOP_BAR_HEIGHT}px;

@@ -11,6 +11,7 @@ import { TimelinePage } from '../pages/Timeline';
 import { ChapterPage } from '../pages/Chapter/ChapterPage';
 import { EntitiesPage } from '../pages/Entities';
 import { StructurePage } from '../pages/Structure/StructurePage';
+import { StorySettingsPage } from '../pages/Settings/StorySettingsPage';
 import { StructureContext } from '../components/inputs/structureContext';
 import { structureStore } from '../context';
 
@@ -50,6 +51,8 @@ const renderPage = (route: TRoute) => {
             return <StructurePage section={route.section} name={route.name} />;
         case 'engine':
             return <EnginePage section={route.section} />;
+        case 'settings':
+            return <StorySettingsPage section={route.section} />;
         case 'canvas':
             return <CanvasPlayground />;
         case 'inputs':

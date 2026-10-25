@@ -558,10 +558,10 @@ describe('mockApi images', () => {
         expect(await api.getImage('story', 'landing')).toMatchObject({ file: 'data/assets/landing.png', url: null });
         await expect(api.getImage('story', 'cover')).rejects.toBeInstanceOf(ApiError);
         const up = await api.uploadImage('story', 'landing', { version: '', data: 'iVBORw0KGgo=' });
-        expect((await api.getStoryInfo()).hasLandingImage).toBe(true);
+        expect(await api.getStoryInfo()).toMatchObject({ hasLandingImage: true });
         await expect(api.deleteImage('story', 'landing', { version: '' })).rejects.toMatchObject({ isStale: true });
         expect(await api.deleteImage('story', 'landing', { version: up.version })).toMatchObject({ url: null });
-        expect((await api.getStoryInfo()).hasLandingImage).toBe(false);
+        expect(await api.getStoryInfo()).toMatchObject({ hasLandingImage: false });
     });
 });
 

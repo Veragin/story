@@ -17,6 +17,7 @@ import type {
     TCreateTypeBody,
     TDeleteGitConfigBody,
     TDeleteMapBody,
+    TEditStoryInfoDto,
     TEngineSection,
     TEngineSectionDto,
     TEntityDtoByKind,
@@ -57,6 +58,7 @@ import type {
     TUpdateMapBody,
     TUpdatePassageBody,
     TUpdateSourceBody,
+    TUpdateStoryBody,
     TUpdateTimelineLayoutBody,
     TUpdateTriggerBody,
     TUpdateTypeBody,
@@ -69,6 +71,8 @@ export type TVisualizerApi = {
     health(): Promise<THealthDto>;
     login(password: string): Promise<void>;
     getStoryInfo(): Promise<TStoryInfoDto>;
+    updateStoryInfo(body: TUpdateStoryBody): Promise<TEditStoryInfoDto>;
+    requestPasswordReset(email: string): Promise<void>;
     getStoryAccess(): Promise<TStoryAccessDto>;
     getProject(): Promise<TProjectDto>;
 

@@ -7,6 +7,7 @@ import {
     type TChapterDto,
     type TChapterLayoutDto,
     type TChapterPassagesDto,
+    type TEditStoryInfoDto,
     type TCharacterDto,
     type TEntityDto,
     type TEntityDtoByKind,
@@ -22,7 +23,6 @@ import {
     type TProjectDto,
     type TSourceDto,
     type TSourceOwner,
-    type TStoryInfoDto,
     type TTimelineLayoutDto,
     type TTriggerDto,
     type TValue,
@@ -60,7 +60,8 @@ const ENTITY_REF_NAMES: Record<TEntityKind, string> = {
 
 const PASSAGE_ID_RE = /['"`]([A-Za-z0-9_]+-[A-Za-z0-9_]+-[A-Za-z0-9_]*)['"`]/g;
 
-const MOCK_STORY: TStoryInfoDto = {
+const MOCK_STORY: TEditStoryInfoDto = {
+    access: 'edit',
     id: 'example',
     name: 'Example (mock)',
     author: '',
@@ -69,7 +70,10 @@ const MOCK_STORY: TStoryInfoDto = {
     public: true,
     version: 'mock-story',
     hasLandingImage: false,
+    email: '',
 };
+
+const sameEmail = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export const displayText = (value: TValue | undefined, fallback: string): string => {
     if (typeof value === 'string') return value || fallback;
@@ -130,6 +134,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
     let chapterLayouts = new Map<string, TChapterLayoutDto>();
     let images = new Map<string, TImageDto>();
     let sources = new Map<string, TSourceDto>();
+    let story = clone(MOCK_STORY);
 
     const load = (s: TMockSeed) => {
         const withVersion = <T>(x: T) => ({ ...clone(x), version: nextVersion() });
@@ -149,6 +154,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         );
         images = new Map();
         sources = new Map();
+        story = clone(MOCK_STORY);
         structureApi.load(s);
         engineApi.load();
         refreshDerived();
@@ -209,6 +215,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
             maps.set(mapId, { ...m, locations, version: nextVersion() });
         }
     };
+
+    const storyInfo = (): TEditStoryInfoDto => ({
+        ...story,
+        hasLandingImage: images.has(`story/${STORY_LANDING_IMAGE_ID}`),
+    });
 
     const get = <T>(map: Map<string, T>, id: string, what: string): T => map.get(id) ?? notFound(`${what} "${id}"`);
 
@@ -353,8 +364,31 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 git: gitAvailable ? ('up' as const) : ('unavailable' as const),
             })),
         login: () => reply(() => undefined),
-        getStoryInfo: () =>
-            reply(() => ({ ...MOCK_STORY, hasLandingImage: images.has(`story/${STORY_LANDING_IMAGE_ID}`) })),
+        getStoryInfo: () => reply(storyInfo),
+        updateStoryInfo: (body) =>
+            reply(() => {
+                if (body.version !== story.version) {
+                    fail(409, { error: 'stale', message: 'Changed meanwhile', current: storyInfo() });
+                }
+                const email = body.email?.trim() ?? story.email;
+                if (email !== story.email && email !== '') git.setAuthorEmail(email);
+                story = {
+                    ...story,
+                    name: body.name ?? story.name,
+                    author: body.author ?? story.author,
+                    description: body.description ?? story.description,
+                    public: body.public ?? story.public,
+                    email,
+                    version: nextVersion(),
+                };
+                return storyInfo();
+            }),
+        requestPasswordReset: (email) =>
+            reply(() => {
+                if (story.email === '' || !sameEmail(email, story.email)) {
+                    fail(400, { error: 'bad_request', message: "This is not the story's email" });
+                }
+            }),
         getStoryAccess: () => reply(() => ({ canEdit: true, canPlay: true })),
 
         getProject: () =>

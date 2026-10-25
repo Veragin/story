@@ -57,7 +57,9 @@ describe('MapPageStore — loading', () => {
 
     it("starts from an empty map of the story's mapSize (rows × columns, not transposed) when there is no map.json, and creates it on the first edit", async () => {
         const { api, store } = await setup({ emptyMap: true });
-        const { width, height } = (await api.getStoryInfo()).mapSize;
+        const info = await api.getStoryInfo();
+        if (info.access !== 'edit') throw new Error('The mock answers the edit info');
+        const { width, height } = info.mapSize;
         expect(width).not.toBe(height);
         expect(store.loadState).toBe('ready');
         expect(store.version).toBe('');

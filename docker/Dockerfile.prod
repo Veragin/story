@@ -20,6 +20,8 @@ RUN yarn install --immutable
 # `index.html` + `player/` with no URL baked in: the web export runs on any static host
 RUN yarn workspace @story/single-player build:standalone
 ENV SINGLE_PLAYER_STANDALONE_DIR=/app/clients/SinglePlayer/dist-standalone
+# The password reset mails' sender, hardcoded for now: replace it before going live (plans/rosti-release.md)
+ENV MAIL_FROM=info@story.cz
 # The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
 # `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
 RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/ && chmod +x docker/prod-entrypoint.sh

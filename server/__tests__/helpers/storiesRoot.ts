@@ -25,6 +25,7 @@ export const STORY_FIXTURE: TStoryFile = {
     mapSize: { width: 40, height: 30 },
     description: 'A test story',
     public: false,
+    email: '',
 };
 
 export const storyFixture = (overrides: Partial<TStoryFile> = {}): TStoryFile => ({ ...STORY_FIXTURE, ...overrides });

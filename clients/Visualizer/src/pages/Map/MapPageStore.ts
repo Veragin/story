@@ -245,7 +245,8 @@ export class MapPageStore implements IMapHost {
             if (!(e instanceof ApiError && e.isNotFound)) throw e;
             if (!this.isGlobal) throw new MissingMapError();
             // the server answers an empty map itself; the mock 404s
-            this.emptySize = (await this.api.getStoryInfo().catch(() => null))?.mapSize ?? null;
+            const info = await this.api.getStoryInfo().catch(() => null);
+            this.emptySize = info?.access === 'edit' ? info.mapSize : null;
             this.applyRemote(null, 'replace');
         }
     };
