@@ -1,19 +1,10 @@
-import {
-    Button,
-    List,
-    ListItemButton,
-    ListItemText,
-    ListSubheader,
-    styled,
-    Tab,
-    Tabs,
-    Tooltip,
-} from '@mui/material';
-import Add from '@mui/icons-material/Add';
-import FiberManualRecord from '@mui/icons-material/FiberManualRecord';
+import { styled, Tab, Tabs } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
-import { spacingCss } from '@story/ui';
+import {
+    SideMenu,
+    type TSideMenuGroup,
+} from '../../components/SideMenu/SideMenu';
 import { modals, router, type TStructureSection } from '../../shell';
 import { CreateLiteralDialog } from './CreateLiteralDialog';
 import { CreateTypeDialog } from './CreateTypeDialog';
@@ -95,119 +86,56 @@ export const StructureList = observer(({ editor }: TProps) => {
         },
     ];
 
-    const visibleGroups = groups.filter((group) => group.section === tab);
-
     const isDirty = (section: TStructureSection) =>
         (section === 'types' ? editor.type : editor.literal).dirty;
 
+    const menuGroups: TSideMenuGroup[] = groups
+        .filter((group) => group.section === tab)
+        .map((group) => ({
+            title: group.title,
+            onNew: group.onNew,
+            newAction: `new-${group.section}`,
+            entries: group.entries.map((entry) => {
+                const selected =
+                    editor.section === group.section &&
+                    editor.name === entry.name;
+                return {
+                    ...entry,
+                    href: router.href({
+                        page: 'structure',
+                        section: group.section,
+                        name: entry.name,
+                    }),
+                    selected,
+                    unsaved: selected && isDirty(group.section),
+                };
+            }),
+        }));
+
     return (
-        <SColumn>
-            <STabs
-                value={tab}
-                onChange={(_event, value: TStructureSection) => setTab(value)}
-                variant="fullWidth"
-            >
-                <Tab value="types" label={_('Types')} data-tab="types" />
-                <Tab value="literals" label={_('Literals')} data-tab="literals" />
-            </STabs>
-            <SList dense>
-                {visibleGroups.map((group) => (
-                    <li key={group.title} data-group={group.title}>
-                        <ul>
-                            <SSubheader>
-                                <span>{group.title}</span>
-                                {group.onNew && (
-                                    <Button
-                                        size="small"
-                                        startIcon={<Add fontSize="small" />}
-                                        onClick={group.onNew}
-                                        data-action={`new-${group.section}`}
-                                    >
-                                        {_('New')}
-                                    </Button>
-                                )}
-                            </SSubheader>
-                            {group.entries.map((entry) => {
-                                const selected =
-                                    editor.section === group.section &&
-                                    editor.name === entry.name;
-                                return (
-                                    <ListItemButton
-                                        key={entry.name}
-                                        component="a"
-                                        href={router.href({
-                                            page: 'structure',
-                                            section: group.section,
-                                            name: entry.name,
-                                        })}
-                                        selected={selected}
-                                        data-name={entry.name}
-                                    >
-                                        <ListItemText
-                                            primary={entry.name}
-                                            secondary={entry.secondary}
-                                        />
-                                        {selected && isDirty(group.section) && (
-                                            <Tooltip
-                                                title={_('Unsaved changes')}
-                                            >
-                                                <FiberManualRecord
-                                                    color="warning"
-                                                    sx={{ fontSize: 10 }}
-                                                />
-                                            </Tooltip>
-                                        )}
-                                    </ListItemButton>
-                                );
-                            })}
-                            {group.entries.length === 0 && (
-                                <SEmpty>{_('None yet.')}</SEmpty>
-                            )}
-                        </ul>
-                    </li>
-                ))}
-            </SList>
-        </SColumn>
+        <SideMenu
+            groups={menuGroups}
+            header={
+                <STabs
+                    value={tab}
+                    onChange={(_event, value: TStructureSection) =>
+                        setTab(value)
+                    }
+                    variant="fullWidth"
+                >
+                    <Tab value="types" label={_('Types')} data-tab="types" />
+                    <Tab
+                        value="literals"
+                        label={_('Literals')}
+                        data-tab="literals"
+                    />
+                </STabs>
+            }
+        />
     );
 });
-
-const SColumn = styled('div')`
-    display: flex;
-    flex-direction: column;
-    width: 260px;
-    flex: 0 0 260px;
-    min-height: 0;
-    border-right: 1px solid ${({ theme }) => theme.palette.divider};
-    background: ${({ theme }) => theme.palette.background.paper};
-`;
 
 const STabs = styled(Tabs)`
     flex: 0 0 auto;
     border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
-`;
-
-const SList = styled(List)`
-    flex: 1;
-    overflow: auto;
-    padding: 0;
-    & ul {
-        padding: 0;
-    }
-    & > li + li {
-        border-top: 1px solid ${({ theme }) => theme.palette.divider};
-    }
-`;
-
-const SSubheader = styled(ListSubheader)`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    line-height: 36px;
-    background: ${({ theme }) => theme.palette.background.paper};
-`;
-
-const SEmpty = styled('li')`
-    padding: ${spacingCss(0.5)} ${spacingCss(2)};
-    font-size: 12px;
-    color: ${({ theme }) => theme.palette.text.secondary};
 `;

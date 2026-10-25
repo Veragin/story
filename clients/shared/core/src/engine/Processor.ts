@@ -1,7 +1,7 @@
 import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
 import { DeltaTime, Time } from '@story/shared';
-import { TChapter, TChapterId, TLinkCost } from '@story/types';
+import { TChapter, TChapterId, TLinkClick, TLinkCost } from '@story/types';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from '../parsePassageId';
 
@@ -81,7 +81,7 @@ export class Processor {
             }
         }
 
-        this.e.story.goToPassage(action.passageId, action.cost, action.onFinish);
+        this.e.story.goToPassage(action);
     };
 
     getPossibleActions = (p: TUnkownPassageScreen) => {
@@ -93,16 +93,13 @@ export class Processor {
         if (cost === undefined) return true;
         const { items, tools } = this.parseCost(cost);
 
-        if (items !== undefined && items.some((item) => this.e.inventory.getItemAmount(item.id) < item.amount)) {
-            return false;
-        }
-        if (tools !== undefined && tools.some((toolId) => this.e.inventory.getItemAmount(toolId) < 1)) {
-            return false;
-        }
-        return true;
+        return (
+            items.every((item) => this.e.inventory.getItemAmount(item.id) >= item.amount) &&
+            tools.every((toolId) => this.e.inventory.getItemAmount(toolId) >= 1)
+        );
     };
 
-    parseCost = (cost?: TLinkCost) => {
+    parseCost = (cost?: TLinkCost): TParsedCost => {
         if (cost === undefined) {
             return { time: DeltaTime.fromS(0), items: [], tools: [] };
         }
@@ -110,7 +107,7 @@ export class Processor {
             return { time: cost, items: [], tools: [] };
         }
 
-        return { time: DeltaTime.fromS(0), ...cost };
+        return { time: cost.time ?? DeltaTime.fromS(0), items: cost.items ?? [], tools: cost.tools ?? [] };
     };
 
     private get activeChapters() {
@@ -119,5 +116,7 @@ export class Processor {
         );
     }
 }
+
+type TParsedCost = Pick<TLinkClick, 'time' | 'items' | 'tools'>;
 
 const isInRange = (start: Time, end: Time) => (time: Time) => !start.isAfter(time) && end.isAfter(time);

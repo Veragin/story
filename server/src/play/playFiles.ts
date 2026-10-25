@@ -11,6 +11,7 @@ import { listStoryDirFiles, STORY_TOP_DIRS } from '../stories/storyFiles';
 
 const PLAY_CONTENT_TYPES = new Map([
     ['.ts', 'text/typescript; charset=utf-8'],
+    ['.tsx', 'text/typescript; charset=utf-8'],
     ['.png', 'image/png'],
 ]);
 

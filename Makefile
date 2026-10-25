@@ -68,7 +68,7 @@ DEV_LOG = .dev.log
 
 # The Phase 11 gate: brings up every service (8100 SinglePlayer, 8101 Visualizer client,
 # 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
-# start it seeds the example story's database row when missing (server/scripts/dev.ts).
+# start it seeds the example and demo stories' database rows when missing (server/scripts/dev.ts).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
 # server that dies cannot take `make ai` / `make bash` down with it.
 start: stop

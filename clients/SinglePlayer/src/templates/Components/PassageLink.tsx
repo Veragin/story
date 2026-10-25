@@ -15,22 +15,17 @@ export const PassageLink = ({ link }: Props) => {
     const time =
         cost.time.s > 0 ? ` (${e.timeManager.renderDeltaTime(cost.time)})` : '';
     const items =
-        cost.items && cost.items.length > 0
+        cost.items.length > 0
             ? ` (${renderItems(cost.items, e.storyModule.itemInfo)})`
             : '';
-    const tools =
-        cost.tools && cost.tools.length > 0
-            ? ` [${cost.tools.join(', ')}]`
-            : '';
+    const tools = cost.tools.length > 0 ? ` [${cost.tools.join(', ')}]` : '';
 
     const isActive = e.processor.isActionPossible(link.cost);
 
     return (
         <SLink
             $isDisabled={!isActive}
-            onClick={() =>
-                e.story.goToPassage(link.passageId, link.cost, link.onFinish)
-            }
+            onClick={() => e.story.goToPassage(link)}
         >
             {link.text}
             {time}

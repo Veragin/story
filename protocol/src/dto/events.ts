@@ -14,6 +14,7 @@ export const RESOURCE_KINDS = [
     'project',
     'structure',
     'catalog',
+    'engine',
 ] as const;
 export type TResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -37,6 +38,7 @@ export const SSE_EVENT = {
  *  - `project`  — `project`: `register.ts`, `TWorldState.ts` or anything under `types/`
  *  - `structure` — `structure`: the literals and types (`types/`, `data/items/`, `data/catalogs/`)
  *  - `catalog`  — `<catalog>/<id>` (`races/elf`), or `<catalog>/*` for an edit of a catalog file
+ *  - `engine`   — the section (`onLinkClick`, `topbar`), or `*` for another file under `data/engine/`
  *
  * An id ending in `*` is a wildcard: refetch everything of that kind (in `chapterId`, if given).
  */

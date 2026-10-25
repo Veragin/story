@@ -1,6 +1,6 @@
 # Server
 
-`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
+`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` / `.tsx` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
 
 It runs from source, no build step: `node --import @swc-node/register/esm-register` (swc emits the decorator metadata Nest's DI needs; tsx/esbuild cannot). Vitest uses `unplugin-swc` for the same reason.
 
@@ -12,7 +12,7 @@ DB_HOST=127.0.0.1 yarn dev:server                 # outside the dev container, a
 curl localhost:8123/api/health                    # {"ok":true,"service":"@story/server",…,"database":"up"}
 ```
 
-`yarn dev` (and `make start`) runs it with the other services; in docker, `make up` + `make dev-server` runs it alone. The dev runner (`server/scripts/dev.ts`) first runs `stories:import-files --seed stories/example` (the example's database row), then starts `src/main.ts` and restarts it when `server/src`, `protocol/src` or `clients/shared/utils/src` change (chokidar: `node --watch` misses rename-saves under the swc hooks). Add a directory to `WATCHED` there when the server starts importing another workspace. `yarn workspace @story/server start` runs it once, without the seed or the watcher. Without a database, TypeORM retries for about 30 s and the server exits; the dev runner waits for the next change.
+`yarn dev` (and `make start`) runs it with the other services; in docker, `make up` + `make dev-server` runs it alone. The dev runner (`server/scripts/dev.ts`) first runs `stories:import-files --seed stories/example --seed stories/demo` (the database rows of the example and the demo), then starts `src/main.ts` and restarts it when `server/src`, `protocol/src` or `clients/shared/utils/src` change (chokidar: `node --watch` misses rename-saves under the swc hooks). Add a directory to `WATCHED` there when the server starts importing another workspace. `yarn workspace @story/server start` runs it once, without the seed or the watcher. Without a database, TypeORM retries for about 30 s and the server exits; the dev runner waits for the next change.
 
 To try writes safely, point it at a copy: `STORIES_ROOT=<copy> PORT=<port> yarn dev:server`.
 
@@ -32,11 +32,11 @@ server/
     stories/           StoryFolders (create / import / export), zip, storyInput, StoriesController, StoryInfoController, importStoryFiles
     storyContext/      StoryContexts (loaded stories, leases, idle eviction), StoryLeaseInterceptor, @StoryCtx()
     events/            EventBus (transactions), chokidar watcher, pathToEvent, SSE, EventsController
-    editor/            one module + thin controller per feature: chapters passages triggers entities catalogs structure source images maps layouts projectInfo
+    editor/            one module + thin controller per feature: chapters passages triggers entities catalogs structure source engine images maps layouts projectInfo
     project/           framework-free ts-morph library: ProjectRoot, SourceProject, readers/, writers/, registry, validate, values, migrations/
     json/              map.json and *.layout.json stores, atomic write (tmp + rename)
   scripts/             dev.ts (watch runner), importStoryFiles.ts (CLI)
-  seed/                example.story.json: the example story's row on a fresh database
+  seed/                <id>.story.json per seeded story (example, demo): its row on a fresh database
   template/            the story "create story" copies (not server code; type-checked like a story)
   __tests__/           integration suites + helpers/
 ```
@@ -100,14 +100,28 @@ curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secr
 - **Export for web** (`/export/web`, same access) is the standalone player's `index.html` and `player/` (the folder `SINGLE_PLAYER_STANDALONE_DIR`; `503 unavailable` until it is built), the play manifest as `play.json`, and the story export: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md).
 - **Import** is `multipart/form-data`: the `zip` file plus the New-story fields minus the map size, which comes from the zip's `data/locations/map.json`. A `story.json` in an older zip is skipped unread. Refused (400): zip-slip paths, symlinks, encrypted or duplicate entries, unknown root entries, no valid map, > 50 MB zipped or > 200 MB unpacked.
 - Loading a story rewrites a stale `tsconfig.json` and migrates an older story to the structure layout (`project/migrations/`), once.
+- **Story code** is `.ts` and `.tsx` (`isStoryCodeFile`, `stories/storyFiles.ts`): the ts-morph project, the source editor, the play manifest and `getPlayFile` (both served as text) and so the web export all take both. Prettier formats a file by its extension, so `<` in a `.tsx` file is JSX. Only the Topbar is meant to be `.tsx`; see the next section.
+
+### Engine settings (`data/engine/`)
+
+```
+data/engine/
+    index.ts        export const engine: TEngineSettings = { onLinkClick, Topbar: () => import('./Topbar') };
+    onLinkClick.ts  /** description */ export const onLinkClick: TOnLinkClick = (click, s, e) => { … };
+    Topbar.tsx      /** description */ export const Topbar = ({ s, e }: TTopbarProps) => <>…</>;
+```
+
+`data/index.ts` re-exports `engine` and the types live in `types/TEngine.ts`. Both settings are optional: without `onLinkClick` no hook runs, without `Topbar` the player shows `DefaultTopbar`. The Topbar is imported lazily, so the MultiEngine (plain node) never loads React or TSX.
+
+`GET /engine/:section` and `PUT /engine/:section` (`:section` is `onLinkClick | topbar`; `editor/engine/`, `project/readers/engine.ts`, `project/writers/engine.ts`) read and write one setting. The JSDoc of the primary export is the setting's `description`, and `code` is the file without it, so a client can send either one alone. A description without code writes a stub (a no-op `onLinkClick`, `Topbar = DefaultTopbar`), read back as `implemented: false`. The write checks the version (409), parses the code (422 with line and column), checks that the primary export is still there (422), sets the JSDoc and commits in one session with one `engine` event; the commit's type check answers new type errors with 422. Creating a setting also creates `data/engine/index.ts` and its entry; for a story made before engine settings it adds the `export * from './engine'` line to `data/index.ts`, and `types/TEngine.ts` (copied from `server/template/types/`) with its line in `types/index.ts`. Delete removes the file and its entry. DTOs and the client side: [`Visualizer.md`](Visualizer.md#api).
 
 ### `stories:import-files` and the seed
 
 ```bash
-yarn workspace @story/server stories:import-files [--seed <dir>]
+yarn workspace @story/server stories:import-files [--seed <dir>]…
 ```
 
-Uses `STORIES_ROOT` and `DB_*`, runs pending migrations, then for every story folder: a legacy `story.json` is validated, upserted as the row, its tsconfig migrated, and the file deleted (an invalid one is reported and kept). Idempotent. With `--seed <dir>` (metadata from `server/seed/<basename>.story.json`): a folder without a row gets the seed row; a missing folder is copied from `<dir>` only when the database holds no story. Dev runs it on every `yarn dev:server` start with `stories/example`; prod runs it in the entrypoint.
+Uses `STORIES_ROOT` and `DB_*`, runs pending migrations, then for every story folder: a legacy `story.json` is validated, upserted as the row, its tsconfig migrated, and the file deleted (an invalid one is reported and kept). Idempotent. `--seed <dir>` can be given several times (metadata from `server/seed/<basename>.story.json`): a folder without a row gets the seed row; a missing folder is copied from `<dir>` only when the database held no story before seeding (decided once, so every seed of a fresh install is copied). Dev runs it on every `yarn dev:server` start with `stories/example` and `stories/demo`; prod runs it in the entrypoint with the same two, copied into the image as `/app/.seed/`.
 
 ## Git
 
@@ -250,4 +264,4 @@ DB_HOST=127.0.0.1 yarn vitest run --project server       # against a local MySQL
 
 ## Production
 
-`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. How to deploy: [`README.md`](README.md#production).
+`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example and the demo. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. How to deploy: [`README.md`](README.md#production).

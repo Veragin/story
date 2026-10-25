@@ -14,11 +14,11 @@ export type TImportStoryFilesReport = {
     imported: { id: string; result: TUpsertResult }[];
     skipped: { id: string; reason: string }[];
     tsconfigRewritten: string[];
-    seeded: string | null;
+    seeded: string[];
 };
 
 export type TImportStoryFilesOptions = {
-    seed?: TStorySeed;
+    seeds?: TStorySeed[];
 };
 
 const storyDirs = async (root: string): Promise<string[]> => {
@@ -39,14 +39,14 @@ const importStory = async (
     id: string,
     stories: StoryRepository,
     report: TImportStoryFilesReport,
-    seedId: string | undefined
+    seedIds: ReadonlySet<string>
 ): Promise<void> => {
     const dir = path.join(root, id);
     const storyFile = path.join(dir, STORY_FILE);
     try {
         const text = await readTextOrNull(storyFile);
         if (text === null && !(await stories.exists(id))) {
-            if (id !== seedId) report.skipped.push({ id, reason: `no ${STORY_FILE} and no database row` });
+            if (!seedIds.has(id)) report.skipped.push({ id, reason: `no ${STORY_FILE} and no database row` });
             return;
         }
         const result = text === null ? null : await stories.upsert(id, parseStoryFile(JSON.parse(text)));
@@ -74,13 +74,18 @@ const copySeed = async (seedDir: string, target: string): Promise<void> => {
 };
 
 // A seed folder without a row gets the seed's metadata; a missing folder is copied in only while the
-// database holds no story at all (a fresh install), so a story deleted later stays deleted.
-const seedStory = async (root: string, seed: TStorySeed, stories: StoryRepository): Promise<string | null> => {
+// database held no story before seeding (a fresh install), so a story deleted later stays deleted.
+const seedStory = async (
+    root: string,
+    seed: TStorySeed,
+    stories: StoryRepository,
+    freshInstall: boolean
+): Promise<string | null> => {
     const id = storySeedId(seed);
     if (await stories.exists(id)) return null;
     const target = path.join(root, id);
     if (!(await exists(target))) {
-        if ((await stories.count()) > 0) return null;
+        if (!freshInstall) return null;
         await copySeed(seed.dir, target);
     }
     await stories.insert(id, seed.file);
@@ -93,10 +98,15 @@ export const importStoryFiles = async (
     stories: StoryRepository,
     options: TImportStoryFilesOptions = {}
 ): Promise<TImportStoryFilesReport> => {
-    const { seed } = options;
-    const report: TImportStoryFilesReport = { imported: [], skipped: [], tsconfigRewritten: [], seeded: null };
-    const seedId = seed === undefined ? undefined : storySeedId(seed);
-    for (const id of await storyDirs(root)) await importStory(root, id, stories, report, seedId);
-    if (seed !== undefined) report.seeded = await seedStory(root, seed, stories);
+    const { seeds = [] } = options;
+    const report: TImportStoryFilesReport = { imported: [], skipped: [], tsconfigRewritten: [], seeded: [] };
+    const seedIds = new Set(seeds.map(storySeedId));
+    for (const id of await storyDirs(root)) await importStory(root, id, stories, report, seedIds);
+    // decided once: the first seed's row must not stop the next seed from being copied
+    const freshInstall = (await stories.count()) === 0;
+    for (const seed of seeds) {
+        const seeded = await seedStory(root, seed, stories, freshInstall);
+        if (seeded !== null) report.seeded.push(seeded);
+    }
     return report;
 };

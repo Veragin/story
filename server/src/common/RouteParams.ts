@@ -1,6 +1,7 @@
 import { createParamDecorator, NotFoundException, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
+    isEngineSection,
     isEntityKind,
     isImageOwner,
     isSourceOwner,
@@ -22,6 +23,7 @@ const SOURCE_ROUTES: readonly TRouteName[] = ['getSource', 'updateSource'];
 
 const paramCheck = (route: TRouteName, name: string): TParamCheck | null => {
     if (name === 'kind') return { what: 'entity kind', isValid: isEntityKind };
+    if (name === 'section') return { what: 'engine section', isValid: isEngineSection };
     if (name !== 'owner') return null;
     return SOURCE_ROUTES.includes(route)
         ? { what: 'source owner', isValid: isSourceOwner }

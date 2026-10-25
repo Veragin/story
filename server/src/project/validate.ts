@@ -97,7 +97,13 @@ type TParsed = ts.SourceFile & { parseDiagnostics?: ts.Diagnostic[] };
 
 // `parseDiagnostics` is internal to TypeScript, hence the cast.
 export const parseSource = (text: string, fileName = 'snippet.ts'): TParsed =>
-    ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS) as TParsed;
+    ts.createSourceFile(
+        fileName,
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+        fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    ) as TParsed;
 
 // Exactly one expression: `1, x: 2` would smuggle a sibling property into an object literal.
 export const assertExpression = (code: string, field: string, file = '') => {

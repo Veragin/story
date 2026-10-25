@@ -11,6 +11,7 @@ export * from './dto/structure';
 export * from './dto/typeText';
 export * from './dto/image';
 export * from './dto/source';
+export * from './dto/engine';
 export * from './dto/play';
 export * from './dto/map';
 export * from './dto/layout';

@@ -1,13 +1,15 @@
 import { expect, vi } from 'vitest';
-import { DeltaTime } from '@story/shared';
+import { DeltaTime, type TPassageId } from '@story/shared';
 import { buildWorldState, createWorldState, type Engine } from '@story/core';
-import { itemInfo, register } from '@story/data';
+import { engine, itemInfo, register } from '@story/data';
 import type { TWorldState } from '@story/data';
 import type { TUnkownPassageScreen } from '@story/core';
+import type { TLink, TLinkCost } from '@story/types';
 
 export const TEST_STORY_ID = 'example';
 
-export const newSession = (): { s: TWorldState; e: Engine } => createWorldState(register, itemInfo, TEST_STORY_ID);
+export const newSession = (): { s: TWorldState; e: Engine } =>
+    createWorldState({ register, itemInfo, engine }, TEST_STORY_ID);
 
 // Annie's kingdom starts after Thomas's village: a walk this long lets her play exactly her first turn
 export const PAST_ANNIE_START = DeltaTime.fromS(
@@ -23,3 +25,10 @@ export const waitForPassage = async (e: Engine, passageId: string) => {
     });
     return e.store.passage as TUnkownPassageScreen;
 };
+
+export const linkTo = (passageId: TPassageId, cost?: TLinkCost, onFinish?: () => void): TLink<TPassageId> => ({
+    text: passageId,
+    passageId,
+    cost,
+    onFinish,
+});

@@ -16,6 +16,8 @@ import type {
     TCreateTriggerBody,
     TCreateTypeBody,
     TDeleteGitConfigBody,
+    TEngineSection,
+    TEngineSectionDto,
     TEntityDtoByKind,
     TEntityKind,
     TEntityListDto,
@@ -46,6 +48,7 @@ import type {
     TTriggerDto,
     TUpdateChapterBody,
     TUpdateChapterLayoutBody,
+    TUpdateEngineSectionBody,
     TUpdateCatalogEntryBody,
     TUpdateEntityBody,
     TUpdateGitConfigBody,
@@ -111,6 +114,9 @@ export type TVisualizerApi = {
 
     getSource(owner: TSourceOwner, id: string): Promise<TSourceDto>;
     updateSource(owner: TSourceOwner, id: string, body: TUpdateSourceBody): Promise<TSourceDto>;
+
+    getEngineSection(section: TEngineSection): Promise<TEngineSectionDto>;
+    updateEngineSection(section: TEngineSection, body: TUpdateEngineSectionBody): Promise<TEngineSectionDto>;
 
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
     uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;

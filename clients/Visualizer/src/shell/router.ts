@@ -1,4 +1,5 @@
 import { action, makeObservable, observable } from 'mobx';
+import { isEngineSection, type TEngineSection } from '@story/protocol';
 import type { TChapterId } from '@story/types';
 import { getUiState, setUiState } from '../ui-state';
 
@@ -15,6 +16,7 @@ export type TRoute =
     | { page: 'entities'; kind?: TEntityKind; id?: string }
     | { page: 'catalog'; catalog: string; id?: string }
     | { page: 'structure'; section?: TStructureSection; name?: string }
+    | { page: 'engine'; section?: TEngineSection }
     | { page: 'canvas' }
     | { page: 'inputs' };
 
@@ -68,6 +70,11 @@ export const parseHash = (hash: string): TRoute | null => {
             if (!isStructureSection(section) || parts.length > 3) return null;
             return parts[2] ? { page: 'structure', section, name: parts[2] } : { page: 'structure', section };
         }
+        case 'engine': {
+            if (parts.length === 1) return { page: 'engine' };
+            const section = parts[1];
+            return parts.length === 2 && isEngineSection(section) ? { page: 'engine', section } : null;
+        }
         case '_canvas':
             return parts.length === 1 ? { page: 'canvas' } : null;
         case '_inputs':
@@ -96,6 +103,8 @@ export const routeToHash = (route: TRoute): string => {
         case 'structure':
             if (!route.section) return '#/structure';
             return route.name ? `#/structure/${route.section}/${enc(route.name)}` : `#/structure/${route.section}`;
+        case 'engine':
+            return route.section ? `#/engine/${route.section}` : '#/engine';
         case 'canvas':
             return '#/_canvas';
         case 'inputs':

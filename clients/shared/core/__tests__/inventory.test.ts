@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { itemInfo } from '@story/data';
-import { newSession, PAST_ANNIE_START, waitForPassage } from './support/engine';
+import { linkTo, newSession, PAST_ANNIE_START, waitForPassage } from './support/engine';
 
 // before the first turn the default character is the dummy passage's: Thomas
 describe('Inventory', () => {
@@ -102,7 +102,7 @@ describe('Inventory', () => {
         expect(s.characters.annie.inventory[0].amount).toBe(10);
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', PAST_ANNIE_START);
+        e.story.goToPassage(linkTo('village-thomas-forest', PAST_ANNIE_START));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(e.inventory.getItemAmount('berries', 'annie')).toBe(9);
@@ -111,7 +111,7 @@ describe('Inventory', () => {
     it('charges a link"s item cost to the link"s character, not the active one', () => {
         const { s, e } = newSession();
 
-        e.story.goToPassage('kingdom-annie-palace', { items: [{ id: 'berries', amount: 1 }] });
+        e.story.goToPassage(linkTo('kingdom-annie-palace', { items: [{ id: 'berries', amount: 1 }] }));
 
         expect(e.inventory.getItemAmount('berries', 'annie')).toBe(9);
         expect(s.characters.thomas.inventory).toHaveLength(1);

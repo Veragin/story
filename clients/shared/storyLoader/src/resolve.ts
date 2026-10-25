@@ -1,7 +1,7 @@
 import { StoryLoaderError } from './StoryLoaderError';
-import type { THostModules } from './types';
+import type { THostModuleFamilies, THostModules, TModuleExports } from './types';
 
-export type TResolved = { kind: 'host'; specifier: string } | { kind: 'file'; path: string };
+export type TResolved = { kind: 'host'; exports: TModuleExports } | { kind: 'file'; path: string };
 
 const STORY_PACKAGES: Readonly<Record<string, string>> = {
     '@story/data': 'data',
@@ -20,12 +20,16 @@ const normalize = (path: string): string | null => {
     return parts.join('/');
 };
 
-// how bundler resolution finds a TS module: as written, `.js` meaning `.ts`, then `.ts`, then a folder's index
+const CODE_EXTENSIONS = ['.ts', '.tsx'];
+
+const isCodeFile = (path: string) => CODE_EXTENSIONS.some((ext) => path.endsWith(ext));
+
+// how bundler resolution finds a module: as written, `.js` meaning `.ts(x)`, then `.ts(x)`, then a folder's index
 const candidates = (path: string) => [
     path,
-    ...(path.endsWith('.js') ? [`${path.slice(0, -3)}.ts`] : []),
-    `${path}.ts`,
-    `${path}/index.ts`,
+    ...(path.endsWith('.js') ? CODE_EXTENSIONS.map((ext) => `${path.slice(0, -3)}${ext}`) : []),
+    ...CODE_EXTENSIONS.map((ext) => `${path}${ext}`),
+    ...CODE_EXTENSIONS.map((ext) => `${path}/index${ext}`),
 ];
 
 const storyPackageOf = (specifier: string): { root: string; rest: string } | null => {
@@ -34,21 +38,48 @@ const storyPackageOf = (specifier: string): { root: string; rest: string } | nul
     return root === undefined ? null : { root, rest: rest.join('/') };
 };
 
-const supported = (hostModules: THostModules) =>
-    ['relative paths', ...Object.keys(STORY_PACKAGES), ...Object.keys(hostModules)].join(', ');
+const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
-export const createResolver = (files: readonly string[], hostModules: THostModules) => {
+type TFamilyMember = { prefix: string; name: string };
+
+const familyMemberOf = (specifier: string, families: THostModuleFamilies): TFamilyMember | null => {
+    const slash = specifier.lastIndexOf('/');
+    const prefix = specifier.slice(0, slash);
+    const name = specifier.slice(slash + 1);
+    return slash > 0 && name !== '' && hasOwn(families, prefix) ? { prefix, name } : null;
+};
+
+const supported = (hostModules: THostModules, families: THostModuleFamilies) =>
+    [
+        'relative paths',
+        ...Object.keys(STORY_PACKAGES),
+        ...Object.keys(hostModules),
+        ...Object.keys(families).map((prefix) => `${prefix}/…`),
+    ].join(', ');
+
+export const createResolver = (
+    files: readonly string[],
+    hostModules: THostModules,
+    families: THostModuleFamilies = {}
+) => {
     const known = new Set(files);
 
     const findFile = (target: string, specifier: string, importer: string): string => {
-        const path = candidates(target).find((c) => c.endsWith('.ts') && known.has(c));
+        const path = candidates(target).find((c) => isCodeFile(c) && known.has(c));
         if (path === undefined) {
             throw new StoryLoaderError(
                 importer,
-                `cannot find "${specifier}" (looked for ${target}.ts and ${target}/index.ts)`
+                `cannot find "${specifier}" (looked for ${target}.ts(x) and ${target}/index.ts(x))`
             );
         }
         return path;
+    };
+
+    // CommonJS interop: without `__esModule` a default import would get the whole object
+    const familyExports = (specifier: string, importer: string, { prefix, name }: TFamilyMember): TModuleExports => {
+        const value = families[prefix](name);
+        if (value === undefined) throw new StoryLoaderError(importer, `cannot import "${specifier}": no such module`);
+        return { __esModule: true, default: value };
     };
 
     const inside = (path: string | null, root: string, specifier: string, importer: string): string => {
@@ -59,7 +90,10 @@ export const createResolver = (files: readonly string[], hostModules: THostModul
     };
 
     return (specifier: string, importer: string): TResolved => {
-        if (Object.prototype.hasOwnProperty.call(hostModules, specifier)) return { kind: 'host', specifier };
+        if (hasOwn(hostModules, specifier)) return { kind: 'host', exports: hostModules[specifier] };
+
+        const member = familyMemberOf(specifier, families);
+        if (member !== null) return { kind: 'host', exports: familyExports(specifier, importer, member) };
 
         if (specifier.startsWith('./') || specifier.startsWith('../')) {
             const target = normalize(dirname(importer) + specifier);
@@ -75,7 +109,7 @@ export const createResolver = (files: readonly string[], hostModules: THostModul
 
         throw new StoryLoaderError(
             importer,
-            `cannot import "${specifier}": a story may import only ${supported(hostModules)}`
+            `cannot import "${specifier}": a story may import only ${supported(hostModules, families)}`
         );
     };
 };

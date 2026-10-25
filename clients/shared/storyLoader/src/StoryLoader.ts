@@ -3,7 +3,7 @@ import '@story/shared';
 import { createResolver, type TResolved, type TResolver } from './resolve';
 import { errorText, StoryLoaderError } from './StoryLoaderError';
 import { STORY_IMPORT, transpile, type TTranspiled } from './transpile';
-import type { THostModules, TModuleExports, TStoryLoaderOptions, TStorySource } from './types';
+import type { TModuleExports, TStoryLoaderOptions, TStorySource } from './types';
 
 type TCompiled = TTranspiled & { dependencies: Map<string, TResolved> };
 
@@ -19,16 +19,14 @@ const APP_IMPORTER = '<app>';
  */
 export class StoryLoader {
     private readonly source: TStorySource;
-    private readonly hostModules: THostModules;
     private readonly resolve: TResolver;
     private readonly compiling = new Map<string, Promise<TCompiled>>();
     private readonly compiled = new Map<string, TCompiled>();
     private readonly modules = new Map<string, TModule>();
 
-    constructor({ source, files, hostModules }: TStoryLoaderOptions) {
+    constructor({ source, files, hostModules, hostModuleFamilies }: TStoryLoaderOptions) {
         this.source = source;
-        this.hostModules = hostModules;
-        this.resolve = createResolver(files, hostModules);
+        this.resolve = createResolver(files, hostModules, hostModuleFamilies);
     }
 
     /** `@story/data` for the story's entry; a relative specifier is relative to the story folder. */
@@ -36,7 +34,7 @@ export class StoryLoader {
 
     private importFrom = async (specifier: string, importer: string): Promise<TModuleExports> => {
         const resolved = this.resolve(specifier, importer);
-        if (resolved.kind === 'host') return this.hostModules[resolved.specifier];
+        if (resolved.kind === 'host') return resolved.exports;
         await this.prefetch(resolved.path);
         return this.evaluate(resolved.path);
     };
@@ -116,6 +114,6 @@ export class StoryLoader {
 
     private require = (specifier: string, importer: string, compiled: TCompiled): TModuleExports => {
         const resolved = compiled.dependencies.get(specifier) ?? this.resolve(specifier, importer);
-        return resolved.kind === 'host' ? this.hostModules[resolved.specifier] : this.evaluate(resolved.path);
+        return resolved.kind === 'host' ? resolved.exports : this.evaluate(resolved.path);
     };
 }

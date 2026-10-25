@@ -43,8 +43,8 @@ const boundaryZones = [
 
     zone(
         pkg('types'),
-        packagesExcept('shared', 'data', 'types'),
-        'types/ may import only @story/shared (and @story/data type-only).'
+        packagesExcept('shared', 'data', 'core', 'types'),
+        'types/ may import only @story/shared (and @story/data, @story/core type-only).'
     ),
 
     zone(
@@ -59,7 +59,17 @@ const boundaryZones = [
         'core/ is headless and may not import @story/ui.'
     ),
 
-    zone(pkg('data'), packagesExcept('shared', 'types', 'core', 'data'), 'data/ may not import @story/ui.'),
+    zone(
+        pkg('data'),
+        packagesExcept('shared', 'types', 'core', 'data', 'ui'),
+        'data/ may not import @story/story-loader.'
+    ),
+    // the Topbar is the story's only UI, so data/engine/ alone may import @story/ui
+    zone(
+        [`./${PACKAGE_DIRS.data}/*`, `./${PACKAGE_DIRS.data}/!(engine)/**`],
+        pkg('ui'),
+        'data/ may import @story/ui only in data/engine/.'
+    ),
 
     // its tests run the example story, so they hand it @story/core as a host module
     zone(
@@ -243,6 +253,21 @@ export default tseslint.config(
                                 'core/src must not import the story at runtime — read it through `engine.storyModule` (TStoryModule). `import type` is fine.',
                         },
                     ],
+                },
+            ],
+        },
+    },
+    {
+        files: [`${PACKAGE_DIRS.types}/**/*.ts`, `${SERVER}/template/types/**/*.ts`],
+        rules: {
+            '@typescript-eslint/no-restricted-imports': [
+                'error',
+                {
+                    paths: ['@story/data', '@story/core'].map((name) => ({
+                        name,
+                        allowTypeImports: true,
+                        message: `types/ must not import ${name} at runtime. \`import type\` is fine.`,
+                    })),
                 },
             ],
         },

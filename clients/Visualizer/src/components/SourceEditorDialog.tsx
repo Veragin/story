@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { reaction } from 'mobx';
+import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
     Alert,
@@ -12,15 +11,10 @@ import {
     styled,
     Typography,
 } from '@mui/material';
-import CodeMirror, {
-    EditorView,
-    type EditorState,
-} from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { lintGutter, setDiagnostics, type Diagnostic } from '@codemirror/lint';
 import type { TDiagnosticDto, TSourceOwner } from '@story/protocol';
 import { apiEvents, type ApiEvents, type TVisualizerApi } from '../api';
 import { modals } from '../shell';
+import { CodeEditor } from './CodeEditor/CodeEditor';
 import { SourceEditorStore } from './SourceEditorStore';
 
 type TProps = {
@@ -34,63 +28,15 @@ type TProps = {
 const formatDiagnostic = (d: TDiagnosticDto) =>
     `${d.file}:${d.line}:${d.column} ${d.code ? `TS${d.code}: ` : ''}${d.message}`;
 
-// server positions are 1-based
-const toCodeMirror = (
-    state: EditorState,
-    diagnostics: TDiagnosticDto[]
-): Diagnostic[] =>
-    diagnostics.map((d) => {
-        const line = state.doc.line(
-            Math.min(Math.max(1, d.line), state.doc.lines)
-        );
-        const from = Math.min(line.from + Math.max(0, d.column - 1), line.to);
-        const word =
-            /^[\w$]+/.exec(state.doc.sliceString(from, line.to))?.[0].length ??
-            0;
-        return {
-            from,
-            to: from + Math.max(word, from < line.to ? 1 : 0),
-            severity: 'error',
-            message: d.code ? `TS${d.code}: ${d.message}` : d.message,
-        };
-    });
-
 export const SourceEditorDialog = observer(
     ({ owner, id, api, events = apiEvents, onClose }: TProps) => {
         const [store] = useState(
             () => new SourceEditorStore(owner, id, api, events)
         );
-        const viewRef = useRef<EditorView | null>(null);
-
         useEffect(() => {
             void store.start();
             return () => store.destroy();
         }, [store]);
-
-        const showDiagnostics = () => {
-            const view = viewRef.current;
-            if (!view) return;
-            view.dispatch(
-                setDiagnostics(
-                    view.state,
-                    toCodeMirror(view.state, store.fileDiagnostics)
-                )
-            );
-        };
-        useEffect(
-            () => reaction(() => store.fileDiagnostics, showDiagnostics),
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-            [store]
-        );
-
-        const extensions = useMemo(
-            () => [
-                javascript({ typescript: true }),
-                lintGutter(),
-                EditorView.lineWrapping,
-            ],
-            []
-        );
 
         const close = async () => {
             if (
@@ -196,21 +142,14 @@ export const SourceEditorDialog = observer(
                         </Alert>
                     )}
                     {store.base ? (
-                        <SEditor>
-                            <CodeMirror
-                                value={store.text}
-                                onChange={(text) => store.setText(text)}
-                                extensions={extensions}
-                                theme="dark"
-                                height="100%"
-                                autoFocus
-                                readOnly={store.saving}
-                                onCreateEditor={(view) => {
-                                    viewRef.current = view;
-                                    showDiagnostics();
-                                }}
-                            />
-                        </SEditor>
+                        <CodeEditor
+                            value={store.text}
+                            onChange={(text) => store.setText(text)}
+                            diagnostics={store.fileDiagnostics}
+                            height="100%"
+                            autoFocus
+                            readOnly={store.saving}
+                        />
                     ) : (
                         !store.loadError && <CircularProgress size={24} />
                     )}
@@ -250,15 +189,4 @@ const SContent = styled(DialogContent)`
     flex-direction: column;
     gap: 8px;
     height: 70vh;
-`;
-
-const SEditor = styled('div')`
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    font-size: 13px;
-
-    & > div {
-        height: 100%;
-    }
 `;

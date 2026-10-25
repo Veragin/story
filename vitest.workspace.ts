@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import swc from 'unplugin-swc';
 import { defineWorkspace } from 'vitest/config';
 
@@ -26,6 +27,21 @@ export default defineWorkspace([
         test: {
             name: 'data',
             root: './stories/example/data',
+            environment: 'node',
+            include: ['__tests__/**/*.test.ts'],
+        },
+    },
+    {
+        // the story's own type universe: `@story/types` / `@story/data` otherwise resolve to the example
+        resolve: {
+            alias: {
+                '@story/types': fileURLToPath(new URL('./stories/demo/types/index.ts', import.meta.url)),
+                '@story/data': fileURLToPath(new URL('./stories/demo/data/index.ts', import.meta.url)),
+            },
+        },
+        test: {
+            name: 'demo-data',
+            root: './stories/demo/data',
             environment: 'node',
             include: ['__tests__/**/*.test.ts'],
         },

@@ -32,6 +32,8 @@ export * from './register';
 export type * from './TWorldState';
 /* itemInfo, TItemType, TItemInfo — the static per-item data the inventory merges in */
 export * from './items/itemInfo';
+/* engine — the story's engine settings: the `onLinkClick` hook and the custom `Topbar` */
+export * from './engine';
 
 /* No art here: an image is the `.png` next to the passage / character / npc file it belongs
    to, found by convention (SinglePlayer's `src/images.ts` reads them from the play manifest). Nothing under `data/`

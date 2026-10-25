@@ -23,7 +23,8 @@
 # secrets for docker compose, never baked into an image
 **/.env
 
-# Stories (plan D4): only the reference story goes into an image. Stories made locally stay local;
-# on the server they live in the `stories` volume (docker/docker-compose.prod.yml).
+# Stories (plan D4): only the reference story and the demo go into an image. Stories made locally stay
+# local; on the server they live in the `stories` volume (docker/docker-compose.prod.yml).
 stories/*
 !stories/example
+!stories/demo

@@ -13,12 +13,13 @@ stories/
     tsconfig.json   binds @story/types / @story/data to this story's own folders
     types/          the shape of the world (what a character _is_, what a location _has_)
     data/           the story itself (chapters, passages, characters, locations, items, art)
+  demo/             a bigger committed story (Thomas, the woodcutter); uses engine settings (data/engine/)
   <id>/             same shape; created, imported or exported from the landing page
 ```
 
-That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). A story's metadata (name, author, password hash, map size, description, public) is not in its folder: it is a row in the server's MySQL database, edited from the landing page (the example's row is seeded from `server/seed/example.story.json`).
+That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). A story's metadata (name, author, password hash, map size, description, public) is not in its folder: it is a row in the server's MySQL database, edited from the landing page (the rows of the example and the demo are seeded from `server/seed/<id>.story.json`).
 
-Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
+Only `stories/example/` and `stories/demo/` are committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
 Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
@@ -29,7 +30,7 @@ The split is also what keeps an engine upgrade safe for every story at once: aut
 ## Repository layout
 
 ```
-stories/        the stories (only example/ is committed); see above
+stories/        the stories (only example/ and demo/ are committed); see above
 clients/
   SinglePlayer/   @story/single-player            plays one story, Vite :8100
   Visualizer/     @story/visualizer-client        the author's editor, Vite :8101
@@ -56,7 +57,7 @@ yarn test          # Vitest; the server suites need MySQL (database story_test)
 Outside docker, run a MySQL 8 with the compose credentials (user `story`/`story`, databases `story` and `story_test`) and prefix the commands with `DB_HOST=127.0.0.1`.
 
 - **Migrations** run on their own: the server applies pending ones on boot. By hand: `yarn workspace @story/server migration:show|run|revert`; new ones: [`Server.md`](Server.md#database-and-migrations).
-- **Seeding**: on every start, the dev server runs `stories:import-files --seed stories/example`, which inserts the example's row from `server/seed/example.story.json` when it is missing (password `example`).
+- **Seeding**: on every start, the dev server runs `stories:import-files --seed stories/example --seed stories/demo`, which inserts each story's row from `server/seed/<id>.story.json` when it is missing (passwords `example` and `demo`; both stories are public).
 
 Single service, either way: `yarn dev:player` / `yarn dev:visualizer` / `yarn dev:server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-player` / `make dev-visualizer` / `make dev-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SinglePlayer all need the server.
 
@@ -95,7 +96,7 @@ make prod-logs
 make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The play site needs a DNS record too (`play.stories.example.com`, or set `PLAY_SITE_ADDRESS`); `play.localhost` works locally. The play site has its own login: a private story asks for its password there even when the editor is logged in to it. Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
+`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The play site needs a DNS record too (`play.stories.example.com`, or set `PLAY_SITE_ADDRESS`); `play.localhost` works locally. The play site has its own login: a private story asks for its password there even when the editor is logged in to it. Only Caddy publishes ports. On start the server applies the migrations and seeds the example and the demo ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
 
 Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) lets an author give a repository URL and access token when creating or editing a story on the landing page (a new connection pushes the story to `main`; branch, author and disconnect are in the Visualizer's git settings). It needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
 

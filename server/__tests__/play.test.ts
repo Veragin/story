@@ -134,8 +134,9 @@ describe('getPlayManifest', () => {
         expect(files).toContain('data/register.ts');
         expect(files).toContain('types/index.ts');
         expect(files).toContain('data/chapters/village/thomas.passages/intro.png');
+        expect(files).toContain('data/engine/Topbar.tsx');
         expect(files).toEqual([...files].sort());
-        expect(files.every((f) => /^(data|types)\/.+\.(ts|png)$/.test(f))).toBe(true);
+        expect(files.every((f) => /^(data|types)\/.+\.(ts|tsx|png)$/.test(f))).toBe(true);
         expect(files.some((f) => f.includes('__tests__') || f.includes('node_modules'))).toBe(false);
     });
 
@@ -171,6 +172,13 @@ describe('getPlayFile', () => {
         const changed = await playFile('open', 'data/register.ts', { 'if-none-match': etag });
         expect(changed.status).toBe(200);
         expect(changed.headers.get('etag')).not.toBe(etag);
+    });
+
+    it('serves a TSX file as source', async () => {
+        const res = await playFile('open', 'data/engine/Topbar.tsx');
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toMatch(/^text\/typescript/);
+        expect(await res.text()).toBe(await readFile(abs('open', 'data/engine/Topbar.tsx'), 'utf8'));
     });
 
     it('serves an image as PNG', async () => {
@@ -241,6 +249,7 @@ describe('exportPlayable', () => {
         expect(text('player/main.js')).toBe(PLAYER_JS);
         expect(JSON.parse(text(PLAY_MANIFEST_FILE))).toEqual((await manifest('open')).body);
         const { files }: { files: string[] } = JSON.parse(text(PLAY_MANIFEST_FILE));
+        expect(files).toContain('data/engine/Topbar.tsx');
         for (const file of files) {
             expect(Buffer.from(zip[file]).equals(await readFile(abs('open', file))), file).toBe(true);
         }

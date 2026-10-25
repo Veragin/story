@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWorldState, isStoryModule } from '@story/core';
 import { DeltaTime } from '@story/shared';
 import { StoryLoaderError } from '../src';
-import { exampleStoryTexts, loaderFor, memorySource } from './support/memorySource';
+import { exampleStoryTexts, HOST_MODULES, loaderFor, memorySource } from './support/memorySource';
 
 const isPassageFile = (file: string) => file.includes('.passages');
 
@@ -23,7 +23,7 @@ describe('the example story', () => {
 
     it('loads and plays', async () => {
         const { story } = await loadExample();
-        const { e } = createWorldState(story.register, story.itemInfo, 'example');
+        const { e } = createWorldState(story, 'example');
 
         await e.startAs('thomas');
 
@@ -107,5 +107,59 @@ describe('modules', () => {
         const source = memorySource({ 'data/index.ts': `throw new Error('boom');` });
 
         await expect(loaderFor(source).import('@story/data')).rejects.toThrow('data/index.ts: failed to run: boom');
+    });
+});
+
+describe('TSX', () => {
+    const element = (type: unknown, props: unknown) => ({ type, props });
+    const JSX_RUNTIME = { jsx: element, jsxs: element, Fragment: 'Fragment' };
+    const BOLT = 'BoltIcon';
+    const ICONS: Readonly<Record<string, unknown>> = { Bolt: BOLT };
+    const iconOf = (name: string) => ICONS[name];
+    const hosts = {
+        hostModules: { ...HOST_MODULES, 'react/jsx-runtime': JSX_RUNTIME },
+        hostModuleFamilies: { '@mui/icons-material': iconOf },
+    };
+
+    it('compiles a `.tsx` file with the automatic runtime, found without an extension and as a folder index', async () => {
+        const source = memorySource({
+            'data/index.ts': `export { title } from './Title';\nexport { icon } from './icon';`,
+            'data/Title.tsx': `export const title = <b title="t">{_('Hi')}</b>;`,
+            'data/icon/index.tsx': `export const icon = <></>;`,
+        });
+
+        const story = await loaderFor(source, hosts).import('@story/data');
+
+        expect(story.title).toEqual({ type: 'b', props: { title: 't', children: 'Hi' } });
+        expect(story.icon).toEqual({ type: 'Fragment', props: {} });
+    });
+
+    it('rejects JSX in a `.ts` file', async () => {
+        const source = memorySource({ 'data/index.ts': `export const title = <b>Hi</b>;` });
+
+        await expect(loaderFor(source, hosts).import('@story/data')).rejects.toThrow(
+            /data\/index\.ts: TypeScript \(JSX needs a \.tsx file\) failed/
+        );
+    });
+
+    it('resolves a member of a host module family as its default export', async () => {
+        const source = memorySource({
+            'data/index.ts': `import Bolt from '@mui/icons-material/Bolt';\nexport const icon = Bolt;`,
+        });
+
+        expect((await loaderFor(source, hosts).import('@story/data')).icon).toBe(BOLT);
+    });
+
+    it('names the importing file for an unknown family member', async () => {
+        const source = memorySource({
+            'data/index.ts': `import Nope from '@mui/icons-material/Nope';\nexport const icon = Nope;`,
+        });
+
+        const loading = loaderFor(source, hosts).import('@story/data');
+
+        await expect(loading).rejects.toBeInstanceOf(StoryLoaderError);
+        await expect(loading).rejects.toThrow(
+            'data/index.ts: cannot import "@mui/icons-material/Nope": no such module'
+        );
     });
 });

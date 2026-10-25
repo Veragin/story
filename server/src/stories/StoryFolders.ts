@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { cp, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Inject, Injectable } from '@nestjs/common';
 import { GLOBAL_MAP_ID, isStoryId, type TMapSizeDto } from '@story/protocol';
 import type { EntityManager } from 'typeorm';
@@ -11,9 +10,8 @@ import { STORIES_ROOT } from './storiesRoot';
 import type { TStoryFile } from './storyFile';
 import { StoryRepository } from '../database/repositories/StoryRepository';
 import { storyTsconfig } from './storyTsconfig';
+import { TEMPLATE_ROOT } from './templateRoot';
 import { zipStory } from './zip';
-
-const TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../template');
 
 const TEMPLATE_DIRS = ['data', 'types'];
 

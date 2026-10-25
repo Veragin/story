@@ -20,9 +20,9 @@ RUN yarn install --immutable
 # `index.html` + `player/` with no URL baked in: the web export runs on any static host
 RUN yarn workspace @story/single-player build:standalone
 ENV SINGLE_PLAYER_STANDALONE_DIR=/app/clients/SinglePlayer/dist-standalone
-# The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
-# `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
-RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/example && chmod +x docker/prod-entrypoint.sh
+# The example's and the demo's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; their
+# metadata is `server/seed/<id>.story.json`). `/app/stories` itself is shadowed by the volume at run time.
+RUN mkdir -p /app/.seed && cp -a stories/example stories/demo /app/.seed/ && chmod +x docker/prod-entrypoint.sh
 ENTRYPOINT ["/app/docker/prod-entrypoint.sh"]
 
 FROM app AS web

@@ -8,6 +8,7 @@ import type { EventBus, TTransaction } from '../events/EventBus';
 import { HttpError, isHttpError } from '../common/HttpError';
 import { importedNames, isIdentifierUsed, removeImportOf } from './ast';
 import { REPO_ROOT } from '../config/env';
+import { isStoryCodeFile } from '../stories/storyFiles';
 import { EXAMPLE_STORY_ROOT, enginePaths, type ProjectRoot } from './ProjectRoot';
 import { diagnoseProject, newDiagnostics, syntaxDiagnostic, withFields } from './validate';
 
@@ -77,7 +78,7 @@ export class SourceProject {
                 if (e.isDirectory()) {
                     if (e.name === 'node_modules' || skip.has(full)) continue;
                     await walk(full);
-                } else if (e.isFile() && e.name.endsWith('.ts') && !e.name.includes('.vistmp')) {
+                } else if (e.isFile() && isStoryCodeFile(e.name) && !e.name.includes('.vistmp')) {
                     out.push(full);
                 }
             }
@@ -221,7 +222,9 @@ const tsPrettierOptions = (): Promise<Options> => {
     return prettierOptions;
 };
 
-const formatTs = async (text: string): Promise<string> => format(text, await tsPrettierOptions());
+// the extension, not prettier's content sniffing, decides whether `<` opens JSX or a type assertion
+const formatTs = async (text: string, abs: string): Promise<string> =>
+    format(text, { ...(await tsPrettierOptions()), filepath: abs });
 
 type TAfterOp = (tx: TTransaction) => Promise<unknown>;
 
@@ -355,7 +358,7 @@ export class EditSession {
                 let text = sf.getFullText();
                 if (text === before) continue;
                 try {
-                    text = await formatTs(text);
+                    text = await formatTs(text, abs);
                 } catch (e) {
                     throw HttpError.invalid(
                         [syntaxDiagnostic(this.sp.root.rel(abs), e instanceof Error ? e.message : String(e))],

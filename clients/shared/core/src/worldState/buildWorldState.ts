@@ -11,6 +11,7 @@ import type {
     TLocationId,
     TNpc,
     TNpcId,
+    TEngineSettings,
 } from '@story/types';
 import { keysOf } from '@story/shared';
 
@@ -37,6 +38,7 @@ export type TStoryRegister = TWorldStateRegister & {
 export type TStoryModule = {
     register: TStoryRegister;
     itemInfo: TItemInfoRegister;
+    engine?: TEngineSettings;
 };
 
 /** The story's authored starting state, without an `Engine` (which would load the saved game). */

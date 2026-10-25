@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createWorldState } from '@story/core';
 import { DeltaTime, setToastHandler, Time } from '@story/shared';
-import { itemInfo, register } from '@story/data';
-import { newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
+import { engine, itemInfo, register } from '@story/data';
+import { linkTo, newSession, TEST_STORY_ID, waitForPassage } from './support/engine';
 import { installLocalStorageStub } from './support/localStorage';
 
 // private to `Engine`, pinned here
@@ -11,7 +11,7 @@ const LOCAL_STORAGE_KEY = `worldState:${TEST_STORY_ID}`;
 const playOneTurn = async () => {
     const session = newSession();
     await session.e.processor.continue();
-    session.e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+    session.e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
     await waitForPassage(session.e, 'village-thomas-forest');
     return session;
 };
@@ -99,7 +99,7 @@ describe('Engine save/load', () => {
         first.e.saveStateToLocalStorage();
 
         // apps keep the `s` reference forever, so loading must not replace it
-        const second = createWorldState(register, itemInfo, TEST_STORY_ID);
+        const second = createWorldState({ register, itemInfo, engine }, TEST_STORY_ID);
         expect(second.s.time.s).toBe(first.s.time.s);
 
         const held = second.s;
@@ -111,7 +111,7 @@ describe('Engine save/load', () => {
         const { e } = await playOneTurn();
         e.saveStateToLocalStorage();
 
-        const other = createWorldState(register, itemInfo, 'another-story');
+        const other = createWorldState({ register, itemInfo, engine }, 'another-story');
         expect(other.s.currentHistory).toEqual({});
 
         other.e.clearStateFromLocalStorage();
@@ -159,11 +159,13 @@ describe('Engine save/load', () => {
             vi.unstubAllGlobals();
             expect('localStorage' in globalThis).toBe(false);
 
-            expect(() => createWorldState(register, itemInfo, TEST_STORY_ID)).toThrow(ReferenceError);
-            expect(() => createWorldState(register, itemInfo, TEST_STORY_ID)).toThrow(/localStorage is not defined/);
+            expect(() => createWorldState({ register, itemInfo, engine }, TEST_STORY_ID)).toThrow(ReferenceError);
+            expect(() => createWorldState({ register, itemInfo, engine }, TEST_STORY_ID)).toThrow(
+                /localStorage is not defined/
+            );
 
             installLocalStorageStub();
-            expect(() => createWorldState(register, itemInfo, TEST_STORY_ID)).not.toThrow();
+            expect(() => createWorldState({ register, itemInfo, engine }, TEST_STORY_ID)).not.toThrow();
         });
     });
 });

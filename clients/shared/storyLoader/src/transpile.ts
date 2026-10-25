@@ -1,5 +1,5 @@
 import { init, parse } from 'es-module-lexer';
-import { transform } from 'sucrase';
+import { transform, type Options } from 'sucrase';
 import { errorText, StoryLoaderError } from './StoryLoaderError';
 
 export const STORY_IMPORT = '__storyImport';
@@ -21,11 +21,18 @@ const LIMITS =
 const compileError = (path: string, step: string, err: unknown) =>
     new StoryLoaderError(path, `${step} failed: ${errorText(err)}. ${LIMITS}`, err);
 
-const stripTypes = (path: string, source: string): string => {
+const isTsx = (path: string) => path.endsWith('.tsx');
+
+// the automatic runtime adds an `import … from 'react/jsx-runtime'`, which the host provides
+const JSX_OPTIONS: Options = { transforms: ['typescript', 'jsx'], jsxRuntime: 'automatic', production: true };
+const TS_OPTIONS: Options = { transforms: ['typescript'] };
+
+const toEsm = (path: string, source: string): string => {
     try {
-        return transform(source, { transforms: ['typescript'], disableESTransforms: true, filePath: path }).code;
+        const options = isTsx(path) ? JSX_OPTIONS : TS_OPTIONS;
+        return transform(source, { ...options, disableESTransforms: true, filePath: path }).code;
     } catch (err: unknown) {
-        throw compileError(path, 'TypeScript', err);
+        throw compileError(path, isTsx(path) ? 'TSX' : 'TypeScript (JSX needs a .tsx file)', err);
     }
 };
 
@@ -52,7 +59,7 @@ const lex = (path: string, esm: string) => {
 
 export const transpile = async (path: string, source: string): Promise<TTranspiled> => {
     await init;
-    const esm = stripTypes(path, source);
+    const esm = toEsm(path, source);
     const imports = lex(path, esm);
 
     if (imports.some((i) => i.d === IMPORT_META)) {
