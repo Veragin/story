@@ -1,5 +1,6 @@
 import { eventIds, type TChangeEvent } from '@story/protocol';
 import { isTempFile } from '../json/atomicWrite';
+import { engineSectionOfFile } from '../project/readers/engine';
 
 // primary: the file *is* the resource, so deleting it deletes the resource
 export type TResourceRef = Omit<TChangeEvent, 'version' | 'op'> & { primary: boolean };
@@ -61,6 +62,13 @@ const pathToResource = (relPath: string): TResourceRef | null => {
             };
         }
         return null;
+    }
+
+    if (area === 'engine') {
+        const section = parts.length === 3 ? engineSectionOfFile(file) : undefined;
+        return section
+            ? { kind: 'engine', id: section, primary: true }
+            : { kind: 'engine', id: eventIds.wildcard, primary: false };
     }
 
     if (parts.length !== 3) return null;

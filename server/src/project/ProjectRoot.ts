@@ -9,6 +9,11 @@ const ENGINE_PACKAGE_ENTRIES: Readonly<Record<string, string>> = {
     '@story/core': 'clients/shared/core/src/index.ts',
     '@story/shared': 'clients/shared/utils/src/index.ts',
     '@story/ui': 'clients/shared/ui/src/index.ts',
+    'react': 'node_modules/@types/react/index.d.ts',
+    'react/*': 'node_modules/@types/react/*',
+    '@mui/material': 'node_modules/@mui/material/index.d.ts',
+    '@mui/icons-material': 'node_modules/@mui/icons-material/index.d.ts',
+    '@mui/icons-material/*': 'node_modules/@mui/icons-material/*',
 };
 
 export const enginePaths = (fromRepo: (repoRelative: string) => string): Record<string, string[]> =>

@@ -14,6 +14,11 @@ import { StructurePage } from '../pages/Structure/StructurePage';
 import { StructureContext } from '../components/inputs/structureContext';
 import { structureStore } from '../context';
 
+// CodeMirror stays out of the main bundle until the tab opens
+const EnginePage = lazy(async () => ({
+    default: (await import('../pages/Engine/EnginePage')).EnginePage,
+}));
+
 // dev-only, kept out of the main bundle
 const CanvasPlayground = lazy(async () => ({
     default: (await import('../canvas/playground/CanvasPlayground'))
@@ -43,6 +48,8 @@ const renderPage = (route: TRoute) => {
             return <EntitiesPage catalog={route.catalog} id={route.id} />;
         case 'structure':
             return <StructurePage section={route.section} name={route.name} />;
+        case 'engine':
+            return <EnginePage section={route.section} />;
         case 'canvas':
             return <CanvasPlayground />;
         case 'inputs':

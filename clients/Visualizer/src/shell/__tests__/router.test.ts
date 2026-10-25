@@ -15,6 +15,9 @@ describe('router hash parsing', () => {
         ['#/structure/types', { page: 'structure', section: 'types' }],
         ['#/structure/types/TRace', { page: 'structure', section: 'types', name: 'TRace' }],
         ['#/structure/literals/TItemType', { page: 'structure', section: 'literals', name: 'TItemType' }],
+        ['#/engine', { page: 'engine' }],
+        ['#/engine/onLinkClick', { page: 'engine', section: 'onLinkClick' }],
+        ['#/engine/topbar', { page: 'engine', section: 'topbar' }],
         ['#/_canvas', { page: 'canvas' }],
         ['#/_inputs', { page: 'inputs' }],
     ];
@@ -40,6 +43,8 @@ describe('router hash parsing', () => {
         '#/entities/catalogs/races/elf/x',
         '#/structure/enums',
         '#/structure/types/TRace/x',
+        '#/engine/statusBar',
+        '#/engine/topbar/x',
     ])('returns null for %j', (hash) => {
         expect(parseHash(hash)).toBeNull();
     });

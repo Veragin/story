@@ -16,6 +16,7 @@ import { EntitiesModule } from './editor/entities/EntitiesModule';
 import { CatalogsModule } from './editor/catalogs/CatalogsModule';
 import { StructureModule } from './editor/structure/StructureModule';
 import { SourceModule } from './editor/source/SourceModule';
+import { EngineModule } from './editor/engine/EngineModule';
 import { ImagesModule } from './editor/images/ImagesModule';
 import { LayoutsModule } from './editor/layouts/LayoutsModule';
 import { MapsModule } from './editor/maps/MapsModule';
@@ -45,6 +46,7 @@ import { StoriesModule } from './stories/StoriesModule';
         CatalogsModule,
         StructureModule,
         SourceModule,
+        EngineModule,
         ImagesModule,
         MapsModule,
         LayoutsModule,

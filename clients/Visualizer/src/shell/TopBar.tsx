@@ -53,6 +53,12 @@ const TABS: TTab[] = [
         route: { page: 'structure' },
         pages: ['structure'],
     },
+    {
+        value: 'engine',
+        label: () => _('Engine'),
+        route: { page: 'engine' },
+        pages: ['engine'],
+    },
 ];
 
 const TOP_BAR_HEIGHT = 48;

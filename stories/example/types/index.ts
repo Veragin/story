@@ -28,3 +28,5 @@ export * from './TLocation';
 export * from './TPassage';
 /* TTimeTrigger */
 export * from './TTimeTrigger';
+/* TLinkClick, TOnLinkClick, TTopbarProps, TEngineSettings */
+export * from './TEngine';

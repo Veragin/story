@@ -61,7 +61,7 @@ describe('StaticStorySource', () => {
         expect(loaded).toEqual(manifest);
 
         const story = await loadStory(source, loaded.files);
-        const { e } = createWorldState(story.register, story.itemInfo, loaded.id);
+        const { e } = createWorldState(story, loaded.id);
         await e.startAs('thomas');
 
         await vi.waitFor(() => expect(e.store.passage?.id).toBe('intro'));

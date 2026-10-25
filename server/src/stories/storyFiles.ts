@@ -8,6 +8,8 @@ export const STORY_TOP_DIRS = ['data', 'types'];
 
 const ALWAYS_SKIPPED_DIRS = ['node_modules'];
 
+export const isStoryCodeFile = (name: string) => name.endsWith('.ts') || name.endsWith('.tsx');
+
 export const listStoryDirFiles = async (storyDir: string, skippedDirs: readonly string[] = []): Promise<string[]> => {
     const skipped = new Set([...ALWAYS_SKIPPED_DIRS, ...skippedDirs]);
     const out: string[] = [];

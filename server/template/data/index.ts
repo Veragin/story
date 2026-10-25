@@ -14,3 +14,5 @@ export * from './register';
 export type * from './TWorldState';
 /* itemInfo, TItemType, TItemInfo — the static per-item data the inventory merges in */
 export * from './items/itemInfo';
+/* engine — the story's engine settings: the `onLinkClick` hook and the custom `Topbar` */
+export * from './engine';

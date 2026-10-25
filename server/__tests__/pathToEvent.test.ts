@@ -38,6 +38,10 @@ describe('pathToResources', () => {
         ['data/npcs/NobleMan.ts', { kind: 'entity', id: 'npcs/nobleMan', primary: true }],
         ['data/register.ts', { kind: 'project', id: 'project', primary: false }],
         ['data/TWorldState.ts', { kind: 'project', id: 'project', primary: false }],
+        ['data/engine/onLinkClick.ts', { kind: 'engine', id: 'onLinkClick', primary: true }],
+        ['data/engine/Topbar.tsx', { kind: 'engine', id: 'topbar', primary: true }],
+        ['data/engine/index.ts', { kind: 'engine', id: '*', primary: false }],
+        ['data/engine/helpers/stats.ts', { kind: 'engine', id: '*', primary: false }],
     ])('%s', (file, expected) => {
         expect(pathToResources(file)).toEqual([expected]);
     });

@@ -30,7 +30,7 @@ const toDto = (sp: SourceProject, abs: string): TSourceDto => {
 };
 
 // Positioned, unlike the prettier message `commit` would report.
-const syntaxErrors = (file: string, text: string): TDiagnosticDto[] => {
+export const syntaxErrors = (file: string, text: string): TDiagnosticDto[] => {
     const sf = parseSource(text, file);
     return (sf.parseDiagnostics ?? []).map((d) => {
         const pos = sf.getLineAndCharacterOfPosition(d.start ?? 0);

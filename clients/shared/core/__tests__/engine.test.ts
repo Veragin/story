@@ -1,17 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
-import { DeltaTime, Time } from '@story/shared';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DeltaTime, setToastHandler, Time } from '@story/shared';
 import { createWorldState, type Engine, type TPassagesModule } from '@story/core';
 import { itemInfo, register } from '@story/data';
 import type { TWorldState } from '@story/data';
-import type { TChapterId, TChapterPassage } from '@story/types';
-import { newSession, PAST_ANNIE_START, TEST_STORY_ID, waitForPassage } from './support/engine';
+import type { TChapterId, TChapterPassage, TEngineSettings } from '@story/types';
+import { linkTo, newSession, PAST_ANNIE_START, TEST_STORY_ID, waitForPassage } from './support/engine';
 
 // `Array.prototype.at` is ES2022; the libs target ES2020
 const last = <T>(items: T[]): T => items[items.length - 1];
 
 type TPassageFn = (s: TWorldState, e: Engine) => TChapterPassage<TChapterId>;
 
-const sessionWith = (extra: Record<string, TPassageFn>) => {
+const sessionWith = (extra: Record<string, TPassageFn>, engine?: TEngineSettings) => {
     const passages = {
         ...register.passages,
         village: async (): Promise<TPassagesModule> => {
@@ -19,7 +19,10 @@ const sessionWith = (extra: Record<string, TPassageFn>) => {
             return { default: { ...module.default, ...extra } };
         },
     };
-    return createWorldState({ ...register, passages } as typeof register, itemInfo, TEST_STORY_ID);
+    return createWorldState(
+        { register: { ...register, passages } as typeof register, itemInfo, engine },
+        TEST_STORY_ID
+    );
 };
 
 const screen = (
@@ -87,7 +90,7 @@ describe('Engine turn loop', () => {
         expect(actions).toHaveLength(1);
         expect(actions[0].passageId).toBe('village-thomas-forest');
 
-        e.story.goToPassage(actions[0].passageId, actions[0].cost);
+        e.story.goToPassage(actions[0]);
         const forest = await waitForPassage(e, 'village-thomas-forest');
 
         expect(forest.title).toBe('Forest');
@@ -99,7 +102,7 @@ describe('Engine turn loop', () => {
         const { s, e } = newSession();
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
         await waitForPassage(e, 'village-thomas-forest');
 
         const thomas = e.history.data.thomas!;
@@ -115,7 +118,7 @@ describe('Engine turn loop', () => {
         const { s, e } = newSession();
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(s.currentHistory.thomas).toMatchObject({ passageId: 'village-thomas-forest' });
@@ -126,7 +129,7 @@ describe('Engine turn loop', () => {
         const { e } = newSession();
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', PAST_ANNIE_START);
+        e.story.goToPassage(linkTo('village-thomas-forest', PAST_ANNIE_START));
         await waitForPassage(e, 'village-thomas-forest');
 
         // Annie is auto-played; only the main character's passages reach the store
@@ -141,7 +144,7 @@ describe('Engine turn loop', () => {
         const onFinish = vi.fn();
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10), onFinish);
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10), onFinish));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(onFinish).toHaveBeenCalled();
@@ -161,7 +164,7 @@ describe('Engine turn loop', () => {
         trigger.time = Time.fromS(s.time.s + DeltaTime.fromMin(5).s);
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(condition).toHaveBeenCalled();
@@ -177,7 +180,7 @@ describe('Engine turn loop', () => {
         trigger.time = Time.fromS(s.time.s + DeltaTime.fromHour(50).s);
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(action).not.toHaveBeenCalled();
@@ -193,7 +196,7 @@ describe('Engine turn loop', () => {
         trigger.time = Time.fromS(s.time.s + DeltaTime.fromMin(5).s);
 
         await e.processor.continue();
-        e.story.goToPassage('village-thomas-forest', DeltaTime.fromMin(10));
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
         await waitForPassage(e, 'village-thomas-forest');
 
         expect(action).not.toHaveBeenCalled();
@@ -212,13 +215,13 @@ describe('Engine turn loop', () => {
             await soloThomas(e);
             expect(execute).not.toHaveBeenCalled();
 
-            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            e.story.goToPassage(linkTo('village-thomas-probe', DeltaTime.fromMin(1)));
             await waitForPassage(e, 'village-thomas-probe');
             expect(execute).toHaveBeenCalledTimes(1);
 
             // Re-entering the same passage is a new entry.
             const turns = e.history.data.thomas!.length;
-            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            e.story.goToPassage(linkTo('village-thomas-probe', DeltaTime.fromMin(1)));
             await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(2));
             expect(e.history.data.thomas).toHaveLength(turns + 1);
         });
@@ -236,7 +239,7 @@ describe('Engine turn loop', () => {
             await soloThomas(e);
             expect(s.characters.thomas.health).toBeGreaterThan(1);
 
-            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            e.story.goToPassage(linkTo('village-thomas-probe', DeltaTime.fromMin(1)));
             const probe = await waitForPassage(e, 'village-thomas-probe');
 
             expect(s.characters.thomas.health).toBe(1);
@@ -268,10 +271,10 @@ describe('Engine turn loop', () => {
             });
             await soloThomas(e);
 
-            e.story.goToPassage('village-thomas-probe', DeltaTime.fromMin(1));
+            e.story.goToPassage(linkTo('village-thomas-probe', DeltaTime.fromMin(1)));
             const probe = await waitForPassage(e, 'village-thomas-probe');
             const [link] = e.processor.getPossibleActions(probe);
-            e.story.goToPassage(link.passageId, link.cost, link.onFinish);
+            e.story.goToPassage(link);
             const next = await waitForPassage(e, 'village-thomas-next');
 
             expect(seenByOnFinish).toHaveBeenCalledWith(42);
@@ -294,7 +297,7 @@ describe('Engine turn loop', () => {
             });
             await soloThomas(e);
 
-            e.story.goToPassage('village-thomas-hop', DeltaTime.fromMin(1));
+            e.story.goToPassage(linkTo('village-thomas-hop', DeltaTime.fromMin(1)));
             await waitForPassage(e, 'village-thomas-next');
 
             expect(execute).toHaveBeenCalledTimes(1);
@@ -336,6 +339,119 @@ describe('Engine turn loop', () => {
             expect(restExecute).toHaveBeenCalledTimes(1);
             expect(last(e.history.data.annie!)).toMatchObject({ reason: 'NO_ACTIONS' });
         });
+    });
+});
+
+describe('engine onLinkClick', () => {
+    afterEach(() => {
+        setToastHandler(() => {});
+        vi.restoreAllMocks();
+    });
+
+    it('receives the link, its character and the parsed cost', async () => {
+        const onLinkClick = vi.fn();
+        const { s, e } = sessionWith({}, { onLinkClick });
+        await soloThomas(e);
+
+        const link = linkTo('village-thomas-forest', { time: DeltaTime.fromMin(10), tools: ['bow'] });
+        e.story.goToPassage(link);
+        await waitForPassage(e, 'village-thomas-forest');
+
+        expect(onLinkClick).toHaveBeenCalledTimes(1);
+        expect(onLinkClick).toHaveBeenCalledWith(
+            { link, characterId: 'thomas', time: DeltaTime.fromMin(10), items: [], tools: ['bow'] },
+            s,
+            e
+        );
+    });
+
+    it('runs for a link an auto-played character takes', async () => {
+        const onLinkClick = vi.fn();
+        const { s, e } = sessionWith(
+            {
+                'village-annie-probe': () => ({
+                    ...screen('probe', {
+                        body: [
+                            { links: [{ text: 'rest', passageId: 'village-annie-rest', cost: DeltaTime.fromMin(5) }] },
+                        ],
+                    }),
+                    characterId: 'annie',
+                }),
+                'village-annie-rest': () => ({ ...screen('rest', {}), characterId: 'annie' }),
+                'village-thomas-probe': () => screen('probe', {}),
+            },
+            { onLinkClick }
+        );
+        e.history.data.annie = [{ passageId: 'village-annie-probe', time: s.time }];
+        e.history.data.thomas = [
+            { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+        ];
+
+        await e.processor.continue();
+        await waitForPassage(e, 'village-thomas-probe');
+
+        expect(onLinkClick).toHaveBeenCalledWith(
+            expect.objectContaining({
+                link: expect.objectContaining({ passageId: 'village-annie-rest' }),
+                characterId: 'annie',
+                time: DeltaTime.fromMin(5),
+            }),
+            s,
+            e
+        );
+    });
+
+    it('runs before the next passage is built', async () => {
+        const { s, e } = sessionWith(
+            {
+                'village-thomas-next': (s) =>
+                    screen('next', { body: [{ condition: s.characters.thomas.health === 7, text: 'saw it' }] }),
+            },
+            {
+                onLinkClick: (_click, s) => {
+                    s.characters.thomas.health = 7;
+                },
+            }
+        );
+        await soloThomas(e);
+
+        e.story.goToPassage(linkTo('village-thomas-next', DeltaTime.fromMin(1)));
+        const next = await waitForPassage(e, 'village-thomas-next');
+
+        expect(next.body[0].condition).toBe(true);
+        expect(s.characters.thomas.health).toBe(7);
+    });
+
+    it('leaves navigation unchanged without a hook', async () => {
+        const { s, e } = sessionWith({});
+        await soloThomas(e);
+        const start = s.time.s;
+
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
+        await waitForPassage(e, 'village-thomas-forest');
+
+        expect(s.time.s).toBe(start + DeltaTime.fromMin(10).s);
+    });
+
+    it('still navigates when the hook throws, and tells the player', async () => {
+        const toast = vi.fn();
+        setToastHandler(toast);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { e } = sessionWith(
+            {},
+            {
+                onLinkClick: () => {
+                    throw new Error('boom');
+                },
+            }
+        );
+        await soloThomas(e);
+
+        e.story.goToPassage(linkTo('village-thomas-forest', DeltaTime.fromMin(10)));
+        await waitForPassage(e, 'village-thomas-forest');
+
+        expect(consoleError).toHaveBeenCalled();
+        expect(toast).toHaveBeenCalledWith(expect.stringContaining('boom'), { variant: 'error' });
     });
 });
 
@@ -397,6 +513,7 @@ describe('Processor cost handling', () => {
         expect(e.processor.parseCost({ items: [{ id: 'berries', amount: 2 }] })).toEqual({
             time: DeltaTime.fromS(0),
             items: [{ id: 'berries', amount: 2 }],
+            tools: [],
         });
     });
 

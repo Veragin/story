@@ -9,7 +9,7 @@ const SERVER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const WATCHED = ['src', '../protocol/src', '../clients/shared/utils/src'].map((dir) => path.resolve(SERVER_ROOT, dir));
 const DEBOUNCE_MS = 150;
 const LOADER = ['--import', '@swc-node/register/esm-register'];
-const EXAMPLE_SEED = path.resolve(SERVER_ROOT, '../stories/example');
+const SEEDS = ['example', 'demo'].map((id) => path.resolve(SERVER_ROOT, '../stories', id));
 
 let child: ChildProcess | undefined;
 let timer: NodeJS.Timeout | undefined;
@@ -17,9 +17,10 @@ let changed: string | undefined;
 let restarting = false;
 let closing = false;
 
-// the committed example has no story.json (D4): its row comes from server/seed, once per database
+// the committed stories have no story.json (D4): their rows come from server/seed, once per database
 const importStoryFiles = async () => {
-    const importer = spawn(process.execPath, [...LOADER, 'scripts/importStoryFiles.ts', '--seed', EXAMPLE_SEED], {
+    const seedArgs = SEEDS.flatMap((dir) => ['--seed', dir]);
+    const importer = spawn(process.execPath, [...LOADER, 'scripts/importStoryFiles.ts', ...seedArgs], {
         cwd: SERVER_ROOT,
         stdio: 'inherit',
     });

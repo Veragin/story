@@ -3,16 +3,15 @@ import { Modal, Row, spacingCss, Text } from '@story/ui';
 import { useState } from 'react';
 import { Inventory } from './Inventory/Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import FavoriteIcon from '@mui/icons-material/Favorite';
 import { observer } from 'mobx-react-lite';
 import { useEngine, useWorldState } from '../../context';
 import { characterImage } from '../../images';
 import { restartGame } from '../../restartGame';
+import { StoryTopbar } from './Topbar/StoryTopbar';
 
 export const StatusBar = observer(() => {
     const e = useEngine();
     const s = useWorldState();
-    const char = s.characters[s.mainCharacterId];
     const [openInventory, setOpenInventory] = useState(false);
     const character = e.storyModule.register.characters[s.mainCharacterId];
     const portrait = characterImage(s.mainCharacterId);
@@ -30,12 +29,9 @@ export const StatusBar = observer(() => {
                 )}
                 <Text>{character.name}</Text>
             </SCharacter>
-            <Tooltip title="Health">
-                <SStat>
-                    <FavoriteIcon />
-                    <Text>{Math.floor(char.health)}%</Text>
-                </SStat>
-            </Tooltip>
+            <SStats>
+                <StoryTopbar />
+            </SStats>
 
             <Tooltip title="Inventory">
                 <Button onClick={() => setOpenInventory(true)}>
@@ -80,10 +76,10 @@ export const SCharacter = styled(Row)`
     gap: ${spacingCss(1)};
 `;
 
-export const SStat = styled(Row)`
+export const SStats = styled(Row)`
     align-items: center;
-    gap: ${spacingCss(0.5)};
-    width: 90px;
+    gap: ${spacingCss(2)};
+    flex-wrap: wrap;
 `;
 
 export const SButtons = styled(Row)`

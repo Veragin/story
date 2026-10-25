@@ -8,6 +8,7 @@ import type {
     TUpdateChapterBody,
 } from './dto/chapter';
 import type { TOkDto } from './dto/common';
+import type { TEngineSection, TEngineSectionDto, TUpdateEngineSectionBody } from './dto/engine';
 import type {
     TCreateEntityBody,
     TDeleteEntityBody,
@@ -158,6 +159,9 @@ export const STORY_ROUTES = {
     getSource: { method: 'GET', path: '/source/:owner/:id', access: 'read' },
     updateSource: { method: 'PUT', path: '/source/:owner/:id', access: 'write' },
 
+    getEngineSection: { method: 'GET', path: '/engine/:section', access: 'read' },
+    updateEngineSection: { method: 'PUT', path: '/engine/:section', access: 'write' },
+
     getImage: { method: 'GET', path: '/images/:owner/:id', access: 'read' },
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
@@ -250,7 +254,9 @@ export type TRouteParams<R extends TRouteName> = {
           ? R extends 'getSource' | 'updateSource'
               ? TSourceOwner
               : TImageOwner
-          : string;
+          : K extends 'section'
+            ? TEngineSection
+            : string;
 };
 
 /** `body: undefined` means the route takes none. Status codes: see `CREATED_ROUTES`, `NO_CONTENT_ROUTES`. */
@@ -342,6 +348,15 @@ export type TApiSpec = {
 
     getSource: { body: undefined; response: TSourceDto };
     updateSource: { body: TUpdateSourceBody; response: TSourceDto };
+
+    /** A missing file answers `exists: false`, `version: ''` and an empty `description` and `code`. */
+    getEngineSection: { body: undefined; response: TEngineSectionDto };
+    /**
+     * Creates the file when missing, plus its entry in `data/engine/index.ts` (and that file, and
+     * `export * from './engine'` in `data/index.ts`). `delete: true` removes both and answers the
+     * missing section.
+     */
+    updateEngineSection: { body: TUpdateEngineSectionBody; response: TEngineSectionDto };
 
     getImage: { body: undefined; response: TImageDto };
     /** The PNG itself, not JSON. Use `TImageDto.url`. */

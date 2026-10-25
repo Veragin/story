@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { ts } from 'ts-morph';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
 import { migrateStoryTsconfig, storyTsconfig } from '../src/stories/storyTsconfig';
@@ -17,6 +18,27 @@ const STALE_TSCONFIG = JSON.stringify({
     },
     include: ['data', 'types'],
 });
+
+const PARSE_HOST: ts.ParseConfigFileHost = {
+    ...ts.sys,
+    onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
+        throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+    },
+};
+
+const compilerOptionsOf = (dir: string): ts.CompilerOptions => {
+    const parsed = ts.getParsedCommandLineOfConfigFile(path.join(dir, 'tsconfig.json'), {}, PARSE_HOST);
+    if (parsed === undefined) throw new Error(`no tsconfig in ${dir}`);
+    return parsed.options;
+};
+
+const HOST_SPECIFIERS = [
+    'react',
+    'react/jsx-runtime',
+    '@mui/material',
+    '@mui/icons-material',
+    '@mui/icons-material/Bolt',
+];
 
 let root: string;
 let cleanup: () => Promise<void>;
@@ -43,6 +65,18 @@ describe('story tsconfig migration', () => {
 
     it('leaves the committed example tsconfig alone: its comments do not count as a difference', async () => {
         expect(await migrateStoryTsconfig(EXAMPLE_STORY_ROOT)).toBe(false);
+    });
+
+    it('resolves React and MUI types for a story outside the repo', async () => {
+        const dir = await writeStoryFolder(root, 'alpha', { tsconfig: STALE_TSCONFIG });
+        await migrateStoryTsconfig(dir);
+        const options = compilerOptionsOf(dir);
+        const importer = path.join(dir, 'data', 'engine', 'Topbar.tsx');
+
+        for (const specifier of HOST_SPECIFIERS) {
+            const { resolvedModule } = ts.resolveModuleName(specifier, importer, options, ts.sys);
+            expect(resolvedModule?.resolvedFileName, specifier).toMatch(/node_modules\/.+\.d\.ts$/);
+        }
     });
 
     it('does not create a tsconfig for a folder without one', async () => {

@@ -34,6 +34,7 @@ import type { ApiEvents } from './events';
 import { createMockSeed, type TMockSeed } from './mockData';
 import { type TMockHolder } from './mockInstances';
 import { createMockGitApi, type TMockRemoteCommit } from './mockGitApi';
+import { createMockEngineApi } from './mockEngineApi';
 import { createMockStructureApi } from './mockStructureApi';
 import type { TVisualizerApi } from './types';
 
@@ -149,6 +150,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         images = new Map();
         sources = new Map();
         structureApi.load(s);
+        engineApi.load();
         refreshDerived();
     };
 
@@ -321,6 +323,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         builtInIds: (target) =>
             target.source === 'chapters' ? [...chapters.keys()] : [...entities[target.kind].keys()],
     });
+
+    const engineApi = createMockEngineApi({ nextVersion, emit, reply, checkVersion });
 
     const deletePlan = (kind: TEntityKind, id: string) => {
         const remaining = [...entities[kind].keys()].filter((key) => key !== id);
@@ -554,6 +558,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
             }),
 
         ...structureApi.routes,
+        ...engineApi.routes,
         ...git.routes,
 
         getSource: (owner, id) => reply(() => sourceOf(owner, id)),

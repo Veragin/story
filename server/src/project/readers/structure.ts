@@ -30,7 +30,7 @@ export const ITEM_INFO_FILE = 'data/items/itemInfo.ts';
 export const ITEM_INFO_TYPE = 'TItemInfo';
 export const CATALOGS_DIR = 'data/catalogs';
 
-const ENGINE_FILES = new Set(['ids.ts']);
+const ENGINE_FILES = new Set(['ids.ts', 'TEngine.ts']);
 
 export const ENGINE_TYPES: ReadonlySet<string> = new Set([
     'TChapter',
