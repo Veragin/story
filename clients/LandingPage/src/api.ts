@@ -3,14 +3,14 @@ import {
     buildPath,
     GLOBAL_ROUTES,
     STORY_ROUTES,
-    storyImportForm,
+    storyFilesForm,
     type TApiErrorBody,
     type TApiErrorCode,
     type TCreateStoryBody,
     type TGitDto,
     type TGlobalRouteName,
     type THealthDto,
-    type TImportStoryBody,
+    type TOkDto,
     type TRouteBody,
     type TRouteParams,
     type TRouteResponse,
@@ -53,7 +53,6 @@ export type TLandingApi = {
     health(): Promise<THealthDto>;
     listStories(): Promise<TStoryListItemDto[]>;
     createStory(body: TCreateStoryBody): Promise<TStoryDto>;
-    importStory(zip: Blob, body: TImportStoryBody): Promise<TStoryDto>;
     login(storyId: string, password: string): Promise<void>;
     getSession(): Promise<TSessionDto>;
     getStoryInfo(storyId: string): Promise<TStoryInfoDto>;
@@ -61,6 +60,7 @@ export type TLandingApi = {
     getGit(storyId: string): Promise<TGitDto>;
     setupGit(storyId: string, body: TSetupGitBody): Promise<TGitDto>;
     updateGitConfig(storyId: string, body: TUpdateGitConfigBody): Promise<TGitDto>;
+    addStoryFiles(storyId: string, zip: Blob): Promise<TOkDto>;
 };
 
 type TLandingStoryRoute = 'getStoryInfo' | 'updateStoryInfo' | 'getGit' | 'setupGit' | 'updateGitConfig';
@@ -119,12 +119,6 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
         health: () => request('health', {}),
         listStories: () => request('listStories', {}),
         createStory: (body) => request('createStory', {}, body),
-        importStory: (zip, body) =>
-            send<TStoryDto>(fetchImpl, baseUrl + buildGlobalPath('importStory', {}), {
-                method: GLOBAL_ROUTES.importStory.method,
-                // the browser sets the multipart content type with its boundary
-                body: storyImportForm(zip, body),
-            }),
         login: (storyId, password) => request('login', { storyId }, { password }),
         getSession: () => request('getSession', {}),
         getStoryInfo: (storyId) => storyRequest(storyId, 'getStoryInfo'),
@@ -132,5 +126,11 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
         getGit: (storyId) => storyRequest(storyId, 'getGit'),
         setupGit: (storyId, body) => storyRequest(storyId, 'setupGit', body),
         updateGitConfig: (storyId, body) => storyRequest(storyId, 'updateGitConfig', body),
+        addStoryFiles: (storyId, zip) =>
+            send<TOkDto>(fetchImpl, baseUrl + buildPath(storyId, 'addStoryFiles', {}), {
+                method: STORY_ROUTES.addStoryFiles.method,
+                // the browser sets the multipart content type with its boundary
+                body: storyFilesForm(zip),
+            }),
     };
 };

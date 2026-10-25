@@ -5,7 +5,6 @@ import { Add } from '@mui/icons-material';
 import { PasswordDialog, showToast } from '@story/ui';
 import { createLandingApi } from './api';
 import { CreateStoryDialog } from './CreateStoryDialog';
-import { ImportStoryButton } from './ImportStoryButton';
 import { StoriesStore } from './StoriesStore';
 import { StoryList } from './StoryList';
 
@@ -33,7 +32,6 @@ export const App = observer(() => {
                 <Typography variant="h4" component="h1" sx={{ flex: 1 }}>
                     {_('Stories')}
                 </Typography>
-                <ImportStoryButton store={store} />
                 <Button
                     variant="contained"
                     startIcon={<Add />}

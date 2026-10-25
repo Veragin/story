@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GRANT_TTL_MS } from '../src/auth/authOptions';
 import { storyGrantOf } from '../src/auth/storyGrant';
 import { ProtocolRoute } from '../src/common/ProtocolRoute';
+import { JSON_CONTENT_TYPE, routeContentType } from '../src/common/routeBody';
 import { ProjectInfoModule } from '../src/editor/projectInfo/ProjectInfoModule';
 import { TEST_GIT_OPTIONS } from './helpers/git';
 import { login, requestJson, type TAny } from './helpers/http';
@@ -40,6 +41,19 @@ const samplePath = (route: TStoryRouteName, storyId: string) =>
 
 type TRouteAnswer = { status: number; body: TAny };
 
+const isJsonRoute = (route: TStoryRouteName) => routeContentType(route) === JSON_CONTENT_TYPE;
+
+// a form sets its own multipart content type, with the boundary
+const jsonHeader = (route: TStoryRouteName): Record<string, string> =>
+    isJsonRoute(route) ? { 'content-type': JSON_CONTENT_TYPE } : {};
+
+const sampleBody = (route: TStoryRouteName) => {
+    if (isJsonRoute(route)) return JSON.stringify({ version: '1' });
+    const form = new FormData();
+    form.set('zip', new Blob([new Uint8Array([1, 2, 3])]), 'story.zip');
+    return form;
+};
+
 // the change feed never ends and the export / image file are not JSON: only the status matters then
 const callRoute = async (base: string, route: TStoryRouteName, storyId: string, cookie?: string) => {
     const { method } = routeDef(route);
@@ -47,8 +61,8 @@ const callRoute = async (base: string, route: TStoryRouteName, storyId: string, 
     const res = await fetch(base + samplePath(route, storyId), {
         method,
         signal: abort.signal,
-        headers: { ...(method === 'GET' ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-        body: method === 'GET' ? undefined : JSON.stringify({ version: '1' }),
+        headers: { ...(method === 'GET' ? {} : jsonHeader(route)), ...(cookie ? { cookie } : {}) },
+        body: method === 'GET' ? undefined : sampleBody(route),
     });
     const isJson = res.headers.get('content-type')?.startsWith('application/json') ?? false;
     if (!isJson) {

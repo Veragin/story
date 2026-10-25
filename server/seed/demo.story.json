@@ -1,8 +1,0 @@
-{
-    "name": "Demo",
-    "author": "Jan Tichavsky",
-    "password": "scrypt$16384$8$1$YONZ5_j5nfwgapHP0AH-Hg$1M8vFONIIXZE9oVeWpb9AcSGHD3i4FvIUfsu5iMNDfdZ0A-gyXHsk7DKKmaU-JFVBT75pJw68n3HZn9oCSNljg",
-    "mapSize": { "width": 80, "height": 60 },
-    "description": "Thomas, a young woodcutter, has two days before his village is attacked. Find the wounded noble man, take on quests from the herbalist and the hunter, and decide what to do when the noble house is robbed. Time drains his stamina and hunger.",
-    "public": true
-}

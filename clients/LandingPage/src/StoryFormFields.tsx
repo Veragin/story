@@ -84,28 +84,26 @@ export const StoryFormFields = ({
                 minRows: 3,
                 maxRows: 10,
             })}
-            {mode !== 'import' && (
-                <Stack direction="row" spacing={2}>
-                    {field('mapWidth', {
-                        label: _('Map width'),
-                        type: 'number',
-                        disabled: mode === 'edit',
-                        helperText:
-                            mode === 'edit'
-                                ? _('Set at creation')
-                                : _(
-                                      'Tiles, %d–%d',
-                                      STORY_LIMITS.mapSizeMin,
-                                      STORY_LIMITS.mapSizeMax
-                                  ),
-                    })}
-                    {field('mapHeight', {
-                        label: _('Map height'),
-                        type: 'number',
-                        disabled: mode === 'edit',
-                    })}
-                </Stack>
-            )}
+            <Stack direction="row" spacing={2}>
+                {field('mapWidth', {
+                    label: _('Map width'),
+                    type: 'number',
+                    disabled: mode === 'edit',
+                    helperText:
+                        mode === 'edit'
+                            ? _('Set at creation')
+                            : _(
+                                  'Tiles, %d–%d',
+                                  STORY_LIMITS.mapSizeMin,
+                                  STORY_LIMITS.mapSizeMax
+                              ),
+                })}
+                {field('mapHeight', {
+                    label: _('Map height'),
+                    type: 'number',
+                    disabled: mode === 'edit',
+                })}
+            </Stack>
             <FormControlLabel
                 control={
                     <Switch

@@ -1,4 +1,4 @@
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
@@ -19,12 +19,10 @@ import {
 } from '../database/repositories/StoryGitRepository';
 import { StoryRepository } from '../database/repositories/StoryRepository';
 import { rewriteInBulk } from '../events/rewriteInBulk';
-import { isMissingFileError } from '../json/atomicWrite';
 import { StoryFolders } from '../stories/StoryFolders';
-import { storyMapSize } from '../stories/storyInput';
 import { checkStoryTree } from '../stories/storyTree';
 import type { TServerContext } from '../storyContext/serverContext';
-import { StoryContexts } from '../storyContext/StoryContexts';
+import { StoryReloader } from '../storyContext/StoryReloader';
 import { GitAvailability } from './GitAvailability';
 import {
     checkBranchName,
@@ -91,7 +89,7 @@ export class GitService {
         private readonly stories: StoryRepository,
         private readonly folders: StoryFolders,
         private readonly locks: GitLocks,
-        private readonly contexts: StoryContexts
+        private readonly reloader: StoryReloader
     ) {}
 
     getGit(ctx: TServerContext): Promise<TGitDto> {
@@ -205,7 +203,7 @@ export class GitService {
             await fetchOrigin(git);
             await rewriteInBulk(ctx.bus, () => mergeNoEdit(git, upstream, current.record));
             const to = await this.head(git);
-            if (from !== to) await this.afterContentChange(ctx);
+            if (from !== to) await this.reloader.afterBulkRewrite(ctx, 'git');
             return { updated: from !== to, from, to, status: await readStatus(git) };
         });
     }
@@ -223,7 +221,7 @@ export class GitService {
             }
             const args = switchArgs(branch, refs);
             await rewriteInBulk(ctx.bus, () => git.run(['switch', '-q', ...args]));
-            await this.afterContentChange(ctx);
+            await this.reloader.afterBulkRewrite(ctx, 'git');
             return readStatus(git);
         });
     }
@@ -239,14 +237,6 @@ export class GitService {
             const skip = before === null ? [] : ['--skip=1'];
             return parseLog(await git.text(['log', LOG_FORMAT, '--name-only', `-n${limit}`, ...skip, start, '--']));
         });
-    }
-
-    // the story's files changed in bulk (pull, checkout, setup from the repo): always reloaded, since the change may
-    // bring another tsconfig.json or an older layout (setup also swaps the folder under the watcher)
-    private async afterContentChange(ctx: TServerContext): Promise<void> {
-        await this.contexts.reload(ctx.storyId);
-        await this.syncMapSize(ctx);
-        ctx.bus.emitStory({ type: 'story', reason: 'git' });
     }
 
     private async setupPush(ctx: TServerContext, input: TSetupInput, record: TStoryGitRecord): Promise<void> {
@@ -301,29 +291,7 @@ export class GitService {
         } finally {
             await rm(tmp, { recursive: true, force: true });
         }
-        await this.afterContentChange(ctx);
-    }
-
-    private async syncMapSize(ctx: TServerContext): Promise<void> {
-        const size = await this.mapSizeOnDisk(ctx);
-        if (size === null) return;
-        await this.stories.exclusive(async (manager) => {
-            const current = await this.stories.readVersioned(ctx.storyId, manager);
-            if (!current) return;
-            const { width, height } = current.file.mapSize;
-            if (width === size.width && height === size.height) return;
-            await this.stories.write(ctx.storyId, { ...current.file, mapSize: size }, current.version, manager);
-        });
-    }
-
-    // a missing or invalid map keeps the stored size
-    private async mapSizeOnDisk(ctx: TServerContext) {
-        try {
-            return storyMapSize(await readFile(ctx.project.paths.map), 'story');
-        } catch (e) {
-            if (isMissingFileError(e) || isHttpError(e)) return null;
-            throw e;
-        }
+        await this.reloader.afterBulkRewrite(ctx, 'git');
     }
 
     private async tryPush(git: GitRunner) {

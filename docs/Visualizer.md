@@ -160,11 +160,11 @@ theme.ts    the single dark MUI theme
 
 ## Landing page (`clients/LandingPage/src/`)
 
-The story list and the way into every story: http://localhost:8103 in dev, `/` in production. It talks to the server only through `GLOBAL_ROUTES` plus a story's `/info` (`api.ts`).
+The story list and the way into every story: http://localhost:8103 in dev, `/` in production. It talks to the server only through `GLOBAL_ROUTES` plus a story's `/info` and `/files` (`api.ts`).
 
 - `StoriesStore.ts`: the list (`GET /api/stories`, with each story's `unlocked` flag) and `requireUnlocked(id)`, which returns at once for an unlocked story and otherwise opens `PasswordDialog` and logs in.
-- `StoryList.tsx` / `StoryCard.tsx`: name, author in grey, a description toggle, and the buttons **Edit** (`EditStoryDialog`: name, author, description, public, an optional new password; the map size is read-only, plan D6), **Open** (`<VITE_VISUALIZER_URL>/?story=<id>#/map`), **Play as single** (`<VITE_ENGINE_URL>/?story=<id>`) and **Export** (navigates to `/api/stories/<id>/export`). Edit, Open and Export go through `requireUnlocked`; Play does not, the player asks for a private story's password itself (in production it is another site, with its own session). The target URLs are in `links.ts`.
-- `CreateStoryDialog.tsx` (name, author, password twice, description, map size, public; `storyForm.ts` checks the fields against `STORY_LIMITS`) `ImportStoryButton.tsx` (a file picker) and `ImportStoryDialog.tsx` (the New-story form without the map size; the id is a slug of the name, as for create).
+- `StoryList.tsx` / `StoryCard.tsx`: name, author in grey, a description toggle, and the buttons **Edit** (`EditStoryDialog`: name, author, description, public, an optional new password; the map size is read-only, plan D6), **Open** (`<VITE_VISUALIZER_URL>/?story=<id>#/map`), **Play as single** (`<VITE_ENGINE_URL>/?story=<id>`), and a kebab menu (`StoryActionsMenu.tsx`) with **Export** (navigates to `/api/stories/<id>/export`), **Export for web** (`/export/web`) and **Import** (a zip picker, then `AddStoryFilesDialog.tsx`: `addStoryFiles` adds the zip's files to the story). Everything but Play goes through `requireUnlocked`; Play does not, the player asks for a private story's password itself (in production it is another site, with its own session). The target URLs are in `links.ts`.
+- `CreateStoryDialog.tsx` (name, author, password twice, description, map size, public; `storyForm.ts` checks the fields against `STORY_LIMITS`). The server's `importStory` (a zip as a new story) has no button.
 - It never runs a story, and it keeps no state of its own besides the list: the grant is the `story_session` cookie, which the other apps on the same host share.
 
 ## Pages
@@ -223,7 +223,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 - **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations, and the editor-only `GET`s `getGit` and `getGitLog`, always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
 - **Stories** (`server/src/stories/`): anyone may list, create or import a story. Create copies the template, writes a `tsconfig.json` and an empty `map.json` of `mapSize`, inserts the story's row (scrypt hash) and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. Export and import (multipart: the zip + the metadata fields) are in [`Server.md`](Server.md#stories). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
 - **Zips** (`server/src/stories/zip.ts`): a story zip holds `tsconfig.json`, `data/`, `types/` at its root, no metadata. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes.
-- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `getPlayFile` (a story file), `exportStory` / `exportPlayable` (the zips) and the body of `importStory` (`multipart/form-data`).
+- Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG bytes), `getPlayFile` (a story file), `exportStory` / `exportPlayable` (the zips) and the bodies of `importStory` / `addStoryFiles` (`multipart/form-data`).
 - A `PUT` or `DELETE` body carries the `version` it was based on; a mismatch answers `409 stale` and writes nothing.
 - `PUT` bodies are **partial** (`{ version, ...changedFields }`; an omitted field is left untouched). The map and the two layouts are the exception: their `PUT` replaces the whole document.
 - `create*` routes, `importStory`, `addChapterCharacter` and `setupGit` answer `201`; `login`, `logout` and `deleteGitConfig` answer `204`; everything else answers `200`.
@@ -247,6 +247,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (the story's row without the password)    |
 | `exportStory`                               | `GET`            | `/export` (`<storyId>.zip`, an attachment)        |
 | `exportPlayable`                            | `GET`            | `/export/web` (`<storyId>-web.zip`, standalone)   |
+| `addStoryFiles`                             | `POST`           | `/files` (multipart zip, adds/replaces files)     |
 | `createChapter`                             | `POST`           | `/chapters`                                       |
 | `get/update/deleteChapter`                  | `GET/PUT/DELETE` | `/chapters/:chapterId`                            |
 | `addChapterCharacter`                       | `POST`           | `/chapters/:chapterId/characters`                 |

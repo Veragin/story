@@ -5,9 +5,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { GLOBAL_MAP_ID, isStoryId, type TMapSizeDto } from '@story/protocol';
 import type { EntityManager } from 'typeorm';
 import { exists } from '../common/fileStat';
+import { atomicWrite } from '../json/atomicWrite';
 import { createDefaultMap, encodeMapFile, MAP_FILE } from '../json/mapFile';
 import { STORIES_ROOT } from './storiesRoot';
 import type { TStoryFile } from './storyFile';
+import { STORY_TOP_FILES } from './storyFiles';
 import { StoryRepository } from '../database/repositories/StoryRepository';
 import { storyTsconfig } from './storyTsconfig';
 import { TEMPLATE_ROOT } from './templateRoot';
@@ -65,6 +67,14 @@ export class StoryFolders {
         return this.place('import', file, async (tmp) => {
             for (const [rel, bytes] of files) await writeInto(tmp, rel, bytes);
         });
+    }
+
+    // the story keeps its own tsconfig.json: the zip's may point elsewhere
+    async addFiles(storyId: string, files: ReadonlyMap<string, Uint8Array>): Promise<void> {
+        const dir = this.dir(storyId);
+        for (const [rel, bytes] of files) {
+            if (!STORY_TOP_FILES.includes(rel)) await atomicWrite(path.join(dir, ...rel.split('/')), bytes);
+        }
     }
 
     // a story without a map.json shows the default map, so the zip carries that one

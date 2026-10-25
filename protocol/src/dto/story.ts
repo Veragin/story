@@ -53,7 +53,7 @@ export const STORY_ZIP_CONTENT_TYPE = 'application/zip';
 
 export const MAX_STORY_ZIP_BYTES = 50 * 1024 * 1024;
 
-/** `importStory`: a form with the zip in `STORY_IMPORT_ZIP_FIELD` (the CSRF check wants this type). */
+/** `importStory`, `addStoryFiles`: a form with the zip in `STORY_IMPORT_ZIP_FIELD` (the CSRF check wants this type). */
 export const STORY_IMPORT_CONTENT_TYPE = 'multipart/form-data';
 
 export const STORY_IMPORT_ZIP_FIELD = 'zip';
@@ -66,6 +66,13 @@ export const storyImportForm = (zip: Blob, body: TImportStoryBody, fileName = 's
     form.set('description', body.description);
     form.set('password', body.password);
     form.set('public', String(body.public));
+    form.set(STORY_IMPORT_ZIP_FIELD, zip, fileName);
+    return form;
+};
+
+/** The `addStoryFiles` form. */
+export const storyFilesForm = (zip: Blob, fileName = 'story.zip'): FormData => {
+    const form = new FormData();
     form.set(STORY_IMPORT_ZIP_FIELD, zip, fileName);
     return form;
 };

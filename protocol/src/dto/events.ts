@@ -55,8 +55,8 @@ export type TChangeEvent = {
 
 export type THelloEvent = { connectedAt: string };
 
-/** `git`: a pull or checkout rewrote the story's files in bulk. */
-export const STORY_EVENT_REASONS = ['git'] as const;
+/** `git`: a pull or checkout rewrote the story's files in bulk; `files`: `addStoryFiles` did. */
+export const STORY_EVENT_REASONS = ['git', 'files'] as const;
 export type TStoryEventReason = (typeof STORY_EVENT_REASONS)[number];
 
 /** The whole story changed: refetch everything. */

@@ -4,7 +4,13 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MAX_STORY_ZIP_BYTES, STORY_LIMITS, storyImportForm, type TImportStoryBody } from '@story/protocol';
+import {
+    MAX_STORY_ZIP_BYTES,
+    STORY_LIMITS,
+    storyFilesForm,
+    storyImportForm,
+    type TImportStoryBody,
+} from '@story/protocol';
 import { REPO_ROOT } from '../src/config/env';
 import { createDefaultMap, decodeMapFile, encodeMapFile, MAP_FILE } from '../src/json/mapFile';
 import { ProjectRoot } from '../src/project/ProjectRoot';
@@ -416,5 +422,58 @@ describe('import', () => {
         const { bytes } = await exportZip('example');
         await importZip(bytes);
         await expect(login(base, 'copy', { password: EXAMPLE_PASSWORD })).rejects.toThrow('401');
+    });
+});
+
+describe('add files', () => {
+    const addFiles = async (storyId: string, zip: Uint8Array, cookie?: string): Promise<TJsonResponse> => {
+        const res = await fetch(`${base}/api/stories/${storyId}/files`, {
+            method: 'POST',
+            body: storyFilesForm(new Blob([new Uint8Array(zip)])),
+            headers: cookie ? { cookie } : {},
+        });
+        return { status: res.status, headers: res.headers, body: await res.json() };
+    };
+
+    it('adds and replaces files, keeps the others and the tsconfig.json, and syncs the map size', async () => {
+        const { id, cookie } = await create();
+        const dir = path.join(storiesRoot, id);
+        const tsconfig = await readFile(path.join(dir, 'tsconfig.json'), 'utf8');
+        const register = await readFile(path.join(dir, 'data/register.ts'), 'utf8');
+        const map = await encodeMapFile(createDefaultMap('global', { width: 33, height: 22 }));
+        const zip = zipSync({
+            'tsconfig.json': text('{ "extends": "elsewhere" }'),
+            [MAP_FILE]: text(map),
+            'data/notes/added.ts': text('export const added = 1;\n'),
+        });
+
+        const res = await addFiles(id, zip, cookie);
+        expect([res.status, res.body]).toEqual([200, { ok: true }]);
+        expect(await readFile(path.join(dir, 'data/notes/added.ts'), 'utf8')).toBe('export const added = 1;\n');
+        expect(await readFile(path.join(dir, 'data/register.ts'), 'utf8')).toBe(register);
+        expect(await readFile(path.join(dir, 'tsconfig.json'), 'utf8')).toBe(tsconfig);
+        expect(await mapSizeOnDisk(id)).toEqual({ width: 33, height: 22 });
+        expect((await call('GET', `/api/stories/${id}/info`, { cookie })).body.mapSize).toEqual({
+            width: 33,
+            height: 22,
+        });
+    });
+
+    it('needs a grant, a valid zip and a valid map, and writes nothing otherwise', async () => {
+        const { id, cookie } = await create();
+        const ok = zipSync({ 'data/added.ts': text('x') });
+        expect((await addFiles(id, ok)).status).toBe(401);
+        const bad: [string, Uint8Array][] = [
+            ['other top-level', zipSync({ 'data/added.ts': text('x'), 'evil.txt': text('x') })],
+            ['zip-slip', zipSync({ 'data/added.ts': text('x'), '../evil.ts': text('x') })],
+            ['map.json invalid', zipSync({ 'data/added.ts': text('x'), [MAP_FILE]: text('{"width": 1}') })],
+            ['not a zip', text('hello')],
+        ];
+        for (const [what, bytes] of bad) {
+            const res = await addFiles(id, bytes, cookie);
+            expect([what, res.status, res.body.error]).toEqual([what, 400, 'bad_request']);
+        }
+        await expect(stat(path.join(storiesRoot, id, 'data/added.ts'))).rejects.toThrow();
+        expect(await mapSizeOnDisk(id)).toEqual(NEW_STORY.mapSize);
     });
 });

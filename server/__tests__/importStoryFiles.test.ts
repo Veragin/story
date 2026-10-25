@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { verifyPassword } from '../src/auth/password';
-import { DEFAULT_STORIES_ROOT, EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
+import { EXAMPLE_STORY_ROOT } from '../src/project/ProjectRoot';
 import { importStoryFiles } from '../src/stories/importStoryFiles';
 import { STORY_FILE } from '../src/stories/storyFile';
 import { readStorySeed, type TStorySeed } from '../src/stories/storySeed';
@@ -11,8 +11,6 @@ import { storyTsconfig } from '../src/stories/storyTsconfig';
 import { setupTestDatabase } from './helpers/database';
 import { EXAMPLE_PASSWORD } from './helpers/http';
 import { copyExampleStory, makeTempStoriesRoot, storyFixture, writeStoryFolder } from './helpers/storiesRoot';
-
-const DEMO_STORY_ROOT = path.join(DEFAULT_STORIES_ROOT, 'demo');
 
 const STALE_TSCONFIG = JSON.stringify({ extends: '../../tsconfig.base.json', include: ['data', 'types'] });
 
@@ -200,15 +198,6 @@ describe('importStoryFiles', () => {
 
             await writeStoryFolder(root, 'demo');
             expect((await importStoryFiles(root, stories(), { seeds: [seed, demo] })).seeded).toEqual(['demo']);
-        });
-    });
-
-    describe('the committed demo', () => {
-        it('has no story.json: its metadata is the seed in server/seed', async () => {
-            expect(await fileExists(path.join(DEMO_STORY_ROOT, STORY_FILE))).toBe(false);
-            const { file } = await readStorySeed(DEMO_STORY_ROOT);
-            expect(file).toMatchObject({ name: 'Demo', public: true });
-            expect(await verifyPassword('demo', file.password)).toBe(true);
         });
     });
 

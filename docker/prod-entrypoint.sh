@@ -3,13 +3,13 @@
 #
 # STORY_DB_SETUP=1 (the server service only: it owns the database): `stories:import-files`, which applies
 # the database migrations, moves every legacy `story.json` of the `stories` volume into the
-# database, rewrites stale story tsconfigs and seeds the example and demo stories: their folders are copied
-# from the image when the database holds no story yet, and their rows come from `server/seed/<id>.story.json`.
+# database, rewrites stale story tsconfigs and seeds the example story: its folder is copied from the
+# image when the database holds no story yet, and its row comes from `server/seed/example.story.json`.
 set -e
 root="${STORIES_ROOT:-/app/stories}"
 mkdir -p "$root"
 if [ "${STORY_DB_SETUP:-}" = 1 ]; then
     echo "[prod-entrypoint] applying database migrations, importing story.json files from $root"
-    (cd /app/server && yarn stories:import-files --seed /app/.seed/example --seed /app/.seed/demo)
+    (cd /app/server && yarn stories:import-files --seed /app/.seed/example)
 fi
 exec "$@"

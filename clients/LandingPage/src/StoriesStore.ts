@@ -2,7 +2,6 @@ import { action, makeObservable, observable, runInAction } from 'mobx';
 import type {
     TCreateStoryBody,
     TGitDto,
-    TImportStoryBody,
     TSetupGitBody,
     TStoryDto,
     TStoryInfoDto,
@@ -141,10 +140,11 @@ export class StoriesStore {
         }
     }
 
-    async importZip(zip: Blob, body: TImportStoryBody): Promise<TStoryDto> {
-        const story = await this.api.importStory(zip, body);
+    // the files may bring another map size
+    async addFiles(id: string, zip: Blob): Promise<boolean> {
+        if (!(await this.withGrant(id, () => this.api.addStoryFiles(id, zip)))) return false;
         await this.load();
-        return story;
+        return true;
     }
 
     loadInfo(id: string): Promise<TStoryInfoDto | null> {

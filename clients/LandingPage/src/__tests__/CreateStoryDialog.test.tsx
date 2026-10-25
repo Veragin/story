@@ -10,13 +10,10 @@ import {
     type TSetupGitBody,
 } from '@story/protocol';
 import { CreateStoryDialog } from '../CreateStoryDialog';
-import { ImportStoryDialog } from '../ImportStoryDialog';
 import {
     EMPTY_STORY_FORM,
-    importFormOf,
     toCreateBody,
     toGitChange,
-    toImportBody,
     toUpdateBody,
     validateStoryForm,
     type TStoryFormValue,
@@ -198,21 +195,6 @@ describe('validateStoryForm', () => {
             public: false,
         });
     });
-
-    it('leaves the map size out of an import: it comes from the zip', () => {
-        const noMap = { ...valid, mapWidth: '', mapHeight: '0' };
-        expect(
-            validateStoryForm(noMap, { passwordRequired: true, mapSize: false })
-        ).toEqual({});
-        expect(toImportBody(noMap)).toEqual({
-            name: 'My Story',
-            author: 'Me',
-            password: 'secret-1',
-            description: '',
-            public: false,
-        });
-        expect(importFormOf('my-story.ZIP').name).toBe('my-story');
-    });
 });
 
 let root: Root | null = null;
@@ -349,58 +331,5 @@ describe('CreateStoryDialog', () => {
             'Field "name" must not be empty'
         );
         expect(createButton().disabled).toBe(false);
-    });
-});
-
-describe('ImportStoryDialog', () => {
-    const importButton = () =>
-        document.querySelector<HTMLButtonElement>('[data-action="import"]')!;
-
-    it('asks for the New story fields without the map size, named after the file', async () => {
-        const onSubmit = vi.fn(() => Promise.resolve());
-        renderDialog(
-            <ImportStoryDialog
-                fileName="old-tale.zip"
-                onSubmit={onSubmit}
-                onClose={() => {}}
-            />
-        );
-        expect(document.body.textContent).toContain('Import old-tale.zip');
-        expect(input('mapWidth')).toBeNull();
-        expect(input('mapHeight')).toBeNull();
-        expect(input('name')!.value).toBe('old-tale');
-
-        act(() => importButton().click());
-        expect(onSubmit).not.toHaveBeenCalled();
-        expect(document.body.textContent).toContain(
-            `At least ${STORY_LIMITS.passwordMinLength} characters`
-        );
-
-        type('name', 'Old Tale');
-        type('password', 'secret-1');
-        type('passwordConfirm', 'secret-1');
-        await act(() => Promise.resolve(importButton().click()));
-        expect(onSubmit).toHaveBeenCalledWith({
-            name: 'Old Tale',
-            author: '',
-            password: 'secret-1',
-            description: '',
-            public: false,
-        });
-    });
-
-    it('shows a rejected import in the dialog', async () => {
-        renderDialog(
-            <ImportStoryDialog
-                fileName="bad.zip"
-                onSubmit={() => Promise.reject(new Error('The zip has no map'))}
-                onClose={() => {}}
-            />
-        );
-        type('password', 'secret-1');
-        type('passwordConfirm', 'secret-1');
-        await act(() => Promise.resolve(importButton().click()));
-        expect(document.body.textContent).toContain('The zip has no map');
-        expect(importButton().disabled).toBe(false);
     });
 });

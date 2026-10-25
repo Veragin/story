@@ -141,3 +141,11 @@ export const unzipStory = (zip: Uint8Array): Map<string, Uint8Array> => {
     }
     return files;
 };
+
+// multer's in-memory file (`@UploadedFile()`)
+export type TUploadedZip = { buffer: Buffer };
+
+export const unzipUploaded = (zip: TUploadedZip | undefined): Map<string, Uint8Array> => {
+    if (!zip) throw HttpError.badRequest('Field "zip" must be the story zip file');
+    return unzipStory(zip.buffer);
+};
