@@ -4,7 +4,6 @@ import {
     STORY_LIMITS,
     type TCreateStoryBody,
     type TGitConfigDto,
-    type TImportStoryBody,
     type TSetupGitBody,
     type TStoryDto,
     type TUpdateGitConfigBody,
@@ -12,8 +11,7 @@ import {
 } from '@story/protocol';
 import { remoteUrlErrorMessage } from '@story/ui';
 
-/** `import` takes the map size from the zip. */
-export type TStoryFormMode = 'create' | 'import' | 'edit';
+export type TStoryFormMode = 'create' | 'edit';
 
 export type TStoryFormValue = {
     name: string;
@@ -87,11 +85,7 @@ const gitErrors = (value: TStoryFormValue, git: TStoryGitState): TStoryFormError
 
 export const validateStoryForm = (
     value: TStoryFormValue,
-    {
-        passwordRequired,
-        mapSize = true,
-        git = null,
-    }: { passwordRequired: boolean; mapSize?: boolean; git?: TStoryGitState }
+    { passwordRequired, git = null }: { passwordRequired: boolean; git?: TStoryGitState }
 ): TStoryFormErrors => {
     const errors: TStoryFormErrors = gitErrors(value, git);
     const name = value.name.trim();
@@ -112,7 +106,6 @@ export const validateStoryForm = (
             errors.passwordConfirm = _('The passwords do not match');
         }
     }
-    if (!mapSize) return errors;
     const width = mapSideError(value.mapWidth);
     if (width) errors.mapWidth = width;
     const height = mapSideError(value.mapHeight);
@@ -122,16 +115,12 @@ export const validateStoryForm = (
 
 export const hasErrors = (errors: TStoryFormErrors) => Object.keys(errors).length > 0;
 
-export const toImportBody = (value: TStoryFormValue): TImportStoryBody => ({
+export const toCreateBody = (value: TStoryFormValue): TCreateStoryBody => ({
     name: value.name.trim(),
     author: value.author.trim(),
     password: value.password,
     description: value.description,
     public: value.public,
-});
-
-export const toCreateBody = (value: TStoryFormValue): TCreateStoryBody => ({
-    ...toImportBody(value),
     mapSize: { width: Number(value.mapWidth), height: Number(value.mapHeight) },
 });
 
@@ -142,12 +131,6 @@ export const toUpdateBody = (value: TStoryFormValue, version: string): TUpdateSt
     description: value.description,
     public: value.public,
     ...(value.password !== '' && { password: value.password }),
-});
-
-// the export's file name is the story id, a fair first guess at the name
-export const importFormOf = (fileName: string): TStoryFormValue => ({
-    ...EMPTY_STORY_FORM,
-    name: fileName.replace(/\.zip$/i, '').trim(),
 });
 
 // the token is sent only when typed: empty keeps the stored one

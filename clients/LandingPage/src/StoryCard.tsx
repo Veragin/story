@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+    Box,
     Button,
     Card,
     CardActions,
@@ -11,11 +12,9 @@ import {
     Typography,
 } from '@mui/material';
 import {
-    Download,
     Edit,
     ExpandLess,
     ExpandMore,
-    Language,
     Lock,
     LockOpen,
     OpenInNew,
@@ -23,6 +22,7 @@ import {
     Public,
 } from '@mui/icons-material';
 import type { TStoryListItemDto } from '@story/protocol';
+import { StoryActionsMenu } from './StoryActionsMenu';
 
 type TProps = {
     story: TStoryListItemDto;
@@ -31,6 +31,7 @@ type TProps = {
     onPlay: () => void;
     onExport: () => void;
     onExportWeb: () => void;
+    onImport: (zip: File) => void;
 };
 
 export const StoryCard = ({
@@ -40,6 +41,7 @@ export const StoryCard = ({
     onPlay,
     onExport,
     onExportWeb,
+    onImport,
 }: TProps) => {
     const [expanded, setExpanded] = useState(false);
     const hasDescription = story.description.trim() !== '';
@@ -108,26 +110,12 @@ export const StoryCard = ({
                 <Button size="small" startIcon={<PlayArrow />} onClick={onPlay}>
                     {_('Play as single')}
                 </Button>
-                <Button
-                    size="small"
-                    startIcon={<Download />}
-                    onClick={onExport}
-                >
-                    {_('Export')}
-                </Button>
-                <Tooltip
-                    title={_(
-                        'A zip to upload to any web host: players open its index.html'
-                    )}
-                >
-                    <Button
-                        size="small"
-                        startIcon={<Language />}
-                        onClick={onExportWeb}
-                    >
-                        {_('Export for web')}
-                    </Button>
-                </Tooltip>
+                <Box sx={{ flex: 1 }} />
+                <StoryActionsMenu
+                    onExport={onExport}
+                    onExportWeb={onExportWeb}
+                    onImport={onImport}
+                />
             </CardActions>
         </Card>
     );

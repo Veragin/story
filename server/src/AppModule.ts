@@ -26,6 +26,7 @@ import { HealthModule } from './health/HealthModule';
 import { PlayModule } from './play/PlayModule';
 import { StoryContextModule } from './storyContext/StoryContextModule';
 import { StoriesModule } from './stories/StoriesModule';
+import { StoryFilesModule } from './storyFiles/StoryFilesModule';
 
 @Module({
     imports: [
@@ -52,6 +53,7 @@ import { StoriesModule } from './stories/StoriesModule';
         LayoutsModule,
         GitModule,
         PlayModule,
+        StoryFilesModule,
     ],
     providers: [
         { provide: APP_FILTER, useClass: ApiExceptionFilter },

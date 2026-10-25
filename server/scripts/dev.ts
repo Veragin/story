@@ -9,7 +9,7 @@ const SERVER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const WATCHED = ['src', '../protocol/src', '../clients/shared/utils/src'].map((dir) => path.resolve(SERVER_ROOT, dir));
 const DEBOUNCE_MS = 150;
 const LOADER = ['--import', '@swc-node/register/esm-register'];
-const SEEDS = ['example', 'demo'].map((id) => path.resolve(SERVER_ROOT, '../stories', id));
+const SEEDS = ['example'].map((id) => path.resolve(SERVER_ROOT, '../stories', id));
 
 let child: ChildProcess | undefined;
 let timer: NodeJS.Timeout | undefined;

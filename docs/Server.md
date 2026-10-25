@@ -12,7 +12,7 @@ DB_HOST=127.0.0.1 yarn dev:server                 # outside the dev container, a
 curl localhost:8123/api/health                    # {"ok":true,"service":"@story/server",…,"database":"up"}
 ```
 
-`yarn dev` (and `make start`) runs it with the other services; in docker, `make up` + `make dev-server` runs it alone. The dev runner (`server/scripts/dev.ts`) first runs `stories:import-files --seed stories/example --seed stories/demo` (the database rows of the example and the demo), then starts `src/main.ts` and restarts it when `server/src`, `protocol/src` or `clients/shared/utils/src` change (chokidar: `node --watch` misses rename-saves under the swc hooks). Add a directory to `WATCHED` there when the server starts importing another workspace. `yarn workspace @story/server start` runs it once, without the seed or the watcher. Without a database, TypeORM retries for about 30 s and the server exits; the dev runner waits for the next change.
+`yarn dev` (and `make start`) runs it with the other services; in docker, `make up` + `make dev-server` runs it alone. The dev runner (`server/scripts/dev.ts`) first runs `stories:import-files --seed stories/example` (the example's database row), then starts `src/main.ts` and restarts it when `server/src`, `protocol/src` or `clients/shared/utils/src` change (chokidar: `node --watch` misses rename-saves under the swc hooks). Add a directory to `WATCHED` there when the server starts importing another workspace. `yarn workspace @story/server start` runs it once, without the seed or the watcher. Without a database, TypeORM retries for about 30 s and the server exits; the dev runner waits for the next change.
 
 To try writes safely, point it at a copy: `STORIES_ROOT=<copy> PORT=<port> yarn dev:server`.
 
@@ -30,7 +30,8 @@ server/
     health/            GET /api/health (+ DB ping)
     auth/              AuthController, SessionService, LoginLimiter, password (scrypt), cookie, CsrfGuard, StoryAccessGuard
     stories/           StoryFolders (create / import / export), zip, storyInput, StoriesController, StoryInfoController, importStoryFiles
-    storyContext/      StoryContexts (loaded stories, leases, idle eviction), StoryLeaseInterceptor, @StoryCtx()
+    storyFiles/        StoryFilesController (addStoryFiles: a zip's files into a live story)
+    storyContext/      StoryContexts (loaded stories, leases, idle eviction), StoryReloader (after a bulk rewrite), StoryLeaseInterceptor, @StoryCtx()
     events/            EventBus (transactions), chokidar watcher, pathToEvent, SSE, EventsController
     editor/            one module + thin controller per feature: chapters passages triggers entities catalogs structure source engine images maps layouts projectInfo
     project/           framework-free ts-morph library: ProjectRoot, SourceProject, readers/, writers/, registry, validate, values, migrations/
@@ -89,6 +90,7 @@ curl -b jar localhost:8123/api/stories/my-story/info             # info without 
 curl -b jar -X PUT -H 'content-type: application/json' localhost:8123/api/stories/my-story/info \
   -d '{"version":"<version>","name":"Renamed","password":"new-secret"}'   # mapSize is read-only
 curl -b jar -o my-story.zip localhost:8123/api/stories/my-story/export
+curl -b jar -F zip=@more-files.zip localhost:8123/api/stories/my-story/files   # adds / replaces files
 curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secret-2 -F description= -F public=false \
   localhost:8123/api/stories/import                                # 201, logs you in; the id is a slug of the name
 ```
@@ -99,6 +101,7 @@ curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secr
 - **Export** holds only `tsconfig.json`, `data/` and `types/` (no metadata), plus a default `data/locations/map.json` when the story has none, so every export can be imported.
 - **Export for web** (`/export/web`, same access) is the standalone player's `index.html` and `player/` (the folder `SINGLE_PLAYER_STANDALONE_DIR`; `503 unavailable` until it is built), the play manifest as `play.json`, and the story export: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md).
 - **Import** is `multipart/form-data`: the `zip` file plus the New-story fields minus the map size, which comes from the zip's `data/locations/map.json`. A `story.json` in an older zip is skipped unread. Refused (400): zip-slip paths, symlinks, encrypted or duplicate entries, unknown root entries, no valid map, > 50 MB zipped or > 200 MB unpacked.
+- **Add files** (`POST /api/stories/<id>/files`, write access, the landing page's per-story **Import**) is `multipart/form-data` with only the `zip`, checked like an import zip but `map.json` is optional. Its files are written into the story, replacing those of the same path; nothing is deleted, and the zip's `tsconfig.json` is ignored. Like a git pull it then reloads the story, takes the map size from `map.json`, and sends a `story` event (`reason: 'files'`).
 - Loading a story rewrites a stale `tsconfig.json` and migrates an older story to the structure layout (`project/migrations/`), once.
 - **Story code** is `.ts` and `.tsx` (`isStoryCodeFile`, `stories/storyFiles.ts`): the ts-morph project, the source editor, the play manifest and `getPlayFile` (both served as text) and so the web export all take both. Prettier formats a file by its extension, so `<` in a `.tsx` file is JSX. Only the Topbar is meant to be `.tsx`; see the next section.
 
@@ -121,7 +124,7 @@ data/engine/
 yarn workspace @story/server stories:import-files [--seed <dir>]…
 ```
 
-Uses `STORIES_ROOT` and `DB_*`, runs pending migrations, then for every story folder: a legacy `story.json` is validated, upserted as the row, its tsconfig migrated, and the file deleted (an invalid one is reported and kept). Idempotent. `--seed <dir>` can be given several times (metadata from `server/seed/<basename>.story.json`): a folder without a row gets the seed row; a missing folder is copied from `<dir>` only when the database held no story before seeding (decided once, so every seed of a fresh install is copied). Dev runs it on every `yarn dev:server` start with `stories/example` and `stories/demo`; prod runs it in the entrypoint with the same two, copied into the image as `/app/.seed/`.
+Uses `STORIES_ROOT` and `DB_*`, runs pending migrations, then for every story folder: a legacy `story.json` is validated, upserted as the row, its tsconfig migrated, and the file deleted (an invalid one is reported and kept). Idempotent. `--seed <dir>` can be given several times (metadata from `server/seed/<basename>.story.json`): a folder without a row gets the seed row; a missing folder is copied from `<dir>` only when the database held no story before seeding (decided once, so every seed of a fresh install is copied). Dev runs it on every `yarn dev:server` start with `stories/example`; prod runs it in the entrypoint with the same, copied into the image as `/app/.seed/`.
 
 ## Git
 

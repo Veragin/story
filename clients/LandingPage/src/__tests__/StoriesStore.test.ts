@@ -55,7 +55,7 @@ const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {
             delete info.unlocked;
             return json(200, info);
         }
-        if (method === 'POST' && url === '/api/stories/import') return json(201, story('copy'));
+        if (method === 'POST' && url === '/api/stories/open/files') return json(200, { ok: true });
         if (method === 'GET' && url === '/api/health') return json(200, { ok: true, git: 'up' });
         if (method === 'POST' && url === '/api/stories') {
             stories.push(story('fresh', { unlocked: true }));
@@ -182,25 +182,29 @@ describe('StoriesStore', () => {
         expect((await loading)?.version).toBe('v1');
     });
 
-    it('imports the zip as a multipart form with the story fields', async () => {
+    it('adds the files of a zip as a multipart form, then reloads the list', async () => {
         const { store, calls } = setup();
+        await store.load();
         const zip = new Blob([new Uint8Array([0x50, 0x4b])], { type: 'application/zip' });
-        const body = { name: 'My copy', author: 'Me', password: 'secret-1', description: '', public: true };
-        const imported = await store.importZip(zip, body);
-        expect(imported.id).toBe('copy');
-        const call = calls.find((c) => c.url.startsWith('/api/stories/import'))!;
-        expect(call.url).toBe('/api/stories/import');
+        expect(await store.addFiles('open', zip)).toBe(true);
+        const call = calls.find((c) => c.url === '/api/stories/open/files')!;
         expect(call.method).toBe('POST');
         expect(call.headers['content-type']).toBeUndefined(); // the browser adds the multipart boundary
         const form = call.body as FormData;
-        expect(Object.fromEntries([...form].filter(([key]) => key !== 'zip'))).toEqual({
-            name: 'My copy',
-            author: 'Me',
-            password: 'secret-1',
-            description: '',
-            public: 'true',
-        });
+        expect([...form.keys()]).toEqual(['zip']);
         expect(form.get('zip')).toBeInstanceOf(Blob);
+        expect(calls.filter((c) => c.url === '/api/stories')).toHaveLength(2);
+    });
+
+    it('adds no files to a locked story when the password prompt is cancelled', async () => {
+        const { store, calls } = setup();
+        await store.load();
+        const adding = store.addFiles('locked', new Blob([]));
+        await tick();
+        expect(store.prompt?.id).toBe('locked');
+        store.cancelPassword();
+        expect(await adding).toBe(false);
+        expect(calls.some((c) => c.url.endsWith('/files'))).toBe(false);
     });
 
     it('reads from the health check whether the server has git', async () => {

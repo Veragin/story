@@ -5,16 +5,13 @@ import { AUTH_OPTIONS, type TAuthOptions } from '../auth/authOptions';
 import { readSessionToken, sessionCookie } from '../auth/cookie';
 import { SessionService } from '../auth/SessionService';
 import { jsonObjectBody } from '../common/body';
-import { HttpError } from '../common/HttpError';
 import { ProtocolRoute } from '../common/ProtocolRoute';
 import { toStoryDto, type TStoryFile } from './storyFile';
 import { StoryFolders } from './StoryFolders';
 import { parseCreateStoryBody, parseImportStoryBody, zipMapSize } from './storyInput';
 import { StoryRepository } from '../database/repositories/StoryRepository';
 import { StoryZipInterceptor } from './StoryZipInterceptor';
-import { unzipStory } from './zip';
-
-type TUploadedZip = { buffer: Buffer };
+import { type TUploadedZip, unzipUploaded } from './zip';
 
 @Controller()
 export class StoriesController {
@@ -52,8 +49,7 @@ export class StoriesController {
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response
     ): Promise<TStoryDto> {
-        if (!zip) throw HttpError.badRequest('Field "zip" must be the story zip file');
-        const files = unzipStory(zip.buffer);
+        const files = unzipUploaded(zip);
         const file = await parseImportStoryBody(fields, zipMapSize(files));
         return this.welcome(await this.folders.import(file, files), file, req, res);
     }

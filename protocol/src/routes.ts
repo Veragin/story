@@ -114,6 +114,7 @@ export const STORY_ROUTES = {
     updateStoryInfo: { method: 'PUT', path: '/info', access: 'write' },
     exportStory: { method: 'GET', path: '/export', access: 'read' },
     exportPlayable: { method: 'GET', path: '/export/web', access: 'read' },
+    addStoryFiles: { method: 'POST', path: '/files', access: 'write' },
 
     createChapter: { method: 'POST', path: '/chapters', access: 'write' },
     getChapter: { method: 'GET', path: '/chapters/:chapterId', access: 'read' },
@@ -291,6 +292,12 @@ export type TApiSpec = {
     exportStory: { body: undefined; response: never };
     /** A `<storyId>-web.zip` attachment, not JSON: the standalone player, `play.json`, `data/` and `types/`. */
     exportPlayable: { body: undefined; response: never };
+    /**
+     * A `multipart/form-data` form (build it with `storyFilesForm`): a story zip in `STORY_IMPORT_ZIP_FIELD`,
+     * shaped like an `exportStory` zip. Its files are added to the story, replacing those of the same path;
+     * its `tsconfig.json` and `story.json` are ignored. A `map.json` in it sets the map size.
+     */
+    addStoryFiles: { body: undefined; response: TOkDto };
 
     createChapter: { body: TCreateChapterBody; response: TChapterDto };
     getChapter: { body: undefined; response: TChapterDto };
