@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createDefaultMap } from '../src/json/mapFile';
 import { changedFiles, snapshot, startSourceApp, storyProblems, tscTemp } from './helpers/sourceHelpers';
 
 let t: Awaited<ReturnType<typeof startSourceApp>>;
@@ -699,6 +700,20 @@ describe('triggers', () => {
 });
 
 describe('entities', () => {
+    it('adds a location to a story with an unregistered location file', async () => {
+        await writeFile(
+            path.join(t.project.root, 'data/locations/home.location.ts'),
+            "import { TLocation } from '@story/types';\n\nexport const homeLocation: TLocation<'home'> = {\n    id: 'home',\n    name: 'Home',\n    description: '',\n    localCharacters: [],\n    init: {},\n};\n"
+        );
+        const res = await t.post('/api/stories/example/entities/locations', {
+            id: 'village_herbalist',
+            name: 'Herbalist',
+            description: '',
+            localCharacters: [],
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(201);
+    });
+
     it('creates, updates and deletes characters, npcs and locations', async () => {
         let res = await t.post('/api/stories/example/entities/characters', {
             id: 'bob',
@@ -759,7 +774,14 @@ describe('entities', () => {
         await expectHealthy();
         await expectTsc();
 
-        // the sublocation (and its import) is cleared with the delete
+        res = await t.put('/api/stories/example/maps/forest', {
+            ...createDefaultMap('forest', { width: 2, height: 2 }),
+            version: '',
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(exists('data/locations/forest.map.json')).toBe(true);
+
+        // the sublocation (and its import) is cleared with the delete, and its map goes too
         const forest = (await t.get('/api/stories/example/entities/locations/forest')).body;
         res = await t.del('/api/stories/example/entities/locations/forest', { version: forest.version });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -772,6 +794,7 @@ describe('entities', () => {
             }),
         ]);
         expect(await read('data/locations/village.location.ts')).not.toMatch(/forest/i);
+        expect(exists('data/locations/forest.map.json')).toBe(false);
         // `location: 'village'` all over the story: the preview names every value it would clear
         res = await t.get('/api/stories/example/entities/locations/village/references');
         expect(res.status, JSON.stringify(res.body)).toBe(200);

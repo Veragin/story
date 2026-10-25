@@ -70,19 +70,30 @@ export const withFields = (
     });
 };
 
-const keyOf = (d: TDiagnosticDto) => `${d.file}|${d.code ?? ''}|${d.message}`;
+const messageKey = (d: TDiagnosticDto) => `${d.file}|${d.code ?? ''}|${d.message}`;
+const positionKey = (d: TDiagnosticDto) => `${d.file}|${d.code ?? ''}|${d.line}:${d.column}`;
 
-// Multiset, ignoring positions: a story already broken by a hand edit stays editable.
-export const newDiagnostics = (before: TDiagnosticDto[], after: TDiagnosticDto[]): TDiagnosticDto[] => {
-    const counts = new Map<string, number>();
-    for (const d of before) counts.set(keyOf(d), (counts.get(keyOf(d)) ?? 0) + 1);
+const unmatched = (
+    before: TDiagnosticDto[],
+    after: TDiagnosticDto[],
+    keyOf: (d: TDiagnosticDto) => string
+): { before: TDiagnosticDto[]; after: TDiagnosticDto[] } => {
+    const pending = new Map<string, TDiagnosticDto[]>();
+    for (const d of before) pending.set(keyOf(d), [...(pending.get(keyOf(d)) ?? []), d]);
     const fresh: TDiagnosticDto[] = [];
     for (const d of after) {
-        const n = counts.get(keyOf(d)) ?? 0;
-        if (n > 0) counts.set(keyOf(d), n - 1);
+        const match = pending.get(keyOf(d));
+        if (match?.length) match.shift();
         else fresh.push(d);
     }
-    return fresh;
+    return { before: [...pending.values()].flat(), after: fresh };
+};
+
+// A story already broken by a hand edit stays editable. Messages are matched ignoring
+// positions, then positions ignoring messages: a new id widens the union an old error quotes.
+export const newDiagnostics = (before: TDiagnosticDto[], after: TDiagnosticDto[]): TDiagnosticDto[] => {
+    const byMessage = unmatched(before, after, messageKey);
+    return unmatched(byMessage.before, byMessage.after, positionKey).after;
 };
 
 export const syntaxDiagnostic = (file: string, message: string, field?: string): TDiagnosticDto => ({

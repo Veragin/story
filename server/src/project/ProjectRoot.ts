@@ -5,6 +5,8 @@ export const DEFAULT_STORIES_ROOT = path.join(REPO_ROOT, 'stories');
 
 export const EXAMPLE_STORY_ROOT = path.join(DEFAULT_STORIES_ROOT, 'example');
 
+export const LOCATION_MAP_SUFFIX = '.map.json';
+
 const ENGINE_PACKAGE_ENTRIES: Readonly<Record<string, string>> = {
     '@story/core': 'clients/shared/core/src/index.ts',
     '@story/shared': 'clients/shared/utils/src/index.ts',
@@ -51,6 +53,7 @@ export class ProjectRoot {
             chaptersDir: this.abs('data/chapters'),
             timelineLayout: this.abs('data/chapters/timeline.layout.json'),
             map: this.abs('data/locations/map.json'),
+            locationMap: (locationId: string) => this.abs('data/locations', `${locationId}${LOCATION_MAP_SUFFIX}`),
             chapterDir: (chapterId: string) => this.abs('data/chapters', chapterId),
             chapterFile: (chapterId: string) => this.abs('data/chapters', chapterId, `${chapterId}.chapter.ts`),
             chapterPassagesFile: (chapterId: string) =>

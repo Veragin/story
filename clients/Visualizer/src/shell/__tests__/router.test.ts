@@ -4,6 +4,7 @@ import { parseHash, routeToHash, TRoute } from '../router';
 describe('router hash parsing', () => {
     const cases: [string, TRoute][] = [
         ['#/map', { page: 'map' }],
+        ['#/map/village', { page: 'map', mapId: 'village' }],
         ['#/timeline', { page: 'timeline' }],
         ['#/timeline/chapter/village', { page: 'chapter', chapterId: 'village' as never }],
         ['#/entities', { page: 'entities' }],
@@ -36,7 +37,7 @@ describe('router hash parsing', () => {
         '#',
         '#/',
         '#/nope',
-        '#/map/extra',
+        '#/map/village/extra',
         '#/timeline/chapter',
         '#/entities/dragons',
         '#/entities/catalogs',

@@ -10,7 +10,7 @@ export const STRUCTURE_SECTIONS = ['types', 'literals'] as const;
 export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
 
 export type TRoute =
-    | { page: 'map' }
+    | { page: 'map'; mapId?: string }
     | { page: 'timeline' }
     | { page: 'chapter'; chapterId: TChapterId }
     | { page: 'entities'; kind?: TEntityKind; id?: string }
@@ -45,7 +45,8 @@ export const parseHash = (hash: string): TRoute | null => {
 
     switch (parts[0]) {
         case 'map':
-            return parts.length === 1 ? { page: 'map' } : null;
+            if (parts.length === 1) return { page: 'map' };
+            return parts.length === 2 && parts[1] ? { page: 'map', mapId: parts[1] } : null;
         case 'timeline':
             if (parts.length === 1) return { page: 'timeline' };
             if (parts.length === 3 && parts[1] === 'chapter' && parts[2]) {
@@ -88,7 +89,7 @@ export const routeToHash = (route: TRoute): string => {
     const enc = encodeURIComponent;
     switch (route.page) {
         case 'map':
-            return '#/map';
+            return route.mapId ? `#/map/${enc(route.mapId)}` : '#/map';
         case 'timeline':
             return '#/timeline';
         case 'chapter':

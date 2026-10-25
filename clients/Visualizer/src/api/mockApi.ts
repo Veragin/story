@@ -201,6 +201,15 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         },
     });
 
+    const removeLocationFromMaps = (locationId: string) => {
+        maps.delete(locationId);
+        for (const [mapId, m] of maps) {
+            if (!(locationId in m.locations)) continue;
+            const locations = Object.fromEntries(Object.entries(m.locations).filter(([id]) => id !== locationId));
+            maps.set(mapId, { ...m, locations, version: nextVersion() });
+        }
+    };
+
     const get = <T>(map: Map<string, T>, id: string, what: string): T => map.get(id) ?? notFound(`${what} "${id}"`);
 
     const references = (passageIds: Set<string>, exceptFolder?: (p: TPassageDto) => boolean) =>
@@ -687,6 +696,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 const plan = deletePlan(kind, id);
                 if (plan.blocking.length > 0) fail(409, { error: 'referenced', references: plan.blocking });
                 map.delete(id);
+                if (kind === 'locations') removeLocationFromMaps(id);
                 emit({ kind: 'entity', id: `${kind}/${id}`, version: null, op: 'deleted' });
                 plan.apply();
                 return { ok: true as const, cleared: plan.cleared };
@@ -724,6 +734,13 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 maps.set(mapId, next);
                 emit({ kind: 'map', id: mapId, version: next.version, op: version === '' ? 'created' : 'updated' });
                 return next;
+            }),
+        deleteMap: (mapId, { version }) =>
+            reply(() => {
+                checkVersion(get(maps, mapId, `map "${mapId}"`), version);
+                maps.delete(mapId);
+                emit({ kind: 'map', id: mapId, version: null, op: 'deleted' });
+                return { ok: true as const };
             }),
 
         getTimelineLayout: () => reply(() => timelineLayout),

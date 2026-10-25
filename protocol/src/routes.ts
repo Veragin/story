@@ -35,7 +35,7 @@ import type {
     TSetupGitBody,
     TUpdateGitConfigBody,
 } from './dto/git';
-import type { TMapDto, TUpdateMapBody } from './dto/map';
+import type { TDeleteMapBody, TMapDto, TUpdateMapBody } from './dto/map';
 import type {
     TChapterPassagesDto,
     TCreatePassageBody,
@@ -173,6 +173,7 @@ export const STORY_ROUTES = {
 
     getMap: { method: 'GET', path: '/maps/:mapId', access: 'read' },
     updateMap: { method: 'PUT', path: '/maps/:mapId', access: 'write' },
+    deleteMap: { method: 'DELETE', path: '/maps/:mapId', access: 'write' },
 
     getTimelineLayout: { method: 'GET', path: '/layout/timeline', access: 'read' },
     updateTimelineLayout: { method: 'PUT', path: '/layout/timeline', access: 'write' },
@@ -381,6 +382,8 @@ export type TApiSpec = {
 
     getMap: { body: undefined; response: TMapDto };
     updateMap: { body: TUpdateMapBody; response: TMapDto };
+    /** A location's map only; `global` cannot be deleted. */
+    deleteMap: { body: TDeleteMapBody; response: TOkDto };
 
     getTimelineLayout: { body: undefined; response: TTimelineLayoutDto };
     updateTimelineLayout: { body: TUpdateTimelineLayoutBody; response: TTimelineLayoutDto };

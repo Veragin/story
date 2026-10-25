@@ -1,7 +1,13 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import styled from '@emotion/styled';
-import { Alert, Button, CircularProgress, TextField } from '@mui/material';
+import {
+    Alert,
+    Button,
+    CircularProgress,
+    InputAdornment,
+    TextField,
+} from '@mui/material';
 import { Modal, Row, spacingCss } from '@story/ui';
 import { modals } from '../../shell';
 import type { MapPageStore } from './MapPageStore';
@@ -11,7 +17,9 @@ export const openAddLocationModal = (store: MapPageStore) =>
 
 const AddLocationModal = observer(
     ({ store, onClose }: { store: MapPageStore; onClose: () => void }) => {
-        const [id, setId] = useState('');
+        const [localId, setLocalId] = useState('');
+        const prefix = store.locationIdPrefix;
+        const id = localId && prefix + localId;
         const [name, setName] = useState('');
         const [busy, setBusy] = useState(false);
         const [error, setError] = useState<string | null>(null);
@@ -47,8 +55,8 @@ const AddLocationModal = observer(
                     >
                         <TextField
                             label={_('Id')}
-                            value={id}
-                            onChange={(e) => setId(e.target.value.trim())}
+                            value={localId}
+                            onChange={(e) => setLocalId(e.target.value.trim())}
                             error={idError !== null}
                             helperText={
                                 idError ??
@@ -59,6 +67,15 @@ const AddLocationModal = observer(
                             size="small"
                             autoFocus
                             fullWidth
+                            slotProps={{
+                                input: {
+                                    startAdornment: prefix ? (
+                                        <InputAdornment position="start">
+                                            {prefix}
+                                        </InputAdornment>
+                                    ) : undefined,
+                                },
+                            }}
                         />
                         <TextField
                             label={_('Name')}

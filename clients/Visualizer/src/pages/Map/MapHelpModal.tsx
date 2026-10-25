@@ -15,11 +15,32 @@ export const openMapHelpModal = () =>
                             'Drag empty space to move the view (in Tiles mode: drag with the right mouse button).'
                         )}
                     </li>
-                    <li>{_('Double-click a location to open it.')}</li>
+                    <li>
+                        {_(
+                            'Double-click a location to open it: in View mode its own map (or add one), otherwise its form.'
+                        )}
+                    </li>
+                </ul>
+                <h4>{_('Location maps')}</h4>
+                <ul>
+                    <li>
+                        {_(
+                            'Every location can have its own map. Locations on the map of "village" have ids starting with "village_" (for example "village_inn"), and can have maps of their own.'
+                        )}
+                    </li>
+                    <li>
+                        {_(
+                            'The path at the top left leads back to the maps above.'
+                        )}
+                    </li>
                 </ul>
                 <h4>{_('Modes')}</h4>
                 <ul>
-                    <li>{_('View: look only, nothing can be changed.')}</li>
+                    <li>
+                        {_(
+                            'View: look only. Click a location to show its details in the side panel, with Open / Add map, Edit and Delete.'
+                        )}
+                    </li>
                     <li>
                         {_(
                             'Locations: click a location to select it, drag it to move it, drag its handles to reshape it, double-click an edge to add a point, right-click a point to remove it. Delete removes the selected location.'

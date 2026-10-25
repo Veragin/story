@@ -204,6 +204,7 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
 
         getMap: (mapId) => request('getMap', { mapId }),
         updateMap: (mapId, body) => request('updateMap', { mapId }, body),
+        deleteMap: (mapId, body) => request('deleteMap', { mapId }, body),
 
         getTimelineLayout: () => request('getTimelineLayout', {}),
         updateTimelineLayout: (body) => request('updateTimelineLayout', {}, body),

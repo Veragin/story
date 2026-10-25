@@ -14,7 +14,7 @@ import {
 import { Node, type ObjectLiteralExpression, type SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
-import { removeLocationPolygon } from '../../json/storeCleanup';
+import { removeLocationMap, removeLocationPolygon } from '../../json/storeCleanup';
 import { siblingPng } from '../images';
 import { capitalize } from '@story/shared';
 import { deleteClearingReferences, deleteReferences, entityResource, type TDeletePlan } from '../clearReferences';
@@ -397,8 +397,10 @@ const sourceDeletePlan = (sp: SourceProject, kind: TSourceKind, id: string): TDe
             s.delete(abs);
             registerRemove(s, kind, id);
             worldStateRemove(s, kind, id);
-            if (kind === 'locations') s.after((tx) => removeLocationPolygon(tx, id));
-            else s.after((tx) => tx.deleteFile(siblingPng(abs)));
+            if (kind === 'locations') {
+                s.after((tx) => removeLocationPolygon(tx, id));
+                s.after((tx) => removeLocationMap(tx, id));
+            } else s.after((tx) => tx.deleteFile(siblingPng(abs)));
         },
     };
 };

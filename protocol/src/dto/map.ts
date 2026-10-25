@@ -3,6 +3,9 @@ import type { TVersioned, TVersionedBody } from './common';
 
 export const GLOBAL_MAP_ID = 'global';
 
+/** The separator between a location id and the name of a location on its map: `village_inn` is on `village`'s map. */
+export const SUBLOCATION_SEPARATOR = '_';
+
 export type TColorId = string;
 
 export type TMapTileDto = {
@@ -42,3 +45,5 @@ export type TMapFile = Omit<TMapDto, 'version'>;
 
 /** Whole-document replace; `version: ''` creates the file. */
 export type TUpdateMapBody = TVersionedBody & TMapFile;
+
+export type TDeleteMapBody = TVersionedBody;

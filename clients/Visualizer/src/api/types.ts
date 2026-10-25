@@ -16,6 +16,7 @@ import type {
     TCreateTriggerBody,
     TCreateTypeBody,
     TDeleteGitConfigBody,
+    TDeleteMapBody,
     TEngineSection,
     TEngineSectionDto,
     TEntityDtoByKind,
@@ -124,6 +125,7 @@ export type TVisualizerApi = {
 
     getMap(mapId: string): Promise<TMapDto>;
     updateMap(mapId: string, body: TUpdateMapBody): Promise<TMapDto>;
+    deleteMap(mapId: string, body: TDeleteMapBody): Promise<TOkDto>;
 
     getTimelineLayout(): Promise<TTimelineLayoutDto>;
     updateTimelineLayout(body: TUpdateTimelineLayoutBody): Promise<TTimelineLayoutDto>;

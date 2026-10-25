@@ -5,7 +5,7 @@ import {
     writeChapterLayoutFile,
     writeTimelineLayoutFile,
 } from './layoutStore';
-import { readMapFile, writeMapFile } from './mapStore';
+import { mapsThatMayHoldLocation, readMapFile, writeMapFile } from './mapStore';
 
 const withoutKeys = <T>(record: Record<string, T>, ids: readonly string[]) => {
     const next = { ...record };
@@ -34,11 +34,21 @@ export const removePassagePositions = async (
 };
 
 export const removeLocationPolygon = async (tx: TTransaction, locationId: string): Promise<boolean> => {
-    const current = await readMapFile(tx.project);
-    if (!current) return false;
-    const locations = withoutKeys(current.locations, [locationId]);
-    if (!locations.changed) return false;
-    await writeMapFile(tx, { ...current, locations: locations.next });
+    let removed = false;
+    for (const mapId of mapsThatMayHoldLocation(locationId)) {
+        const current = await readMapFile(tx.project, mapId);
+        if (!current) continue;
+        const locations = withoutKeys(current.locations, [locationId]);
+        if (!locations.changed) continue;
+        await writeMapFile(tx, { ...current, locations: locations.next });
+        removed = true;
+    }
+    return removed;
+};
+
+export const removeLocationMap = async (tx: TTransaction, locationId: string): Promise<boolean> => {
+    if (!(await readMapFile(tx.project, locationId))) return false;
+    await tx.deleteFile(tx.project.paths.locationMap(locationId));
     return true;
 };
 

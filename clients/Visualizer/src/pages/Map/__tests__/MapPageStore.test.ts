@@ -1,18 +1,27 @@
 import '@story/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiEvents, createMockApi, createMockSeed, type TMockApi } from '../../../api';
-import { MapPageStore } from '../MapPageStore';
+import { MapPageStore, type TMapPageStoreOptions } from '../MapPageStore';
 import { getUiState } from '../../../ui-state';
 
 type TSetup = { api: TMockApi; events: ApiEvents; store: MapPageStore; confirm: ReturnType<typeof vi.fn> };
 
-const setup = async (opts: { emptyMap?: boolean; persist?: boolean } = {}): Promise<TSetup> => {
+type TSetupOptions = Pick<TMapPageStoreOptions, 'mapId' | 'askDelete'> & { emptyMap?: boolean; persist?: boolean };
+
+const setup = async (opts: TSetupOptions = {}): Promise<TSetup> => {
     const events = new ApiEvents({ createEventSource: undefined });
     const seed = createMockSeed();
     if (opts.emptyMap) seed.maps = [];
     const api = createMockApi({ seed, events });
     const confirm = vi.fn(() => Promise.resolve(true));
-    const store = new MapPageStore({ api, events, confirm, persistUiState: opts.persist ?? false });
+    const store = new MapPageStore({
+        api,
+        events,
+        confirm,
+        mapId: opts.mapId,
+        askDelete: opts.askDelete,
+        persistUiState: opts.persist ?? false,
+    });
     await store.init();
     return { api, events, store, confirm };
 };
@@ -356,5 +365,65 @@ describe('MapPageStore — locations', () => {
             fill: '#33669959',
             stroke: '#336699',
         });
+    });
+});
+
+describe('MapPageStore — location maps', () => {
+    const addInn = (api: TMockApi) =>
+        api.createEntity('locations', { id: 'village_inn', name: 'Inn', description: '', localCharacters: [] });
+
+    it('shows a missing location map as missing until it is added, then edits it', async () => {
+        const { api, store } = await setup({ mapId: 'village' });
+        expect(store.loadState).toBe('missing');
+        expect(await store.fetchLocationMap('village')).toBeNull();
+
+        await store.createLocationMap('village', { width: 5, height: 4 });
+        await store.load();
+        expect(store.loadState).toBe('ready');
+        expect(store.map).toMatchObject({ mapId: 'village', width: 5, height: 4 });
+        expect(store.ancestorMapIds).toEqual(['global', 'village']);
+        expect(store.locationIdPrefix).toBe('village_');
+
+        await addInn(api);
+        await store.loadLocations();
+        expect(store.unplacedLocations.map((l) => l.id)).toEqual(['village_inn']);
+    });
+
+    it('lists only the locations of its own map as unplaced', async () => {
+        const { api, store } = await setup();
+        await addInn(api);
+        await store.loadLocations();
+        expect(store.unplacedLocations).toEqual([]);
+        expect(store.childLocationIds('village')).toEqual(['village_inn']);
+    });
+
+    it('deletes only what was chosen: the map, the sublocations, or the location with both', async () => {
+        const askDelete = vi.fn<NonNullable<TMapPageStoreOptions['askDelete']>>();
+        const { api, store } = await setup({ askDelete });
+        await addInn(api);
+        await store.loadLocations();
+        await store.createLocationMap('village', { width: 2, height: 2 });
+
+        askDelete.mockResolvedValueOnce({ map: true, sublocations: false, location: false });
+        expect(await store.deleteLocation('village')).toBe('deleted');
+        expect(askDelete).toHaveBeenLastCalledWith(
+            expect.objectContaining({ locationId: 'village', hasMap: true, sublocationIds: ['village_inn'] })
+        );
+        await expect(api.getMap('village')).rejects.toBeInstanceOf(ApiError);
+        expect(store.locations.has('village_inn')).toBe(true);
+
+        askDelete.mockResolvedValueOnce({ map: false, sublocations: true, location: false });
+        expect(await store.deleteLocation('village')).toBe('deleted');
+        expect(store.locations.has('village_inn')).toBe(false);
+        expect(store.locations.has('village')).toBe(true);
+
+        await addInn(api);
+        await store.loadLocations();
+        await store.createLocationMap('village', { width: 2, height: 2 });
+        askDelete.mockResolvedValueOnce({ map: false, sublocations: false, location: true });
+        expect(await store.deleteLocation('village')).toBe('deleted');
+        expect([...store.locations.keys()]).toEqual(['kingdom']);
+        await expect(api.getMap('village')).rejects.toBeInstanceOf(ApiError);
+        expect(store.map?.locations.village).toBeUndefined();
     });
 });

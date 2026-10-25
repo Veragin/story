@@ -55,21 +55,22 @@ export class ModalStore {
         [...this.stack].reverse().forEach((m) => this.close(m.id));
     };
 
-    confirm = (options: TConfirmOptions): Promise<boolean> =>
-        new Promise<boolean>((resolve) => {
-            let result = false;
+    // resolves with `dismissed` when the modal is closed without an answer
+    ask = <T>(render: (answer: (value: T) => void) => ReactNode, dismissed: T): Promise<T> =>
+        new Promise<T>((resolve) => {
+            let result = dismissed;
             this.open(
                 (close) =>
-                    createElement(ConfirmDialog, {
-                        ...options,
-                        onAnswer: (answer: boolean) => {
-                            result = answer;
-                            close();
-                        },
+                    render((value) => {
+                        result = value;
+                        close();
                     }),
                 { onClose: () => resolve(result) }
             );
         });
+
+    confirm = (options: TConfirmOptions): Promise<boolean> =>
+        this.ask<boolean>((onAnswer) => createElement(ConfirmDialog, { ...options, onAnswer }), false);
 }
 
 export const modals = new ModalStore();
