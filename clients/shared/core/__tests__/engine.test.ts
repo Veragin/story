@@ -339,6 +339,39 @@ describe('Engine turn loop', () => {
             expect(restExecute).toHaveBeenCalledTimes(1);
             expect(last(e.history.data.annie!)).toMatchObject({ reason: 'NO_ACTIONS' });
         });
+
+        it('takes the link with the highest autoPriortiy, the first one on a tie', async () => {
+            const highExecute = vi.fn();
+            const { s, e } = sessionWith({
+                'village-annie-choose': () => ({
+                    ...screen('choose', {
+                        body: [
+                            {
+                                links: [
+                                    { text: 'default', passageId: 'village-annie-default' },
+                                    { text: 'high', passageId: 'village-annie-high', autoPriortiy: 5 },
+                                    { text: 'tie', passageId: 'village-annie-tie', autoPriortiy: 5 },
+                                    { text: 'low', passageId: 'village-annie-low', autoPriortiy: 2 },
+                                    { text: 'zero', passageId: 'village-annie-zero', autoPriortiy: 0 },
+                                ],
+                            },
+                        ],
+                    }),
+                    characterId: 'annie',
+                }),
+                'village-annie-high': () => ({ ...screen('high', { execute: highExecute }), characterId: 'annie' }),
+                'village-thomas-probe': () => screen('probe', {}),
+            });
+            e.history.data.annie = [{ passageId: 'village-annie-choose', time: s.time }];
+            e.history.data.thomas = [
+                { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+            ];
+
+            await e.processor.continue();
+            await waitForPassage(e, 'village-thomas-probe');
+
+            expect(highExecute).toHaveBeenCalledTimes(1);
+        });
     });
 });
 

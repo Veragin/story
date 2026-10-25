@@ -51,8 +51,6 @@ const setup = ({ tooMany = false, filesStatus = [200], gitSetupStatus = 200 } = 
         }
         const reset = /^\/api\/stories\/([^/]+)\/password-reset$/.exec(url);
         if (method === 'POST' && reset) {
-            if (body.email !== 'me@story.cz')
-                return json(400, { error: 'bad_request', message: "This is not the story's email" });
             return new Response(null, { status: 204 });
         }
         if (method === 'PUT' && reset) {
@@ -270,14 +268,6 @@ describe('StoriesStore', () => {
         expect(call?.headers['content-type']).toBe('application/json');
         expect(call?.body).toEqual({ email: 'me@story.cz' });
         expect(store.prompt?.id).toBe('locked');
-    });
-
-    it("rejects a reset request with the server's message on a wrong email", async () => {
-        const { store } = setup();
-        await store.load();
-        void store.open('locked');
-        await tick();
-        await expect(store.requestPasswordReset('other@story.cz')).rejects.toThrow("This is not the story's email");
     });
 
     it('requests no reset link without a password prompt', async () => {

@@ -13,7 +13,6 @@ const ENGINE_PACKAGE_ENTRIES: Readonly<Record<string, string>> = {
     '@story/ui': 'clients/shared/ui/src/index.ts',
     'react': 'node_modules/@types/react/index.d.ts',
     'react/*': 'node_modules/@types/react/*',
-    '@mui/material': 'node_modules/@mui/material/index.d.ts',
     '@mui/icons-material': 'node_modules/@mui/icons-material/index.d.ts',
     '@mui/icons-material/*': 'node_modules/@mui/icons-material/*',
 };

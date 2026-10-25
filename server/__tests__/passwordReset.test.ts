@@ -41,16 +41,11 @@ const start = async () => {
 };
 
 describe('requestPasswordReset', () => {
-    it('answers a wrong email, or a story without one, with 400 after the delay, and mails nothing', async () => {
+    it('answers a wrong email, or a story without one, with 204 after the delay, and mails nothing', async () => {
         const { testApp, request, rows } = await start();
-        const wrong = await request('other@example.com');
-        expect([wrong.status, wrong.body]).toEqual([
-            400,
-            { error: 'bad_request', message: "This is not the story's email" },
-        ]);
+        expect((await request('other@example.com')).status).toBe(204);
         expect(testApp.wrongEmailDelays()).toBe(1);
-        const none = await request('anyone@example.com', 'beta');
-        expect([none.status, none.body.message]).toEqual([400, "This is not the story's email"]);
+        expect((await request('anyone@example.com', 'beta')).status).toBe(204);
         expect(testApp.wrongEmailDelays()).toBe(2);
         expect(testApp.mailer.sent).toEqual([]);
         expect(await rows()).toEqual([]);
@@ -107,7 +102,7 @@ describe('requestPasswordReset', () => {
         const blocked = await request(EMAIL);
         expect([blocked.status, blocked.body.error]).toEqual([429, 'too_many_requests']);
         expect(testApp.mailer.sent).toHaveLength(2);
-        expect((await request('x@example.com', 'beta')).status).toBe(400);
+        expect((await request('x@example.com', 'beta')).status).toBe(204);
     });
 });
 

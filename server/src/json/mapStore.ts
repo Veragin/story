@@ -32,17 +32,17 @@ const load = async (project: ProjectRoot, file: string): Promise<{ map: TMapFile
     }
 };
 
-const writeMap = async (tx: TTransaction, map: TMapFile): Promise<string> => {
+const writeMap = async (tx: TTransaction, file: string, map: TMapFile): Promise<string> => {
     const text = await encodeMapFile(map);
-    await tx.writeFile(mapPath(tx.project, map.mapId), text);
+    await tx.writeFile(file, text);
     return text;
 };
 
 export const readMapFile = async (project: ProjectRoot, mapId: string = GLOBAL_MAP_ID): Promise<TMapFile | null> =>
     (await load(project, mapPath(project, mapId))).map;
 
-export const writeMapFile = async (tx: TTransaction, map: TMapFile): Promise<TVersion> =>
-    version(await writeMap(tx, map));
+export const writeMapFile = async (tx: TTransaction, mapId: string, map: TMapFile): Promise<TVersion> =>
+    version(await writeMap(tx, mapPath(tx.project, mapId), map));
 
 // only the global map exists without a file; a location's map is created by the first PUT
 export const readMap = async (
@@ -72,7 +72,7 @@ export const updateMap = async (
             ...(current.map ?? createDefaultMap(mapId)),
             version: current.version,
         }));
-        const text = await writeMap(tx, map);
+        const text = await writeMap(tx, file, map);
         const next = version(text);
         tx.setEvent({ kind: 'map', id: mapId, version: next, op: current.map ? 'updated' : 'created' });
         return { ...decodeMapFile(JSON.parse(text)), version: next };

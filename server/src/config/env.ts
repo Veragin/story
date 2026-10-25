@@ -7,6 +7,7 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 const DEFAULT_PORT = 8123;
 
 const DEFAULT_PUBLIC_URL = 'http://localhost:8103';
+const DEFAULT_MAIL_FROM = 'info@story.cz';
 
 const optionalText = z.string().trim().optional();
 
@@ -59,7 +60,7 @@ export const ENV_SCHEMA = z.object({
     GIT_ALLOW_FILE_REMOTES: flag,
     PUBLIC_URL: optionalText.transform((value) => normalizeOrigin(value || DEFAULT_PUBLIC_URL)),
     SMTP_URL: optionalText.transform((value) => value || null),
-    MAIL_FROM: z.string().trim().min(1),
+    MAIL_FROM: optionalText.transform((value) => value || DEFAULT_MAIL_FROM),
 });
 
 export type TEnv = z.infer<typeof ENV_SCHEMA>;

@@ -58,9 +58,10 @@ export class PasswordResetController {
         this.requestLimiter.fail(key);
         const story = await this.stories.read(storyId);
         if (!story) throw HttpError.noStory(storyId);
+        // the same 204 as a match: the answer must not reveal the story's email
         if (!isStoryEmailMatch(story.email, email)) {
             await this.resetOptions.wrongEmailDelay();
-            throw HttpError.badRequest("This is not the story's email");
+            return;
         }
         const token = newToken();
         await this.resets.replace(storyId, hashToken(token), new Date(Date.now() + RESET_TOKEN_TTL_MS));

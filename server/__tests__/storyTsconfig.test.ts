@@ -32,13 +32,7 @@ const compilerOptionsOf = (dir: string): ts.CompilerOptions => {
     return parsed.options;
 };
 
-const HOST_SPECIFIERS = [
-    'react',
-    'react/jsx-runtime',
-    '@mui/material',
-    '@mui/icons-material',
-    '@mui/icons-material/Bolt',
-];
+const HOST_SPECIFIERS = ['react', 'react/jsx-runtime', '@mui/icons-material', '@mui/icons-material/Bolt'];
 
 let root: string;
 let cleanup: () => Promise<void>;

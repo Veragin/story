@@ -34,24 +34,19 @@ describe('PasswordDialog forgotten password', () => {
         await click(buttonByText('Send link'));
         expect(onRequestReset).toHaveBeenCalledWith('me@example.com');
         expect(text()).toContain(
-            'A link to set a new password was sent to me@example.com. It is valid for 12 hours.'
+            "If me@example.com is the story's email, a link to set a new password was sent to it. It is valid for 12 hours."
         );
         await click(buttonByText('Back'));
         expect(text()).toContain('Unlock My Story');
     });
 
-    it('shows a wrong email and a rate limit under the field', async () => {
+    it('shows a rate limit under the field', async () => {
         const onRequestReset = vi
             .fn<(email: string) => Promise<void>>()
-            .mockRejectedValueOnce(
-                statusError(400, "This is not the story's email")
-            )
             .mockRejectedValueOnce(statusError(429, 'Too Many Requests'));
         open(onRequestReset);
         await click(buttonByText('Forgotten password?'));
         type('[data-field="email"]', 'x@example.com');
-        await click(buttonByText('Send link'));
-        expect(text()).toContain("This is not the story's email");
         await click(buttonByText('Send link'));
         expect(text()).toContain(
             'Too many wrong attempts. Try again in a few minutes.'
