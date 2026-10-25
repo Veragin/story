@@ -134,7 +134,7 @@ export class GitService {
             if (!story) throw HttpError.noStory(storyId);
             const input = parseSetupBody(fields, this.options, {
                 authorName: story.author || storyId,
-                authorEmail: `${storyId}@story.local`,
+                authorEmail: story.email || `${storyId}@story.local`,
             });
             await checkBranchName(this.runner(ctx.project.root, null), input.branch);
             const record: TStoryGitRecord = {

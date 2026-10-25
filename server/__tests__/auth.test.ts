@@ -10,6 +10,7 @@ import { Session } from '../src/database/entities/Session';
 import { SessionGrant } from '../src/database/entities/SessionGrant';
 import { SessionGrantRepository } from '../src/database/repositories/SessionGrantRepository';
 import { SessionRepository } from '../src/database/repositories/SessionRepository';
+import { StoryPasswordResetRepository } from '../src/database/repositories/StoryPasswordResetRepository';
 import { StoryRepository } from '../src/database/repositories/StoryRepository';
 import { setupTestDatabase } from './helpers/database';
 import { cookieOf, EXAMPLE_PASSWORD, login, requestJson, sleep } from './helpers/http';
@@ -78,6 +79,7 @@ describe('SessionService', () => {
             new DatabaseService(dataSource),
             new SessionRepository(dataSource),
             new SessionGrantRepository(dataSource),
+            new StoryPasswordResetRepository(dataSource),
             options
         );
     };

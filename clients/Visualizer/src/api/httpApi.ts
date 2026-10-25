@@ -34,6 +34,7 @@ const NOT_MARKED_SAVED: readonly TRouteName[] = ['updateSource'];
 const NOT_STORY_WRITES: readonly TRouteName[] = [
     'login',
     'logout',
+    'requestPasswordReset',
     'updateGitConfig',
     'setupGit',
     'deleteGitConfig',
@@ -143,6 +144,9 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         health: () => request('health', {}),
         login: (password) => request('login', { storyId: options.storyId ?? STORY_ID }, { password }),
         getStoryInfo: () => request('getStoryInfo', {}),
+        updateStoryInfo: (body) => request('updateStoryInfo', {}, body),
+        requestPasswordReset: (email) =>
+            request('requestPasswordReset', { storyId: options.storyId ?? STORY_ID }, { email }),
         getStoryAccess: () => request('getStoryAccess', { storyId: options.storyId ?? STORY_ID }),
         getProject: () => request('getProject', {}),
 

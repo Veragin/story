@@ -47,6 +47,16 @@ describe('importStoryFiles', () => {
         expect(await readFile(path.join(dir, 'tsconfig.json'), 'utf8')).toBe(await storyTsconfig(dir));
     });
 
+    it('reads an optional email: a legacy story.json has none', async () => {
+        const legacy: Record<string, unknown> = { ...storyFixture() };
+        delete legacy.email;
+        await writeStoryFolder(root, 'alpha', { storyJson: JSON.stringify(legacy) });
+        await writeStoryFolder(root, 'beta', { storyJson: JSON.stringify(storyFixture({ email: 'me@example.com' })) });
+        await importStoryFiles(root, stories());
+        expect((await stories().read('alpha'))?.email).toBe('');
+        expect((await stories().read('beta'))?.email).toBe('me@example.com');
+    });
+
     it('skips an invalid story.json with a reason and keeps the file', async () => {
         await writeStoryFolder(root, 'alpha', { storyJson: JSON.stringify(storyFixture()) });
         const broken = await writeStoryFolder(root, 'broken', {

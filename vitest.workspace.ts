@@ -17,6 +17,15 @@ export default defineWorkspace([
     },
     {
         test: {
+            name: 'ui',
+            root: './clients/shared/ui',
+            environment: 'jsdom',
+            include: ['__tests__/**/*.test.ts', '__tests__/**/*.test.tsx'],
+            setupFiles: ['./__tests__/setup.ts'],
+        },
+    },
+    {
+        test: {
             name: 'story-loader',
             root: './clients/shared/storyLoader',
             environment: 'jsdom',
@@ -56,7 +65,7 @@ export default defineWorkspace([
             environment: 'node',
             include: ['__tests__/**/*.test.ts'],
             setupFiles: ['reflect-metadata'],
-            env: { DB_NAME: SERVER_TEST_DB },
+            env: { DB_NAME: SERVER_TEST_DB, MAIL_FROM: 'test@story.local' },
             // the suites share one database and truncate it: one fork runs the files one after another
             pool: 'forks',
             poolOptions: { forks: { singleFork: true } },

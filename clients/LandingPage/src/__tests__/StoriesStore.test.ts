@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { TStoryInfoDto, TStoryListItemDto } from '@story/protocol';
+import type { TStoryListItemDto } from '@story/protocol';
 import { passwordErrorMessage } from '@story/ui';
 import { ApiError, createLandingApi } from '../api';
 import { StoriesStore } from '../StoriesStore';
@@ -24,10 +24,10 @@ const json = (status: number, body?: unknown) =>
 type TCall = { method: string; url: string; headers: Record<string, string>; body: unknown };
 
 // every story's password is `secret`
-const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {}) => {
+const setup = ({ tooMany = false, filesStatus = [200], gitSetupStatus = 200 } = {}) => {
     const stories = [story('locked'), story('open', { unlocked: true }), story('pub', { public: true })];
     const calls: TCall[] = [];
-    const infoAnswers = [...infoStatus];
+    const filesAnswers = [...filesStatus];
     const answer = (input: RequestInfo | URL, init: RequestInit = {}): Response => {
         const url = String(input);
         const method = init.method ?? 'GET';
@@ -44,18 +44,25 @@ const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {
             s.unlocked = true;
             return new Response(null, { status: 204 });
         }
-        if (method === 'GET' && url === '/api/stories/open/info') {
-            const status = infoAnswers.shift() ?? 200;
+        if (method === 'POST' && url === '/api/stories/open/files') {
+            const status = filesAnswers.shift() ?? 200;
             if (status === 401) return json(401, { error: 'unauthorized', message: 'locked' });
-            const info: TStoryInfoDto & { unlocked?: boolean } = {
-                ...stories[1],
-                version: 'v1',
-                hasLandingImage: false,
-            };
-            delete info.unlocked;
-            return json(200, info);
+            return json(200, { ok: true });
         }
-        if (method === 'POST' && url === '/api/stories/open/files') return json(200, { ok: true });
+        const reset = /^\/api\/stories\/([^/]+)\/password-reset$/.exec(url);
+        if (method === 'POST' && reset) {
+            if (body.email !== 'me@story.cz')
+                return json(400, { error: 'bad_request', message: "This is not the story's email" });
+            return new Response(null, { status: 204 });
+        }
+        if (method === 'PUT' && reset) {
+            if (body.token !== 'tkn') {
+                return json(400, { error: 'bad_request', message: 'The link is invalid or has expired' });
+            }
+            const s = stories.find((x) => x.id === reset[1]);
+            if (s) s.unlocked = true;
+            return new Response(null, { status: 204 });
+        }
         if (method === 'GET' && url === '/api/health') return json(200, { ok: true, git: 'up' });
         if (method === 'POST' && url === '/api/stories') {
             stories.push(story('fresh', { unlocked: true }));
@@ -172,14 +179,15 @@ describe('StoriesStore', () => {
     });
 
     it('asks again and retries once when the server says 401 for a story the list called unlocked', async () => {
-        const { store } = setup({ infoStatus: [401, 200] });
+        const { store, calls } = setup({ filesStatus: [401, 200] });
         await store.load();
-        const loading = store.loadInfo('open');
+        const adding = store.addFiles('open', new Blob([]));
         await tick();
         expect(store.prompt?.id).toBe('open'); // the grant expired: marked locked, prompt opened
         expect(store.isUnlocked('open')).toBe(false);
         await store.submitPassword('secret');
-        expect((await loading)?.version).toBe('v1');
+        expect(await adding).toBe(true);
+        expect(calls.filter((c) => c.url === '/api/stories/open/files')).toHaveLength(2);
     });
 
     it('adds the files of a zip as a multipart form, then reloads the list', async () => {
@@ -249,5 +257,52 @@ describe('StoriesStore', () => {
         const { store, calls } = setup();
         await store.create(createBody, null);
         expect(calls.some((c) => c.url.includes('/git/'))).toBe(false);
+    });
+
+    it('requests a reset link for the story whose password is asked for', async () => {
+        const { store, calls } = setup();
+        await store.load();
+        void store.open('locked');
+        await tick();
+        await store.requestPasswordReset('me@story.cz');
+        const call = calls.find((c) => c.url === '/api/stories/locked/password-reset');
+        expect(call?.method).toBe('POST');
+        expect(call?.headers['content-type']).toBe('application/json');
+        expect(call?.body).toEqual({ email: 'me@story.cz' });
+        expect(store.prompt?.id).toBe('locked');
+    });
+
+    it("rejects a reset request with the server's message on a wrong email", async () => {
+        const { store } = setup();
+        await store.load();
+        void store.open('locked');
+        await tick();
+        await expect(store.requestPasswordReset('other@story.cz')).rejects.toThrow("This is not the story's email");
+    });
+
+    it('requests no reset link without a password prompt', async () => {
+        const { store, calls } = setup();
+        await store.requestPasswordReset('me@story.cz');
+        expect(calls.some((c) => c.url.endsWith('/password-reset'))).toBe(false);
+    });
+
+    it('sets a new password from a reset link, then shows the story unlocked', async () => {
+        const { store, calls } = setup();
+        await store.load();
+        await store.resetPassword('locked', 'tkn', 'secret-2');
+        const call = calls.find((c) => c.url === '/api/stories/locked/password-reset');
+        expect(call?.method).toBe('PUT');
+        expect(call?.body).toEqual({ token: 'tkn', password: 'secret-2' });
+        expect(store.isUnlocked('locked')).toBe(true);
+        expect(calls.filter((c) => c.url === '/api/stories')).toHaveLength(2);
+    });
+
+    it('rejects an expired reset link and keeps the story locked', async () => {
+        const { store } = setup();
+        await store.load();
+        await expect(store.resetPassword('locked', 'old', 'secret-2')).rejects.toThrow(
+            'The link is invalid or has expired'
+        );
+        expect(store.isUnlocked('locked')).toBe(false);
     });
 });

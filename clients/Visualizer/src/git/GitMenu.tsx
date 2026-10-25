@@ -13,7 +13,7 @@ import {
     openGitBranchDialog,
     openGitCommitDialog,
     openGitHistoryDialog,
-    openGitSettingsDialog,
+    openGitSettings,
 } from './gitDialogs';
 
 type TProps = {
@@ -112,7 +112,7 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
             <Divider />
             <MenuItem
                 disabled={store.busy}
-                onClick={openDialog(openGitSettingsDialog)}
+                onClick={openDialog(openGitSettings)}
             >
                 <ListItemText primary={_('Settings…')} />
             </MenuItem>

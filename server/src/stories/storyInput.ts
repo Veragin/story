@@ -1,4 +1,4 @@
-import { STORY_LIMITS, type TMapSizeDto } from '@story/protocol';
+import { isStoryEmail, STORY_LIMITS, type TMapSizeDto } from '@story/protocol';
 import { hashPassword } from '../auth/password';
 import { flagField, rejectUnknownFields, textField } from '../common/fields';
 import { errorMessage, HttpError } from '../common/HttpError';
@@ -8,7 +8,7 @@ import type { TStoryFile } from './storyFile';
 
 const L = STORY_LIMITS;
 
-const password = (value: unknown) => {
+export const password = (value: unknown) => {
     if (typeof value !== 'string') throw HttpError.badRequest('Field "password" must be a string');
     if (value.length < L.passwordMinLength) {
         throw HttpError.badRequest(`Field "password" must be at least ${L.passwordMinLength} characters`);
@@ -17,6 +17,12 @@ const password = (value: unknown) => {
         throw HttpError.badRequest(`Field "password" is longer than ${L.passwordMaxLength} characters`);
     }
     return value;
+};
+
+const emailField = (body: Record<string, unknown>) => {
+    const email = textField(body, 'email', L.emailMaxLength);
+    if (email !== '' && !isStoryEmail(email)) throw HttpError.badRequest('Field "email" is not an email address');
+    return email;
 };
 
 const isMapSide = (v: unknown): v is number =>
@@ -32,7 +38,7 @@ const mapSize = (value: unknown): TMapSizeDto => {
 };
 
 const parseNewStory = async (body: Record<string, unknown>, size: () => TMapSizeDto): Promise<TStoryFile> => {
-    const withDefaults = { author: '', description: '', public: false, ...body };
+    const withDefaults = { author: '', description: '', public: false, email: '', ...body };
     const plain = password(body.password);
     return {
         name: textField(withDefaults, 'name', L.nameMaxLength, { required: true }),
@@ -41,6 +47,7 @@ const parseNewStory = async (body: Record<string, unknown>, size: () => TMapSize
         mapSize: size(),
         description: textField(withDefaults, 'description', L.descriptionMaxLength, { trim: false }),
         public: flagField(withDefaults, 'public'),
+        email: emailField(withDefaults),
     };
 };
 
@@ -83,7 +90,7 @@ export const storyMapSize = (bytes: Uint8Array | undefined, source: string): TMa
 export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto =>
     storyMapSize(files.get(MAP_FILE), 'zip');
 
-// `hasLandingImage` is derived from the file: accepted so the whole info can be sent back, but never applied
+// `access` and `hasLandingImage` are derived: accepted so the whole info can be sent back, but never applied
 const UPDATE_FIELDS = [
     'version',
     'id',
@@ -91,9 +98,11 @@ const UPDATE_FIELDS = [
     'author',
     'description',
     'public',
+    'email',
     'password',
     'mapSize',
     'hasLandingImage',
+    'access',
 ];
 
 export type TPasswordHash = () => string | undefined;
@@ -132,6 +141,7 @@ export const applyUpdateStoryBody = (
         next.description = textField(body, 'description', L.descriptionMaxLength, { trim: false });
     }
     if (body.public !== undefined) next.public = flagField(body, 'public');
+    if (body.email !== undefined) next.email = emailField(body);
     const hash = passwordHash();
     if (hash !== undefined) next.password = hash;
     return next;

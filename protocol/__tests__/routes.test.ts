@@ -22,6 +22,8 @@ const PUBLIC_ROUTES = [
     'logout',
     'getSession',
     'getStoryAccess',
+    'requestPasswordReset',
+    'resetPassword',
 ];
 
 const WRITE_GETS: readonly TStoryRouteName[] = ['getGit', 'getGitLog'];

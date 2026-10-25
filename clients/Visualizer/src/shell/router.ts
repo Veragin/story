@@ -9,6 +9,9 @@ export type TEntityKind = (typeof ENTITY_KINDS)[number];
 export const STRUCTURE_SECTIONS = ['types', 'literals'] as const;
 export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
 
+export const SETTINGS_SECTIONS = ['git'] as const;
+export type TSettingsSection = (typeof SETTINGS_SECTIONS)[number];
+
 export type TRoute =
     | { page: 'map'; mapId?: string }
     | { page: 'timeline' }
@@ -17,6 +20,7 @@ export type TRoute =
     | { page: 'catalog'; catalog: string; id?: string }
     | { page: 'structure'; section?: TStructureSection; name?: string }
     | { page: 'engine'; section?: TEngineSection }
+    | { page: 'settings'; section?: TSettingsSection }
     | { page: 'canvas' }
     | { page: 'inputs' };
 
@@ -30,6 +34,9 @@ const isEntityKind = (value: string): value is TEntityKind => ENTITY_KINDS.some(
 
 const isStructureSection = (value: string): value is TStructureSection =>
     STRUCTURE_SECTIONS.some((section) => section === value);
+
+const isSettingsSection = (value: string): value is TSettingsSection =>
+    SETTINGS_SECTIONS.some((section) => section === value);
 
 const decode = (part: string) => {
     try {
@@ -76,6 +83,11 @@ export const parseHash = (hash: string): TRoute | null => {
             const section = parts[1];
             return parts.length === 2 && isEngineSection(section) ? { page: 'engine', section } : null;
         }
+        case 'settings': {
+            if (parts.length === 1) return { page: 'settings' };
+            const section = parts[1];
+            return parts.length === 2 && isSettingsSection(section) ? { page: 'settings', section } : null;
+        }
         case '_canvas':
             return parts.length === 1 ? { page: 'canvas' } : null;
         case '_inputs':
@@ -106,6 +118,8 @@ export const routeToHash = (route: TRoute): string => {
             return route.name ? `#/structure/${route.section}/${enc(route.name)}` : `#/structure/${route.section}`;
         case 'engine':
             return route.section ? `#/engine/${route.section}` : '#/engine';
+        case 'settings':
+            return route.section ? `#/settings/${route.section}` : '#/settings';
         case 'canvas':
             return '#/_canvas';
         case 'inputs':
@@ -118,8 +132,11 @@ const initialRoute = (): TRoute => {
     return parseHash(window.location.hash) ?? parseHash(getUiState<string>(LAST_ROUTE_KEY, '')) ?? DEFAULT_ROUTE;
 };
 
+const pageRouteOf = (route: TRoute): TRoute | null => (route.page === 'settings' ? null : route);
+
 export class Router {
     route: TRoute = initialRoute();
+    private routeBeforeSettings: TRoute | null = pageRouteOf(this.route);
     private started = false;
 
     constructor() {
@@ -159,6 +176,8 @@ export class Router {
 
     href = (route: TRoute) => routeToHash(route);
 
+    leaveSettings = () => this.navigate(this.routeBeforeSettings ?? DEFAULT_ROUTE);
+
     sync = () => {
         const parsed = parseHash(window.location.hash);
         if (parsed === null) {
@@ -167,6 +186,7 @@ export class Router {
         } else {
             this.route = parsed;
         }
+        this.routeBeforeSettings = pageRouteOf(this.route) ?? this.routeBeforeSettings;
         setUiState(LAST_ROUTE_KEY, routeToHash(this.route));
     };
 

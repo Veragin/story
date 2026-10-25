@@ -4,17 +4,20 @@ export type TAuthOptions = {
     login: (password: string) => Promise<void>;
     storyName?: () => Promise<string | null>;
     onCancel?: () => void;
+    requestReset?: (email: string) => Promise<void>;
 };
 
 export class AuthStore {
     prompt: { storyName: string } | null = null;
     private waiting: { resolve: () => void; reject: (e: unknown) => void }[] = [];
     private loginListeners = new Set<() => void>();
+    readonly requestReset: TAuthOptions['requestReset'];
 
     constructor(
         readonly storyId: string,
         private readonly options: TAuthOptions
     ) {
+        this.requestReset = options.requestReset;
         makeObservable<AuthStore, 'setPrompt'>(this, {
             prompt: observable.ref,
             setPrompt: action,

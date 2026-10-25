@@ -10,6 +10,7 @@ export type TStoryFile = {
     mapSize: TMapSizeDto;
     description: string;
     public: boolean;
+    email: string;
 };
 
 const isPositiveInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v > 0;
@@ -26,6 +27,7 @@ export const parseStoryFile = (value: unknown): TStoryFile => {
     const author = stringField(value, 'author');
     const password = stringField(value, 'password');
     const description = stringField(value, 'description');
+    const email = value.email === undefined ? '' : stringField(value, 'email');
     if (typeof value.public !== 'boolean') throw new Error('story.json: "public" must be a boolean');
     const { mapSize } = value;
     if (!isPlainObject(mapSize) || !isPositiveInt(mapSize.width) || !isPositiveInt(mapSize.height)) {
@@ -38,6 +40,7 @@ export const parseStoryFile = (value: unknown): TStoryFile => {
         mapSize: { width: mapSize.width, height: mapSize.height },
         description,
         public: value.public,
+        email,
     };
 };
 

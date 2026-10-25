@@ -21,3 +21,6 @@ RUN mkdir -p /home/$UNAME/.claude
 RUN chown -R $UNAME:$UGROUP /home/$UNAME/.claude/
 
 RUN corepack enable
+
+# The password reset mails' sender, hardcoded for now (plans/rosti-release.md); without SMTP_URL they are only logged
+ENV MAIL_FROM=info@story.cz

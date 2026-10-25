@@ -28,7 +28,8 @@ server/
                        dataSourceOptions (shared by app + CLI), dataSource.ts (TypeORM CLI), entityRegistry, migrationRegistry, migrations/
     common/            @ProtocolRoute, @RouteParams, boot route check, JSON body/response interceptors, ApiExceptionFilter, HttpError
     health/            GET /api/health (+ DB ping)
-    auth/              AuthController, SessionService, LoginLimiter, password (scrypt), cookie, CsrfGuard, StoryAccessGuard
+    auth/              AuthController, PasswordResetController, SessionService, LoginLimiter, password (scrypt), cookie, CsrfGuard, StoryAccessGuard
+    mail/              MailModule, Mailer (nodemailer over SMTP_URL, or a log line without it)
     stories/           StoryFolders (create / import / export), zip, storyInput, StoriesController, StoryInfoController, importStoryFiles
     storyFiles/        StoryFilesController (addStoryFiles: a zip's files into a live story)
     storyContext/      StoryContexts (loaded stories, leases, idle eviction), StoryReloader (after a bulk rewrite), StoryLeaseInterceptor, @StoryCtx()
@@ -52,7 +53,7 @@ For a protocol route, in this order (verified from the running app's enhancer li
 2. **`CsrfGuard`**: a mutation must send the route's content type (`application/json`; `multipart/form-data` for `importStory`), else 400, and an `Origin` in `ALLOWED_ORIGINS` or matching its `Host`, else 403. No `Origin` (curl) is allowed.
 3. **`StoryAccessGuard`** (story routes): the route's `access` from the protocol decides (see Auth). Attaches the grant's expiry to the request (`storyGrant.ts`).
 4. **`JsonResponseInterceptor`**: JSON answers become `JSON.stringify + '\n'` with `cache-control: no-store` (204s too); raw responses that already wrote headers (PNG, zip, SSE) are left alone.
-5. **`JsonBodyInterceptor`**: reads the body only now, after the guards (20 MB limit, `Malformed JSON body: …`, must be an object; `PUT`/`DELETE` must carry a string `version`).
+5. **`JsonBodyInterceptor`**: reads the body only now, after the guards (20 MB limit, `Malformed JSON body: …`, must be an object; `PUT`/`DELETE` must carry a string `version`, except `resetPassword`).
 6. **`StoryLeaseInterceptor`** (story routes): loads the story (or reuses it) and holds a lease until the response settles; `@StoryCtx()` hands the handler `{ storyId, project, sp, bus }`. The event stream keeps its lease until the connection closes.
 7. **`StoryVersionConflictInterceptor`**: a `StoryVersionConflictError` (story info written with a stale version) → 409 `stale` with the current info.
 8. Handler (`@ProtocolRoute`), then **`ApiExceptionFilter`**: `HttpError` → its status and `TApiErrorBody`; Nest exceptions mapped to the same shape (`not_found`, `bad_request`, …); anything else is logged and answered 500 `internal`.
@@ -63,13 +64,28 @@ So a foreign origin or a locked story never gets its body parsed, and a 404/401 
 
 Per-story passwords; there are no user accounts.
 
-- **Access levels** live in the protocol (`access` on every entry of `STORY_ROUTES` / `GLOBAL_ROUTES`, `protocol/src/routes.ts`): `public` (health, list, create, import, login, logout, session, `getStoryAccess`), `read` (every other story `GET`, incl. events, images, source and export), `write` (every story `POST`/`PUT`/`DELETE`, plus the editor-only `GET`s `getGit` and `getGitLog`). The types enforce story mutation = write; a story `GET` is read unless marked write.
+- **Access levels** live in the protocol (`access` on every entry of `STORY_ROUTES` / `GLOBAL_ROUTES`, `protocol/src/routes.ts`): `public` (health, list, create, import, login, logout, session, `getStoryAccess`, `requestPasswordReset`, `resetPassword`), `read` (every other story `GET`, incl. events, images, source and export), `write` (every story `POST`/`PUT`/`DELETE`, plus the editor-only `GET`s `getGit` and `getGitLog`). The types enforce story mutation = write; a story `GET` is read unless marked write.
 - `StoryAccessGuard`: unknown story → 404; a grant for the story → pass; `read` on a `public` story → pass without a grant; else 401 `Story "x" is locked`. A public story's export carries no metadata or hash, so it is safe to read logged out.
 - **Login** `POST /api/stories/:storyId/login {"password"}` checks the scrypt hash and sets the `story_session` cookie (HttpOnly, SameSite=Lax; with `COOKIE_SECURE=1` it is `Secure` and named `__Host-story_session`, so the play subdomain cannot plant one). One cookie holds grants for several stories, 24 h each. Create and import log the creator in the same way.
 - **The play site** (`PlaySiteGuard`): a request with the `X-Story-Play-Site` header, which the play site's proxy always sets (`docker/Caddyfile`), reaches only `listStories`, `login`, `getPlayManifest` and `getPlayFile` (else 403): story code runs there. Every response carries `Cross-Origin-Resource-Policy: same-origin` and `X-Content-Type-Options: nosniff`, so the play site cannot embed the main site's API either. In dev the SinglePlayer's Vite proxy sets the header; the dev ports share one host's cookies, so dev is not isolated.
 - **Sessions in MySQL**: `session` stores only the SHA-256 of the token, `session_grant` one row per (session, story) with `expiresAt` (cascades on story delete). A restart keeps everyone logged in. Expired grants never count; they are pruned every 10 min.
 - **Login limiter** (in memory): 10 wrong passwords per client and story within 10 min → 429. With `TRUST_PROXY=1` the client is the last `X-Forwarded-For` hop.
 - An `/events` stream ends when its grant expires; a public read without a grant has no expiry.
+
+### Password reset
+
+A story may have an `email` (optional, trimmed, `STORY_EMAIL_PATTERN`, ≤ 255 characters; `''` clears it on update). Only the editors see it: `getStoryInfo` answers a public story without a grant with `{ access: 'public', id, name, author, description }`, and with a grant the full info (`access: 'edit'`, `email`). `listStories` never carries it.
+
+1. `POST /api/stories/:storyId/password-reset {"email"}` (`PasswordResetController`): rate-limited per client and story, 5 requests per 15 min, each one counts (a second `LoginLimiter`, token `RESET_REQUEST_LIMITER`) → 429. The email must match the story's, trimmed and case-insensitively; otherwise, and when the story has none, the server waits 1 s and answers 400 `This is not the story's email`. On a match it stores the SHA-256 of a fresh token in `story_password_reset` (one row per story, so only the newest link works; expires in 12 h, pruned with the sessions) and mails `${PUBLIC_URL}/?story=<id>&resetToken=<token>` → 204. A failed send is 500.
+2. `PUT /api/stories/:storyId/password-reset {"token","password"}`: an unknown, replaced or expired token is 400 `The link is invalid or has expired`. Otherwise, in one transaction: the new password (the story `version` bumps), the reset row deleted, **every grant for the story revoked**; then the browser gets a grant and the cookie like `login` → 204.
+
+Mail goes through `nodemailer` with `SMTP_URL` and the sender `MAIL_FROM`; without `SMTP_URL` (dev) the server logs the whole mail, link included, instead.
+
+```bash
+curl -H 'content-type: application/json' -d '{"email":"me@example.com"}' localhost:8123/api/stories/my-story/password-reset
+curl -c jar -X PUT -H 'content-type: application/json' -d '{"token":"<from the log>","password":"new-secret"}' \
+  localhost:8123/api/stories/my-story/password-reset
+```
 
 By hand (the example's password is `example`):
 
@@ -80,7 +96,7 @@ curl -b jar localhost:8123/api/session
 
 ## Stories
 
-A story is a folder `STORIES_ROOT/<id>/` (`tsconfig.json`, `data/`, `types/`) plus a `story` row (name, author, scrypt hash, map size, description, public, `version`). `GET /api/stories` lists them (no password; `unlocked` = your cookie holds its grant).
+A story is a folder `STORIES_ROOT/<id>/` (`tsconfig.json`, `data/`, `types/`) plus a `story` row (name, author, scrypt hash, map size, description, public, email, `version`). `GET /api/stories` lists them (no password; `unlocked` = your cookie holds its grant).
 
 ```bash
 # create from server/template/ (201, logs you in; the id is a slug of the name)
@@ -96,6 +112,7 @@ curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secr
 ```
 
 - Limits (`STORY_LIMITS`, `protocol/src/dto/story.ts`): non-empty name, password ≥ 6 characters, each map side 1–500 tiles.
+- Setting a story's email to a new non-empty value also sets the author email of its git settings (when connected), bumping their version; git setup defaults the author email to the story's email.
 - The info `version` is the row's counter (`"1"`, `"2"`, …); a stale one is 409 `stale`.
 - Create and import build the folder in a `.create-*` / `.import-*` temp dir, insert the row in a transaction, rename the folder, then commit; a failure leaves neither folder nor row. The server writes the story's `tsconfig.json` (engine paths are relative).
 - **Export** holds only `tsconfig.json`, `data/` and `types/` (no metadata), plus a default `data/locations/map.json` when the story has none, so every export can be imported.
@@ -205,22 +222,25 @@ Besides the usual `bad_request`, `not_found`, `exists` and `stale`:
 
 From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot with a readable message):
 
-| Variable                       | Default              | Meaning                                                                                                                                                                                                    |
-| ------------------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                         | `8123`               | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
-| `STORIES_ROOT`                 | `stories`            | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
-| `DB_HOST`                      | `mysql`              | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
-| `DB_PORT`                      | `3306`               |                                                                                                                                                                                                            |
-| `DB_USER`                      | `story`              |                                                                                                                                                                                                            |
-| `DB_PASSWORD`                  | `story`              | Prod: from `docker/.env`.                                                                                                                                                                                  |
-| `DB_NAME`                      | `story`              | The tests always use `story_test` (see Tests).                                                                                                                                                             |
-| `COOKIE_SECURE`                | off                  | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
-| `TRUST_PROXY`                  | off                  | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
-| `ALLOWED_ORIGINS`              | the dev ports        | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
-| `GIT_TOKEN_KEY`                | unset                | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
-| `GIT_ALLOWED_HOSTS`            | any                  | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
-| `GIT_DISABLED_STORIES`         | `example`            | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
-| `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
+| Variable                       | Default                 | Meaning                                                                                                                                                                                                    |
+| ------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | `8123`                  | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
+| `STORIES_ROOT`                 | `stories`               | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
+| `DB_HOST`                      | `mysql`                 | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
+| `DB_PORT`                      | `3306`                  |                                                                                                                                                                                                            |
+| `DB_USER`                      | `story`                 |                                                                                                                                                                                                            |
+| `DB_PASSWORD`                  | `story`                 | Prod: from `docker/.env`.                                                                                                                                                                                  |
+| `DB_NAME`                      | `story`                 | The tests always use `story_test` (see Tests).                                                                                                                                                             |
+| `COOKIE_SECURE`                | off                     | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
+| `TRUST_PROXY`                  | off                     | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
+| `ALLOWED_ORIGINS`              | the dev ports           | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
+| `GIT_TOKEN_KEY`                | unset                   | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
+| `GIT_ALLOWED_HOSTS`            | any                     | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
+| `GIT_DISABLED_STORIES`         | `example`               | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
+| `PUBLIC_URL`                   | `http://localhost:8103` | The landing page's origin: the base of the password reset links. Never taken from the request's headers. Prod: `https://<SITE_ADDRESS>`.                                                                   |
+| `SMTP_URL`                     | unset                   | SMTP connection URL for the password reset mails (`smtps://user:password@host:465`). Unset: the mails are only logged.                                                                                     |
+| `MAIL_FROM`                    | required                | The mails' sender. Set by `docker/Dockerfile.dev` and `docker/Dockerfile.prod` (hardcoded for now, see `plans/rosti-release.md`); the server tests get it from `vitest.workspace.ts`.                      |
+| `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build    | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
 
 Outside the schema: `STORY_DB_SETUP=1` makes `docker/prod-entrypoint.sh` run the migrations and the import before starting (prod server service only); `DB_TEST_NAME` overrides the test database name.
 
@@ -254,7 +274,7 @@ DB_HOST=127.0.0.1 yarn vitest run --project server       # against a local MySQL
 
 - Real MySQL, database **`story_test`**: `vitest.workspace.ts` forces `DB_NAME` (from `DB_TEST_NAME`, default `story_test`), and the helper refuses a name not ending in `_test`. The dev compose creates it (`docker/mysql/init/`, on a fresh volume only).
 - Suites share that database and truncate it, so the `server` project runs its files in one fork, one after another.
-- `__tests__/helpers/testApp.ts#createTestApp({ stories, watch, … })` boots the real `AppModule` on a temp `STORIES_ROOT` (copies of the example, rows seeded with password `example`), truncated tables, listening on a random port; it returns `{ base, project(id), story(id), stories, sessions, contexts, close }`. Never boot a test app on the real `stories/`. `overrideModules` swaps a feature module for a probe. `helpers/http.ts` has `requestJson`, `login`, `waitFor`.
+- `__tests__/helpers/testApp.ts#createTestApp({ stories, watch, … })` boots the real `AppModule` on a temp `STORIES_ROOT` (copies of the example, rows seeded with password `example`), truncated tables, listening on a random port; it returns `{ base, project(id), story(id), stories, sessions, contexts, mailer, wrongEmailDelays, close }`. Mails go to a `FakeMailer` (`mailer.sent`), and the password reset's 1 s wrong-email delay is only counted. Never boot a test app on the real `stories/`. `overrideModules` swaps a feature module for a probe. `helpers/http.ts` has `requestJson`, `login`, `waitFor`.
 - Don't run a dev server against `story_test` while the tests run.
 - Git is unavailable in a test app unless `createTestApp({ git })` overrides the git options; `helpers/git.ts` has `TEST_GIT_OPTIONS` (a test key, `allowFileRemotes`) and temp bare repos as `file://` remotes. `allowFileRemotes` (env `GIT_ALLOW_FILE_REMOTES=1`) is test-only: `gitRemote` then accepts `file://` and `GitRunner` adds `-c protocol.file.allow=always`. Never set it in prod.
 
@@ -267,4 +287,4 @@ DB_HOST=127.0.0.1 yarn vitest run --project server       # against a local MySQL
 
 ## Production
 
-`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example and the demo. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. How to deploy: [`README.md`](README.md#production).
+`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, `PUBLIC_URL=https://<SITE_ADDRESS>`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS` and `SMTP_URL`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example and the demo. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. How to deploy: [`README.md`](README.md#production).

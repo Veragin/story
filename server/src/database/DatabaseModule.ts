@@ -7,9 +7,16 @@ import { dataSourceOptions } from './dataSourceOptions';
 import { SessionGrantRepository } from './repositories/SessionGrantRepository';
 import { SessionRepository } from './repositories/SessionRepository';
 import { StoryGitRepository } from './repositories/StoryGitRepository';
+import { StoryPasswordResetRepository } from './repositories/StoryPasswordResetRepository';
 import { StoryRepository } from './repositories/StoryRepository';
 
-const REPOSITORIES = [StoryRepository, SessionRepository, SessionGrantRepository, StoryGitRepository];
+const REPOSITORIES = [
+    StoryRepository,
+    SessionRepository,
+    SessionGrantRepository,
+    StoryGitRepository,
+    StoryPasswordResetRepository,
+];
 
 @Module({
     imports: [

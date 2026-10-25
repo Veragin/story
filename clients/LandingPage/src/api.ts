@@ -17,10 +17,7 @@ import {
     type TSessionDto,
     type TSetupGitBody,
     type TStoryDto,
-    type TStoryInfoDto,
     type TStoryListItemDto,
-    type TUpdateGitConfigBody,
-    type TUpdateStoryBody,
 } from '@story/protocol';
 
 export class ApiError extends Error {
@@ -55,15 +52,13 @@ export type TLandingApi = {
     createStory(body: TCreateStoryBody): Promise<TStoryDto>;
     login(storyId: string, password: string): Promise<void>;
     getSession(): Promise<TSessionDto>;
-    getStoryInfo(storyId: string): Promise<TStoryInfoDto>;
-    updateStoryInfo(storyId: string, body: TUpdateStoryBody): Promise<TStoryInfoDto>;
-    getGit(storyId: string): Promise<TGitDto>;
+    requestPasswordReset(storyId: string, email: string): Promise<void>;
+    resetPassword(storyId: string, token: string, password: string): Promise<void>;
     setupGit(storyId: string, body: TSetupGitBody): Promise<TGitDto>;
-    updateGitConfig(storyId: string, body: TUpdateGitConfigBody): Promise<TGitDto>;
     addStoryFiles(storyId: string, zip: Blob): Promise<TOkDto>;
 };
 
-type TLandingStoryRoute = 'getStoryInfo' | 'updateStoryInfo' | 'getGit' | 'setupGit' | 'updateGitConfig';
+type TLandingStoryRoute = 'setupGit';
 
 export type TLandingApiOptions = {
     baseUrl?: string;
@@ -121,11 +116,9 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
         createStory: (body) => request('createStory', {}, body),
         login: (storyId, password) => request('login', { storyId }, { password }),
         getSession: () => request('getSession', {}),
-        getStoryInfo: (storyId) => storyRequest(storyId, 'getStoryInfo'),
-        updateStoryInfo: (storyId, body) => storyRequest(storyId, 'updateStoryInfo', body),
-        getGit: (storyId) => storyRequest(storyId, 'getGit'),
+        requestPasswordReset: (storyId, email) => request('requestPasswordReset', { storyId }, { email }),
+        resetPassword: (storyId, token, password) => request('resetPassword', { storyId }, { token, password }),
         setupGit: (storyId, body) => storyRequest(storyId, 'setupGit', body),
-        updateGitConfig: (storyId, body) => storyRequest(storyId, 'updateGitConfig', body),
         addStoryFiles: (storyId, zip) =>
             send<TOkDto>(fetchImpl, baseUrl + buildPath(storyId, 'addStoryFiles', {}), {
                 method: STORY_ROUTES.addStoryFiles.method,

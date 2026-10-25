@@ -402,6 +402,35 @@ describe('git routes', () => {
         expect(cleared.body.config).toMatchObject({ hasToken: false, version: '3' });
     });
 
+    it('setup defaults the author email to the story email; a changed story email follows, a cleared one does not', async () => {
+        const { testApp, cookie, call, repo } = await start();
+        const info = (body: Record<string, unknown>) =>
+            requestJson(`${testApp.base}/api/stories/alpha/info`, 'PUT', { body, headers: { cookie } });
+        expect((await info({ version: '1', email: 'me@example.com' })).status).toBe(200);
+        const setup = await setupPush(call, repo.url);
+        expect(setup.body.config).toMatchObject({ authorEmail: 'me@example.com', version: '1' });
+
+        expect((await info({ version: '2', email: 'New@Example.com' })).status).toBe(200);
+        expect((await call('GET')).body.config).toMatchObject({ authorEmail: 'New@Example.com', version: '2' });
+        expect((await info({ version: '3', name: 'Renamed' })).status).toBe(200);
+        expect((await call('GET')).body.config).toMatchObject({ authorEmail: 'New@Example.com', version: '2' });
+        expect((await info({ version: '4', email: '' })).status).toBe(200);
+        expect((await call('GET')).body.config).toMatchObject({ authorEmail: 'New@Example.com', version: '2' });
+
+        const stale = await call('PUT', '/config', { version: '1', authorName: 'Me' });
+        expect([stale.status, stale.body.error]).toEqual([409, 'stale']);
+    });
+
+    it('a story email change without git touches no git row', async () => {
+        const { testApp, cookie } = await start();
+        const res = await requestJson(`${testApp.base}/api/stories/alpha/info`, 'PUT', {
+            body: { version: '1', email: 'me@example.com' },
+            headers: { cookie },
+        });
+        expect(res.status).toBe(200);
+        expect(await testApp.app.get(DataSource).query('SELECT storyId FROM story_git')).toEqual([]);
+    });
+
     it('serializes concurrent commits', async () => {
         const { call, repo, dir } = await start();
         await setupPush(call, repo.url);

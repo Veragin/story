@@ -22,6 +22,7 @@ export const auth = new AuthStore(STORY_ID, {
     login: (password) => plainRequest('login', { storyId: STORY_ID }, { password }),
     storyName: async () => (await plainRequest('listStories', {})).find((s) => s.id === STORY_ID)?.name ?? null,
     onCancel: goToLanding,
+    requestReset: (email) => plainRequest('requestPasswordReset', { storyId: STORY_ID }, { email }),
 });
 
 // an `EventSource` can't see a 401, so probe with a plain request to trigger the login prompt

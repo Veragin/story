@@ -156,6 +156,10 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         conflicts = new Map();
     };
 
+    const setAuthorEmail = (email: string) => {
+        if (config) config = { ...config, authorEmail: email, version: ctx.nextVersion() };
+    };
+
     const simulateRemoteCommit = ({ branch, subject = 'Remote change', conflict }: TMockRemoteCommit = {}) => {
         const target = branch ?? config?.branch ?? 'main';
         const commit = commitOf(subject, 'Someone else', conflict);
@@ -323,5 +327,5 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
             }),
     };
 
-    return { routes, touch, reset, simulateRemoteCommit };
+    return { routes, touch, reset, setAuthorEmail, simulateRemoteCommit };
 };

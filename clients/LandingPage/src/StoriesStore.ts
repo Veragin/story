@@ -1,16 +1,7 @@
 import { action, makeObservable, observable, runInAction } from 'mobx';
-import type {
-    TCreateStoryBody,
-    TGitDto,
-    TSetupGitBody,
-    TStoryDto,
-    TStoryInfoDto,
-    TStoryListItemDto,
-    TUpdateStoryBody,
-} from '@story/protocol';
+import type { TCreateStoryBody, TSetupGitBody, TStoryDto, TStoryListItemDto } from '@story/protocol';
 import { errorMessage, isApiError, type TLandingApi } from './api';
 import { engineUrl, exportUrl, exportWebUrl, visualizerUrl } from './links';
-import type { TGitChange } from './storyForm';
 
 /** `gitError`: the story was created, connecting it to the repository failed. */
 export type TCreateResult = { story: TStoryDto; gitError: string | null };
@@ -147,24 +138,16 @@ export class StoriesStore {
         return true;
     }
 
-    loadInfo(id: string): Promise<TStoryInfoDto | null> {
-        return this.withGrant(id, () => this.api.getStoryInfo(id));
+    async requestPasswordReset(email: string) {
+        const story = this.prompt;
+        if (!story) return;
+        await this.api.requestPasswordReset(story.id, email);
     }
 
-    loadGit(id: string): Promise<TGitDto | null> {
-        return this.withGrant(id, () => this.api.getGit(id));
-    }
-
-    saveGit(id: string, change: TGitChange): Promise<TGitDto | null> {
-        return this.withGrant(id, () =>
-            change.kind === 'setup' ? this.api.setupGit(id, change.body) : this.api.updateGitConfig(id, change.body)
-        );
-    }
-
-    async saveInfo(id: string, body: TUpdateStoryBody): Promise<TStoryInfoDto | null> {
-        const info = await this.withGrant(id, () => this.api.updateStoryInfo(id, body));
-        if (info) await this.load();
-        return info;
+    async resetPassword(storyId: string, token: string, password: string) {
+        await this.api.resetPassword(storyId, token, password);
+        this.setUnlocked(storyId, true);
+        await this.load();
     }
 
     private setUnlocked(id: string, unlocked: boolean) {

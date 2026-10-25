@@ -23,6 +23,7 @@ const toFile = (row: Story): TStoryFile => ({
     mapSize: { width: row.mapWidth, height: row.mapHeight },
     description: row.description,
     public: row.isPublic,
+    email: row.email ?? '',
 });
 
 const toColumns = (file: TStoryFile) => ({
@@ -33,6 +34,7 @@ const toColumns = (file: TStoryFile) => ({
     mapHeight: file.mapSize.height,
     description: file.description,
     isPublic: file.public,
+    email: file.email === '' ? null : file.email,
 });
 
 const toVersion = (version: number): TVersion => String(version);
@@ -104,6 +106,19 @@ export class StoryRepository {
             .execute();
         if (result.affected !== 1) throw new StoryVersionConflictError(storyId);
         return toVersion(current + 1);
+    }
+
+    async setPassword(
+        storyId: string,
+        passwordHash: string,
+        manager: EntityManager = this.dataSource.manager
+    ): Promise<void> {
+        await manager
+            .createQueryBuilder()
+            .update(Story)
+            .set({ passwordHash, version: () => '`version` + 1' })
+            .where('id = :id', { id: storyId })
+            .execute();
     }
 
     upsert(storyId: string, file: TStoryFile): Promise<TUpsertResult> {

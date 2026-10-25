@@ -50,7 +50,7 @@ const boundaryZones = [
     zone(
         pkg('ui'),
         packagesExcept('shared', 'types', 'ui'),
-        'ui/ may import only @story/shared and @story/types — it must not reach into the runtime (core) or the story (data).'
+        'ui/ may import only @story/shared, @story/types and @story/protocol — it must not reach into the runtime (core) or the story (data).'
     ),
 
     zone(
@@ -89,12 +89,18 @@ const boundaryZones = [
         'data/ is author-edited and must never import from a service (the clients, the server) or the protocol.'
     ),
 
-    ...['shared', 'ui', 'core', 'storyLoader'].map((p) =>
+    ...['shared', 'core', 'storyLoader'].map((p) =>
         zone(
             pkg(p),
             servicesAndProtocol(),
             `@story/${p} is a shared package and may not import from a service or the protocol — the dependency arrow points the other way.`
         )
+    ),
+    // the shared story form validates against the protocol's limits and DTOs
+    zone(
+        pkg('ui'),
+        services(),
+        '@story/ui is a shared package and may not import from a service — the dependency arrow points the other way.'
     ),
 
     ...SERVICES.flatMap((target) =>

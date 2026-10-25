@@ -101,4 +101,27 @@ describe('StoryRepository', () => {
             version: '2',
         });
     });
+
+    it('stores an email as is and none as NULL, read back as an empty string', async () => {
+        await stories().insert('alpha', storyFixture({ email: 'Me@Example.com' }));
+        await stories().insert('beta', storyFixture());
+        expect(await dataSource.query('SELECT id, email FROM story ORDER BY id')).toEqual([
+            { id: 'alpha', email: 'Me@Example.com' },
+            { id: 'beta', email: null },
+        ]);
+        expect((await stories().read('alpha'))?.email).toBe('Me@Example.com');
+        expect((await stories().read('beta'))?.email).toBe('');
+        expect(await stories().write('alpha', storyFixture({ email: '' }), '1')).toBe('2');
+        expect(await dataSource.query('SELECT email FROM story WHERE id = ?', ['alpha'])).toEqual([{ email: null }]);
+        expect(await stories().upsert('beta', storyFixture())).toBe('unchanged');
+    });
+
+    it('sets the password and bumps the version', async () => {
+        await stories().insert('alpha', storyFixture());
+        await stories().setPassword('alpha', 'scrypt$new');
+        expect(await stories().readVersioned('alpha')).toEqual({
+            file: storyFixture({ password: 'scrypt$new' }),
+            version: '2',
+        });
+    });
 });

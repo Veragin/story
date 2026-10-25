@@ -1,6 +1,6 @@
 // `Shell` stays out of this barrel: it imports the pages, which import this
 export { router, parseHash, routeToHash, ENTITY_KINDS, DEFAULT_ROUTE } from './router';
-export type { TRoute, TPage, TEntityKind, TStructureSection } from './router';
+export type { TRoute, TPage, TEntityKind, TStructureSection, TSettingsSection } from './router';
 export type { TEngineSection } from '@story/protocol';
 export { ControlBar } from './ControlBar';
 export { shell } from './shellStore';

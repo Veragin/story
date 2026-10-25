@@ -74,7 +74,7 @@ export type TUpdateGitConfigBody = TVersionedBody &
 export const GIT_SETUP_MODES = ['push', 'pull'] as const;
 export type TGitSetupMode = (typeof GIT_SETUP_MODES)[number];
 
-/** `authorName` defaults to the story's author, `authorEmail` to `<storyId>@story.local`. */
+/** `authorName` defaults to the story's author, `authorEmail` to the story's email, else `<storyId>@story.local`. */
 export type TSetupGitBody = {
     remoteUrl: string;
     branch: string;
