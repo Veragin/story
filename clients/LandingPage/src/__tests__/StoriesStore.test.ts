@@ -24,7 +24,7 @@ const json = (status: number, body?: unknown) =>
 type TCall = { method: string; url: string; headers: Record<string, string>; body: unknown };
 
 // every story's password is `secret`
-const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
+const setup = ({ tooMany = false, infoStatus = [200], gitSetupStatus = 200 } = {}) => {
     const stories = [story('locked'), story('open', { unlocked: true }), story('pub', { public: true })];
     const calls: TCall[] = [];
     const infoAnswers = [...infoStatus];
@@ -47,11 +47,24 @@ const setup = ({ tooMany = false, infoStatus = [200] } = {}) => {
         if (method === 'GET' && url === '/api/stories/open/info') {
             const status = infoAnswers.shift() ?? 200;
             if (status === 401) return json(401, { error: 'unauthorized', message: 'locked' });
-            const info: TStoryInfoDto & { unlocked?: boolean } = { ...stories[1], version: 'v1' };
+            const info: TStoryInfoDto & { unlocked?: boolean } = {
+                ...stories[1],
+                version: 'v1',
+                hasLandingImage: false,
+            };
             delete info.unlocked;
             return json(200, info);
         }
         if (method === 'POST' && url === '/api/stories/import') return json(201, story('copy'));
+        if (method === 'GET' && url === '/api/health') return json(200, { ok: true, git: 'up' });
+        if (method === 'POST' && url === '/api/stories') {
+            stories.push(story('fresh', { unlocked: true }));
+            return json(201, story('fresh'));
+        }
+        if (method === 'POST' && url === '/api/stories/fresh/git/setup') {
+            if (gitSetupStatus !== 200) return json(gitSetupStatus, { error: 'git_auth', message: 'Bad token' });
+            return json(200, { available: true, config: null, status: null });
+        }
         return json(404, { error: 'not_found' });
     };
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(answer(input, init)));
@@ -123,19 +136,28 @@ describe('StoriesStore', () => {
         expect(navigate).toHaveBeenCalledWith('/api/stories/open/export');
     });
 
-    it('plays a public story without the password, and asks for a private one', async () => {
+    it('exports for the web through the same-origin /api path once unlocked', async () => {
         const { store, navigate } = setup();
         await store.load();
-        await store.play('pub');
-        expect(store.prompt).toBeNull();
-        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=pub`);
+        await store.exportForWeb('open');
+        expect(navigate).toHaveBeenCalledWith('/api/stories/open/export/web');
 
-        const playing = store.play('locked');
+        const exporting = store.exportForWeb('locked');
         await tick();
         expect(store.prompt?.id).toBe('locked');
         store.cancelPassword();
-        await playing;
+        await exporting;
         expect(navigate).toHaveBeenCalledTimes(1);
+    });
+
+    it('plays any story without asking: the player asks for a private one', async () => {
+        const { store, navigate } = setup();
+        await store.load();
+        store.play('pub');
+        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=pub`);
+        store.play('locked');
+        expect(store.prompt).toBeNull();
+        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=locked`);
     });
 
     it('rejects with the 429 of too many attempts, worded by passwordErrorMessage', async () => {
@@ -179,5 +201,49 @@ describe('StoriesStore', () => {
             public: 'true',
         });
         expect(form.get('zip')).toBeInstanceOf(Blob);
+    });
+
+    it('reads from the health check whether the server has git', async () => {
+        const { store } = setup();
+        expect(store.gitAvailable).toBe(false);
+        await store.checkGit();
+        expect(store.gitAvailable).toBe(true);
+    });
+
+    const createBody = {
+        name: 'Fresh',
+        author: 'Me',
+        password: 'secret-1',
+        description: '',
+        mapSize: { width: 40, height: 30 },
+        public: false,
+    };
+    const gitBody = {
+        remoteUrl: 'https://example.com/me/fresh.git',
+        branch: 'main',
+        initial: 'push' as const,
+        token: 'tkn',
+    };
+
+    it('connects a created story to its repository', async () => {
+        const { store, calls } = setup();
+        const result = await store.create(createBody, gitBody);
+        expect(result).toEqual({ story: story('fresh'), gitError: null });
+        const call = calls.find((c) => c.url === '/api/stories/fresh/git/setup')!;
+        expect(call.method).toBe('POST');
+        expect(call.body).toEqual(gitBody);
+    });
+
+    it('keeps a created story when connecting it to git fails', async () => {
+        const { store } = setup({ gitSetupStatus: 400 });
+        const result = await store.create(createBody, gitBody);
+        expect(result).toEqual({ story: story('fresh'), gitError: 'Bad token' });
+        expect(store.story('fresh')).toBeDefined();
+    });
+
+    it('creates without a git call when no repository is given', async () => {
+        const { store, calls } = setup();
+        await store.create(createBody, null);
+        expect(calls.some((c) => c.url.includes('/git/'))).toBe(false);
     });
 });

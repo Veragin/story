@@ -27,13 +27,17 @@ export type TStoryDto = {
     author: string;
     description: string;
     mapSize: TMapSizeDto;
-    /** Playable in SingleEngine without the password; editing still needs it. */
+    /** Playable in SinglePlayer without the password; editing still needs it. */
     public: boolean;
 };
 
 export type TStoryListItemDto = TStoryDto & { unlocked: boolean };
 
-export type TStoryInfoDto = TStoryDto & TVersioned;
+export type TStoryInfoDto = TStoryDto &
+    TVersioned & {
+        /** `LANDING_IMAGE_FILE` exists; derived from the file, not stored. Upload it as the `story` owner's image. */
+        hasLandingImage: boolean;
+    };
 
 /** `password` is plain; the server stores only its hash. */
 export type TCreateStoryBody = Omit<TStoryDto, 'id'> & { password: string };

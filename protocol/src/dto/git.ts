@@ -14,6 +14,9 @@ export const GIT_LIMITS = {
     logLimitMax: 200,
 } as const;
 
+/** What the clients offer for a new connection. */
+export const GIT_DEFAULT_BRANCH = 'master';
+
 /** A client-side approximation of `git check-ref-format --branch`. */
 export const GIT_BRANCH_PATTERN =
     /^(?![-/.])(?!.*(?:\.\.|@\{|\/\/|\/\.|\.lock(?:\/|$)))(?!@$)[^\s~^:?*[\\\p{Cc}]+(?<![/.])$/u;

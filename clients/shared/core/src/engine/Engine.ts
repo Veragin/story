@@ -1,7 +1,7 @@
 import type { TWorldState } from '@story/data';
 import { Inventory } from './Inventory';
 import { keysOf, showToast, TimeManager } from '@story/shared';
-import { TChapterId, TChapterPassage } from '@story/types';
+import { TChapterId, TChapterPassage, TCharacterId } from '@story/types';
 import { createDummyPassage } from './const';
 import { History } from './History';
 import { Processor } from './Processor';
@@ -47,6 +47,16 @@ export class Engine {
             this.setWorldState(startState);
         }
     };
+
+    startAs = async (characterId: TCharacterId) => {
+        runInAction(() => {
+            this.s.mainCharacterId = characterId;
+        });
+        this.activePassage = createDummyPassage(this.activePassage.chapterId, characterId);
+        await this.processor.continue();
+    };
+
+    hasSave = () => localStorage.getItem(this.localStorageKey) !== null;
 
     saveStateToLocalStorage = () => {
         showToast(_('Game was saved'), { variant: 'success' });

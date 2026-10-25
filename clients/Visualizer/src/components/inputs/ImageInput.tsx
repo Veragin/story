@@ -8,6 +8,7 @@ import {
     Typography,
 } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import NotesIcon from '@mui/icons-material/Notes';
 import ImageIcon from '@mui/icons-material/Image';
 import {
@@ -18,13 +19,15 @@ import {
 } from '@story/protocol';
 import { spacingCss } from '@story/ui';
 import { api as defaultApi, ApiError, type TVisualizerApi } from '../../api';
+import { modals } from '../../shell';
 import { StringInput } from './StringInput';
 
 type TProps = {
     owner: TImageOwner;
     id: string;
-    description: TMaybeCode<string> | undefined;
-    onDescriptionChange: (value: string) => void;
+    description?: TMaybeCode<string>;
+    onDescriptionChange?: (value: string) => void;
+    onChange?: (image: TImageDto) => void;
     hasError?: boolean;
     disabled?: boolean;
     api?: TVisualizerApi;
@@ -45,6 +48,7 @@ export const ImageInput = ({
     id,
     description,
     onDescriptionChange,
+    onChange,
     hasError,
     disabled,
     api = defaultApi,
@@ -54,7 +58,7 @@ export const ImageInput = ({
     const [error, setError] = useState<string | null>(null);
     const [showDescription, setShowDescription] = useState(false);
     const input = useRef<HTMLInputElement>(null);
-    // a late upload response for a previous owner is dropped
+    // a late response for a previous owner is dropped
     const current = useRef({ owner, id });
     current.current = { owner, id };
 
@@ -78,6 +82,33 @@ export const ImageInput = ({
         };
     }, [api, owner, id]);
 
+    const save = async (
+        send: () => Promise<TImageDto>,
+        staleMessage: string
+    ) => {
+        const alive = () =>
+            current.current.owner === owner && current.current.id === id;
+        setBusy(true);
+        try {
+            const saved = await send();
+            if (alive()) {
+                setImage(saved);
+                setShowDescription(false);
+                onChange?.(saved);
+            }
+        } catch (e) {
+            if (!alive()) return;
+            if (e instanceof ApiError && e.isStale && e.current) {
+                setImage(e.current as TImageDto);
+                setError(staleMessage);
+            } else {
+                setError(e instanceof Error ? e.message : String(e));
+            }
+        } finally {
+            if (alive()) setBusy(false);
+        }
+    };
+
     const upload = async (file: File) => {
         setError(null);
         if (file.type !== 'image/png') {
@@ -93,39 +124,39 @@ export const ImageInput = ({
             );
             return;
         }
-        const alive = () =>
-            current.current.owner === owner && current.current.id === id;
-        setBusy(true);
-        try {
-            const data = await readBase64(file);
-            const saved = await api.uploadImage(owner, id, {
-                version: image?.version ?? '',
-                data,
-            });
-            if (alive()) {
-                setImage(saved);
-                setShowDescription(false);
-            }
-        } catch (e) {
-            if (!alive()) return;
-            if (e instanceof ApiError && e.isStale && e.current) {
-                setImage(e.current as TImageDto);
-                setError(
-                    _('The image changed on disk. Upload again to replace it.')
-                );
-            } else {
-                setError(e instanceof Error ? e.message : String(e));
-            }
-        } finally {
-            if (alive()) setBusy(false);
-        }
+        await save(
+            async () =>
+                api.uploadImage(owner, id, {
+                    version: image?.version ?? '',
+                    data: await readBase64(file),
+                }),
+            _('The image changed on disk. Upload again to replace it.')
+        );
+    };
+
+    const remove = async () => {
+        if (!image?.url) return;
+        const confirmed = await modals.confirm({
+            title: _('Remove image?'),
+            message: _('This deletes %s.', image.file),
+            danger: true,
+            confirmLabel: _('Remove'),
+        });
+        if (!confirmed) return;
+        setError(null);
+        await save(
+            () => api.deleteImage(owner, id, { version: image.version }),
+            _(
+                'The image changed on disk. Remove it again if you still want to.'
+            )
+        );
     };
 
     const pick = () => input.current?.click();
     const text = typeof description === 'string' ? description : '';
     const loading = !image && !error;
 
-    const descriptionEditor = (
+    const descriptionEditor = onDescriptionChange && (
         <StringInput
             value={description ?? ''}
             onChange={onDescriptionChange}
@@ -148,7 +179,7 @@ export const ImageInput = ({
                 </Typography>
             ) : image?.url ? (
                 <SFrame data-view={showDescription ? 'description' : 'image'}>
-                    {showDescription ? (
+                    {showDescription && descriptionEditor ? (
                         descriptionEditor
                     ) : (
                         <SImg
@@ -175,31 +206,48 @@ export const ImageInput = ({
                                 </SOverlayButton>
                             </span>
                         </Tooltip>
-                        <Tooltip
-                            title={
-                                showDescription
-                                    ? _('Show image')
-                                    : _('Show description')
-                            }
-                        >
-                            <SOverlayButton
-                                size="small"
-                                aria-label={
+                        <Tooltip title={_('Remove image')}>
+                            <span>
+                                <SOverlayButton
+                                    size="small"
+                                    aria-label={_('Remove image')}
+                                    data-action="remove-image"
+                                    disabled={disabled || busy}
+                                    onClick={() => void remove()}
+                                >
+                                    <DeleteIcon fontSize="small" />
+                                </SOverlayButton>
+                            </span>
+                        </Tooltip>
+                        {descriptionEditor && (
+                            <Tooltip
+                                title={
                                     showDescription
                                         ? _('Show image')
                                         : _('Show description')
                                 }
-                                aria-pressed={showDescription}
-                                data-action="toggle-description"
-                                onClick={() => setShowDescription((v) => !v)}
                             >
-                                {showDescription ? (
-                                    <ImageIcon fontSize="small" />
-                                ) : (
-                                    <NotesIcon fontSize="small" />
-                                )}
-                            </SOverlayButton>
-                        </Tooltip>
+                                <SOverlayButton
+                                    size="small"
+                                    aria-label={
+                                        showDescription
+                                            ? _('Show image')
+                                            : _('Show description')
+                                    }
+                                    aria-pressed={showDescription}
+                                    data-action="toggle-description"
+                                    onClick={() =>
+                                        setShowDescription((v) => !v)
+                                    }
+                                >
+                                    {showDescription ? (
+                                        <ImageIcon fontSize="small" />
+                                    ) : (
+                                        <NotesIcon fontSize="small" />
+                                    )}
+                                </SOverlayButton>
+                            </Tooltip>
+                        )}
                     </SOverlay>
                 </SFrame>
             ) : (

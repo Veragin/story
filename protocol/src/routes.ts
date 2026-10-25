@@ -42,7 +42,8 @@ import type {
     TPassageDto,
     TUpdatePassageBody,
 } from './dto/passage';
-import type { TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type { TDeleteImageBody, TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type { TPlayManifestDto } from './dto/play';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
 import type {
@@ -111,6 +112,7 @@ export const STORY_ROUTES = {
     getStoryInfo: { method: 'GET', path: '/info', access: 'read' },
     updateStoryInfo: { method: 'PUT', path: '/info', access: 'write' },
     exportStory: { method: 'GET', path: '/export', access: 'read' },
+    exportPlayable: { method: 'GET', path: '/export/web', access: 'read' },
 
     createChapter: { method: 'POST', path: '/chapters', access: 'write' },
     getChapter: { method: 'GET', path: '/chapters/:chapterId', access: 'read' },
@@ -159,6 +161,10 @@ export const STORY_ROUTES = {
     getImage: { method: 'GET', path: '/images/:owner/:id', access: 'read' },
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
+    deleteImage: { method: 'DELETE', path: '/images/:owner/:id', access: 'write' },
+
+    getPlayManifest: { method: 'GET', path: '/play', access: 'read' },
+    getPlayFile: { method: 'GET', path: '/play/:file', access: 'read' },
 
     getMap: { method: 'GET', path: '/maps/:mapId', access: 'read' },
     updateMap: { method: 'PUT', path: '/maps/:mapId', access: 'write' },
@@ -277,6 +283,8 @@ export type TApiSpec = {
     updateStoryInfo: { body: TUpdateStoryBody; response: TStoryInfoDto };
     /** A `<storyId>.zip` attachment, not JSON. */
     exportStory: { body: undefined; response: never };
+    /** A `<storyId>-web.zip` attachment, not JSON: the standalone player, `play.json`, `data/` and `types/`. */
+    exportPlayable: { body: undefined; response: never };
 
     createChapter: { body: TCreateChapterBody; response: TChapterDto };
     getChapter: { body: undefined; response: TChapterDto };
@@ -339,6 +347,15 @@ export type TApiSpec = {
     /** The PNG itself, not JSON. Use `TImageDto.url`. */
     getImageFile: { body: undefined; response: never };
     uploadImage: { body: TUploadImageBody; response: TImageDto };
+    /** Answers the image as it is now: none. Deleting a missing image (`version: ''`) changes nothing. */
+    deleteImage: { body: TDeleteImageBody; response: TImageDto };
+
+    getPlayManifest: { body: undefined; response: TPlayManifestDto };
+    /**
+     * A file of `TPlayManifestDto.files`, not JSON; `:file` is its story-relative path. `ETag` is its
+     * version, `cache-control: no-cache` (stories are edited live).
+     */
+    getPlayFile: { body: undefined; response: never };
 
     getMap: { body: undefined; response: TMapDto };
     updateMap: { body: TUpdateMapBody; response: TMapDto };

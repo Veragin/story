@@ -14,11 +14,13 @@ import {
     type TStoryFormErrors,
     type TStoryFormMode,
     type TStoryFormValue,
+    type TStoryGitState,
 } from './storyForm';
 
 type TProps = {
     title: string;
     mode: TStoryFormMode;
+    git?: TStoryGitState;
     value: TStoryFormValue | null;
     onChange: (value: TStoryFormValue) => void;
     errors: TStoryFormErrors;
@@ -37,6 +39,7 @@ type TProps = {
 export const StoryFormDialog = ({
     title,
     mode,
+    git = null,
     value,
     onChange,
     errors,
@@ -66,6 +69,7 @@ export const StoryFormDialog = ({
                     onChange={onChange}
                     errors={submitted ? errors : {}}
                     mode={mode}
+                    git={git}
                     disabled={saving}
                 />
             ) : (

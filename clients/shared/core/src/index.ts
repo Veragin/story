@@ -9,5 +9,7 @@ export * from './engine/const';
 export * from './worldState/buildWorldState';
 export * from './worldState/createWorldState';
 export * from './worldState/loadWorldState';
+export * from './worldState/playableCharacters';
+export * from './worldState/isStoryModule';
 
 export * from './parsePassageId';

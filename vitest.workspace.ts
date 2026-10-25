@@ -16,6 +16,14 @@ export default defineWorkspace([
     },
     {
         test: {
+            name: 'story-loader',
+            root: './clients/shared/storyLoader',
+            environment: 'jsdom',
+            include: ['__tests__/**/*.test.ts'],
+        },
+    },
+    {
+        test: {
             name: 'data',
             root: './stories/example/data',
             environment: 'node',
@@ -51,10 +59,11 @@ export default defineWorkspace([
     },
     {
         test: {
-            name: 'single-engine',
-            root: './clients/SingleEngine',
-            environment: 'node',
-            include: ['vite/__tests__/**/*.test.ts'],
+            name: 'single-player',
+            root: './clients/SinglePlayer',
+            environment: 'jsdom',
+            include: ['__tests__/**/*.test.ts', '__tests__/**/*.test.tsx'],
+            setupFiles: ['./__tests__/setup.ts'],
         },
     },
     {

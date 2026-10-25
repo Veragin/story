@@ -1,25 +1,36 @@
 import { useState } from 'react';
-import type { TCreateStoryBody } from '@story/protocol';
+import type { TCreateStoryBody, TSetupGitBody } from '@story/protocol';
 import { errorMessage } from './api';
 import { StoryFormDialog } from './StoryFormDialog';
 import {
     EMPTY_STORY_FORM,
     hasErrors,
     toCreateBody,
+    toGitChange,
     validateStoryForm,
+    type TStoryGitState,
 } from './storyForm';
 
 type TProps = {
-    onSubmit: (body: TCreateStoryBody) => Promise<void>;
+    gitAvailable: boolean;
+    onSubmit: (
+        body: TCreateStoryBody,
+        git: TSetupGitBody | null
+    ) => Promise<void>;
     onClose: () => void;
 };
 
-export const CreateStoryDialog = ({ onSubmit, onClose }: TProps) => {
+export const CreateStoryDialog = ({
+    gitAvailable,
+    onSubmit,
+    onClose,
+}: TProps) => {
     const [value, setValue] = useState(EMPTY_STORY_FORM);
     const [submitted, setSubmitted] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const errors = validateStoryForm(value, { passwordRequired: true });
+    const git: TStoryGitState = gitAvailable ? { config: null } : null;
+    const errors = validateStoryForm(value, { passwordRequired: true, git });
 
     const create = async () => {
         setSubmitted(true);
@@ -27,7 +38,11 @@ export const CreateStoryDialog = ({ onSubmit, onClose }: TProps) => {
         setSaving(true);
         setError(null);
         try {
-            await onSubmit(toCreateBody(value));
+            const change = toGitChange(value, git);
+            await onSubmit(
+                toCreateBody(value),
+                change?.kind === 'setup' ? change.body : null
+            );
         } catch (e) {
             setError(errorMessage(e));
             setSaving(false);
@@ -38,6 +53,7 @@ export const CreateStoryDialog = ({ onSubmit, onClose }: TProps) => {
         <StoryFormDialog
             title={_('New story')}
             mode="create"
+            git={git}
             value={value}
             onChange={setValue}
             errors={errors}

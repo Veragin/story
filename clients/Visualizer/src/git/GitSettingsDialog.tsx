@@ -14,11 +14,12 @@ import {
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
+    GIT_DEFAULT_BRANCH,
     GIT_LIMITS,
     isGitBranchName,
     type TGitSetupMode,
 } from '@story/protocol';
-import { showToast } from '@story/ui';
+import { remoteUrlErrorMessage, showToast } from '@story/ui';
 import { modals } from '../shell';
 import { GitDisconnectPanel } from './GitDisconnectPanel';
 import type { GitStore, TGitConfigPatch, TGitResult } from './GitStore';
@@ -28,27 +29,13 @@ type TProps = {
     onClose: () => void;
 };
 
-const DEFAULT_BRANCH = 'main';
-
-const remoteUrlError = (value: string): string | null => {
-    try {
-        const url = new URL(value);
-        if (url.protocol !== 'https:') return _('Use an https:// URL');
-        if (url.username || url.password)
-            return _('Put the token in its own field, not in the URL');
-        return null;
-    } catch {
-        return _('Not a URL, e.g. https://github.com/me/story.git');
-    }
-};
-
 const setupMode = (value: string): TGitSetupMode =>
     value === 'pull' ? 'pull' : 'push';
 
 export const GitSettingsDialog = observer(({ store, onClose }: TProps) => {
     const config = store.config;
     const [remoteUrl, setRemoteUrl] = useState(config?.remoteUrl ?? '');
-    const [branch, setBranch] = useState(config?.branch ?? DEFAULT_BRANCH);
+    const [branch, setBranch] = useState(config?.branch ?? GIT_DEFAULT_BRANCH);
     const [token, setToken] = useState('');
     const [authorName, setAuthorName] = useState(config?.authorName ?? '');
     const [authorEmail, setAuthorEmail] = useState(config?.authorEmail ?? '');
@@ -57,7 +44,7 @@ export const GitSettingsDialog = observer(({ store, onClose }: TProps) => {
     const [disconnecting, setDisconnecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const urlError = remoteUrlError(remoteUrl.trim());
+    const urlError = remoteUrlErrorMessage(remoteUrl.trim());
     const branchError = isGitBranchName(branch.trim())
         ? null
         : _('Not a valid branch name');

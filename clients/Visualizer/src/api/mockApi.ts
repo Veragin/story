@@ -1,6 +1,8 @@
 import {
     isCode,
     isValueRecord,
+    LANDING_IMAGE_FILE,
+    STORY_LANDING_IMAGE_ID,
     type TChangeEvent,
     type TChapterDto,
     type TChapterLayoutDto,
@@ -65,6 +67,7 @@ const MOCK_STORY: TStoryInfoDto = {
     mapSize: { width: 40, height: 30 },
     public: true,
     version: 'mock-story',
+    hasLandingImage: false,
 };
 
 export const displayText = (value: TValue | undefined, fallback: string): string => {
@@ -207,15 +210,19 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
             })
             .map((e) => ({ file: passages.get(e.from)?.file ?? '', line: 1, passageId: e.from }));
 
-    const imageOf = (owner: TImageOwner, id: string): TImageDto => {
-        const found =
-            images.get(`${owner}/${id}`) ??
-            (owner === 'passages'
+    const imageFileOf = (owner: TImageOwner, id: string): string => {
+        if (owner === 'story') {
+            return id === STORY_LANDING_IMAGE_ID ? LANDING_IMAGE_FILE : notFound(`story image "${id}"`);
+        }
+        const { file } =
+            owner === 'passages'
                 ? get(passages, id, 'passage')
-                : get(entities[owner] as Map<string, TEntityDto>, id, `${owner}/${id}`));
-        if ('url' in found) return found;
-        return { owner, id, file: found.file.replace(/\.ts$/, '.png'), version: '', url: null };
+                : get(entities[owner] as Map<string, TEntityDto>, id, `${owner}/${id}`);
+        return file.replace(/\.ts$/, '.png');
     };
+
+    const imageOf = (owner: TImageOwner, id: string): TImageDto =>
+        images.get(`${owner}/${id}`) ?? { owner, id, file: imageFileOf(owner, id), version: '', url: null };
 
     const sourceOf = (owner: TSourceOwner, id: string): TSourceDto => {
         const saved = sources.get(`${owner}/${id}`);
@@ -333,7 +340,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 git: gitAvailable ? ('up' as const) : ('unavailable' as const),
             })),
         login: () => reply(() => undefined),
-        getStoryInfo: () => reply(() => MOCK_STORY),
+        getStoryInfo: () =>
+            reply(() => ({ ...MOCK_STORY, hasLandingImage: images.has(`story/${STORY_LANDING_IMAGE_ID}`) })),
         getStoryAccess: () => reply(() => ({ canEdit: true, canPlay: true })),
 
         getProject: () =>
@@ -694,6 +702,13 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 const next: TImageDto = { ...current, version: nextVersion(), url: `data:image/png;base64,${data}` };
                 images.set(`${owner}/${id}`, next);
                 return next;
+            }),
+        deleteImage: (owner, id, { version }) =>
+            reply(() => {
+                const current = imageOf(owner, id);
+                checkVersion(current, version);
+                images.delete(`${owner}/${id}`);
+                return imageOf(owner, id);
             }),
 
         getMap: (mapId) => reply(() => get(maps, mapId, `map "${mapId}"`)),

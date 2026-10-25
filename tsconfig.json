@@ -13,6 +13,7 @@
             "@story/shared": ["clients/shared/utils/src/index.ts"],
             "@story/ui": ["clients/shared/ui/src/index.ts"],
             "@story/core": ["clients/shared/core/src/index.ts"],
+            "@story/story-loader": ["clients/shared/storyLoader/src/index.ts"],
             "@story/data": ["stories/example/data/index.ts"],
             "@story/data/*": ["stories/example/data/*"],
             "@story/protocol": ["protocol/src/index.ts"]
@@ -36,8 +37,10 @@
         "clients/shared/utils",
         "clients/shared/ui",
         "clients/shared/core",
+        "clients/shared/storyLoader",
         "stories/example/data",
-        "clients/SingleEngine/src",
+        "clients/SinglePlayer/src",
+        "clients/SinglePlayer/__tests__",
         "clients/Visualizer/src",
         "clients/LandingPage/src",
         "clients/MultiEngine/src",
@@ -52,7 +55,8 @@
         "dist",
 
         /* Node-land config, checked by `tsconfig.node.json` instead — see the note there. */
-        "clients/SingleEngine/vite.config.ts",
+        "clients/SinglePlayer/vite.config.ts",
+        "clients/SinglePlayer/vite.standalone.config.ts",
         "clients/Visualizer/vite.config.ts",
         "clients/LandingPage/vite.config.ts",
         "clients/MultiEngine/vite.config.ts",

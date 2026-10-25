@@ -83,7 +83,18 @@ export const storyMapSize = (bytes: Uint8Array | undefined, source: string): TMa
 export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto =>
     storyMapSize(files.get(MAP_FILE), 'zip');
 
-const UPDATE_FIELDS = ['version', 'id', 'name', 'author', 'description', 'public', 'password', 'mapSize'];
+// `hasLandingImage` is derived from the file: accepted so the whole info can be sent back, but never applied
+const UPDATE_FIELDS = [
+    'version',
+    'id',
+    'name',
+    'author',
+    'description',
+    'public',
+    'password',
+    'mapSize',
+    'hasLandingImage',
+];
 
 export type TPasswordHash = () => string | undefined;
 

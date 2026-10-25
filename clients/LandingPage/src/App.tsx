@@ -15,6 +15,7 @@ export const App = observer(() => {
 
     useEffect(() => {
         void store.load();
+        void store.checkGit();
         // logins elsewhere and expiring grants change the `unlocked` flags
         const refresh = () => void store.load();
         window.addEventListener('focus', refresh);
@@ -44,12 +45,25 @@ export const App = observer(() => {
             <StoryList store={store} />
             {creating && (
                 <CreateStoryDialog
-                    onSubmit={async (body) => {
-                        const story = await store.create(body);
+                    gitAvailable={store.gitAvailable}
+                    onSubmit={async (body, git) => {
+                        const { story, gitError } = await store.create(
+                            body,
+                            git
+                        );
                         setCreating(false);
                         showToast(_('Created "%s"', story.name), {
                             variant: 'success',
                         });
+                        if (gitError) {
+                            showToast(
+                                _(
+                                    'Not connected to git: %s. Try again in Edit.',
+                                    gitError
+                                ),
+                                { variant: 'warning' }
+                            );
+                        }
                     }}
                     onClose={() => setCreating(false)}
                 />

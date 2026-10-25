@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint';
 // here because they are type-only (the latter enforced by `no-restricted-imports` below).
 const SERVER = 'server';
 const PROTOCOL = 'protocol';
-const SERVICES = ['clients/SingleEngine', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
+const SERVICES = ['clients/SinglePlayer', 'clients/Visualizer', 'clients/LandingPage', 'clients/MultiEngine', SERVER];
 
 // globs only: a zone mixing globs and plain paths flags every import in its target
 const tree = (dir) => `./${dir}/**`;
@@ -22,6 +22,7 @@ const PACKAGE_DIRS = {
     shared: 'clients/shared/utils',
     ui: 'clients/shared/ui',
     core: 'clients/shared/core',
+    storyLoader: 'clients/shared/storyLoader',
 };
 const pkg = (name) => tree(PACKAGE_DIRS[name]);
 
@@ -60,6 +61,13 @@ const boundaryZones = [
 
     zone(pkg('data'), packagesExcept('shared', 'types', 'core', 'data'), 'data/ may not import @story/ui.'),
 
+    // its tests run the example story, so they hand it @story/core as a host module
+    zone(
+        pkg('storyLoader'),
+        packagesExcept('shared', 'core', 'storyLoader'),
+        '@story/story-loader may import only @story/shared (the story reaches the rest through its host modules).'
+    ),
+
     zone(
         pkg('types'),
         servicesAndProtocol(),
@@ -71,7 +79,7 @@ const boundaryZones = [
         'data/ is author-edited and must never import from a service (the clients, the server) or the protocol.'
     ),
 
-    ...['shared', 'ui', 'core'].map((p) =>
+    ...['shared', 'ui', 'core', 'storyLoader'].map((p) =>
         zone(
             pkg(p),
             servicesAndProtocol(),
@@ -124,7 +132,7 @@ const templateZones = [
 ];
 
 export default tseslint.config(
-    { ignores: ['dist', '**/dist/**', 'node_modules'] },
+    { ignores: ['dist', '**/dist/**', '**/dist-standalone/**', 'node_modules'] },
     {
         // the typescript resolver maps `@story/*` to source paths so the repo-relative zones match
         files: ['**/*.{ts,tsx}'],
@@ -191,7 +199,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['clients/SingleEngine/src/**/*.{ts,tsx}'],
+        files: ['clients/SinglePlayer/src/**/*.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
@@ -199,14 +207,14 @@ export default tseslint.config(
                     paths: ['@story/data', '@story/types'].map((name) => ({
                         name,
                         allowTypeImports: true,
-                        message: `SingleEngine/src must not import ${name} at runtime — the story is loaded by \`loadStory\` and reached through the engine (\`engine.storyModule\`). \`import type\` is fine.`,
+                        message: `SinglePlayer/src must not import ${name} at runtime — the story is loaded by \`loadStory\` and reached through the engine (\`engine.storyModule\`). \`import type\` is fine.`,
                     })),
                     patterns: [
                         {
                             group: ['@story/data/*', '@story/types/*'],
                             allowTypeImports: true,
                             message:
-                                'SingleEngine/src must not import the story at runtime — it is loaded by `loadStory`. `import type` is fine.',
+                                'SinglePlayer/src must not import the story at runtime — it is loaded by `loadStory`. `import type` is fine.',
                         },
                     ],
                 },
@@ -240,7 +248,6 @@ export default tseslint.config(
         },
     },
     {
-        // `{}` data types: the server generates `export type T<Id>Data = {}`
         files: [`${SERVER}/template/**/*.ts`],
         settings: {
             'import/resolver': {
@@ -249,6 +256,12 @@ export default tseslint.config(
         },
         rules: {
             'import/no-restricted-paths': ['error', { basePath: import.meta.dirname, zones: templateZones }],
+        },
+    },
+    {
+        // `{}` data types: the server generates `export type T<Id>Data = {}` into every story
+        files: [`${SERVER}/template/**/*.ts`, `${PACKAGE_DIRS.data}/**/*.ts`],
+        rules: {
             '@typescript-eslint/no-empty-object-type': 'off',
         },
     }

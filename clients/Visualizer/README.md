@@ -12,23 +12,23 @@ yarn dev:landing-page           # just the landing page (story list), http://loc
 
 In docker: `make start` runs everything. Or run `make up` and then `make dev-server` plus `make dev-visualizer` (and `make dev-landing-page`). Running the server: [`docs/Server.md`](../../docs/Server.md#running-it).
 
-**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SingleEngine, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
+**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SinglePlayer, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
 
 Open a story from the landing page (http://localhost:8103): the client runs on http://localhost:8101/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8123/api/health` (or `localhost:8101/api/health` through the proxy) answers `{"ok":true,...}`.
 
 **Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`clients/Visualizer/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
 
-| Env var               | Where        | Default                 | Meaning                                                                                                                |
-| --------------------- | ------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                       |
-| `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                       |
-| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash).  |
-| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                        |
-| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                     |
-| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                                |
-| `STORIES_ROOT`        | SingleEngine | `stories`               | Where the engine's dev server finds the stories it serves (`vite/storiesPlugin.ts`). Keep it the same as the server's. |
-| `STORY_SERVER`        | SingleEngine | `http://localhost:8123` | Target of SingleEngine's Vite `/api` proxy, and the server its story guard asks `GET /api/stories/<id>/access`.        |
-| `VITE_LANDING_URL`    | SingleEngine | this host, port 8103    | Where SingleEngine goes without `?story=` or after a cancelled password prompt.                                        |
+| Env var               | Where        | Default                 | Meaning                                                                                                               |
+| --------------------- | ------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                      |
+| `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                      |
+| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
+| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                       |
+| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
+| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
+| `VITE_PLAYER_URL`     | client       | this host, port 8100    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
+| `STORY_SERVER`        | SinglePlayer | `http://localhost:8123` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
+| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8103    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
 
 The server's variables are in [`docs/Server.md`](../../docs/Server.md#environment); the production build variables in [`docs/README.md`](../../docs/README.md#production).
 
@@ -110,7 +110,7 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 
 In the client, `clients/Visualizer/src/components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
-The game finds the same files: the story's virtual module lists every `.png` under its `data/` (`clients/SingleEngine/vite/storiesPlugin.ts`, read by `clients/SingleEngine/src/images.ts`), so there too a missing `.png` just means no picture.
+The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
 
 ## Live refresh
 

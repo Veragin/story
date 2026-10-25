@@ -2,17 +2,25 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
-import { STORY_LIMITS, type TCreateStoryBody } from '@story/protocol';
+import {
+    GIT_DEFAULT_BRANCH,
+    STORY_LIMITS,
+    type TCreateStoryBody,
+    type TGitConfigDto,
+    type TSetupGitBody,
+} from '@story/protocol';
 import { CreateStoryDialog } from '../CreateStoryDialog';
 import { ImportStoryDialog } from '../ImportStoryDialog';
 import {
     EMPTY_STORY_FORM,
     importFormOf,
     toCreateBody,
+    toGitChange,
     toImportBody,
     toUpdateBody,
     validateStoryForm,
     type TStoryFormValue,
+    type TStoryGitState,
 } from '../storyForm';
 
 const valid: TStoryFormValue = {
@@ -22,6 +30,109 @@ const valid: TStoryFormValue = {
     password: 'secret-1',
     passwordConfirm: 'secret-1',
 };
+
+const CONFIG: TGitConfigDto = {
+    remoteUrl: 'https://example.com/me/story.git',
+    branch: 'main',
+    hasToken: true,
+    authorName: 'Me',
+    authorEmail: 'me@story.local',
+    version: '3',
+};
+
+describe('the git fields', () => {
+    const NEW: TStoryGitState = { config: null };
+    const CONNECTED: TStoryGitState = { config: CONFIG };
+    const errors = (v: Partial<TStoryFormValue>, git: TStoryGitState) =>
+        validateStoryForm({ ...valid, ...v }, { passwordRequired: true, git });
+
+    it('are optional for a story not yet connected', () => {
+        expect(errors({}, NEW)).toEqual({});
+        expect(toGitChange(valid, NEW)).toBeNull();
+    });
+
+    it('want an https URL without credentials, and a URL for a token', () => {
+        expect(
+            errors({ gitRemoteUrl: 'git@host:me/x.git' }, NEW).gitRemoteUrl
+        ).toBeDefined();
+        expect(
+            errors({ gitRemoteUrl: 'http://example.com/x.git' }, NEW)
+                .gitRemoteUrl
+        ).toBe('Use an https:// URL');
+        expect(
+            errors({ gitRemoteUrl: 'https://me:tkn@example.com/x.git' }, NEW)
+                .gitRemoteUrl
+        ).toBeDefined();
+        expect(errors({ gitToken: 'tkn' }, NEW).gitRemoteUrl).toBeDefined();
+    });
+
+    it('cannot clear the URL of a connected story', () => {
+        expect(
+            errors({ ...valid, gitRemoteUrl: CONFIG.remoteUrl }, CONNECTED)
+        ).toEqual({});
+        expect(
+            errors({ gitRemoteUrl: '' }, CONNECTED).gitRemoteUrl
+        ).toBeDefined();
+    });
+
+    it('are ignored without git on the server', () => {
+        expect(
+            errors({ gitRemoteUrl: 'nonsense', gitToken: 'x' }, null)
+        ).toEqual({});
+        expect(
+            toGitChange({ ...valid, gitRemoteUrl: 'https://e.com/x.git' }, null)
+        ).toBeNull();
+    });
+
+    it('set up a new connection by pushing the story to the default branch', () => {
+        expect(
+            toGitChange(
+                {
+                    ...valid,
+                    gitRemoteUrl: ' https://e.com/x.git ',
+                    gitToken: 'tkn',
+                },
+                NEW
+            )
+        ).toEqual({
+            kind: 'setup',
+            body: {
+                remoteUrl: 'https://e.com/x.git',
+                branch: GIT_DEFAULT_BRANCH,
+                initial: 'push',
+                token: 'tkn',
+            },
+        });
+        expect(
+            toGitChange({ ...valid, gitRemoteUrl: 'https://e.com/x.git' }, NEW)
+        ).toEqual({
+            kind: 'setup',
+            body: {
+                remoteUrl: 'https://e.com/x.git',
+                branch: GIT_DEFAULT_BRANCH,
+                initial: 'push',
+            },
+        });
+    });
+
+    it('update only what changed of a connection, an empty token keeping the stored one', () => {
+        const same = { ...valid, gitRemoteUrl: CONFIG.remoteUrl };
+        expect(toGitChange(same, CONNECTED)).toBeNull();
+        expect(toGitChange({ ...same, gitToken: 'new' }, CONNECTED)).toEqual({
+            kind: 'update',
+            body: { version: '3', token: 'new' },
+        });
+        expect(
+            toGitChange(
+                { ...same, gitRemoteUrl: 'https://e.com/y.git' },
+                CONNECTED
+            )
+        ).toEqual({
+            kind: 'update',
+            body: { version: '3', remoteUrl: 'https://e.com/y.git' },
+        });
+    });
+});
 
 describe('validateStoryForm', () => {
     const create = (v: Partial<TStoryFormValue>) =>
@@ -137,9 +248,19 @@ const type = (field: keyof TStoryFormValue, value: string) => {
 };
 
 describe('CreateStoryDialog', () => {
-    const render = (onSubmit: (body: TCreateStoryBody) => Promise<void>) =>
+    const render = (
+        onSubmit: (
+            body: TCreateStoryBody,
+            git: TSetupGitBody | null
+        ) => Promise<void>,
+        gitAvailable = false
+    ) =>
         renderDialog(
-            <CreateStoryDialog onSubmit={onSubmit} onClose={() => {}} />
+            <CreateStoryDialog
+                gitAvailable={gitAvailable}
+                onSubmit={onSubmit}
+                onClose={() => {}}
+            />
         );
 
     const createButton = () =>
@@ -176,14 +297,44 @@ describe('CreateStoryDialog', () => {
         type('passwordConfirm', 'secret-1');
         type('mapWidth', '12');
         await act(() => Promise.resolve(createButton().click()));
-        expect(onSubmit).toHaveBeenCalledWith({
-            name: 'My Story',
-            author: 'Me',
-            password: 'secret-1',
-            description: '',
-            mapSize: { width: 12, height: 30 },
-            public: false,
-        });
+        expect(onSubmit).toHaveBeenCalledWith(
+            {
+                name: 'My Story',
+                author: 'Me',
+                password: 'secret-1',
+                description: '',
+                mapSize: { width: 12, height: 30 },
+                public: false,
+            },
+            null
+        );
+    });
+
+    it('hides the git fields when the server has no git', () => {
+        render(() => Promise.resolve());
+        expect(input('gitRemoteUrl')).toBeNull();
+        expect(input('gitToken')).toBeNull();
+    });
+
+    it('submits the repository URL and token as a git setup', async () => {
+        const onSubmit = vi.fn(() => Promise.resolve());
+        render(onSubmit, true);
+        type('name', 'My Story');
+        type('password', 'secret-1');
+        type('passwordConfirm', 'secret-1');
+        type('gitRemoteUrl', 'https://example.com/me/story.git');
+        type('gitToken', 'tkn');
+        await act(() => Promise.resolve(createButton().click()));
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'My Story' }),
+            {
+                remoteUrl: 'https://example.com/me/story.git',
+                branch: GIT_DEFAULT_BRANCH,
+                initial: 'push',
+                token: 'tkn',
+            }
+        );
+        expect(input('gitToken')!.getAttribute('type')).toBe('password');
     });
 
     it('shows a rejected create in the dialog', async () => {

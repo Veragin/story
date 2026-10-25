@@ -25,7 +25,7 @@ tackled:
 4. **The transport.** §3 says "ws + http". Only http exists. Node has no built-in WebSocket
    _server_, so the ws half means adding the `ws` package — not worth buying for a scaffold that
    would not speak a protocol.
-5. **The client's passage rendering.** It will reuse `clients/SingleEngine/src/templates/`. §3 defers
+5. **The client's passage rendering.** It will reuse `clients/SinglePlayer/src/templates/`. §3 defers
    extracting those into `@story/ui` _"until MultiEngine is actually built — don't generalize on
    spec"_, so this phase left them where they are and the client renders a static page.
 

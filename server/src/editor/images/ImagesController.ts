@@ -3,7 +3,8 @@ import type { TRouteBody, TRouteResponse } from '@story/protocol';
 import type { Request, Response } from 'express';
 import { ProtocolRoute } from '../../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../../common/RouteParams';
-import { readImage, readImageFile, uploadImage } from '../../project/images';
+import { sendVersionedFile } from '../../common/versionedFile';
+import { deleteImage, readImage, readImageFile, uploadImage } from '../../project/images';
 import type { TServerContext } from '../../storyContext/serverContext';
 import { StoryCtx } from '../../storyContext/StoryCtx';
 
@@ -25,15 +26,7 @@ export class ImagesController {
         @Res() res: Response
     ): Promise<void> {
         const { bytes, version } = await readImageFile(sp, owner, id);
-        const etag = `"${version}"`;
-        const headers = { etag, 'cache-control': 'no-cache' };
-        if (req.headers['if-none-match'] === etag) {
-            res.writeHead(304, headers);
-            res.end();
-        } else {
-            res.writeHead(200, { ...headers, 'content-type': 'image/png', 'content-length': bytes.length });
-            res.end(bytes);
-        }
+        sendVersionedFile(req, res, { bytes, version, contentType: 'image/png' });
     }
 
     @ProtocolRoute('uploadImage')
@@ -43,5 +36,14 @@ export class ImagesController {
         @Body() body: TRouteBody<'uploadImage'>
     ): Promise<TRouteResponse<'uploadImage'>> {
         return uploadImage(ctx, owner, id, body);
+    }
+
+    @ProtocolRoute('deleteImage')
+    deleteImage(
+        @StoryCtx() ctx: TServerContext,
+        @RouteParams() { owner, id }: THandlerParams<'deleteImage'>,
+        @Body() body: TRouteBody<'deleteImage'>
+    ): Promise<TRouteResponse<'deleteImage'>> {
+        return deleteImage(ctx, owner, id, body);
     }
 }

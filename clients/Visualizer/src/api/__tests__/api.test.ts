@@ -552,6 +552,17 @@ describe('mockApi images', () => {
         });
         await expect(api.getImage('characters', 'nobody')).rejects.toBeInstanceOf(ApiError);
     });
+
+    it('keeps the story landing image, reflected in the story info, until it is deleted', async () => {
+        const api = createMockApi();
+        expect(await api.getImage('story', 'landing')).toMatchObject({ file: 'data/assets/landing.png', url: null });
+        await expect(api.getImage('story', 'cover')).rejects.toBeInstanceOf(ApiError);
+        const up = await api.uploadImage('story', 'landing', { version: '', data: 'iVBORw0KGgo=' });
+        expect((await api.getStoryInfo()).hasLandingImage).toBe(true);
+        await expect(api.deleteImage('story', 'landing', { version: '' })).rejects.toMatchObject({ isStale: true });
+        expect(await api.deleteImage('story', 'landing', { version: up.version })).toMatchObject({ url: null });
+        expect((await api.getStoryInfo()).hasLandingImage).toBe(false);
+    });
 });
 
 describe('extractEdges', () => {

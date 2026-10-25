@@ -195,12 +195,16 @@ describe('over HTTP', () => {
         });
     });
 
-    it('adds Secure with cookieSecure (COOKIE_SECURE=1)', async () => {
+    it('adds Secure and the __Host- prefix with cookieSecure (COOKIE_SECURE=1)', async () => {
         const base = await start({ cookieSecure: true });
         const ok = await tryLogin(base, 'secret', EXAMPLE_PASSWORD);
-        expect(ok.headers.get('set-cookie')).toMatch(/; Secure$/);
-        const out = await call(base, 'POST', '/api/logout', { cookie: cookieOf(ok) });
-        expect(out.headers.get('set-cookie')).toMatch(/^story_session=; .*Max-Age=0; Secure$/);
+        expect(ok.headers.get('set-cookie')).toMatch(/^__Host-story_session=[\w-]{43}; .*; Secure$/);
+        const cookie = cookieOf(ok);
+        expect((await call(base, 'GET', '/api/session', { cookie })).body).toEqual({ storyIds: ['secret'] });
+        const unprefixed = cookie.replace(/^__Host-/, '');
+        expect((await call(base, 'GET', '/api/session', { cookie: unprefixed })).body).toEqual({ storyIds: [] });
+        const out = await call(base, 'POST', '/api/logout', { cookie });
+        expect(out.headers.get('set-cookie')).toMatch(/^__Host-story_session=; .*Max-Age=0; Secure$/);
     });
 
     it('keeps several grants in one cookie; session, access and logout', async () => {

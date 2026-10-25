@@ -43,7 +43,7 @@ describe('readers', () => {
             file: 'data/chapters/village/village.chapter.ts',
             exportName: 'villageChapter',
             title: 'Village Chapter',
-            timeRange: { start: '2.1. 8:00', end: '5.1. 8:00' },
+            timeRange: { start: '2.1. 7:00', end: '5.1. 7:00' },
             location: 'village',
             triggerIds: ['nobleHouseRobbery'],
             init: { mojePromena: { time: 0, asd: 'asd' } },

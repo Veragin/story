@@ -5,7 +5,7 @@ services:
     platform: linux/amd64
     image: story/template
     ports:
-      - 8100:8100 # SingleEngine          (vite)
+      - 8100:8100 # SinglePlayer          (vite)
       - 8101:8101 # Visualizer client     (vite)
       - 8102:8102 # MultiEngine client    (vite)
       - 8103:8103 # Landing page          (vite) — the story list, proxies /api to 8123
@@ -22,6 +22,10 @@ services:
       DB_USER: story
       DB_PASSWORD: story
       DB_NAME: story
+      # dev only: encrypts the stored git tokens; production sets its own in docker/.env
+      GIT_TOKEN_KEY: L+dnTukTcCDqLBNIOfteI4CzvsvD7tucPgyOafLIREw=
+      # "Export for web" zips this folder: `yarn workspace @story/single-player build:standalone` first
+      SINGLE_PLAYER_STANDALONE_DIR: /app/clients/SinglePlayer/dist-standalone
     depends_on:
       mysql:
         condition: service_healthy

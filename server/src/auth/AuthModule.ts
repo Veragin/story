@@ -6,6 +6,7 @@ import { AuthController } from './AuthController';
 import { AUTH_OPTIONS, authOptionsFromConfig } from './authOptions';
 import { CsrfGuard } from './CsrfGuard';
 import { LoginLimiter } from './LoginLimiter';
+import { PlaySiteGuard } from './PlaySiteGuard';
 import { SessionService } from './SessionService';
 import { StoryAccessGuard } from './StoryAccessGuard';
 import { UnmatchedStoryPathMiddleware } from './UnmatchedStoryPathMiddleware';
@@ -17,7 +18,8 @@ import { UnmatchedStoryPathMiddleware } from './UnmatchedStoryPathMiddleware';
         { provide: AUTH_OPTIONS, inject: [ConfigService], useFactory: authOptionsFromConfig },
         { provide: LoginLimiter, useFactory: () => new LoginLimiter() },
         SessionService,
-        // global guards run in registration order: the CSRF check comes before any story lookup
+        // global guards run in registration order: the play site and CSRF checks come before any story lookup
+        { provide: APP_GUARD, useClass: PlaySiteGuard },
         { provide: APP_GUARD, useClass: CsrfGuard },
         { provide: APP_GUARD, useClass: StoryAccessGuard },
     ],

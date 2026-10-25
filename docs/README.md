@@ -18,11 +18,11 @@ stories/
 
 That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). A story's metadata (name, author, password hash, map size, description, public) is not in its folder: it is a row in the server's MySQL database, edited from the landing page (the example's row is seeded from `server/seed/example.story.json`).
 
-Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
+Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
-Every story is behind its password: the Visualizer asks for it, and so does SingleEngine unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
+Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
-Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui}` packages), `protocol/`, `server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
+Everything outside `stories/` — `clients/` (the apps and the shared `clients/shared/{core,utils,ui,storyLoader}` packages), `protocol/`, `server/` — is engine plumbing that an author should never need to open. The two folders are kept deliberately plain for this reason: no `src/` subfolder, no build step, no `dist/`. A passage is `data/chapters/village/village.chapter.ts`, and saving it (by hand, in the Visualizer's forms or in its source editor) refreshes the running apps.
 
 The split is also what keeps an engine upgrade safe for every story at once: author edits land in `types/`/`data/`, and engine changes land everywhere else. **Nothing in `types/` or `data/` may import from a service**; `yarn lint` enforces it for every story (`import/no-restricted-paths` in `eslint.config.js`).
 
@@ -31,7 +31,7 @@ The split is also what keeps an engine upgrade safe for every story at once: aut
 ```
 stories/        the stories (only example/ is committed); see above
 clients/
-  SingleEngine/   @story/single-engine            plays one story, Vite :8100
+  SinglePlayer/   @story/single-player            plays one story, Vite :8100
   Visualizer/     @story/visualizer-client        the author's editor, Vite :8101
   MultiEngine/    @story/multi-engine-client      scaffold, Vite :8102
   LandingPage/    @story/visualizer-landing-page  the story list, Vite :8103
@@ -39,7 +39,7 @@ clients/
 protocol/       @story/protocol   the wire contract: routes (with access levels), DTOs, errors
 server/         @story/server     NestJS + MySQL on :8123, the only server; see Server.md
 docker/         docker-compose.yml (dev, + mysql), docker-compose.prod.yml, Dockerfiles, Caddyfile, prod-entrypoint.sh, mysql/init/
-docs/           this file, Server.md, Visualizer.md
+docs/           this file, Server.md, Visualizer.md, SinglePlayerStandalone.md
 scripts/        typecheck-stories.mjs
 ```
 
@@ -58,7 +58,7 @@ Outside docker, run a MySQL 8 with the compose credentials (user `story`/`story`
 - **Migrations** run on their own: the server applies pending ones on boot. By hand: `yarn workspace @story/server migration:show|run|revert`; new ones: [`Server.md`](Server.md#database-and-migrations).
 - **Seeding**: on every start, the dev server runs `stories:import-files --seed stories/example`, which inserts the example's row from `server/seed/example.story.json` when it is missing (password `example`).
 
-Single service, either way: `yarn dev:engine` / `yarn dev:visualizer` / `yarn dev:server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-engine` / `make dev-visualizer` / `make dev-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SingleEngine all need the server.
+Single service, either way: `yarn dev:player` / `yarn dev:visualizer` / `yarn dev:server` / `yarn dev:landing-page` / `yarn dev:multi-engine`, or `make up` followed by `make dev-player` / `make dev-visualizer` / `make dev-server` / `make dev-landing-page` / `make dev-multi-engine`. (`make start` already holds all five ports, and the dev servers use `strictPort`, so start the container with `make up` when you want just one.) The landing page, the Visualizer client and SinglePlayer all need the server.
 
 Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, `yarn pretty:check`.
 
@@ -66,7 +66,7 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 | Service                   | Port | Status                              |
 | ------------------------- | ---- | ----------------------------------- |
-| SingleEngine (vite)       | 8100 | implemented; proxies `/api` to 8123 |
+| SinglePlayer (vite)       | 8100 | implemented; proxies `/api` to 8123 |
 | Visualizer client (vite)  | 8101 | implemented; proxies `/api` to 8123 |
 | MultiEngine client (vite) | 8102 | scaffold                            |
 | Landing page (vite)       | 8103 | implemented; proxies `/api` to 8123 |
@@ -76,14 +76,17 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 ### Production
 
-`docker/docker-compose.prod.yml` runs everything behind one origin, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443:
+`docker/docker-compose.prod.yml` runs everything behind two origins, with Caddy (`docker/Caddyfile`) in front, on ports 80 and 443. SinglePlayer runs story code, so it lives on a play site of its own (`PLAY_SITE_ADDRESS`, default `play.<SITE_ADDRESS>`): story code there cannot script the Visualizer or reach the editing session.
 
-| Path           | Served by                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------- |
-| `/`            | the landing page, static build                                                               |
-| `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                             |
-| `/play/`       | SingleEngine, still a Vite dev server (`base` `/play/`) until the per-story build lands (D7) |
-| `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                    |
+| Site                | Path           | Served by                                                                                          |
+| ------------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| `SITE_ADDRESS`      | `/`            | the landing page, static build                                                                     |
+|                     | `/visualizer/` | the Visualizer client, static build (Vite `base` `/visualizer/`)                                   |
+|                     | `/play/`       | a redirect to the play site                                                                        |
+|                     | `/api/`        | the server, stories in the `stories` volume, metadata and logins in MySQL                          |
+| `PLAY_SITE_ADDRESS` | `/play/`       | SinglePlayer, static build (Vite `base` `/play/`); it fetches the story's source from the play API |
+|                     | `/api/`        | the server, limited to the player's routes (story list, login, play manifest and files)            |
+|                     | anything else  | a redirect to `SITE_ADDRESS`                                                                       |
 
 ```bash
 cp docker/.env.example docker/.env               # then set DB_PASSWORD and MYSQL_ROOT_PASSWORD (and GIT_TOKEN_KEY for git)
@@ -92,18 +95,19 @@ make prod-logs
 make prod-down                                  # keeps the volumes (stories, database, certificates)
 ```
 
-`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
+`docker/.env` (gitignored) is needed by every `make prod-*` target. `SITE_ADDRESS` is the public host name (default `localhost`, which gets a certificate from Caddy's local CA). The play site needs a DNS record too (`play.stories.example.com`, or set `PLAY_SITE_ADDRESS`); `play.localhost` works locally. The play site has its own login: a private story asks for its password there even when the editor is logged in to it. Only Caddy publishes ports. On start the server applies the migrations and seeds the example ([`Server.md`](Server.md#production)); back up the `stories` and `mysql` volumes.
 
-Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
+Git support for stories (commit, push, pull and switch branches from the Visualizer, [`Server.md`](Server.md#git)) lets an author give a repository URL and access token when creating or editing a story on the landing page (a new connection pushes the story to `main`; branch, author and disconnect are in the Visualizer's git settings). It needs `GIT_TOKEN_KEY` in `docker/.env`: generate it once with `openssl rand -base64 32`. It encrypts the remote access tokens stored in the database. Without it the server runs with git unavailable (the Git button is hidden; `/api/health` says `"git":"unavailable"`). Keep it with the database backup: a lost or changed key cannot decrypt the stored tokens, and each connected story's token has to be entered again in its git settings. Set `GIT_ALLOWED_HOSTS` (e.g. `github.com,gitlab.com`) to limit the hosts a remote may point at; remotes are HTTPS only. A token is shared by everyone with the story's password, so use a fine-grained token scoped to that one repo.
 
-The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`), so they do not depend on the domain. Build variables:
+The images are built with path-only cross-app links (`VITE_LANDING_URL=/`, `VITE_VISUALIZER_URL=/visualizer`, `VITE_ENGINE_URL=/play`, `VITE_PLAYER_URL=/play`), so they do not depend on the domain. Build variables:
 
-| Env var                | Where        | Default | Meaning                                                                                                                                                                      |
-| ---------------------- | ------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VISUALIZER_BASE`      | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change.                             |
-| `LANDING_BASE`         | landing page | `/`     | Vite `base` of the build.                                                                                                                                                    |
-| `ENGINE_BASE`          | SingleEngine | `/`     | Vite `base` of the dev server (`/play/`): pages, modules (`/play/@fs/…`, `/play/@id/…`, which the story guard checks with the base taken off) and the HMR websocket.         |
-| `ENGINE_ALLOWED_HOSTS` | SingleEngine | (Vite)  | Comma-separated host names the dev server answers (Vite's `server.allowedHosts`), or `*` for any. The production compose sets `*`: the port is reachable only through Caddy. |
+| Env var           | Where        | Default | Meaning                                                                                                                                          |
+| ----------------- | ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `VISUALIZER_BASE` | Visualizer   | `/`     | Vite `base` of the build (`/visualizer/`, both slashes). Routing is the hash and API calls are the absolute `/api/…`, so only asset URLs change. |
+| `LANDING_BASE`    | landing page | `/`     | Vite `base` of the build.                                                                                                                        |
+| `PLAYER_BASE`     | SinglePlayer | `/`     | Vite `base` of the build (`/play/`). API calls are the absolute `/api/…`, so only asset URLs change.                                             |
+
+The app image also builds the standalone player (`build:standalone`, `index.html` + `player/` with `base` `./`) and sets `SINGLE_PLAYER_STANDALONE_DIR` to it, so **Export for web** works ([`SinglePlayerStandalone.md`](SinglePlayerStandalone.md)).
 
 ## Data structure
 
@@ -208,22 +212,26 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
     - the bottom of the stack: depends on nothing
 
 - ui
-    - the React pieces the front-ends need: theme, layout primitives, toasts, the global stylesheet, and `PasswordDialog` (the story password prompt of the landing page, the Visualizer and SingleEngine)
-    - exists so SingleEngine, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
+    - the React pieces the front-ends need: theme, layout primitives, toasts, the global stylesheet, and `PasswordDialog` (the story password prompt of the landing page, the Visualizer and SinglePlayer)
+    - exists so SinglePlayer, the Visualizer and MultiEngine look like one product instead of three, and so MUI is a detail of one package rather than a dependency of every app
 
 - core
     - the headless story runtime: engine, story, processor, history, inventory, world state
-    - no React, no rendering — it is the same runtime whether it runs in a browser tab (SingleEngine), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
+    - no React, no rendering — it is the same runtime whether it runs in a browser tab (SinglePlayer), in a simulation (Visualizer) or on a server (MultiEngine), which is exactly why it cannot be owned by any one of them
+
+- storyLoader (`@story/story-loader`)
+    - runs a story's TypeScript source in the browser: fetches the files from a `TStorySource`, transpiles them (sucrase), runs them as CommonJS and loads `import()`ed chapters lazily; the story's `@story/shared` / `@story/core` are the app's own instances
+    - used by SinglePlayer (and its standalone build); its limits are in `clients/shared/storyLoader/README.md`
 
 ### Services
 
-- SingleEngine
+- SinglePlayer
     - a service that can play the story for single player
     - only client implementation
     - fully implemented
-    - plays the story named by `?story=<id>` (the landing page's **Play as single**; without it, it goes to the landing page, `VITE_LANDING_URL`, default this host on 8103). `src/main.tsx` asks the server `GET /api/stories/<id>/access`, shows the password dialog for a private story it may not play yet, then imports the story's virtual module `virtual:story/<id>` (its `data/index.ts` plus the URL of every `.png`) and starts the engine on it
-    - `vite/storiesPlugin.ts` (`story:stories`) serves the stories from `STORIES_ROOT` (the server's, default `stories/`): `@story/types` / `@story/data` imported from inside `stories/<id>/` mean that story's folders, and every request for a story file (or its virtual module) is checked against `GET /api/stories/<id>/access` with the browser's cookie (cached 30 s) and answered `403` unless the story may be played. So the server has to run too
-    - the stories are served by the Vite dev server (plan D7); a per-story production build is future work
+    - plays the story named by `?story=<id>` (the landing page's **Play as single**, the Visualizer's **Play**); without it, a `play.json` next to the page (a standalone export, `src/source/StaticStorySource.ts`), else it goes to the landing page (`VITE_LANDING_URL`, default this host on 8103)
+    - `src/main.tsx` loads the play manifest (`GET /api/stories/<id>/play`, `src/source/ServerStorySource.ts`); a private story answers `401` until the session holds its grant, so it shows the password dialog, logs in and retries (in dev an editor coming from the Visualizer already has the grant; the production play site has its own session). Then it sets the title and favicon, loads the story with `@story/story-loader` and starts the engine on it. A missing story shows an error with a link back to the landing page
+    - one static build plays every story (plan D7 done): the story's TypeScript is fetched file by file from `GET /api/stories/<id>/play/<file>` and run in the browser; a chapter's passages are fetched when the chapter is first played. Images are the manifest's `.png` files, served by the same route
 
 - MultiEngine
     - a service that can play the story for multiple players

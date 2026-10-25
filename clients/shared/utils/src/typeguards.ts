@@ -15,3 +15,6 @@ export const isNullish = <T>(value: T | undefined | null): value is undefined | 
 
 export const isOneOf = <T extends readonly unknown[]>(value: unknown, array: T): value is T[number] =>
     array.includes(value);
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;

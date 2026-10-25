@@ -22,6 +22,7 @@ import { MapsModule } from './editor/maps/MapsModule';
 import { EventsModule } from './events/EventsModule';
 import { GitModule } from './git/GitModule';
 import { HealthModule } from './health/HealthModule';
+import { PlayModule } from './play/PlayModule';
 import { StoryContextModule } from './storyContext/StoryContextModule';
 import { StoriesModule } from './stories/StoriesModule';
 
@@ -48,6 +49,7 @@ import { StoriesModule } from './stories/StoriesModule';
         MapsModule,
         LayoutsModule,
         GitModule,
+        PlayModule,
     ],
     providers: [
         { provide: APP_FILTER, useClass: ApiExceptionFilter },

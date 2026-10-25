@@ -114,6 +114,7 @@ export type TVisualizerApi = {
 
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
     uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;
+    deleteImage(owner: TImageOwner, id: string, body: TVersionedBody): Promise<TImageDto>;
 
     getMap(mapId: string): Promise<TMapDto>;
     updateMap(mapId: string, body: TUpdateMapBody): Promise<TMapDto>;

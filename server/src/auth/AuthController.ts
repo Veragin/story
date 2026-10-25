@@ -10,6 +10,7 @@ import { AUTH_OPTIONS, type TAuthOptions } from './authOptions';
 import { clearedSessionCookie, readSessionToken, sessionCookie } from './cookie';
 import { clientAddress, LoginLimiter, loginKey } from './LoginLimiter';
 import { verifyPassword } from './password';
+import { isPlaySite } from './PlaySiteGuard';
 import { SessionService } from './SessionService';
 
 @Controller()
@@ -20,6 +21,10 @@ export class AuthController {
         private readonly loginLimiter: LoginLimiter,
         @Inject(AUTH_OPTIONS) private readonly options: TAuthOptions
     ) {}
+
+    private tokenOf(req: Request) {
+        return readSessionToken(req, this.options.cookieSecure);
+    }
 
     @ProtocolRoute('login')
     async login(
@@ -40,19 +45,20 @@ export class AuthController {
             throw HttpError.unauthorized('Wrong password');
         }
         this.loginLimiter.succeed(key);
-        const { token } = await this.sessions.grant(readSessionToken(req), storyId);
+        // every story's code shares the play site's origin: like one account at a time, a login there replaces the last
+        const { token } = await this.sessions.grant(this.tokenOf(req), storyId, { exclusive: isPlaySite(req) });
         res.setHeader('set-cookie', sessionCookie(token, this.options.cookieSecure));
     }
 
     @ProtocolRoute('logout')
     async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
-        await this.sessions.revoke(readSessionToken(req));
+        await this.sessions.revoke(this.tokenOf(req));
         res.setHeader('set-cookie', clearedSessionCookie(this.options.cookieSecure));
     }
 
     @ProtocolRoute('getSession')
     async getSession(@Req() req: Request): Promise<TSessionDto> {
-        return { storyIds: await this.sessions.storyIds(readSessionToken(req)) };
+        return { storyIds: await this.sessions.storyIds(this.tokenOf(req)) };
     }
 
     @ProtocolRoute('getStoryAccess')
@@ -62,7 +68,7 @@ export class AuthController {
     ): Promise<TStoryAccessDto> {
         const story = await this.stories.read(storyId);
         if (!story) throw HttpError.noStory(storyId);
-        const canEdit = (await this.sessions.expiresAt(readSessionToken(req), storyId)) !== null;
+        const canEdit = (await this.sessions.expiresAt(this.tokenOf(req), storyId)) !== null;
         return { canEdit, canPlay: canEdit || story.public };
     }
 }

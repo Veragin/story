@@ -1,6 +1,6 @@
 # Server
 
-`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SingleEngine all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
+`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
 
 It runs from source, no build step: `node --import @swc-node/register/esm-register` (swc emits the decorator metadata Nest's DI needs; tsx/esbuild cannot). Vitest uses `unplugin-swc` for the same reason.
 
@@ -64,7 +64,8 @@ Per-story passwords; there are no user accounts.
 
 - **Access levels** live in the protocol (`access` on every entry of `STORY_ROUTES` / `GLOBAL_ROUTES`, `protocol/src/routes.ts`): `public` (health, list, create, import, login, logout, session, `getStoryAccess`), `read` (every other story `GET`, incl. events, images, source and export), `write` (every story `POST`/`PUT`/`DELETE`, plus the editor-only `GET`s `getGit` and `getGitLog`). The types enforce story mutation = write; a story `GET` is read unless marked write.
 - `StoryAccessGuard`: unknown story → 404; a grant for the story → pass; `read` on a `public` story → pass without a grant; else 401 `Story "x" is locked`. A public story's export carries no metadata or hash, so it is safe to read logged out.
-- **Login** `POST /api/stories/:storyId/login {"password"}` checks the scrypt hash and sets the `story_session` cookie (HttpOnly, SameSite=Lax, `Secure` with `COOKIE_SECURE=1`). One cookie holds grants for several stories, 24 h each. Create and import log the creator in the same way.
+- **Login** `POST /api/stories/:storyId/login {"password"}` checks the scrypt hash and sets the `story_session` cookie (HttpOnly, SameSite=Lax; with `COOKIE_SECURE=1` it is `Secure` and named `__Host-story_session`, so the play subdomain cannot plant one). One cookie holds grants for several stories, 24 h each. Create and import log the creator in the same way.
+- **The play site** (`PlaySiteGuard`): a request with the `X-Story-Play-Site` header, which the play site's proxy always sets (`docker/Caddyfile`), reaches only `listStories`, `login`, `getPlayManifest` and `getPlayFile` (else 403): story code runs there. Every response carries `Cross-Origin-Resource-Policy: same-origin` and `X-Content-Type-Options: nosniff`, so the play site cannot embed the main site's API either. In dev the SinglePlayer's Vite proxy sets the header; the dev ports share one host's cookies, so dev is not isolated.
 - **Sessions in MySQL**: `session` stores only the SHA-256 of the token, `session_grant` one row per (session, story) with `expiresAt` (cascades on story delete). A restart keeps everyone logged in. Expired grants never count; they are pruned every 10 min.
 - **Login limiter** (in memory): 10 wrong passwords per client and story within 10 min → 429. With `TRUST_PROXY=1` the client is the last `X-Forwarded-For` hop.
 - An `/events` stream ends when its grant expires; a public read without a grant has no expiry.
@@ -96,6 +97,7 @@ curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secr
 - The info `version` is the row's counter (`"1"`, `"2"`, …); a stale one is 409 `stale`.
 - Create and import build the folder in a `.create-*` / `.import-*` temp dir, insert the row in a transaction, rename the folder, then commit; a failure leaves neither folder nor row. The server writes the story's `tsconfig.json` (engine paths are relative).
 - **Export** holds only `tsconfig.json`, `data/` and `types/` (no metadata), plus a default `data/locations/map.json` when the story has none, so every export can be imported.
+- **Export for web** (`/export/web`, same access) is the standalone player's `index.html` and `player/` (the folder `SINGLE_PLAYER_STANDALONE_DIR`; `503 unavailable` until it is built), the play manifest as `play.json`, and the story export: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md).
 - **Import** is `multipart/form-data`: the `zip` file plus the New-story fields minus the map size, which comes from the zip's `data/locations/map.json`. A `story.json` in an older zip is skipped unread. Refused (400): zip-slip paths, symlinks, encrypted or duplicate entries, unknown root entries, no valid map, > 50 MB zipped or > 200 MB unpacked.
 - Loading a story rewrites a stale `tsconfig.json` and migrates an older story to the structure layout (`project/migrations/`), once.
 
@@ -186,21 +188,22 @@ Besides the usual `bad_request`, `not_found`, `exists` and `stale`:
 
 From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot with a readable message):
 
-| Variable               | Default       | Meaning                                                                                                                                            |
-| ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                 | `8123`        | Listen port (on `0.0.0.0`).                                                                                                                        |
-| `STORIES_ROOT`         | `stories`     | One folder per story; relative paths resolve against the repo root. SingleEngine's dev server reads the same variable: keep them equal.            |
-| `DB_HOST`              | `mysql`       | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                  |
-| `DB_PORT`              | `3306`        |                                                                                                                                                    |
-| `DB_USER`              | `story`       |                                                                                                                                                    |
-| `DB_PASSWORD`          | `story`       | Prod: from `docker/.env`.                                                                                                                          |
-| `DB_NAME`              | `story`       | The tests always use `story_test` (see Tests).                                                                                                     |
-| `COOKIE_SECURE`        | off           | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                      |
-| `TRUST_PROXY`          | off           | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone. |
-| `ALLOWED_ORIGINS`      | the dev ports | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.           |
-| `GIT_TOKEN_KEY`        | unset         | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                            |
-| `GIT_ALLOWED_HOSTS`    | any           | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                      |
-| `GIT_DISABLED_STORIES` | `example`     | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.             |
+| Variable                       | Default              | Meaning                                                                                                                                                                                                    |
+| ------------------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | `8123`               | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
+| `STORIES_ROOT`                 | `stories`            | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
+| `DB_HOST`                      | `mysql`              | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
+| `DB_PORT`                      | `3306`               |                                                                                                                                                                                                            |
+| `DB_USER`                      | `story`              |                                                                                                                                                                                                            |
+| `DB_PASSWORD`                  | `story`              | Prod: from `docker/.env`.                                                                                                                                                                                  |
+| `DB_NAME`                      | `story`              | The tests always use `story_test` (see Tests).                                                                                                                                                             |
+| `COOKIE_SECURE`                | off                  | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
+| `TRUST_PROXY`                  | off                  | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
+| `ALLOWED_ORIGINS`              | the dev ports        | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
+| `GIT_TOKEN_KEY`                | unset                | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
+| `GIT_ALLOWED_HOSTS`            | any                  | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
+| `GIT_DISABLED_STORIES`         | `example`            | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
+| `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
 
 Outside the schema: `STORY_DB_SETUP=1` makes `docker/prod-entrypoint.sh` run the migrations and the import before starting (prod server service only); `DB_TEST_NAME` overrides the test database name.
 

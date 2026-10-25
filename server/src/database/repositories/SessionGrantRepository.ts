@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, LessThanOrEqual, type EntityManager } from 'typeorm';
+import { DataSource, LessThanOrEqual, Not, type EntityManager } from 'typeorm';
 import { SessionGrant } from '../entities/SessionGrant';
 
 @Injectable()
@@ -30,6 +30,14 @@ export class SessionGrantRepository {
 
     existsLive(tokenHash: string, now: Date, manager: EntityManager = this.dataSource.manager): Promise<boolean> {
         return this.live(tokenHash, now, manager).getExists();
+    }
+
+    async deleteOtherStories(
+        sessionId: number,
+        storyId: string,
+        manager: EntityManager = this.dataSource.manager
+    ): Promise<void> {
+        await manager.delete(SessionGrant, { sessionId, storyId: Not(storyId) });
     }
 
     async deleteExpired(now: Date, manager: EntityManager = this.dataSource.manager): Promise<void> {

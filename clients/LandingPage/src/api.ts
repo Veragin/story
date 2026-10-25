@@ -7,15 +7,19 @@ import {
     type TApiErrorBody,
     type TApiErrorCode,
     type TCreateStoryBody,
+    type TGitDto,
     type TGlobalRouteName,
+    type THealthDto,
     type TImportStoryBody,
     type TRouteBody,
     type TRouteParams,
     type TRouteResponse,
     type TSessionDto,
+    type TSetupGitBody,
     type TStoryDto,
     type TStoryInfoDto,
     type TStoryListItemDto,
+    type TUpdateGitConfigBody,
     type TUpdateStoryBody,
 } from '@story/protocol';
 
@@ -46,6 +50,7 @@ export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
 export const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 export type TLandingApi = {
+    health(): Promise<THealthDto>;
     listStories(): Promise<TStoryListItemDto[]>;
     createStory(body: TCreateStoryBody): Promise<TStoryDto>;
     importStory(zip: Blob, body: TImportStoryBody): Promise<TStoryDto>;
@@ -53,7 +58,12 @@ export type TLandingApi = {
     getSession(): Promise<TSessionDto>;
     getStoryInfo(storyId: string): Promise<TStoryInfoDto>;
     updateStoryInfo(storyId: string, body: TUpdateStoryBody): Promise<TStoryInfoDto>;
+    getGit(storyId: string): Promise<TGitDto>;
+    setupGit(storyId: string, body: TSetupGitBody): Promise<TGitDto>;
+    updateGitConfig(storyId: string, body: TUpdateGitConfigBody): Promise<TGitDto>;
 };
+
+type TLandingStoryRoute = 'getStoryInfo' | 'updateStoryInfo' | 'getGit' | 'setupGit' | 'updateGitConfig';
 
 export type TLandingApiOptions = {
     baseUrl?: string;
@@ -99,7 +109,14 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
             baseUrl + buildGlobalPath(route, params),
             jsonInit(GLOBAL_ROUTES[route].method, body)
         );
+    const storyRequest = <R extends TLandingStoryRoute>(storyId: string, route: R, body?: TRouteBody<R>) =>
+        send<TRouteResponse<R>>(
+            fetchImpl,
+            baseUrl + buildPath<TLandingStoryRoute>(storyId, route, {}),
+            jsonInit(STORY_ROUTES[route].method, body)
+        );
     return {
+        health: () => request('health', {}),
         listStories: () => request('listStories', {}),
         createStory: (body) => request('createStory', {}, body),
         importStory: (zip, body) =>
@@ -110,17 +127,10 @@ export const createLandingApi = ({ baseUrl = '', fetch: fetchImpl = fetch }: TLa
             }),
         login: (storyId, password) => request('login', { storyId }, { password }),
         getSession: () => request('getSession', {}),
-        getStoryInfo: (storyId) =>
-            send(
-                fetchImpl,
-                baseUrl + buildPath(storyId, 'getStoryInfo', {}),
-                jsonInit(STORY_ROUTES.getStoryInfo.method, undefined)
-            ),
-        updateStoryInfo: (storyId, body) =>
-            send(
-                fetchImpl,
-                baseUrl + buildPath(storyId, 'updateStoryInfo', {}),
-                jsonInit(STORY_ROUTES.updateStoryInfo.method, body)
-            ),
+        getStoryInfo: (storyId) => storyRequest(storyId, 'getStoryInfo'),
+        updateStoryInfo: (storyId, body) => storyRequest(storyId, 'updateStoryInfo', body),
+        getGit: (storyId) => storyRequest(storyId, 'getGit'),
+        setupGit: (storyId, body) => storyRequest(storyId, 'setupGit', body),
+        updateGitConfig: (storyId, body) => storyRequest(storyId, 'updateGitConfig', body),
     };
 };

@@ -34,7 +34,7 @@ export class Story {
                 }
             );
         }
-        items?.forEach((item) => this.e.inventory.removeItem(item), characterId);
+        items?.forEach((item) => this.e.inventory.removeItem(item, characterId));
 
         void this.e.processor.continue();
     };

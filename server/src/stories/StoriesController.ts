@@ -27,7 +27,7 @@ export class StoriesController {
 
     @ProtocolRoute('listStories')
     async listStories(@Req() req: Request): Promise<TStoryListItemDto[]> {
-        const unlocked = new Set(await this.sessions.storyIds(readSessionToken(req)));
+        const unlocked = new Set(await this.sessions.storyIds(readSessionToken(req, this.options.cookieSecure)));
         return (await this.stories.list()).map(({ id, file }) => ({
             ...toStoryDto(id, file),
             unlocked: unlocked.has(id),
@@ -60,7 +60,7 @@ export class StoriesController {
 
     // the author of a new story is logged in to it
     private async welcome(id: string, file: TStoryFile, req: Request, res: Response): Promise<TStoryDto> {
-        const { token } = await this.sessions.grant(readSessionToken(req), id);
+        const { token } = await this.sessions.grant(readSessionToken(req, this.options.cookieSecure), id);
         res.setHeader('set-cookie', sessionCookie(token, this.options.cookieSecure));
         return toStoryDto(id, file);
     }
