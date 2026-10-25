@@ -40,7 +40,7 @@ export const removeLocationPolygon = async (tx: TTransaction, locationId: string
         if (!current) continue;
         const locations = withoutKeys(current.locations, [locationId]);
         if (!locations.changed) continue;
-        await writeMapFile(tx, { ...current, locations: locations.next });
+        await writeMapFile(tx, mapId, { ...current, locations: locations.next });
         removed = true;
     }
     return removed;

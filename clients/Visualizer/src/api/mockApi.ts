@@ -73,8 +73,6 @@ const MOCK_STORY: TEditStoryInfoDto = {
     email: '',
 };
 
-const sameEmail = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
 export const displayText = (value: TValue | undefined, fallback: string): string => {
     if (typeof value === 'string') return value || fallback;
     if (isCode(value)) {
@@ -383,12 +381,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 };
                 return storyInfo();
             }),
-        requestPasswordReset: (email) =>
-            reply(() => {
-                if (story.email === '' || !sameEmail(email, story.email)) {
-                    fail(400, { error: 'bad_request', message: "This is not the story's email" });
-                }
-            }),
+        requestPasswordReset: () => reply(() => undefined),
         getStoryAccess: () => reply(() => ({ canEdit: true, canPlay: true })),
 
         getProject: () =>

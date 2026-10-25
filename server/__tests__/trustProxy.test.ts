@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { clientAddress, type TClientRequest } from '../src/auth/LoginLimiter';
-import { parseTestEnv } from './helpers/env';
+import { parseEnv } from '../src/config/env';
 import { EXAMPLE_PASSWORD, requestJson } from './helpers/http';
 import { createTestApp, seedStory, type TTestApp } from './helpers/testApp';
 
@@ -28,10 +28,10 @@ describe('clientAddress', () => {
 
 describe('TRUST_PROXY', () => {
     it('is on only for TRUST_PROXY=1', () => {
-        expect(parseTestEnv().TRUST_PROXY).toBe(false);
-        expect(parseTestEnv({ TRUST_PROXY: '0' }).TRUST_PROXY).toBe(false);
-        expect(parseTestEnv({ TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(false);
-        expect(parseTestEnv({ TRUST_PROXY: ' 1 ' }).TRUST_PROXY).toBe(true);
+        expect(parseEnv({}).TRUST_PROXY).toBe(false);
+        expect(parseEnv({ TRUST_PROXY: '0' }).TRUST_PROXY).toBe(false);
+        expect(parseEnv({ TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(false);
+        expect(parseEnv({ TRUST_PROXY: ' 1 ' }).TRUST_PROXY).toBe(true);
     });
 });
 

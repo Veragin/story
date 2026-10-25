@@ -74,12 +74,8 @@ export class Processor {
             return;
         }
 
-        let action = actions[0];
-        for (const a of actions) {
-            if (a.autoPriortiy ?? 1 > (action.autoPriortiy ?? 1)) {
-                action = a;
-            }
-        }
+        const priority = (link: (typeof actions)[number]) => link.autoPriortiy ?? 1;
+        const action = actions.reduce((best, a) => (priority(a) > priority(best) ? a : best));
 
         this.e.story.goToPassage(action);
     };

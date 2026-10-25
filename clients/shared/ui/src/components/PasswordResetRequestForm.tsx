@@ -45,7 +45,7 @@ export const PasswordResetRequestForm = ({
                 <DialogContent>
                     <Alert severity="success">
                         {_(
-                            'A link to set a new password was sent to %s. It is valid for 12 hours.',
+                            "If %s is the story's email, a link to set a new password was sent to it. It is valid for 12 hours.",
                             sentTo
                         )}
                     </Alert>
