@@ -1,8 +1,8 @@
 import { Body, Controller } from '@nestjs/common';
-import type { TMapDto } from '@story/protocol';
+import type { TMapDto, TOkDto } from '@story/protocol';
 import { ProtocolRoute } from '../../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../../common/RouteParams';
-import { readMap, updateMap } from '../../json/mapStore';
+import { deleteMap, readMap, updateMap } from '../../json/mapStore';
 import type { TServerContext } from '../../storyContext/serverContext';
 import { StoryCtx } from '../../storyContext/StoryCtx';
 import { StoryRepository } from '../../database/repositories/StoryRepository';
@@ -26,5 +26,14 @@ export class MapsController {
         @Body() body: unknown
     ): Promise<TMapDto> {
         return updateMap(ctx, mapId, body);
+    }
+
+    @ProtocolRoute('deleteMap')
+    deleteMap(
+        @StoryCtx() ctx: TServerContext,
+        @RouteParams() { mapId }: THandlerParams<'deleteMap'>,
+        @Body() body: unknown
+    ): Promise<TOkDto> {
+        return deleteMap(ctx, mapId, body);
     }
 }

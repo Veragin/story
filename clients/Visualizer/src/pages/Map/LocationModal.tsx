@@ -5,23 +5,33 @@ import { modals } from '../../shell';
 import { LocationForm } from './LocationForm/LocationForm';
 import type { MapPageStore } from './MapPageStore';
 
-export const openLocationModal = (store: MapPageStore, locationId: string) =>
+export const openLocationModal = (
+    store: MapPageStore,
+    locationId: string,
+    { readOnly = store.mode === 'view' }: { readOnly?: boolean } = {}
+) =>
     modals.open((close) => (
-        <LocationModal store={store} locationId={locationId} onClose={close} />
+        <LocationModal
+            store={store}
+            locationId={locationId}
+            readOnly={readOnly}
+            onClose={close}
+        />
     ));
 
 const LocationModal = observer(
     ({
         store,
         locationId,
+        readOnly,
         onClose,
     }: {
         store: MapPageStore;
         locationId: string;
+        readOnly: boolean;
         onClose: () => void;
     }) => {
         const location = store.locations.get(locationId);
-        const readOnly = store.mode === 'view';
         return (
             <Modal
                 open

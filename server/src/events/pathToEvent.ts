@@ -1,4 +1,5 @@
-import { eventIds, type TChangeEvent } from '@story/protocol';
+import { eventIds, GLOBAL_MAP_ID, type TChangeEvent } from '@story/protocol';
+import { LOCATION_MAP_SUFFIX } from '../project/ProjectRoot';
 import { isTempFile } from '../json/atomicWrite';
 import { engineSectionOfFile } from '../project/readers/engine';
 
@@ -74,7 +75,10 @@ const pathToResource = (relPath: string): TResourceRef | null => {
     if (parts.length !== 3) return null;
 
     if (area === 'locations') {
-        if (file === 'map.json') return { kind: 'map', id: 'global', primary: true };
+        if (file === 'map.json') return { kind: 'map', id: GLOBAL_MAP_ID, primary: true };
+        if (file.endsWith(LOCATION_MAP_SUFFIX)) {
+            return { kind: 'map', id: file.slice(0, -LOCATION_MAP_SUFFIX.length), primary: true };
+        }
         if (file.endsWith('.location.ts')) {
             return {
                 kind: 'entity',

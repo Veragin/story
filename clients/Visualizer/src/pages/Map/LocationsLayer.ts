@@ -18,7 +18,7 @@ export class LocationsLayer {
         private readonly onOpen: (locationId: string) => void
     ) {
         scene.layer(LAYER, 1);
-        this.selection = new SelectionController(scene);
+        this.selection = new SelectionController(scene, { selectInViewMode: true });
         this.vertexEdit = new VertexEditController(scene, this.selection);
 
         this.disposers.push(

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { TChangeEvent, TMapDto, TMapFile } from '@story/protocol';
 import {
     removeChapterLayout,
+    removeLocationMap,
     removeLocationPolygon,
     removePassagePositions,
     removeTimelineEntries,
@@ -36,6 +37,7 @@ beforeEach(async () => {
     events = [];
     const { paths } = story.project;
     await rm(paths.map, { force: true });
+    await rm(paths.locationMap('village'), { force: true });
     await rm(paths.timelineLayout, { force: true });
     await rm(paths.chapterLayout('village'), { force: true });
 });
@@ -116,12 +118,34 @@ describe('map store', () => {
         expect(await exists(story.project.paths.map)).toBe(false);
     });
 
-    it('404s any map id but global', async () => {
-        expect((await call('GET', '/api/stories/example/maps/other')).status).toBe(404);
+    it("keeps a location's map in <id>.map.json: 404 until created, then GET / PUT / DELETE like the global one", async () => {
+        const file = story.project.paths.locationMap('village');
+        const villageMap = { ...sampleMap(), mapId: 'village', title: 'Village' };
+        expect((await call('GET', '/api/stories/example/maps/village')).status).toBe(404);
+        expect((await call('DELETE', '/api/stories/example/maps/village', { version: '' })).status).toBe(404);
+
+        const created = await call<TMapDto>('PUT', '/api/stories/example/maps/village', { ...villageMap, version: '' });
+        expect(created.status).toBe(200);
+        expect(await exists(file)).toBe(true);
+        expect(await exists(story.project.paths.map)).toBe(false);
+        expect((await call<TMapDto>('GET', '/api/stories/example/maps/village')).json.title).toBe('Village');
+
+        expect((await call('DELETE', '/api/stories/example/maps/village', { version: 'old' })).status).toBe(409);
+        const deleted = await call('DELETE', '/api/stories/example/maps/village', { version: created.json.version });
+        expect(deleted).toEqual({ status: 200, json: { ok: true } });
+        expect(await exists(file)).toBe(false);
+        expect(events).toEqual([
+            { kind: 'map', id: 'village', version: created.json.version, op: 'created' },
+            { kind: 'map', id: 'village', version: null, op: 'deleted' },
+        ]);
+    });
+
+    it('404s a map id that is not an identifier, and refuses to delete the global map', async () => {
+        expect((await call('GET', '/api/stories/example/maps/a-b')).status).toBe(404);
         expect(
-            (await call('PUT', '/api/stories/example/maps/other', { ...sampleMap(), mapId: 'other', version: '' }))
-                .status
+            (await call('PUT', '/api/stories/example/maps/a-b', { ...sampleMap(), mapId: 'a-b', version: '' })).status
         ).toBe(404);
+        expect((await call('DELETE', '/api/stories/example/maps/global', { version: '' })).status).toBe(400);
     });
 
     it('creates with version "", updates with the current version, one event each', async () => {
@@ -431,6 +455,23 @@ describe('cleanup helpers (inside a caller transaction)', () => {
         expect(removed).toEqual([true, false]);
         expect(await exists(paths.chapterLayout('village'))).toBe(false);
         expect(events).toHaveLength(1); // the second transaction set no event
+    });
+
+    it("removes a sublocation's shape from its parent's map, and a location's own map", async () => {
+        const { paths } = story.project;
+        const villageMap = {
+            ...sampleMap(),
+            mapId: 'village',
+            locations: { village_inn: sampleMap().locations.village },
+        };
+        await writeFile(paths.locationMap('village'), await encodeMapFile(villageMap));
+        const results = await story.bus.transaction(async (tx) => [
+            await removeLocationPolygon(tx, 'village_inn'),
+            await removeLocationMap(tx, 'village'),
+            await removeLocationMap(tx, 'village'),
+        ]);
+        expect(results).toEqual([true, true, false]);
+        expect(await exists(paths.locationMap('village'))).toBe(false);
     });
 
     it('a no-op helper on a missing map.json does not create it', async () => {

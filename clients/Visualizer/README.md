@@ -98,6 +98,8 @@ Tests: `yarn test` at the root runs the `visualizer-client` and `visualizer-land
 }
 ```
 
+A location's own map is `data/locations/<locationId>.map.json` in the same format (`mapId` is the location id); the locations on it have ids `<locationId>_<name>`.
+
 Painting a tile is a one-line diff. Colour ids may not contain whitespace or `*`. Polygons are in tile-renderer world coordinates (hex renderer at zoom 1). Location keys are sorted. Empty `label`/`description` are dropped.
 
 ## Images

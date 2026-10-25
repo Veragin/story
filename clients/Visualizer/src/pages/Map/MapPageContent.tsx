@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from '@emotion/styled';
 import { Alert, Button, CircularProgress } from '@mui/material';
-import { Column, spacingCss } from '@story/ui';
-import { useKey } from '../../shell';
+import { Column, Row, spacingCss } from '@story/ui';
+import { router, useKey } from '../../shell';
 import { TileToolbar } from '../../MapEditor/components/TileToolbar';
 import type { MapPageStore } from './MapPageStore';
 import { MapControlBar } from './MapControlBar';
@@ -11,6 +11,10 @@ import { MapCanvas } from './MapCanvas';
 import { LocationToolbar, SToolRow } from './LocationToolbar';
 import { openLocationModal } from './LocationModal';
 import { openAddLocationModal } from './AddLocationModal';
+import { LocationSidebar } from './LocationSidebar';
+import { MapBreadcrumbs } from './MapBreadcrumbs';
+import { addLocationMap, openLocationMap } from './openLocationMap';
+import { mapRoute } from './mapRoute';
 
 export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
     const closers = useRef(new Set<() => void>());
@@ -23,7 +27,16 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
     }, []);
 
     const openLocation = (id: string) => track(openLocationModal(store, id));
+    const editLocation = (id: string) =>
+        track(openLocationModal(store, id, { readOnly: false }));
     const deleteLocation = (id: string) => void store.deleteLocation(id);
+    const openMap = (id: string) => void openLocationMap(store, id);
+    const addMap = (id: string) => void addLocationMap(store, id);
+    const onCanvasAction = (id: string) =>
+        store.mode === 'view' ? openMap(id) : openLocation(id);
+    const addThisMap = async () => {
+        if (await addLocationMap(store, store.mapId)) await store.load();
+    };
 
     useKey(
         ['Delete', 'Backspace'],
@@ -93,12 +106,55 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                     </Button>
                 </SCenter>
             )}
+            {store.loadState === 'missing' && (
+                <SCenter>
+                    <Alert severity="info">
+                        {_(
+                            '%s has no map yet.',
+                            store.locationName(store.mapId)
+                        )}
+                    </Alert>
+                    <Row style={{ gap: 8 }}>
+                        <Button
+                            variant="contained"
+                            onClick={() => void addThisMap()}
+                        >
+                            {_('Add map')}
+                        </Button>
+                        <Button
+                            color="inherit"
+                            href={router.href(mapRoute(store.parentMapId))}
+                        >
+                            {_('Back')}
+                        </Button>
+                    </Row>
+                </SCenter>
+            )}
             {store.loadState === 'ready' && (
-                <MapCanvas store={store} onOpenLocation={openLocation} />
+                <SMapArea>
+                    <MapCanvas store={store} onOpenLocation={onCanvasAction} />
+                    <MapBreadcrumbs store={store} />
+                    {store.mode === 'view' && store.selectedLocationId && (
+                        <LocationSidebar
+                            store={store}
+                            locationId={store.selectedLocationId}
+                            onOpenMap={openMap}
+                            onAddMap={addMap}
+                            onEdit={editLocation}
+                            onDelete={deleteLocation}
+                        />
+                    )}
+                </SMapArea>
             )}
         </>
     );
 });
+
+const SMapArea = styled(Column)`
+    position: relative;
+    flex: 1;
+    min-height: 0;
+`;
 
 const SCenter = styled(Column)`
     margin: auto;

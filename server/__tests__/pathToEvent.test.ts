@@ -32,6 +32,7 @@ describe('pathToResources', () => {
         ],
         ['data/chapters/timeline.layout.json', { kind: 'layout', id: 'timeline', primary: true }],
         ['data/locations/map.json', { kind: 'map', id: 'global', primary: true }],
+        ['data/locations/village.map.json', { kind: 'map', id: 'village', primary: true }],
         ['data/locations/village.location.ts', { kind: 'entity', id: 'locations/village', primary: true }],
         ['data/characters/thomas.ts', { kind: 'entity', id: 'characters/thomas', primary: true }],
         ['data/npcs/Franta.ts', { kind: 'entity', id: 'npcs/franta', primary: true }],

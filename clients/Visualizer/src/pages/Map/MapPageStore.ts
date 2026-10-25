@@ -19,6 +19,7 @@ import type { TMapDocument } from '../../MapEditor/types';
 import type { TConfirmOptions } from '../../shell/modals';
 import { getUiState, setUiState } from '../../ui-state';
 import { mergeMaps, sameMap, toMapDocument } from './mergeMap';
+import { descendantLocationIds, isOnMap, locationIdPrefix, mapAncestors, parentLocationId } from './locationTree';
 
 export const MAP_MODES = ['view', 'locations', 'tiles'] as const;
 export type TMapMode = (typeof MAP_MODES)[number];
@@ -29,12 +30,25 @@ export type TMapNotice = { kind: 'info' | 'warning' | 'error'; text: string; ref
 
 export type TDeleteResult = 'deleted' | 'cancelled' | 'referenced' | 'failed';
 
+export type TDeleteLocationRequest = {
+    locationId: string;
+    name: string;
+    file: string | null;
+    hasMap: boolean;
+    sublocationIds: string[];
+};
+
+export type TDeleteLocationChoice = { map: boolean; sublocations: boolean; location: boolean };
+
+export type TMapSize = { width: number; height: number };
+
 export type TMapPageStoreOptions = {
     api: TVisualizerApi;
     events?: ApiEvents;
     mapId?: string;
     autosaveMs?: number;
     confirm?: (options: TConfirmOptions) => Promise<boolean>;
+    askDelete?: (request: TDeleteLocationRequest) => Promise<TDeleteLocationChoice | null>;
     persistUiState?: boolean;
 };
 
@@ -81,7 +95,7 @@ export class MapPageStore implements IMapHost {
     readonly camera: Camera;
     readonly tiles: MapStore;
 
-    loadState: 'loading' | 'ready' | 'error' = 'loading';
+    loadState: 'loading' | 'ready' | 'missing' | 'error' = 'loading';
     loadError: string | null = null;
     // shallow: thousands of tiles; watch `revision`
     map: TMapDocument | null = null;
@@ -93,6 +107,8 @@ export class MapPageStore implements IMapHost {
     saveError: string | null = null;
     notice: TMapNotice | null = null;
     locations = observable.map<string, TLocationDto>([], { deep: false });
+    // a location's own map: its version, null when it has none; absent until asked
+    locationMaps = observable.map<string, string | null>();
     selectedLocationId: string | null = null;
     viewport: TSize = { width: 0, height: 0 };
     readonly hasSavedCamera: boolean;
@@ -101,6 +117,8 @@ export class MapPageStore implements IMapHost {
     private readonly events?: ApiEvents;
     private readonly autosaveMs: number;
     private readonly confirm: (options: TConfirmOptions) => Promise<boolean>;
+    private readonly askDelete: (request: TDeleteLocationRequest) => Promise<TDeleteLocationChoice | null>;
+    private readonly cameraKey: string;
     private readonly persist: boolean;
     private base: TMapDocument | null = null;
     private dirty = false;
@@ -118,11 +136,13 @@ export class MapPageStore implements IMapHost {
         this.mapId = options.mapId ?? GLOBAL_MAP_ID;
         this.autosaveMs = options.autosaveMs ?? 1000;
         this.confirm = options.confirm ?? (() => Promise.resolve(true));
+        this.askDelete = options.askDelete ?? this.confirmDeleteAll;
         this.persist = options.persistUiState ?? true;
+        this.cameraKey = this.isGlobal ? UI_CAMERA_KEY : `${UI_CAMERA_KEY}:${this.mapId}`;
 
         const savedMode = this.persist ? getUiState<string>(UI_MODE_KEY, 'view') : 'view';
         this.mode = isOneOf(savedMode, MAP_MODES) ? savedMode : 'view';
-        const savedCamera = this.persist ? getUiState<TCameraState | null>(UI_CAMERA_KEY, null) : null;
+        const savedCamera = this.persist ? getUiState<TCameraState | null>(this.cameraKey, null) : null;
         this.hasSavedCamera = isCameraState(savedCamera);
         this.camera = new Camera({
             ...(this.hasSavedCamera ? savedCamera : { zoom: 1 }),
@@ -161,7 +181,7 @@ export class MapPageStore implements IMapHost {
     init = async () => {
         if (this.events) {
             this.disposers.push(
-                this.events.subscribe({ kind: 'map', id: this.mapId }, () => void this.refetchMap()),
+                this.events.subscribe('map', (e) => this.onMapEvent(e)),
                 this.events.subscribe('entity', (e) => this.onEntityEvent(e)),
                 this.events.onResync(() => {
                     void this.refetchMap();
@@ -176,7 +196,7 @@ export class MapPageStore implements IMapHost {
                     if (this.cameraTimer) return;
                     this.cameraTimer = setTimeout(() => {
                         this.cameraTimer = null;
-                        setUiState(UI_CAMERA_KEY, this.camera.state);
+                        setUiState(this.cameraKey, this.camera.state);
                     }, 250);
                 })
             );
@@ -190,7 +210,7 @@ export class MapPageStore implements IMapHost {
         for (const d of this.disposers.splice(0)) d();
         if (this.cameraTimer) clearTimeout(this.cameraTimer);
         // an untouched camera must not suppress the next mount's fit
-        if (this.persist && this.cameraMoved) setUiState(UI_CAMERA_KEY, this.camera.state);
+        if (this.persist && this.cameraMoved) setUiState(this.cameraKey, this.camera.state);
         this.tiles.detach();
         if (this.dirty) void this.flush();
         else if (this.timer) clearTimeout(this.timer);
@@ -207,11 +227,15 @@ export class MapPageStore implements IMapHost {
             this.ensureInitialView();
         } catch (e) {
             runInAction(() => {
-                this.loadState = 'error';
+                this.loadState = e instanceof MissingMapError ? 'missing' : 'error';
                 this.loadError = errorMessage(e);
             });
         }
     };
+
+    get isGlobal() {
+        return this.mapId === GLOBAL_MAP_ID;
+    }
 
     private loadMap = async () => {
         try {
@@ -219,6 +243,7 @@ export class MapPageStore implements IMapHost {
             this.applyRemote(dto, 'replace');
         } catch (e) {
             if (!(e instanceof ApiError && e.isNotFound)) throw e;
+            if (!this.isGlobal) throw new MissingMapError();
             // the server answers an empty map itself; the mock 404s
             this.emptySize = (await this.api.getStoryInfo().catch(() => null))?.mapSize ?? null;
             this.applyRemote(null, 'replace');
@@ -266,6 +291,10 @@ export class MapPageStore implements IMapHost {
                 this.setNotice({ kind: 'error', text: _('Could not refresh the map: %s', errorMessage(e)) });
                 return;
             }
+            if (!this.isGlobal) {
+                runInAction(() => (this.loadState = 'missing'));
+                return;
+            }
             dto = null;
         }
         if (this.saving) {
@@ -285,6 +314,11 @@ export class MapPageStore implements IMapHost {
             this.applyRemote(dto, 'replace');
         }
     };
+
+    private onMapEvent(e: TChangeEvent) {
+        if (e.id === this.mapId) void this.refetchMap();
+        if (this.locationMaps.has(e.id)) runInAction(() => this.locationMaps.set(e.id, e.version));
+    }
 
     private onEntityEvent(e: TChangeEvent) {
         if (!e.id.startsWith('locations/') && e.id !== '*') return;
@@ -461,7 +495,7 @@ export class MapPageStore implements IMapHost {
 
     get unplacedLocations(): TLocationDto[] {
         const shapes = this.map?.locations ?? {};
-        return [...this.locations.values()].filter((l) => !shapes[l.id]);
+        return [...this.locations.values()].filter((l) => !shapes[l.id] && isOnMap(l.id, this.mapId, this.locations));
     }
 
     selectLocation = (id: string | null) => {
@@ -521,18 +555,108 @@ export class MapPageStore implements IMapHost {
         return dto;
     };
 
-    deleteLocation = async (id: string): Promise<TDeleteResult> => {
-        const entity = this.locations.get(id);
-        const name = this.locationName(id);
+    get locationIdPrefix() {
+        return locationIdPrefix(this.mapId);
+    }
+
+    sublocationIds = (id: string) => descendantLocationIds(id, this.locations.keys());
+
+    childLocationIds = (id: string) => [...this.locations.keys()].filter((other) => isOnMap(other, id, this.locations));
+
+    get ancestorMapIds() {
+        return mapAncestors(this.mapId, this.locations);
+    }
+
+    get parentMapId() {
+        return parentLocationId(this.mapId, this.locations) ?? GLOBAL_MAP_ID;
+    }
+
+    fetchLocationMap = async (id: string): Promise<string | null> => {
+        let version: string | null;
+        try {
+            version = (await this.api.getMap(id)).version;
+        } catch (e) {
+            if (!(e instanceof ApiError && e.isNotFound)) throw e;
+            version = null;
+        }
+        runInAction(() => this.locationMaps.set(id, version));
+        return version;
+    };
+
+    createLocationMap = async (id: string, { width, height }: TMapSize) => {
+        const map = createDefaultMapData(id, this.locationName(id), width, height);
+        const dto = await this.api.updateMap(id, { ...map, version: '' });
+        runInAction(() => this.locationMaps.set(id, dto.version));
+    };
+
+    private confirmDeleteAll = async (request: TDeleteLocationRequest): Promise<TDeleteLocationChoice | null> => {
         const ok = await this.confirm({
-            title: _('Delete location %s?', name),
-            message: entity
-                ? _("This deletes %s and the location's shape on the map.", entity.file)
-                : _('There is no location file for "%s"; only its shape on the map is removed.', id),
+            title: _('Delete location %s?', request.name),
+            message: request.file
+                ? _("This deletes %s and the location's shape on the map.", request.file)
+                : _('There is no location file for "%s"; only its shape on the map is removed.', request.locationId),
             danger: true,
         });
-        if (!ok) return 'cancelled';
+        return ok ? { map: true, sublocations: true, location: true } : null;
+    };
+
+    deleteLocation = async (id: string): Promise<TDeleteResult> => {
+        const entity = this.locations.get(id);
+        const sublocationIds = this.sublocationIds(id);
+        const hasMap = (await this.fetchLocationMap(id).catch(() => null)) !== null;
+        const choice = await this.askDelete({
+            locationId: id,
+            name: this.locationName(id),
+            file: entity?.file ?? null,
+            hasMap,
+            sublocationIds,
+        });
+        if (!choice || (!choice.location && !choice.map && !choice.sublocations)) return 'cancelled';
         this.setNotice(null);
+
+        if (choice.location || choice.sublocations) {
+            for (const sub of sublocationIds) {
+                const result = await this.deleteLocationEntity(sub);
+                if (result !== 'deleted') return result;
+            }
+        }
+        if (choice.location) {
+            const result = await this.deleteLocationEntity(id);
+            if (result !== 'deleted') return result;
+        } else if (choice.map && hasMap) {
+            const result = await this.deleteLocationMap(id);
+            if (result !== 'deleted') return result;
+        }
+        await this.flush();
+        return 'deleted';
+    };
+
+    private deleteLocationMap = async (id: string): Promise<TDeleteResult> => {
+        const name = this.locationName(id);
+        try {
+            await this.api.deleteMap(id, { version: this.locationMaps.get(id) ?? '' });
+        } catch (e) {
+            if (e instanceof ApiError && e.isStale) {
+                await this.fetchLocationMap(id);
+                this.setNotice({ kind: 'warning', text: _('The map of %s changed on disk; delete it again.', name) });
+                return 'failed';
+            }
+            if (!(e instanceof ApiError && e.isNotFound)) {
+                this.setNotice({
+                    kind: 'error',
+                    text: _('Could not delete the map of %s: %s', name, errorMessage(e)),
+                });
+                return 'failed';
+            }
+        }
+        runInAction(() => this.locationMaps.set(id, null));
+        return 'deleted';
+    };
+
+    // the server also drops its shape and its own map
+    private deleteLocationEntity = async (id: string): Promise<TDeleteResult> => {
+        const entity = this.locations.get(id);
+        const name = this.locationName(id);
         if (entity) {
             try {
                 await this.api.deleteEntity('locations', id, { version: entity.version });
@@ -561,13 +685,13 @@ export class MapPageStore implements IMapHost {
         }
         runInAction(() => {
             this.locations.delete(id);
+            this.locationMaps.set(id, null);
             if (this.map?.locations[id]) {
                 delete this.map.locations[id];
                 this.onMapEdited();
             }
             if (this.selectedLocationId === id) this.selectedLocationId = null;
         });
-        await this.flush();
         return 'deleted';
     };
 
@@ -576,6 +700,12 @@ export class MapPageStore implements IMapHost {
         runInAction(() => this.locations.set(id, dto));
         return dto;
     };
+}
+
+class MissingMapError extends Error {
+    constructor() {
+        super(_('This location has no map yet'));
+    }
 }
 
 const isCameraState = (v: unknown): v is TCameraState =>

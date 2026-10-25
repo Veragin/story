@@ -32,7 +32,7 @@ const InputsPlayground = lazy(async () => ({
 const renderPage = (route: TRoute) => {
     switch (route.page) {
         case 'map':
-            return <MapPage />;
+            return <MapPage key={route.mapId} mapId={route.mapId} />;
         case 'timeline':
             return <TimelinePage />;
         case 'chapter':
