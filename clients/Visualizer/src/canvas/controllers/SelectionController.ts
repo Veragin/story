@@ -102,10 +102,12 @@ export class SelectionController implements ISceneInteraction {
         const dx = e.world.x - g.startWorld.x;
         const dy = e.world.y - g.startWorld.y;
         if (g.type === 'move') {
+            const drag = g.shape.drag;
+            const axis = drag?.resolveAxis ? drag.resolveAxis(e) : (drag?.axis ?? 'both');
             let next = { x: g.startOrigin.x + dx, y: g.startOrigin.y + dy };
-            if (g.shape.drag?.axis === 'x') next.y = g.startOrigin.y;
-            if (g.shape.drag?.axis === 'y') next.x = g.startOrigin.x;
-            if (g.shape.drag?.constrain) next = g.shape.drag.constrain(next, g.shape);
+            if (axis === null || axis === 'y') next.x = g.startOrigin.x;
+            if (axis === null || axis === 'x') next.y = g.startOrigin.y;
+            if (drag?.constrain) next = drag.constrain(next, g.shape);
             const before = g.shape.getOrigin();
             if (before.x === next.x && before.y === next.y) return;
             g.shape.setOrigin(next);

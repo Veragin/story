@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DAY_S, HOUR_S, TimeManager } from '@story/shared';
 import { ApiError, ApiEvents, createMockApi, type TMockApi } from '../../../api';
-import { click, createCanvas, drag, fire, installFrames, uninstallFrames } from '../../../canvas/__tests__/helpers';
+import {
+    click,
+    createCanvas,
+    drag,
+    fire,
+    installFrames,
+    key,
+    uninstallFrames,
+} from '../../../canvas/__tests__/helpers';
 import { TimelineView } from '../canvas/TimelineView';
 import { STRIP_HEIGHT } from '../canvas/TimeStripShape';
 import { TimelineStore, type TTimelineDeps } from '../store/TimelineStore';
@@ -264,20 +272,49 @@ describe('TimelineView', () => {
         expect(view.shapeOf('chapter', 'kingdom')!.getBounds().y).toBe(70);
     });
 
-    it('dragging the selected chapter saves the shifted time range', async () => {
+    const dragHolding = (code: string, from: [number, number], to: [number, number]) => {
+        key('keydown', code);
+        drag(canvas, from, to);
+        key('keyup', code);
+    };
+
+    it('a plain drag of the selected chapter moves nothing', async () => {
+        const update = vi.spyOn(s.api, 'updateChapter');
+        const r = screenRect('chapter', 'village');
+        const at: [number, number] = [r.x + 40, r.y + 20];
+        click(canvas, ...at);
+        drag(canvas, at, [at[0] + 100, at[1] + 100]);
+        await flush();
+        expect(update).not.toHaveBeenCalled();
+        expect((await s.api.getTimelineLayout()).chapters.village).toBeUndefined();
+        expect(screenRect('chapter', 'village')).toEqual(r);
+    });
+
+    it('dragging the selected chapter with Shift moves it freely', async () => {
+        const r = screenRect('chapter', 'village');
+        const at: [number, number] = [r.x + 40, r.y + 20];
+        click(canvas, ...at);
+        drag(canvas, at, [at[0] + 14 * HOUR_S * s.store.pps, at[1] + 200], 4, { shiftKey: true });
+        await vi.waitFor(async () =>
+            expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 22:00', end: '5.1. 22:00' })
+        );
+        await vi.waitFor(async () => expect((await s.api.getTimelineLayout()).chapters.village).toEqual({ y: 200 }));
+    });
+
+    it('dragging the selected chapter with X saves only the shifted time range', async () => {
         const r = screenRect('chapter', 'village');
         const at: [number, number] = [r.x + 40, r.y + 20];
         click(canvas, ...at);
         expect(s.store.selected).toEqual({ kind: 'chapter', id: 'village' });
         const dx = 14 * HOUR_S * s.store.pps;
-        drag(canvas, at, [at[0] + dx, at[1]]);
+        dragHolding('KeyX', at, [at[0] + dx, at[1] + 200]);
         await vi.waitFor(async () =>
             expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 22:00', end: '5.1. 22:00' })
         );
         expect((await s.api.getTimelineLayout()).chapters.village).toBeUndefined();
     });
 
-    it('dragging the right edge resizes, a vertical drag saves y', async () => {
+    it('dragging the right edge resizes, a drag with Y saves only y', async () => {
         const r = screenRect('chapter', 'village');
         click(canvas, r.x + 40, r.y + 20);
         const right: [number, number] = [r.x + r.width, r.y + 20];
@@ -287,7 +324,7 @@ describe('TimelineView', () => {
         );
 
         const r2 = screenRect('chapter', 'village');
-        drag(canvas, [r2.x + 40, r2.y + 20], [r2.x + 40, r2.y + 220]);
+        dragHolding('KeyY', [r2.x + 40, r2.y + 20], [r2.x + 140, r2.y + 220]);
         await vi.waitFor(async () => expect((await s.api.getTimelineLayout()).chapters.village).toEqual({ y: 200 }));
         expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 8:00', end: '5.1. 15:00' });
     });

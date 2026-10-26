@@ -11,6 +11,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AlarmIcon from '@mui/icons-material/Alarm';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { spacingCss } from '@story/ui';
 import type { TChapterId } from '@story/types';
 import { api, apiEvents } from '../../api';
@@ -21,6 +22,7 @@ import { TimelineView, type TTimelineTooltip } from './canvas/TimelineView';
 import { AddModal } from './AddModal';
 import { ReferencesModal } from './ReferencesModal';
 import { TriggerModal } from './TriggerModal';
+import { openTimelineHelpModal } from './TimelineHelpModal';
 
 const ALL = '__all__';
 
@@ -161,6 +163,15 @@ export const TimelinePage = observer(() => {
                             aria-pressed={store.showTriggers}
                         >
                             <AlarmIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={_('Help')}>
+                        <IconButton
+                            color="inherit"
+                            onClick={() => openTimelineHelpModal()}
+                            aria-label={_('Help')}
+                        >
+                            <HelpOutlineIcon />
                         </IconButton>
                     </Tooltip>
                 </SControls>

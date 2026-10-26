@@ -9,7 +9,9 @@ import {
     SelectionController,
     type ISceneInteraction,
     type Shape,
+    type TDragAxis,
     type TSceneEvents,
+    type TScenePointerEvent,
 } from '../../../canvas';
 import { displayText } from '../../../api';
 import { CHAPTER_HEIGHT, type TimelineStore } from '../store/TimelineStore';
@@ -29,6 +31,7 @@ export type TTimelineViewOptions = {
 };
 
 const MIN_CHAPTER_WIDTH = 6;
+const AXIS_KEYS = new Set(['KeyX', 'KeyY']);
 const WHEEL_SENSITIVITY = 0.0015;
 
 const timelineDataOf = (shape: Shape | null | undefined): TTimelineShapeData | null => {
@@ -55,6 +58,7 @@ export class TimelineView {
     private triggerShapes = new Map<string, TriggerShape<TTimelineShapeData>>();
     private lines: LineShape[] = [];
     private dragging = false;
+    private heldAxisKeys = new Set<string>();
     private placed: boolean;
     private disposers: (() => void)[] = [];
 
@@ -84,12 +88,23 @@ export class TimelineView {
 
         const onWheel = (e: WheelEvent) => this.handleWheel(e);
         const onLeave = () => this.setStripHover(null);
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (AXIS_KEYS.has(e.code)) this.heldAxisKeys.add(e.code);
+        };
+        const onKeyUp = (e: KeyboardEvent) => this.heldAxisKeys.delete(e.code);
+        const onBlur = () => this.heldAxisKeys.clear();
         canvas.addEventListener('wheel', onWheel, { passive: false });
         canvas.addEventListener('pointerleave', onLeave);
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
 
         this.disposers.push(
             () => canvas.removeEventListener('wheel', onWheel),
             () => canvas.removeEventListener('pointerleave', onLeave),
+            () => window.removeEventListener('keydown', onKeyDown),
+            () => window.removeEventListener('keyup', onKeyUp),
+            () => window.removeEventListener('blur', onBlur),
             this.scene.addInteraction(this.stripPan),
             this.scene.addDrawHook(this.drawGrid, 'before'),
             this.camera.subscribe((s) => this.store.saveCamera({ x: s.x, y: s.y })),
@@ -128,6 +143,15 @@ export class TimelineView {
         const rect = this.canvas.getBoundingClientRect();
         this.zoomAt(e.clientX - rect.left, factor);
     }
+
+    // a plain drag must not shift chapter times by accident
+    private chapterDragAxis = (e: TScenePointerEvent): TDragAxis | null => {
+        if (e.shiftKey) return 'both';
+        const x = this.heldAxisKeys.has('KeyX');
+        const y = this.heldAxisKeys.has('KeyY');
+        if (x === y) return null;
+        return x ? 'x' : 'y';
+    };
 
     private inStrip(screenY: number): boolean {
         return screenY >= this.scene.size.height - STRIP_HEIGHT;
@@ -250,6 +274,7 @@ export class TimelineView {
                 stroke: { color: '#ffffff55', width: 1, screenWidth: true },
                 hoverStyle: { stroke: { color: '#ffffff', width: 2, screenWidth: true } },
                 draggable: true,
+                drag: { resolveAxis: this.chapterDragAxis },
                 resizeEdges: ['left', 'right'],
                 minWidth: MIN_CHAPTER_WIDTH,
                 labelStyle: { color: '#fff', fontSize: 14 },
@@ -342,7 +367,7 @@ export class TimelineView {
         if (!data) return;
         if (!final) {
             this.dragging = true;
-            this.showDragTooltip(shape, data);
+            this.showDragTooltip(shape, data, kind, edge);
             return;
         }
         this.dragging = false;
@@ -366,6 +391,7 @@ export class TimelineView {
     ): { start: number; end: number } {
         const pps = this.store.pps;
         if (kind === 'move') {
+            if (shape.x === this.store.timeToX(range.start)) return range; // snapping would shift an off-grid start
             const start = this.snapX(shape.x);
             return { start, end: start + (range.end - range.start) };
         }
@@ -416,7 +442,12 @@ export class TimelineView {
         }
     }
 
-    private showDragTooltip(shape: Shape, data: TTimelineShapeData): void {
+    private showDragTooltip(
+        shape: Shape,
+        data: TTimelineShapeData,
+        kind: TSceneEvents['change']['kind'],
+        edge: TSceneEvents['change']['edge']
+    ): void {
         if (!this.opts.onTooltip) return;
         const b = shape.getBounds();
         const screen = this.camera.worldToScreen({ x: b.x, y: b.y + b.height });
@@ -427,8 +458,7 @@ export class TimelineView {
         }
         const range = this.store.chapterRange(data.id);
         if (!range || !(shape instanceof RectShape)) return;
-        const start = this.snapX(shape.x);
-        const end = this.snapX(shape.x + shape.width);
+        const { start, end } = this.shapeRange(shape, kind, edge, range);
         this.opts.onTooltip({ title: `${this.renderTime(start)} – ${this.renderTime(end)}`, lines: [], ...pos });
     }
 }
