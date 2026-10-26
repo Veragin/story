@@ -11,16 +11,18 @@ import {
 import { Modal, Row, spacingCss } from '@story/ui';
 import { modals } from '../../shell';
 import type { MapPageStore } from './MapPageStore';
+import { locationIdFromName } from './locationTree';
 
 export const openAddLocationModal = (store: MapPageStore) =>
     modals.open((close) => <AddLocationModal store={store} onClose={close} />);
 
 const AddLocationModal = observer(
     ({ store, onClose }: { store: MapPageStore; onClose: () => void }) => {
-        const [localId, setLocalId] = useState('');
+        const [name, setName] = useState('');
+        const [customId, setCustomId] = useState<string | null>(null);
+        const localId = customId ?? locationIdFromName(name);
         const prefix = store.locationIdPrefix;
         const id = localId && prefix + localId;
-        const [name, setName] = useState('');
         const [busy, setBusy] = useState(false);
         const [error, setError] = useState<string | null>(null);
         const idError = id ? store.validateLocationId(id) : null;
@@ -54,9 +56,17 @@ const AddLocationModal = observer(
                         }}
                     >
                         <TextField
+                            label={_('Name')}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            size="small"
+                            autoFocus
+                            fullWidth
+                        />
+                        <TextField
                             label={_('Id')}
                             value={localId}
-                            onChange={(e) => setLocalId(e.target.value.trim())}
+                            onChange={(e) => setCustomId(e.target.value.trim() || null)}
                             error={idError !== null}
                             helperText={
                                 idError ??
@@ -65,7 +75,6 @@ const AddLocationModal = observer(
                                 )
                             }
                             size="small"
-                            autoFocus
                             fullWidth
                             slotProps={{
                                 input: {
@@ -76,13 +85,6 @@ const AddLocationModal = observer(
                                     ) : undefined,
                                 },
                             }}
-                        />
-                        <TextField
-                            label={_('Name')}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            size="small"
-                            fullWidth
                         />
                         {error && <Alert severity="error">{error}</Alert>}
                         <SButtons>

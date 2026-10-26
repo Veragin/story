@@ -30,3 +30,14 @@ export const mapAncestors = (mapId: string, ids: TIds): string[] => {
     for (let id: string | null = mapId; id && id !== GLOBAL_MAP_ID; id = parentLocationId(id, ids)) chain.unshift(id);
     return [GLOBAL_MAP_ID, ...chain];
 };
+
+export const locationIdFromName = (name: string): string =>
+    name
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .split(/[^A-Za-z0-9]+/)
+        .filter(Boolean)
+        .map((word, i) =>
+            i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        )
+        .join('');
