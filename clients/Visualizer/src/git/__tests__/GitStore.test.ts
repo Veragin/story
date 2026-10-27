@@ -42,8 +42,7 @@ describe('GitStore', () => {
         const result = await store.setup(SETUP);
         expect(result.ok).toBe(true);
         expect(store.status).toMatchObject({ branch: 'main', ahead: 0, behind: 0, upstream: 'origin/main' });
-        const log = await store.log();
-        expect(log.ok && log.value.map((c) => c.subject)).toEqual(['Initial story']);
+        expect(store.status?.head?.subject).toBe('Initial story');
     });
 
     it('hides itself without a write grant or when the server has no git', async () => {
@@ -93,16 +92,17 @@ describe('GitStore', () => {
         const pushed = await store.pullThenPush();
         expect(pushed.ok).toBe(true);
         expect(store.status).toMatchObject({ ahead: 0, behind: 0 });
-        const log = await store.log({ limit: 2 });
-        expect(log.ok && log.value[0].subject).toBe('Merge origin/main');
+        expect(store.status?.head?.subject).toBe('Merge origin/main');
     });
 
-    it('refuses pull and checkout with uncommitted changes, and reports conflicting files', async () => {
+    it('refuses pull and switching with uncommitted changes, and reports conflicting files', async () => {
         await store.setup(SETUP);
+        await store.checkout('feature', true);
+        await store.checkout('main', false);
         await edit();
         const pull = await store.pull();
         expect(!pull.ok && pull.code).toBe('git_dirty');
-        const checkout = await store.checkout('feature', true);
+        const checkout = await store.checkout('feature', false);
         expect(!checkout.ok && checkout.code).toBe('git_dirty');
 
         await store.commit('Local work', false);
@@ -132,6 +132,63 @@ describe('GitStore', () => {
 
         const bad = await store.checkout('no..dots', true);
         expect(!bad.ok && bad.code).toBe('bad_request');
+    });
+
+    it('creates a branch that keeps the uncommitted changes', async () => {
+        await store.setup(SETUP);
+        await edit();
+        expect((await store.checkout('carried', true)).ok).toBe(true);
+        expect(store.status).toMatchObject({ branch: 'carried' });
+        expect(store.dirty).toBe(true);
+    });
+
+    it('discards the uncommitted changes and reloads the stores', async () => {
+        await store.setup(SETUP);
+        await edit();
+        const resync = vi.fn();
+        events.onResync(resync);
+        expect((await store.discard()).ok).toBe(true);
+        await settle();
+        expect(store.dirty).toBe(false);
+        expect(resync).toHaveBeenCalledTimes(1);
+    });
+
+    it('force pushes over a remote that is ahead', async () => {
+        await store.setup(SETUP);
+        api.simulateRemoteGitCommit({ subject: 'From elsewhere' });
+        await edit();
+        await store.commit('Local work', false);
+        const push = await store.push();
+        expect(!push.ok && push.code).toBe('git_rejected');
+        expect((await store.forcePush()).ok).toBe(true);
+        await store.fetch({ force: true });
+        expect(store.status).toMatchObject({ ahead: 0, behind: 0 });
+    });
+
+    it('lists the branches with their tips and deletes them', async () => {
+        await store.setup(SETUP);
+        api.simulateRemoteGitCommit({ branch: 'theirs', subject: 'Their work' });
+        await store.fetch({ force: true });
+        await store.checkout('mine', true);
+        await store.checkout('main', false);
+
+        const listed = await store.loadBranches();
+        expect(listed.ok).toBe(true);
+        const byName = new Map(store.branches?.map((b) => [b.name, b]));
+        expect(byName.get('theirs')).toMatchObject({
+            current: false,
+            local: false,
+            remote: true,
+            commit: { subject: 'Their work' },
+        });
+        expect(byName.get('main')).toMatchObject({ current: true, local: true, remote: true });
+        expect(byName.get('mine')).toMatchObject({ current: false, local: true, remote: false });
+
+        const current = await store.deleteBranch('main', false);
+        expect(!current.ok && current.code).toBe('bad_request');
+        expect((await store.deleteBranch('mine', false)).ok).toBe(true);
+        expect((await store.deleteBranch('theirs', true)).ok).toBe(true);
+        expect(store.status).toMatchObject({ localBranches: ['main'], remoteBranches: ['main'] });
     });
 
     it('throttles fetch to once per 30 s unless forced', async () => {

@@ -8,13 +8,9 @@ import {
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { showToast } from '@story/ui';
+import { discardChanges, forcePush } from './gitActions';
+import { openGitBranchDialog, openGitCommitDialog } from './gitDialogs';
 import type { GitStore } from './GitStore';
-import {
-    openGitBranchDialog,
-    openGitCommitDialog,
-    openGitHistoryDialog,
-    openGitSettings,
-} from './gitDialogs';
 
 type TProps = {
     store: GitStore;
@@ -24,11 +20,11 @@ type TProps = {
 
 export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
     const status = store.status;
-    const dirtyHint = store.dirty ? _('Commit your changes first') : undefined;
+    const head = status?.head;
 
-    const openDialog = (open: () => void) => () => {
+    const closeThen = (open: () => unknown) => () => {
         onClose();
-        open();
+        void open();
     };
 
     const push = async () => {
@@ -60,8 +56,30 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
         >
             {store.busy && <LinearProgress />}
             <MenuItem
+                disabled={store.busy}
+                onClick={closeThen(openGitBranchDialog)}
+            >
+                <ListItemText
+                    primary={status?.branch}
+                    secondary={
+                        head ? (
+                            <>
+                                <code>{head.shortHash}</code> {head.subject}
+                            </>
+                        ) : (
+                            _('No commits yet')
+                        )
+                    }
+                    slotProps={{
+                        primary: { noWrap: true, fontWeight: 'bold' },
+                        secondary: { noWrap: true },
+                    }}
+                />
+            </MenuItem>
+            <Divider />
+            <MenuItem
                 disabled={store.busy || !store.dirty}
-                onClick={openDialog(openGitCommitDialog)}
+                onClick={closeThen(openGitCommitDialog)}
             >
                 <ListItemText
                     primary={_('Commit & push…')}
@@ -81,40 +99,31 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
                 </MenuItem>
             )}
             <MenuItem
+                disabled={store.busy || status?.detached}
+                onClick={closeThen(() => forcePush(store))}
+            >
+                <ListItemText primary={_('Force push…')} />
+            </MenuItem>
+            <MenuItem
                 disabled={store.busy || store.dirty}
                 onClick={() => void pull()}
             >
                 <ListItemText
                     primary={_('Pull')}
                     secondary={
-                        dirtyHint ??
-                        (status && status.behind > 0
-                            ? _('%d new commits', status.behind)
-                            : undefined)
+                        store.dirty
+                            ? _('Commit your changes first')
+                            : status && status.behind > 0
+                              ? _('%d new commits', status.behind)
+                              : undefined
                     }
                 />
             </MenuItem>
             <MenuItem
-                disabled={store.busy || store.dirty}
-                onClick={openDialog(openGitBranchDialog)}
+                disabled={store.busy || !store.dirty}
+                onClick={closeThen(() => discardChanges(store))}
             >
-                <ListItemText
-                    primary={_('Switch branch…')}
-                    secondary={dirtyHint}
-                />
-            </MenuItem>
-            <MenuItem
-                disabled={store.busy}
-                onClick={openDialog(openGitHistoryDialog)}
-            >
-                <ListItemText primary={_('History…')} />
-            </MenuItem>
-            <Divider />
-            <MenuItem
-                disabled={store.busy}
-                onClick={openDialog(openGitSettings)}
-            >
-                <ListItemText primary={_('Settings…')} />
+                <ListItemText primary={_('Discard changes…')} />
             </MenuItem>
             {store.lastError && (
                 <Alert

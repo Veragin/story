@@ -1,4 +1,4 @@
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { GLOBAL_MAP_ID, STORY_ROUTE_NAMES, routeDef, routeTemplate, storyImportForm } from '@story/protocol';
 import { unzipSync, zipSync, type Zippable } from 'fflate';
@@ -230,6 +230,87 @@ describe('git routes', () => {
         await writeFile(path.join(dir, 'data', 'dirty.txt'), 'dirty\n');
         const dirty = await call('POST', '/checkout', { branch: 'main', create: false });
         expect([dirty.status, dirty.body.error]).toEqual([409, 'git_dirty']);
+        const carried = await call('POST', '/checkout', { branch: 'carried', create: true });
+        expect(carried.body).toMatchObject({ branch: 'carried', changes: [{ path: 'data/dirty.txt' }] });
+    });
+
+    it('status carries the head commit; branches lists local and remote tips', async () => {
+        const { call, repo, dir } = await start();
+        const setup = await setupPush(call, repo.url);
+        expect(setup.body.status.head).toMatchObject({
+            subject: 'Initial story',
+            hash: expect.stringMatching(/^[0-9a-f]{40}$/),
+        });
+        await pushedClone(repo, (clone) => renameVillage(clone, 'Feature Village'), 'feature');
+        await call('POST', '/checkout', { branch: 'draft', create: true });
+        await call('POST', '/fetch');
+
+        const res = await call('GET', '/branches');
+        expect(res.status).toBe(200);
+        const byName = Object.fromEntries(res.body.map((b: { name: string }) => [b.name, b]));
+        expect(Object.keys(byName).sort()).toEqual(['draft', 'feature', 'main']);
+        expect(byName.draft).toMatchObject({ current: true, local: true, remote: false });
+        expect(byName.main).toMatchObject({ current: false, local: true, remote: true });
+        expect(byName.feature).toMatchObject({
+            current: false,
+            local: false,
+            remote: true,
+            commit: { subject: 'Change on feature', author: 'Remote' },
+        });
+        expect(byName.main.commit.hash).toBe((await git(dir, 'rev-parse', 'main')).trim());
+    });
+
+    it('deletes a local branch, and with remote also the origin one; never the current branch', async () => {
+        const { call, repo } = await start();
+        await setupPush(call, repo.url);
+        await call('POST', '/checkout', { branch: 'gone', create: true });
+        await call('POST', '/push');
+        const current = await call('POST', '/branches/delete', { branch: 'gone', remote: true });
+        expect(current.status).toBe(400);
+        await call('POST', '/checkout', { branch: 'main', create: false });
+
+        const local = await call('POST', '/branches/delete', { branch: 'gone', remote: false });
+        expect(local.body).toMatchObject({ localBranches: ['main'], remoteBranches: ['gone', 'main'] });
+        const remote = await call('POST', '/branches/delete', { branch: 'gone', remote: true });
+        expect(remote.body).toMatchObject({ localBranches: ['main'], remoteBranches: ['main'] });
+        expect((await git(repo.dir, 'branch', '--list')).trim()).toBe('* main');
+        const missing = await call('POST', '/branches/delete', { branch: 'gone', remote: true });
+        expect(missing.status).toBe(404);
+    });
+
+    it('force push overwrites a remote that is ahead', async () => {
+        const { call, repo, dir } = await start();
+        await setupPush(call, repo.url);
+        await pushedClone(repo, (clone) => writeFile(path.join(clone, 'data', 'remote.txt'), 'remote\n'));
+        await writeFile(path.join(dir, 'data', 'local.txt'), 'local\n');
+        await call('POST', '/commit', { message: 'Local', push: false });
+        const rejected = await call('POST', '/push');
+        expect([rejected.status, rejected.body.error]).toEqual([409, 'git_rejected']);
+
+        const forced = await call('POST', '/push/force');
+        expect(forced.status).toBe(200);
+        expect((await git(repo.dir, 'log', '--format=%s', 'main')).trim().split('\n')).toEqual([
+            'Local',
+            'Initial story',
+        ]);
+    });
+
+    it('discard drops edits and untracked files, keeps ignored ones, and the project follows', async () => {
+        const { call, story, repo, dir } = await start();
+        await setupPush(call, repo.url);
+        await renameVillage(dir, 'Edited Village');
+        await writeFile(path.join(dir, 'data', 'new.txt'), 'new\n');
+        await mkdir(path.join(dir, 'node_modules'), { recursive: true });
+        await writeFile(path.join(dir, 'node_modules', 'kept.txt'), 'kept\n');
+        expect(await chapterName(story, 'village')).toBe('Edited Village');
+
+        const res = await call('POST', '/discard');
+        expect(res.status).toBe(200);
+        expect(res.body.changes).toEqual([]);
+        expect(await exists(path.join(dir, 'data', 'new.txt'))).toBe(false);
+        expect(await exists(path.join(dir, 'node_modules', 'kept.txt'))).toBe(true);
+        expect(await chapterName(story, 'village')).toBe('Village Chapter');
+        expect((await call('POST', '/discard')).body.changes).toEqual([]);
     });
 
     it('pull fast-forwards and merges, and the project and the map size follow', async () => {
@@ -481,7 +562,7 @@ describe('git routes', () => {
 
     it('every git route is editor-only', () => {
         const gitRoutes = STORY_ROUTE_NAMES.filter((route) => routeTemplate(route).includes('/git'));
-        expect(gitRoutes).toHaveLength(10);
+        expect(gitRoutes).toHaveLength(14);
         for (const route of gitRoutes) expect(routeDef(route).access).toBe('write');
     });
 });

@@ -3,6 +3,7 @@ import {
     GIT_SETUP_MODES,
     isGitBranchName,
     type TGitCheckoutBody,
+    type TDeleteGitBranchBody,
     type TGitCommitBody,
     type TGitSetupMode,
 } from '@story/protocol';
@@ -32,6 +33,7 @@ const UPDATE_FIELDS = ['version', 'remoteUrl', 'branch', 'token', 'authorName', 
 const DELETE_FIELDS = ['version', 'removeRepo'];
 const COMMIT_FIELDS = ['message', 'push'];
 const CHECKOUT_FIELDS = ['branch', 'create'];
+const DELETE_BRANCH_FIELDS = ['branch', 'remote'];
 
 export const branchField = (body: Record<string, unknown>, field = 'branch'): string => {
     const value = body[field];
@@ -107,6 +109,11 @@ export const parseCommitBody = (body: Record<string, unknown>): TGitCommitBody =
 export const parseCheckoutBody = (body: Record<string, unknown>): TGitCheckoutBody => {
     rejectUnknownFields(body, CHECKOUT_FIELDS);
     return { branch: branchField(body), create: flagField(body, 'create') };
+};
+
+export const parseDeleteBranchBody = (body: Record<string, unknown>): TDeleteGitBranchBody => {
+    rejectUnknownFields(body, DELETE_BRANCH_FIELDS);
+    return { branch: branchField(body), remote: flagField(body, 'remote') };
 };
 
 export type TLogQuery = { limit: number; before: string | null };

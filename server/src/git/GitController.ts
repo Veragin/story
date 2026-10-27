@@ -1,5 +1,12 @@
 import { Body, Controller, Query } from '@nestjs/common';
-import type { TGitCommitResultDto, TGitDto, TGitLogEntryDto, TGitPullResultDto, TGitStatusDto } from '@story/protocol';
+import type {
+    TGitBranchDto,
+    TGitCommitResultDto,
+    TGitDto,
+    TGitLogEntryDto,
+    TGitPullResultDto,
+    TGitStatusDto,
+} from '@story/protocol';
 import { ProtocolRoute } from '../common/ProtocolRoute';
 import type { TServerContext } from '../storyContext/serverContext';
 import { StoryCtx } from '../storyContext/StoryCtx';
@@ -44,6 +51,11 @@ export class GitController {
         return this.git.push(ctx);
     }
 
+    @ProtocolRoute('gitForcePush')
+    gitForcePush(@StoryCtx() ctx: TServerContext): Promise<TGitStatusDto> {
+        return this.git.push(ctx, { force: true });
+    }
+
     @ProtocolRoute('gitPull')
     gitPull(@StoryCtx() ctx: TServerContext): Promise<TGitPullResultDto> {
         return this.git.pull(ctx);
@@ -52,6 +64,21 @@ export class GitController {
     @ProtocolRoute('gitCheckout')
     gitCheckout(@StoryCtx() ctx: TServerContext, @Body() body: unknown): Promise<TGitStatusDto> {
         return this.git.checkout(ctx, body);
+    }
+
+    @ProtocolRoute('gitDiscard')
+    gitDiscard(@StoryCtx() ctx: TServerContext): Promise<TGitStatusDto> {
+        return this.git.discard(ctx);
+    }
+
+    @ProtocolRoute('getGitBranches')
+    getGitBranches(@StoryCtx() ctx: TServerContext): Promise<TGitBranchDto[]> {
+        return this.git.branches(ctx);
+    }
+
+    @ProtocolRoute('deleteGitBranch')
+    deleteGitBranch(@StoryCtx() ctx: TServerContext, @Body() body: unknown): Promise<TGitStatusDto> {
+        return this.git.deleteBranch(ctx, body);
     }
 
     @ProtocolRoute('getGitLog')

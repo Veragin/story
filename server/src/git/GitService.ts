@@ -2,6 +2,7 @@ import { rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
+    TGitBranchDto,
     TGitCommitResultDto,
     TGitConfigDto,
     TGitDto,
@@ -27,10 +28,12 @@ import { GitAvailability } from './GitAvailability';
 import {
     checkBranchName,
     commitAll,
+    deleteRemoteBranch,
     fetchOrigin,
     gitDir,
     mergeNoEdit,
     pushHead,
+    readBranches,
     readRefs,
     readStatus,
     requireClean,
@@ -42,6 +45,7 @@ import {
     parseCommitBody,
     parseConfigChange,
     parseDeleteBody,
+    parseDeleteBranchBody,
     parseLogQuery,
     parseSetupBody,
     type TSetupInput,
@@ -183,10 +187,10 @@ export class GitService {
         });
     }
 
-    push(ctx: TServerContext): Promise<TGitStatusDto> {
+    push(ctx: TServerContext, { force = false } = {}): Promise<TGitStatusDto> {
         return this.withRepo(ctx, async ({ git }) => {
             if ((await readStatus(git)).detached) throw HttpError.badRequest('Switch to a branch before you push');
-            await pushHead(git);
+            await pushHead(git, { force });
             return readStatus(git);
         });
     }
@@ -212,16 +216,53 @@ export class GitService {
         const { branch, create } = parseCheckoutBody(jsonObjectBody(body));
         return this.withRepo(ctx, async ({ git }) => {
             await checkBranchName(git, branch);
-            requireClean(await readStatus(git), 'switch branches');
             const refs = await readRefs(git);
             if (create) {
                 if (refs.localBranches.includes(branch)) throw HttpError.exists(`Branch "${branch}" exists`);
                 await git.run(['switch', '-q', '-c', branch]);
                 return readStatus(git);
             }
+            requireClean(await readStatus(git), 'switch branches');
             const args = switchArgs(branch, refs);
             await rewriteInBulk(ctx.bus, () => git.run(['switch', '-q', ...args]));
             await this.reloader.afterBulkRewrite(ctx, 'git');
+            return readStatus(git);
+        });
+    }
+
+    discard(ctx: TServerContext): Promise<TGitStatusDto> {
+        return this.withRepo(ctx, async ({ git }) => {
+            const before = await readStatus(git);
+            if (before.changes.length === 0) return before;
+            await this.head(git);
+            await rewriteInBulk(ctx.bus, async () => {
+                await git.run(['reset', '-q', '--hard', 'HEAD']);
+                await git.run(['clean', '-q', '-f', '-d']);
+            });
+            await this.reloader.afterBulkRewrite(ctx, 'git');
+            return readStatus(git);
+        });
+    }
+
+    branches(ctx: TServerContext): Promise<TGitBranchDto[]> {
+        return this.withRepo(ctx, async ({ git }) => {
+            const status = await readStatus(git);
+            return readBranches(git, status.detached ? null : status.branch);
+        });
+    }
+
+    deleteBranch(ctx: TServerContext, body: unknown): Promise<TGitStatusDto> {
+        const { branch, remote } = parseDeleteBranchBody(jsonObjectBody(body));
+        return this.withRepo(ctx, async ({ git }) => {
+            const status = await readStatus(git);
+            if (!status.detached && status.branch === branch) {
+                throw HttpError.badRequest('Switch to another branch before you delete this one');
+            }
+            const local = status.localBranches.includes(branch);
+            const onRemote = remote && status.remoteBranches.includes(branch);
+            if (!local && !onRemote) throw HttpError.notFound(`No branch "${branch}"`);
+            if (onRemote) await deleteRemoteBranch(git, branch);
+            if (local) await git.run(['branch', '-q', '-D', branch]);
             return readStatus(git);
         });
     }
@@ -258,7 +299,7 @@ export class GitService {
 
     private async firstPush(git: GitRunner, branch: string): Promise<void> {
         try {
-            await pushHead(git, branch);
+            await pushHead(git, { branch });
         } catch (e) {
             if (isHttpError(e) && e.body.error === 'git_rejected') {
                 throw HttpError.of(

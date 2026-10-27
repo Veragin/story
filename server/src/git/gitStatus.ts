@@ -1,4 +1,4 @@
-import type { TGitChangeDto, TGitChangeKind, TGitLogEntryDto } from '@story/protocol';
+import type { TGitBranchDto, TGitChangeDto, TGitChangeKind, TGitCommitDto, TGitLogEntryDto } from '@story/protocol';
 
 export type TPorcelainStatus = {
     oid: string | null;
@@ -78,6 +78,15 @@ export const parseRefs = (output: string): TRefs => {
 const RECORD = '\x1e';
 const FIELD = '\x1f';
 
+// the fields of LOG_FORMAT and BRANCH_FORMAT, in order
+const parseCommit = ([hash, shortHash, author, date, subject]: string[]): TGitCommitDto => ({
+    hash,
+    shortHash,
+    subject: subject ?? '',
+    author: author ?? '',
+    date: date ? new Date(date).toISOString() : '',
+});
+
 export const LOG_FORMAT = `--format=${RECORD}%H${FIELD}%h${FIELD}%an${FIELD}%aI${FIELD}%s`;
 
 // `git log <LOG_FORMAT> --name-only`: each record is the header line, then the changed paths
@@ -87,17 +96,35 @@ export const parseLog = (output: string): TGitLogEntryDto[] =>
         .filter((record) => record.trim() !== '')
         .map((record) => {
             const [header, ...lines] = record.split('\n');
-            const [hash, shortHash, author, date, subject] = header.split(FIELD);
             const files = lines.filter(Boolean);
-            return {
-                hash,
-                shortHash,
-                subject: subject ?? '',
-                author: author ?? '',
-                date: date ? new Date(date).toISOString() : '',
-                ...(files.length > 0 && { files }),
-            };
+            return { ...parseCommit(header.split(FIELD)), ...(files.length > 0 && { files }) };
         });
+
+export const BRANCH_FORMAT = `--format=%(refname)${FIELD}%(objectname)${FIELD}%(objectname:short)${FIELD}%(authorname)${FIELD}%(authordate:iso-strict)${FIELD}%(contents:subject)`;
+
+const newestFirst = (a: TGitBranchDto, b: TGitBranchDto) =>
+    b.commit.date.localeCompare(a.commit.date) || a.name.localeCompare(b.name);
+
+// `git for-each-ref <BRANCH_FORMAT> refs/heads refs/remotes/origin`: a local branch shows its own tip
+export const parseBranches = (output: string, current: string | null): TGitBranchDto[] => {
+    const branches = new Map<string, TGitBranchDto>();
+    for (const line of output.split('\n').filter(Boolean)) {
+        const [ref, ...fields] = line.split(FIELD);
+        const commit = parseCommit(fields);
+        const local = ref.startsWith(LOCAL_PREFIX);
+        if (!local && (!ref.startsWith(REMOTE_PREFIX) || ref === `${REMOTE_PREFIX}HEAD`)) continue;
+        const name = ref.slice((local ? LOCAL_PREFIX : REMOTE_PREFIX).length);
+        const known = branches.get(name);
+        branches.set(name, {
+            name,
+            current: name === current,
+            local: local || (known?.local ?? false),
+            remote: !local || (known?.remote ?? false),
+            commit: local || !known ? commit : known.commit,
+        });
+    }
+    return [...branches.values()].sort(newestFirst);
+};
 
 // `git diff --name-only -z`
 export const parsePathList = (output: string): string[] => output.split('\0').filter(Boolean);

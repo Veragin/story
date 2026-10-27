@@ -1,10 +1,19 @@
 import path from 'node:path';
-import type { TGitStatusDto } from '@story/protocol';
+import type { TGitBranchDto, TGitCommitDto, TGitStatusDto } from '@story/protocol';
 import { lstatOrNull } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
 import { asRemote } from './gitErrors';
 import type { GitRunner } from './GitRunner';
-import { parsePathList, parsePorcelainStatus, parseRefs, type TRefs } from './gitStatus';
+import {
+    BRANCH_FORMAT,
+    LOG_FORMAT,
+    parseBranches,
+    parseLog,
+    parsePathList,
+    parsePorcelainStatus,
+    parseRefs,
+    type TRefs,
+} from './gitStatus';
 
 export type TAuthor = { authorName: string; authorEmail: string };
 
@@ -22,16 +31,26 @@ const lastFetchedAt = async (git: GitRunner): Promise<string | null> => {
 export const readRefs = async (git: GitRunner): Promise<TRefs> =>
     parseRefs(await git.text(['for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes/origin']));
 
+// null: no commits yet
+const readHead = async (git: GitRunner): Promise<TGitCommitDto | null> => {
+    const { stdout, code } = await git.run(['log', '-1', LOG_FORMAT, 'HEAD', '--'], { okCodes: [128] });
+    if (code !== 0) return null;
+    const [head] = parseLog(stdout);
+    return head ?? null;
+};
+
 export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
-    const [porcelain, refs, fetchedAt] = await Promise.all([
+    const [porcelain, refs, fetchedAt, head] = await Promise.all([
         git.text(['--no-optional-locks', 'status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all']),
         readRefs(git),
         lastFetchedAt(git),
+        readHead(git),
     ]);
     const status = parsePorcelainStatus(porcelain);
     return {
         branch: status.head ?? status.oid?.slice(0, SHORT_HASH_LENGTH) ?? '',
         detached: status.head === null,
+        head,
         ahead: status.ahead,
         behind: status.behind,
         upstream: status.upstream,
@@ -40,6 +59,9 @@ export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
         lastFetchedAt: fetchedAt,
     };
 };
+
+export const readBranches = async (git: GitRunner, current: string | null): Promise<TGitBranchDto[]> =>
+    parseBranches(await git.text(['for-each-ref', BRANCH_FORMAT, 'refs/heads', 'refs/remotes/origin']), current);
 
 export const requireClean = (status: TGitStatusDto, action: string) => {
     if (status.changes.length > 0) {
@@ -69,8 +91,15 @@ export const commitAll = async (git: GitRunner, message: string, author: TAuthor
     return resolveCommit(git, 'HEAD');
 };
 
-export const pushHead = async (git: GitRunner, branch?: string): Promise<void> => {
-    await asRemote(git.run(['push', '-u', 'origin', branch ? `HEAD:refs/heads/${branch}` : 'HEAD'], { network: true }));
+type TPushOptions = { branch?: string; force?: boolean };
+
+export const pushHead = async (git: GitRunner, { branch, force = false }: TPushOptions = {}): Promise<void> => {
+    const target = branch ? `HEAD:refs/heads/${branch}` : 'HEAD';
+    await asRemote(git.run(['push', '-u', ...(force ? ['--force'] : []), 'origin', target], { network: true }));
+};
+
+export const deleteRemoteBranch = async (git: GitRunner, branch: string): Promise<void> => {
+    await asRemote(git.run(['push', 'origin', '--delete', branch], { network: true }));
 };
 
 export const fetchOrigin = async (git: GitRunner): Promise<void> => {

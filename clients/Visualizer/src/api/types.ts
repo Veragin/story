@@ -15,6 +15,7 @@ import type {
     TCreatePassageBody,
     TCreateTriggerBody,
     TCreateTypeBody,
+    TDeleteGitBranchBody,
     TDeleteGitConfigBody,
     TDeleteMapBody,
     TEditStoryInfoDto,
@@ -23,6 +24,7 @@ import type {
     TEntityDtoByKind,
     TEntityKind,
     TEntityListDto,
+    TGitBranchDto,
     TGitCheckoutBody,
     TGitCommitBody,
     TGitCommitResultDto,
@@ -143,7 +145,11 @@ export type TVisualizerApi = {
     gitFetch(): Promise<TGitStatusDto>;
     gitCommit(body: TGitCommitBody): Promise<TGitCommitResultDto>;
     gitPush(): Promise<TGitStatusDto>;
+    gitForcePush(): Promise<TGitStatusDto>;
     gitPull(): Promise<TGitPullResultDto>;
     gitCheckout(body: TGitCheckoutBody): Promise<TGitStatusDto>;
+    gitDiscard(): Promise<TGitStatusDto>;
+    getGitBranches(): Promise<TGitBranchDto[]>;
+    deleteGitBranch(body: TDeleteGitBranchBody): Promise<TGitStatusDto>;
     getGitLog(query?: TGitLogQuery): Promise<TGitLogEntryDto[]>;
 };

@@ -41,8 +41,11 @@ const NOT_STORY_WRITES: readonly TRouteName[] = [
     'gitFetch',
     'gitCommit',
     'gitPush',
+    'gitForcePush',
     'gitPull',
     'gitCheckout',
+    'gitDiscard',
+    'deleteGitBranch',
 ];
 
 export type TQuery = Record<string, string | number | undefined>;
@@ -222,8 +225,12 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         gitFetch: () => request('gitFetch', {}),
         gitCommit: (body) => request('gitCommit', {}, body),
         gitPush: () => request('gitPush', {}),
+        gitForcePush: () => request('gitForcePush', {}),
         gitPull: () => request('gitPull', {}),
         gitCheckout: (body) => request('gitCheckout', {}, body),
+        gitDiscard: () => request('gitDiscard', {}),
+        getGitBranches: () => request('getGitBranches', {}),
+        deleteGitBranch: (body) => request('deleteGitBranch', {}, body),
         getGitLog: (query) => request('getGitLog', {}, undefined, query),
     };
 };

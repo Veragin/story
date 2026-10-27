@@ -20,6 +20,7 @@ describe('GitCommitDialog', () => {
     let store: GitStore;
     let release: () => void;
     let onClose: ReturnType<typeof vi.fn<() => void>>;
+    let onCommitted: ReturnType<typeof vi.fn<() => void>>;
 
     beforeEach(async () => {
         const events = new ApiEvents({ createEventSource: undefined });
@@ -36,7 +37,14 @@ describe('GitCommitDialog', () => {
         await api.updateTimelineLayout(layout);
         await settle();
         onClose = vi.fn<() => void>();
-        await mountAsync(<GitCommitDialog store={store} onClose={onClose} />);
+        onCommitted = vi.fn<() => void>();
+        await mountAsync(
+            <GitCommitDialog
+                store={store}
+                onClose={onClose}
+                onCommitted={onCommitted}
+            />
+        );
     });
 
     afterEach(() => {
@@ -67,7 +75,8 @@ describe('GitCommitDialog', () => {
         );
         await submit();
 
-        expect(onClose).toHaveBeenCalled();
+        expect(onCommitted).toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
         expect(store.dirty).toBe(false);
         expect(store.status?.ahead).toBe(0);
     });
@@ -80,7 +89,7 @@ describe('GitCommitDialog', () => {
         );
         await submit();
 
-        expect(onClose).not.toHaveBeenCalled();
+        expect(onCommitted).not.toHaveBeenCalled();
         expect(get('[role=dialog]').textContent).toContain(
             'Committed locally, but the push failed'
         );
@@ -94,7 +103,7 @@ describe('GitCommitDialog', () => {
             pullThenPush?.click();
             await settle();
         });
-        expect(onClose).toHaveBeenCalled();
+        expect(onCommitted).toHaveBeenCalled();
         expect(store.status).toMatchObject({ ahead: 0, behind: 0 });
     });
 });

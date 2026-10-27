@@ -3,6 +3,7 @@ import {
     isGitBranchName,
     type TApiErrorBody,
     type TChangeEvent,
+    type TGitBranchDto,
     type TGitChangeKind,
     type TGitConfigDto,
     type TGitDto,
@@ -32,8 +33,12 @@ type TGitRoutes =
     | 'gitFetch'
     | 'gitCommit'
     | 'gitPush'
+    | 'gitForcePush'
     | 'gitPull'
     | 'gitCheckout'
+    | 'gitDiscard'
+    | 'getGitBranches'
+    | 'deleteGitBranch'
     | 'getGitLog';
 
 type TBranches = Map<string, TGitLogEntryDto[]>;
@@ -50,6 +55,13 @@ type TRepo = {
 export type TMockRemoteCommit = { branch?: string; subject?: string; conflict?: string[] };
 
 const copyBranches = (branches: TBranches): TBranches => new Map([...branches].map(([b, list]) => [b, [...list]]));
+
+const tipOf = (list: TGitLogEntryDto[] | undefined) => {
+    const tip = list?.[0];
+    if (!tip) return null;
+    const { hash, shortHash, subject, author, date } = tip;
+    return { hash, shortHash, subject, author, date };
+};
 
 const changePath = (event: TChangeEvent) =>
     event.kind === 'map' ? `data/locations/${event.id}.json` : `data/${event.kind}/${event.id}.ts`;
@@ -107,6 +119,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         return {
             branch: r.branch,
             detached: false,
+            head: tipOf(local),
             ahead: missingFrom(local, remote ?? []).length,
             behind: missingFrom(remote ?? [], local).length,
             upstream: remote ? `origin/${r.branch}` : null,
@@ -128,9 +141,9 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         r.lastFetchedAt = new Date().toISOString();
     };
 
-    const pushNow = (r: TRepo) => {
+    const pushNow = (r: TRepo, force = false) => {
         const local = r.local.get(r.branch) ?? [];
-        if (missingFrom(origin.get(r.branch) ?? [], local).length > 0) {
+        if (!force && missingFrom(origin.get(r.branch) ?? [], local).length > 0) {
             fail(409, { error: 'git_rejected', message: 'Updates were rejected: the remote contains newer work' });
         }
         origin.set(r.branch, [...local]);
@@ -278,6 +291,13 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 return statusOf(r);
             }),
 
+        gitForcePush: () =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                pushNow(r, true);
+                return statusOf(r);
+            }),
+
         gitPull: () =>
             ctx.reply(() => {
                 const { config: c, repo: r } = requireRepo();
@@ -302,7 +322,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
             ctx.reply(() => {
                 const r = requireRepo().repo;
                 validateBranch(branch);
-                requireClean(r);
+                if (!create) requireClean(r);
                 if (create) {
                     if (r.local.has(branch)) fail(409, { error: 'exists', message: `Branch "${branch}" exists` });
                     r.local.set(branch, [...(r.local.get(r.branch) ?? [])]);
@@ -313,6 +333,44 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 const changed = r.branch !== branch;
                 r.branch = branch;
                 if (changed && !create) ctx.emitStory();
+                return statusOf(r);
+            }),
+
+        gitDiscard: () =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                if (r.changes.size === 0) return statusOf(r);
+                r.changes.clear();
+                ctx.emitStory();
+                return statusOf(r);
+            }),
+
+        getGitBranches: () =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                const names = new Set([...r.local.keys(), ...r.known.keys()]);
+                return [...names]
+                    .flatMap((name): TGitBranchDto[] => {
+                        const commit = tipOf(r.local.get(name)) ?? tipOf(r.known.get(name));
+                        if (!commit) return [];
+                        const current = name === r.branch;
+                        return [{ name, current, local: r.local.has(name), remote: r.known.has(name), commit }];
+                    })
+                    .sort((a, b) => b.commit.date.localeCompare(a.commit.date) || a.name.localeCompare(b.name));
+            }),
+
+        deleteGitBranch: ({ branch, remote }) =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                validateBranch(branch);
+                if (branch === r.branch) badRequest('Switch to another branch before you delete this one');
+                const onRemote = remote && r.known.has(branch);
+                if (!r.local.has(branch) && !onRemote) notFound(`branch "${branch}"`);
+                if (onRemote) {
+                    origin.delete(branch);
+                    r.known.delete(branch);
+                }
+                r.local.delete(branch);
                 return statusOf(r);
             }),
 

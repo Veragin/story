@@ -24,7 +24,9 @@ import type {
     TUpdateTimelineLayoutBody,
 } from './dto/layout';
 import type {
+    TDeleteGitBranchBody,
     TDeleteGitConfigBody,
+    TGitBranchDto,
     TGitCheckoutBody,
     TGitCommitBody,
     TGitCommitResultDto,
@@ -190,8 +192,12 @@ export const STORY_ROUTES = {
     gitFetch: { method: 'POST', path: '/git/fetch', access: 'write' },
     gitCommit: { method: 'POST', path: '/git/commit', access: 'write' },
     gitPush: { method: 'POST', path: '/git/push', access: 'write' },
+    gitForcePush: { method: 'POST', path: '/git/push/force', access: 'write' },
     gitPull: { method: 'POST', path: '/git/pull', access: 'write' },
     gitCheckout: { method: 'POST', path: '/git/checkout', access: 'write' },
+    gitDiscard: { method: 'POST', path: '/git/discard', access: 'write' },
+    getGitBranches: { method: 'GET', path: '/git/branches', access: 'write' },
+    deleteGitBranch: { method: 'POST', path: '/git/branches/delete', access: 'write' },
     getGitLog: { method: 'GET', path: '/git/log', access: 'write' },
 } as const satisfies Record<string, TStoryRouteDef>;
 
@@ -420,10 +426,17 @@ export type TApiSpec = {
     gitCommit: { body: TGitCommitBody; response: TGitCommitResultDto };
     /** `409 git_rejected` when the remote is ahead. */
     gitPush: { body: undefined; response: TGitStatusDto };
+    /** Overwrites the remote branch with the local one. */
+    gitForcePush: { body: undefined; response: TGitStatusDto };
     /** Fetch + merge; `409 git_dirty` with uncommitted changes, `409 git_conflict` (merge aborted) on a conflict. */
     gitPull: { body: undefined; response: TGitPullResultDto };
-    /** `409 git_dirty` with uncommitted changes. */
+    /** Switching (not creating) answers `409 git_dirty` with uncommitted changes. */
     gitCheckout: { body: TGitCheckoutBody; response: TGitStatusDto };
+    /** Drops every uncommitted change, untracked files included (ignored ones stay). */
+    gitDiscard: { body: undefined; response: TGitStatusDto };
+    /** Local and `origin` branches as of the last fetch, newest commit first. */
+    getGitBranches: { body: undefined; response: TGitBranchDto[] };
+    deleteGitBranch: { body: TDeleteGitBranchBody; response: TGitStatusDto };
     /** Newest first; query `TGitLogQuery`. */
     getGitLog: { body: undefined; response: TGitLogEntryDto[] };
 };
@@ -497,7 +510,14 @@ export const matchPath = (template: string, pathname: string): Record<string, st
 };
 
 /** Mutations without a body; still sent as `application/json`: the CSRF check wants it on every mutation. */
-export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout', 'gitFetch', 'gitPush', 'gitPull'];
+export const BODYLESS_ROUTES: readonly TRouteName[] = [
+    'logout',
+    'gitFetch',
+    'gitPush',
+    'gitForcePush',
+    'gitPull',
+    'gitDiscard',
+];
 
 /** `204 No Content`. */
 export const NO_CONTENT_ROUTES: readonly TRouteName[] = [
