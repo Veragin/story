@@ -29,8 +29,6 @@ import type {
     TGitCommitBody,
     TGitCommitResultDto,
     TGitDto,
-    TGitLogEntryDto,
-    TGitLogQuery,
     TGitPullResultDto,
     TGitStatusDto,
     THealthDto,
@@ -151,5 +149,4 @@ export type TVisualizerApi = {
     gitDiscard(): Promise<TGitStatusDto>;
     getGitBranches(): Promise<TGitBranchDto[]>;
     deleteGitBranch(body: TDeleteGitBranchBody): Promise<TGitStatusDto>;
-    getGitLog(query?: TGitLogQuery): Promise<TGitLogEntryDto[]>;
 };

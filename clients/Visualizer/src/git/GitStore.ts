@@ -64,6 +64,7 @@ export class GitStore {
     private lastFetchAt: number | null = null;
     private refreshTimer: ReturnType<typeof setTimeout> | null = null;
     private loadToken = 0;
+    private branchesRequest = 0;
 
     constructor({
         api,
@@ -245,9 +246,10 @@ export class GitStore {
         );
 
     loadBranches = async (): Promise<TGitResult<TGitBranchDto[]>> => {
+        const request = ++this.branchesRequest;
         try {
             const branches = await this.api.getGitBranches();
-            runInAction(() => (this.branches = branches));
+            if (request === this.branchesRequest) runInAction(() => (this.branches = branches));
             return { ok: true, value: branches };
         } catch (e) {
             return gitFailure(e);

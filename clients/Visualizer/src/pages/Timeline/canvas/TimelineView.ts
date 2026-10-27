@@ -31,7 +31,7 @@ export type TTimelineViewOptions = {
 };
 
 const MIN_CHAPTER_WIDTH = 6;
-const AXIS_KEYS = new Set(['KeyX', 'KeyY']);
+const AXIS_KEYS = new Set(['x', 'y']);
 const WHEEL_SENSITIVITY = 0.0015;
 
 const timelineDataOf = (shape: Shape | null | undefined): TTimelineShapeData | null => {
@@ -88,10 +88,12 @@ export class TimelineView {
 
         const onWheel = (e: WheelEvent) => this.handleWheel(e);
         const onLeave = () => this.setStripHover(null);
+        // e.key, not e.code: the letter must follow the keyboard layout (QWERTZ swaps Y and Z)
         const onKeyDown = (e: KeyboardEvent) => {
-            if (AXIS_KEYS.has(e.code)) this.heldAxisKeys.add(e.code);
+            const letter = e.key.toLowerCase();
+            if (AXIS_KEYS.has(letter)) this.heldAxisKeys.add(letter);
         };
-        const onKeyUp = (e: KeyboardEvent) => this.heldAxisKeys.delete(e.code);
+        const onKeyUp = (e: KeyboardEvent) => this.heldAxisKeys.delete(e.key.toLowerCase());
         const onBlur = () => this.heldAxisKeys.clear();
         canvas.addEventListener('wheel', onWheel, { passive: false });
         canvas.addEventListener('pointerleave', onLeave);
@@ -147,8 +149,8 @@ export class TimelineView {
     // a plain drag must not shift chapter times by accident
     private chapterDragAxis = (e: TScenePointerEvent): TDragAxis | null => {
         if (e.shiftKey) return 'both';
-        const x = this.heldAxisKeys.has('KeyX');
-        const y = this.heldAxisKeys.has('KeyY');
+        const x = this.heldAxisKeys.has('x');
+        const y = this.heldAxisKeys.has('y');
         if (x === y) return null;
         return x ? 'x' : 'y';
     };

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
     BRANCH_FORMAT,
-    LOG_FORMAT,
+    COMMIT_FORMAT,
     parseBranches,
-    parseLog,
+    parseCommitLine,
     parsePorcelainStatus,
     parseRefs,
 } from '../src/git/gitStatus';
@@ -72,30 +72,18 @@ describe('parseRefs', () => {
     });
 });
 
-describe('parseLog', () => {
-    it('reads the records of LOG_FORMAT with their files', () => {
-        expect(LOG_FORMAT).toContain('%H');
-        const output =
-            `\x1e${'b'.repeat(40)}\x1fbbbbbbb\x1fAnn\x1f2026-01-02T03:04:05+01:00\x1fSecond: a, b\n\ndata/x.ts\ndata/y.ts\n` +
-            `\x1e${'c'.repeat(40)}\x1fccccccc\x1fBob\x1f2026-01-01T00:00:00+00:00\x1fFirst\n`;
-        expect(parseLog(output)).toEqual([
-            {
-                hash: 'b'.repeat(40),
-                shortHash: 'bbbbbbb',
-                author: 'Ann',
-                date: '2026-01-02T02:04:05.000Z',
-                subject: 'Second: a, b',
-                files: ['data/x.ts', 'data/y.ts'],
-            },
-            {
-                hash: 'c'.repeat(40),
-                shortHash: 'ccccccc',
-                author: 'Bob',
-                date: '2026-01-01T00:00:00.000Z',
-                subject: 'First',
-            },
-        ]);
-        expect(parseLog('')).toEqual([]);
+describe('parseCommitLine', () => {
+    it('reads a COMMIT_FORMAT line', () => {
+        expect(COMMIT_FORMAT).toContain('%H');
+        const output = `${'b'.repeat(40)}\x1fbbbbbbb\x1fAnn\x1f2026-01-02T03:04:05+01:00\x1fSecond: a, b\n`;
+        expect(parseCommitLine(output)).toEqual({
+            hash: 'b'.repeat(40),
+            shortHash: 'bbbbbbb',
+            author: 'Ann',
+            date: '2026-01-02T02:04:05.000Z',
+            subject: 'Second: a, b',
+        });
+        expect(parseCommitLine('')).toBeNull();
     });
 });
 

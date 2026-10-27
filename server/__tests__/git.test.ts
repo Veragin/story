@@ -75,7 +75,6 @@ describe('git routes', () => {
         const res = await call('POST', '/fetch');
         expect([res.status, res.body.error]).toEqual([503, 'git_unavailable']);
         expect((await call('POST', '/setup', {})).status).toBe(503);
-        expect((await call('GET', '/log')).status).toBe(503);
         const health = await requestJson(`${testApp.base}/api/health`, 'GET');
         expect(health.body.git).toBe('unavailable');
     });
@@ -89,7 +88,6 @@ describe('git routes', () => {
             ['POST', '/fetch'],
             ['POST', '/push'],
             ['POST', '/pull'],
-            ['GET', '/log'],
         ] as const) {
             const res = await call(method, sub);
             expect([res.status, res.body.error]).toEqual([409, 'git_not_configured']);
@@ -150,16 +148,10 @@ describe('git routes', () => {
         expect(res.status).toBe(200);
         expect(res.body).toMatchObject({ pushed: true, status: { changes: [], ahead: 0 } });
         expect(res.body.commit).toMatch(/^[0-9a-f]{40}$/);
+        expect(res.body.status.head).toMatchObject({ hash: res.body.commit, subject: 'Add a note' });
 
         const clone = await cloneRepo(repo, 'clone');
         expect(await readFile(path.join(clone, 'data', 'note.txt'), 'utf8')).toBe('hello\n');
-
-        const log = await call('GET', '/log?limit=1');
-        expect(log.body).toEqual([
-            expect.objectContaining({ hash: res.body.commit, subject: 'Add a note', files: ['data/note.txt'] }),
-        ]);
-        const older = await call('GET', `/log?before=${res.body.commit}`);
-        expect(older.body.map((e: { subject: string }) => e.subject)).toEqual(['Initial story']);
     });
 
     it('a rejected push keeps the commit; pull merges the remote, then push succeeds', async () => {
@@ -278,7 +270,7 @@ describe('git routes', () => {
         expect(missing.status).toBe(404);
     });
 
-    it('force push overwrites a remote that is ahead', async () => {
+    it('force push is rejected until the remote is fetched, then overwrites it', async () => {
         const { call, repo, dir } = await start();
         await setupPush(call, repo.url);
         await pushedClone(repo, (clone) => writeFile(path.join(clone, 'data', 'remote.txt'), 'remote\n'));
@@ -287,6 +279,10 @@ describe('git routes', () => {
         const rejected = await call('POST', '/push');
         expect([rejected.status, rejected.body.error]).toEqual([409, 'git_rejected']);
 
+        const stale = await call('POST', '/push/force');
+        expect([stale.status, stale.body.error]).toEqual([409, 'git_rejected']);
+
+        await call('POST', '/fetch');
         const forced = await call('POST', '/push/force');
         expect(forced.status).toBe(200);
         expect((await git(repo.dir, 'log', '--format=%s', 'main')).trim().split('\n')).toEqual([
@@ -562,7 +558,7 @@ describe('git routes', () => {
 
     it('every git route is editor-only', () => {
         const gitRoutes = STORY_ROUTE_NAMES.filter((route) => routeTemplate(route).includes('/git'));
-        expect(gitRoutes).toHaveLength(14);
+        expect(gitRoutes).toHaveLength(13);
         for (const route of gitRoutes) expect(routeDef(route).access).toBe('write');
     });
 });

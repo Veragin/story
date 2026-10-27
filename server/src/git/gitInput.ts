@@ -9,7 +9,6 @@ import {
 } from '@story/protocol';
 import { flagField, rejectUnknownFields, textField } from '../common/fields';
 import { HttpError } from '../common/HttpError';
-import { isPlainObject } from '../common/isPlainObject';
 import type { TStoryGitRecord } from '../database/repositories/StoryGitRepository';
 import { validateRemoteUrl, type TRemoteRules } from './gitRemote';
 
@@ -17,7 +16,6 @@ const L = GIT_LIMITS;
 
 const CONTROL = /\p{Cc}/u;
 const IDENT_FORBIDDEN = /[<>\p{Cc}]/u;
-const COMMIT_HASH = /^[0-9a-f]{4,64}$/i;
 
 export type TAuthorDefaults = { authorName: string; authorEmail: string };
 
@@ -114,31 +112,4 @@ export const parseCheckoutBody = (body: Record<string, unknown>): TGitCheckoutBo
 export const parseDeleteBranchBody = (body: Record<string, unknown>): TDeleteGitBranchBody => {
     rejectUnknownFields(body, DELETE_BRANCH_FIELDS);
     return { branch: branchField(body), remote: flagField(body, 'remote') };
-};
-
-export type TLogQuery = { limit: number; before: string | null };
-
-const LIMIT_PATTERN = /^\d+$/;
-
-const parseLimit = (limit: unknown): number => {
-    if (limit === undefined) return L.logLimitDefault;
-    if (typeof limit !== 'string' || !LIMIT_PATTERN.test(limit)) {
-        throw HttpError.badRequest('Query "limit" must be a whole number');
-    }
-    const n = Number(limit);
-    if (n < 1 || n > L.logLimitMax) throw HttpError.badRequest(`Query "limit" must be 1 to ${L.logLimitMax}`);
-    return n;
-};
-
-const parseBefore = (before: unknown): string | null => {
-    if (before === undefined) return null;
-    if (typeof before !== 'string' || !COMMIT_HASH.test(before)) {
-        throw HttpError.badRequest('Query "before" must be a commit hash');
-    }
-    return before;
-};
-
-export const parseLogQuery = (query: unknown): TLogQuery => {
-    const q = isPlainObject(query) ? query : {};
-    return { limit: parseLimit(q.limit), before: parseBefore(q.before) };
 };

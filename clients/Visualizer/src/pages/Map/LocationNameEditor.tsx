@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from '@emotion/styled';
 import { IconButton, TextField, Tooltip } from '@mui/material';
@@ -16,26 +16,30 @@ type Props = {
 export const LocationNameEditor = observer(
     ({ store, locationId, onEditInForm }: Props) => {
         const [draft, setDraft] = useState<string | null>(null);
+        const draftRef = useRef<string | null>(null);
         const inputRef = useRef<HTMLInputElement>(null);
-        const cancelled = useRef(false);
         const location = store.locations.get(locationId);
         const name = store.locationName(locationId);
 
+        const updateDraft = (value: string | null) => {
+            draftRef.current = value;
+            setDraft(value);
+        };
         const startEditing = () => {
             const text = location ? nameAsText(location.name) : undefined;
             if (text === undefined) onEditInForm(locationId);
-            else setDraft(text);
+            else updateDraft(text);
         };
         const commit = () => {
-            if (draft === null) return;
+            flushDraft(store, locationId, draftRef);
             setDraft(null);
-            if (cancelled.current) {
-                cancelled.current = false;
-                return;
-            }
-            const text = draft.trim();
-            if (text) void store.renameLocation(locationId, text);
         };
+
+        // React skips onBlur on unmount, so a pending rename is saved for the id it was started on
+        useEffect(
+            () => () => flushDraft(store, locationId, draftRef),
+            [store, locationId]
+        );
 
         if (draft !== null) {
             return (
@@ -44,15 +48,14 @@ export const LocationNameEditor = observer(
                     fullWidth
                     autoFocus
                     value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
+                    onChange={(e) => updateDraft(e.target.value)}
                     inputRef={inputRef}
                     onBlur={commit}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') inputRef.current?.blur();
                         if (e.key === 'Escape') {
                             e.stopPropagation();
-                            cancelled.current = true;
-                            inputRef.current?.blur();
+                            updateDraft(null);
                         }
                     }}
                     slotProps={{
@@ -81,6 +84,16 @@ export const LocationNameEditor = observer(
         );
     }
 );
+
+const flushDraft = (
+    store: MapPageStore,
+    locationId: string,
+    draftRef: { current: string | null }
+) => {
+    const text = draftRef.current?.trim();
+    draftRef.current = null;
+    if (text) void store.renameLocation(locationId, text);
+};
 
 const SRow = styled(Row)`
     flex: 1;

@@ -6,7 +6,6 @@ import type {
     TGitCommitResultDto,
     TGitConfigDto,
     TGitDto,
-    TGitLogEntryDto,
     TGitPullResultDto,
     TGitStatusDto,
 } from '@story/protocol';
@@ -46,14 +45,13 @@ import {
     parseConfigChange,
     parseDeleteBody,
     parseDeleteBranchBody,
-    parseLogQuery,
     parseSetupBody,
     type TSetupInput,
 } from './gitInput';
 import { GitLocks } from './GitLocks';
 import { GIT_OPTIONS, type TGitOptions } from './gitOptions';
 import { GitRunner } from './GitRunner';
-import { LOG_FORMAT, parseLog, type TRefs } from './gitStatus';
+import type { TRefs } from './gitStatus';
 import { GITIGNORE_FILE, STORY_GITIGNORE } from './storyGitignore';
 import { decryptToken, encryptToken, TokenCipherError } from './tokenCipher';
 
@@ -264,19 +262,6 @@ export class GitService {
             if (onRemote) await deleteRemoteBranch(git, branch);
             if (local) await git.run(['branch', '-q', '-D', branch]);
             return readStatus(git);
-        });
-    }
-
-    log(ctx: TServerContext, query: unknown): Promise<TGitLogEntryDto[]> {
-        const { limit, before } = parseLogQuery(query);
-        return this.withRepo(ctx, async ({ git }) => {
-            const start = await resolveCommit(git, before ?? 'HEAD');
-            if (start === null) {
-                if (before !== null) throw HttpError.notFound(`No commit "${before}"`);
-                return [];
-            }
-            const skip = before === null ? [] : ['--skip=1'];
-            return parseLog(await git.text(['log', LOG_FORMAT, '--name-only', `-n${limit}`, ...skip, start, '--']));
         });
     }
 

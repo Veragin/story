@@ -5,9 +5,9 @@ import {
     type TChangeEvent,
     type TGitBranchDto,
     type TGitChangeKind,
+    type TGitCommitDto,
     type TGitConfigDto,
     type TGitDto,
-    type TGitLogEntryDto,
     type TGitStatusDto,
     type TVersion,
 } from '@story/protocol';
@@ -38,10 +38,9 @@ type TGitRoutes =
     | 'gitCheckout'
     | 'gitDiscard'
     | 'getGitBranches'
-    | 'deleteGitBranch'
-    | 'getGitLog';
+    | 'deleteGitBranch';
 
-type TBranches = Map<string, TGitLogEntryDto[]>;
+type TBranches = Map<string, TGitCommitDto[]>;
 
 type TRepo = {
     branch: string;
@@ -56,12 +55,7 @@ export type TMockRemoteCommit = { branch?: string; subject?: string; conflict?: 
 
 const copyBranches = (branches: TBranches): TBranches => new Map([...branches].map(([b, list]) => [b, [...list]]));
 
-const tipOf = (list: TGitLogEntryDto[] | undefined) => {
-    const tip = list?.[0];
-    if (!tip) return null;
-    const { hash, shortHash, subject, author, date } = tip;
-    return { hash, shortHash, subject, author, date };
-};
+const tipOf = (list: TGitCommitDto[] | undefined) => list?.[0] ?? null;
 
 const changePath = (event: TChangeEvent) =>
     event.kind === 'map' ? `data/locations/${event.id}.json` : `data/${event.kind}/${event.id}.ts`;
@@ -93,9 +87,9 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
     let conflicts = new Map<string, string[]>();
     let hashCounter = 0;
 
-    const commitOf = (subject: string, author: string, files?: string[]): TGitLogEntryDto => {
+    const commitOf = (subject: string, author: string): TGitCommitDto => {
         const hash = (++hashCounter).toString(16).padStart(8, '0').repeat(5);
-        return { hash, shortHash: hash.slice(0, 7), subject, author, date: new Date().toISOString(), files };
+        return { hash, shortHash: hash.slice(0, 7), subject, author, date: new Date().toISOString() };
     };
 
     const requireRepo = (): { config: TGitConfigDto; repo: TRepo } => {
@@ -108,7 +102,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         if (r.changes.size > 0) fail(409, { error: 'git_dirty', message: `${r.changes.size} uncommitted changes` });
     };
 
-    const missingFrom = (list: TGitLogEntryDto[], other: TGitLogEntryDto[]) => {
+    const missingFrom = (list: TGitCommitDto[], other: TGitCommitDto[]) => {
         const hashes = new Set(other.map((c) => c.hash));
         return list.filter((c) => !hashes.has(c.hash));
     };
@@ -175,7 +169,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
 
     const simulateRemoteCommit = ({ branch, subject = 'Remote change', conflict }: TMockRemoteCommit = {}) => {
         const target = branch ?? config?.branch ?? 'main';
-        const commit = commitOf(subject, 'Someone else', conflict);
+        const commit = commitOf(subject, 'Someone else');
         origin.set(target, [commit, ...(origin.get(target) ?? [])]);
         if (conflict) conflicts.set(commit.hash, conflict);
     };
@@ -264,7 +258,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                     badRequest('The commit message is empty or too long');
                 }
                 if (r.changes.size === 0) fail(409, { error: 'git_nothing_to_commit', message: 'Nothing to commit' });
-                const commit = commitOf(text.split('\n')[0], c.authorName, [...r.changes.keys()]);
+                const commit = commitOf(text.split('\n')[0], c.authorName);
                 r.local.set(r.branch, [commit, ...(r.local.get(r.branch) ?? [])]);
                 r.changes.clear();
                 let pushError: TApiErrorBody | undefined;
@@ -372,16 +366,6 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 }
                 r.local.delete(branch);
                 return statusOf(r);
-            }),
-
-        getGitLog: (query = {}) =>
-            ctx.reply(() => {
-                const r = requireRepo().repo;
-                const limit = Math.min(Math.max(query.limit ?? GIT_LIMITS.logLimitDefault, 1), GIT_LIMITS.logLimitMax);
-                const list = r.local.get(r.branch) ?? [];
-                const index = query.before ? list.findIndex((c) => c.hash === query.before) : -1;
-                if (query.before && index === -1) return [];
-                return list.slice(index + 1, index + 1 + limit);
             }),
     };
 

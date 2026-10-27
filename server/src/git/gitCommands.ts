@@ -2,13 +2,13 @@ import path from 'node:path';
 import type { TGitBranchDto, TGitCommitDto, TGitStatusDto } from '@story/protocol';
 import { lstatOrNull } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
-import { asRemote } from './gitErrors';
+import { asRemote, isRemoteRefGone, remoteHttpError } from './gitErrors';
 import type { GitRunner } from './GitRunner';
 import {
     BRANCH_FORMAT,
-    LOG_FORMAT,
+    COMMIT_FORMAT,
     parseBranches,
-    parseLog,
+    parseCommitLine,
     parsePathList,
     parsePorcelainStatus,
     parseRefs,
@@ -33,10 +33,8 @@ export const readRefs = async (git: GitRunner): Promise<TRefs> =>
 
 // null: no commits yet
 const readHead = async (git: GitRunner): Promise<TGitCommitDto | null> => {
-    const { stdout, code } = await git.run(['log', '-1', LOG_FORMAT, 'HEAD', '--'], { okCodes: [128] });
-    if (code !== 0) return null;
-    const [head] = parseLog(stdout);
-    return head ?? null;
+    const { stdout, code } = await git.run(['log', '-1', COMMIT_FORMAT, 'HEAD', '--'], { okCodes: [128] });
+    return code === 0 ? parseCommitLine(stdout) : null;
 };
 
 export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
@@ -95,11 +93,18 @@ type TPushOptions = { branch?: string; force?: boolean };
 
 export const pushHead = async (git: GitRunner, { branch, force = false }: TPushOptions = {}): Promise<void> => {
     const target = branch ? `HEAD:refs/heads/${branch}` : 'HEAD';
-    await asRemote(git.run(['push', '-u', ...(force ? ['--force'] : []), 'origin', target], { network: true }));
+    await asRemote(
+        git.run(['push', '-u', ...(force ? ['--force-with-lease'] : []), 'origin', target], { network: true })
+    );
 };
 
 export const deleteRemoteBranch = async (git: GitRunner, branch: string): Promise<void> => {
-    await asRemote(git.run(['push', 'origin', '--delete', branch], { network: true }));
+    try {
+        await git.run(['push', 'origin', '--delete', branch], { network: true });
+    } catch (e) {
+        if (!isRemoteRefGone(e)) throw remoteHttpError(e);
+        await git.run(['update-ref', '-d', `refs/remotes/origin/${branch}`]);
+    }
 };
 
 export const fetchOrigin = async (git: GitRunner): Promise<void> => {

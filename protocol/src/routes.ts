@@ -31,7 +31,6 @@ import type {
     TGitCommitBody,
     TGitCommitResultDto,
     TGitDto,
-    TGitLogEntryDto,
     TGitPullResultDto,
     TGitStatusDto,
     TSetupGitBody,
@@ -198,7 +197,6 @@ export const STORY_ROUTES = {
     gitDiscard: { method: 'POST', path: '/git/discard', access: 'write' },
     getGitBranches: { method: 'GET', path: '/git/branches', access: 'write' },
     deleteGitBranch: { method: 'POST', path: '/git/branches/delete', access: 'write' },
-    getGitLog: { method: 'GET', path: '/git/log', access: 'write' },
 } as const satisfies Record<string, TStoryRouteDef>;
 
 export const GLOBAL_ROUTES = {
@@ -437,8 +435,6 @@ export type TApiSpec = {
     /** Local and `origin` branches as of the last fetch, newest commit first. */
     getGitBranches: { body: undefined; response: TGitBranchDto[] };
     deleteGitBranch: { body: TDeleteGitBranchBody; response: TGitStatusDto };
-    /** Newest first; query `TGitLogQuery`. */
-    getGitLog: { body: undefined; response: TGitLogEntryDto[] };
 };
 
 export type TRouteBody<R extends TRouteName> = TApiSpec[R]['body'];

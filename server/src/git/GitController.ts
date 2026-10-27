@@ -1,12 +1,5 @@
-import { Body, Controller, Query } from '@nestjs/common';
-import type {
-    TGitBranchDto,
-    TGitCommitResultDto,
-    TGitDto,
-    TGitLogEntryDto,
-    TGitPullResultDto,
-    TGitStatusDto,
-} from '@story/protocol';
+import { Body, Controller } from '@nestjs/common';
+import type { TGitBranchDto, TGitCommitResultDto, TGitDto, TGitPullResultDto, TGitStatusDto } from '@story/protocol';
 import { ProtocolRoute } from '../common/ProtocolRoute';
 import type { TServerContext } from '../storyContext/serverContext';
 import { StoryCtx } from '../storyContext/StoryCtx';
@@ -79,10 +72,5 @@ export class GitController {
     @ProtocolRoute('deleteGitBranch')
     deleteGitBranch(@StoryCtx() ctx: TServerContext, @Body() body: unknown): Promise<TGitStatusDto> {
         return this.git.deleteBranch(ctx, body);
-    }
-
-    @ProtocolRoute('getGitLog')
-    getGitLog(@StoryCtx() ctx: TServerContext, @Query() query: unknown): Promise<TGitLogEntryDto[]> {
-        return this.git.log(ctx, query);
     }
 }

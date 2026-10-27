@@ -9,7 +9,11 @@ import {
 import { observer } from 'mobx-react-lite';
 import { showToast } from '@story/ui';
 import { discardChanges, forcePush } from './gitActions';
-import { openGitBranchDialog, openGitCommitDialog } from './gitDialogs';
+import {
+    openGitBranchDialog,
+    openGitCommitDialog,
+    openGitSettings,
+} from './gitDialogs';
 import type { GitStore } from './GitStore';
 
 type TProps = {
@@ -124,6 +128,13 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
                 onClick={closeThen(() => discardChanges(store))}
             >
                 <ListItemText primary={_('Discard changes…')} />
+            </MenuItem>
+            <Divider />
+            <MenuItem
+                disabled={store.busy}
+                onClick={closeThen(openGitSettings)}
+            >
+                <ListItemText primary={_('Settings…')} />
             </MenuItem>
             {store.lastError && (
                 <Alert

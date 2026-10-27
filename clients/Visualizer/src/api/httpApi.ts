@@ -48,15 +48,6 @@ const NOT_STORY_WRITES: readonly TRouteName[] = [
     'deleteGitBranch',
 ];
 
-export type TQuery = Record<string, string | number | undefined>;
-
-const queryString = (query: TQuery | undefined): string => {
-    const entries = Object.entries(query ?? {}).flatMap(([key, value]) =>
-        value === undefined ? [] : [[key, String(value)]]
-    );
-    return entries.length === 0 ? '' : `?${new URLSearchParams(entries)}`;
-};
-
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
     try {
         const body = (await res.json()) as Partial<TApiErrorBody>;
@@ -93,13 +84,12 @@ export const createRequest = ({
     return async <R extends TRouteName>(
         route: R,
         params: TRouteParams<R>,
-        body?: TRouteBody<R>,
-        query?: TQuery
+        body?: TRouteBody<R>
     ): Promise<TRouteResponse<R>> => {
         const { method, path } = endpoint(storyId, route, params);
         const send = async (): Promise<Response> => {
             try {
-                return await fetchImpl(baseUrl + path + queryString(query), {
+                return await fetchImpl(baseUrl + path, {
                     method,
                     // on every mutation, bodyless ones included: the server's CSRF check requires it
                     headers: method === 'GET' ? undefined : { 'content-type': 'application/json' },
@@ -231,6 +221,5 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         gitDiscard: () => request('gitDiscard', {}),
         getGitBranches: () => request('getGitBranches', {}),
         deleteGitBranch: (body) => request('deleteGitBranch', {}, body),
-        getGitLog: (query) => request('getGitLog', {}, undefined, query),
     };
 };

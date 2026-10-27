@@ -10,8 +10,6 @@ export const GIT_LIMITS = {
     branchMaxLength: 255,
     authorNameMaxLength: 255,
     authorEmailMaxLength: 255,
-    logLimitDefault: 50,
-    logLimitMax: 200,
 } as const;
 
 /** What the clients offer for a new connection. */
@@ -133,8 +131,3 @@ export type TGitBranchDto = {
 
 /** `remote` also deletes the branch on `origin`; the current branch cannot be deleted. */
 export type TDeleteGitBranchBody = { branch: string; remote: boolean };
-
-export type TGitLogEntryDto = TGitCommitDto & { files?: string[] };
-
-/** The `getGitLog` query string. `before`: a commit hash, the page starts at its parent. */
-export type TGitLogQuery = { limit?: number; before?: string };

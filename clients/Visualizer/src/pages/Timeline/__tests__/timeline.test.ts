@@ -272,10 +272,10 @@ describe('TimelineView', () => {
         expect(view.shapeOf('chapter', 'kingdom')!.getBounds().y).toBe(70);
     });
 
-    const dragHolding = (code: string, from: [number, number], to: [number, number]) => {
-        key('keydown', code);
+    const dragHolding = (code: string, letter: string, from: [number, number], to: [number, number]) => {
+        key('keydown', code, letter);
         drag(canvas, from, to);
-        key('keyup', code);
+        key('keyup', code, letter);
     };
 
     it('a plain drag of the selected chapter moves nothing', async () => {
@@ -307,7 +307,7 @@ describe('TimelineView', () => {
         click(canvas, ...at);
         expect(s.store.selected).toEqual({ kind: 'chapter', id: 'village' });
         const dx = 14 * HOUR_S * s.store.pps;
-        dragHolding('KeyX', at, [at[0] + dx, at[1] + 200]);
+        dragHolding('KeyX', 'x', at, [at[0] + dx, at[1] + 200]);
         await vi.waitFor(async () =>
             expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 22:00', end: '5.1. 22:00' })
         );
@@ -324,7 +324,7 @@ describe('TimelineView', () => {
         );
 
         const r2 = screenRect('chapter', 'village');
-        dragHolding('KeyY', [r2.x + 40, r2.y + 20], [r2.x + 140, r2.y + 220]);
+        dragHolding('KeyZ', 'y', [r2.x + 40, r2.y + 20], [r2.x + 140, r2.y + 220]);
         await vi.waitFor(async () => expect((await s.api.getTimelineLayout()).chapters.village).toEqual({ y: 200 }));
         expect((await s.api.getChapter('village')).timeRange).toEqual({ start: '2.1. 8:00', end: '5.1. 15:00' });
     });

@@ -421,16 +421,11 @@ describe('httpApi', () => {
 });
 
 describe('git over http and SSE', () => {
-    it('sends the log query, and reports story writes but not git calls', async () => {
+    it('reports story writes but not git calls', async () => {
         const fetch = vi.fn<typeof globalThis.fetch>(() => Promise.resolve(new Response('[]', { status: 200 })));
         const onStoryWrite = vi.fn();
         const api = createHttpApi({ storyId: 'example', fetch, onStoryWrite });
 
-        await api.getGitLog({ limit: 20, before: 'abc' });
-        expect(fetch).toHaveBeenLastCalledWith(
-            '/api/stories/example/git/log?limit=20&before=abc',
-            expect.objectContaining({ method: 'GET' })
-        );
         await api.gitPull();
         expect(fetch).toHaveBeenLastCalledWith(
             '/api/stories/example/git/pull',

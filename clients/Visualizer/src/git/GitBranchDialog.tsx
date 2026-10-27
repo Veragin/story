@@ -44,11 +44,15 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
 
     const { refsKey, clearError } = store;
     useEffect(() => {
+        let cancelled = false;
         const load = async () => {
             const result = await store.loadBranches();
-            setLoadError(result.ok ? null : result.message);
+            if (!cancelled) setLoadError(result.ok ? null : result.message);
         };
         void load();
+        return () => {
+            cancelled = true;
+        };
     }, [store, refsKey]);
     useEffect(clearError, [clearError]);
 

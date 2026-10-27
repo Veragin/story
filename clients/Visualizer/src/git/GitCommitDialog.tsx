@@ -46,6 +46,7 @@ export const GitCommitDialog = observer(
         const changes = store.status?.changes ?? [];
         const trimmed = message.trim();
         const committed = pushError !== null;
+        const close = committed ? onCommitted : onClose;
 
         const commit = async () => {
             if (!trimmed || store.busy) return;
@@ -82,7 +83,7 @@ export const GitCommitDialog = observer(
         };
 
         return (
-            <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+            <Dialog open onClose={close} maxWidth="sm" fullWidth>
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -180,7 +181,7 @@ export const GitCommitDialog = observer(
                         </Stack>
                     </DialogContent>
                     <DialogActions>
-                        <Button color="inherit" onClick={onClose}>
+                        <Button color="inherit" onClick={close}>
                             {committed ? _('Close') : _('Cancel')}
                         </Button>
                         {committed ? (
