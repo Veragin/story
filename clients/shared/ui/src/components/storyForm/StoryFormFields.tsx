@@ -1,11 +1,8 @@
-import {
-    FormControlLabel,
-    Stack,
-    Switch,
-    TextField,
-    type TextFieldProps,
-} from '@mui/material';
+import type { ComponentProps } from 'react';
+import { FormControlLabel, Stack, Switch } from '@mui/material';
 import { STORY_LIMITS } from '@story/protocol';
+import { LabeledField } from '../LabeledField';
+import { LabeledTextField } from '../LabeledTextField';
 import type {
     TStoryFormErrors,
     TStoryFormMode,
@@ -29,18 +26,17 @@ export const StoryFormFields = ({
 }: TProps) => {
     const field = (
         key: Exclude<keyof TStoryFormValue, 'public'>,
-        props: TextFieldProps
+        label: string,
+        props: Partial<ComponentProps<typeof LabeledTextField>> = {}
     ) => (
-        <TextField
-            fullWidth
-            size="small"
+        <LabeledTextField
             {...props}
+            label={label}
             value={value[key]}
             onChange={(e) => onChange({ ...value, [key]: e.target.value })}
-            error={errors[key] !== undefined}
-            helperText={errors[key] ?? props.helperText}
+            error={errors[key]}
             disabled={disabled || props.disabled}
-            inputProps={{ 'data-field': key }}
+            dataField={key}
         />
     );
     const passwordHint =
@@ -50,73 +46,68 @@ export const StoryFormFields = ({
 
     return (
         <Stack spacing={2} sx={{ pt: 1 }}>
-            {field('name', {
-                label: _('Name'),
+            {field('name', _('Name'), {
                 required: true,
                 autoFocus: true,
             })}
-            {field('author', { label: _('Author') })}
-            {field('email', {
-                label: _('Email'),
+            {field('author', _('Author'))}
+            {field('email', _('Email'), {
                 type: 'email',
                 autoComplete: 'email',
                 helperText: _(
                     'Optional. Used as the author email of git commits and to reset a forgotten password.'
                 ),
             })}
-            <Stack direction="row" spacing={2}>
-                {field('password', {
-                    label: mode === 'edit' ? _('New password') : _('Password'),
+            {field(
+                'password',
+                mode === 'edit' ? _('New password') : _('Password'),
+                {
                     type: 'password',
                     required: mode !== 'edit',
                     autoComplete: 'new-password',
                     helperText: passwordHint,
-                })}
-                {field('passwordConfirm', {
-                    label: _('Confirm password'),
-                    type: 'password',
-                    required: mode !== 'edit',
-                    autoComplete: 'new-password',
-                })}
-            </Stack>
-            {field('description', {
-                label: _('Description'),
+                }
+            )}
+            {field('passwordConfirm', _('Confirm password'), {
+                type: 'password',
+                required: mode !== 'edit',
+                autoComplete: 'new-password',
+            })}
+            {field('description', _('Description'), {
                 multiline: true,
                 minRows: 3,
                 maxRows: 10,
             })}
-            <Stack direction="row" spacing={2}>
-                {field('mapWidth', {
-                    label: _('Map width'),
-                    type: 'number',
-                    disabled: mode === 'edit',
-                    helperText:
-                        mode === 'edit'
-                            ? _('Set at creation')
-                            : _(
-                                  'Tiles, %d–%d',
-                                  STORY_LIMITS.mapSizeMin,
-                                  STORY_LIMITS.mapSizeMax
-                              ),
-                })}
-                {field('mapHeight', {
-                    label: _('Map height'),
-                    type: 'number',
-                    disabled: mode === 'edit',
-                })}
-            </Stack>
-            <FormControlLabel
-                control={
-                    <Switch
-                        checked={value.public}
-                        onChange={(e) =>
-                            onChange({ ...value, public: e.target.checked })
-                        }
-                        disabled={disabled}
-                    />
-                }
-                label={_('Public: anyone may play it without the password')}
-            />
+            {field('mapWidth', _('Map width'), {
+                type: 'number',
+                disabled: mode === 'edit',
+                helperText:
+                    mode === 'edit'
+                        ? _('Set at creation')
+                        : _(
+                              'Tiles, %d–%d',
+                              STORY_LIMITS.mapSizeMin,
+                              STORY_LIMITS.mapSizeMax
+                          ),
+            })}
+            {field('mapHeight', _('Map height'), {
+                type: 'number',
+                disabled: mode === 'edit',
+            })}
+            <LabeledField label={_('Public')}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={value.public}
+                            onChange={(e) =>
+                                onChange({ ...value, public: e.target.checked })
+                            }
+                            disabled={disabled}
+                        />
+                    }
+                    label={_('Anyone may play it without the password')}
+                />
+            </LabeledField>
         </Stack>
     );
 };

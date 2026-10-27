@@ -1,14 +1,8 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import styled from '@emotion/styled';
-import {
-    Alert,
-    Button,
-    CircularProgress,
-    InputAdornment,
-    TextField,
-} from '@mui/material';
-import { Modal, Row, spacingCss } from '@story/ui';
+import { Alert, Button, CircularProgress, InputAdornment } from '@mui/material';
+import { LabeledTextField, Modal, Row, spacingCss } from '@story/ui';
 import { modals } from '../../shell';
 import type { MapPageStore } from './MapPageStore';
 import { locationIdFromName } from './locationTree';
@@ -55,27 +49,22 @@ const AddLocationModal = observer(
                             void create();
                         }}
                     >
-                        <TextField
+                        <LabeledTextField
                             label={_('Name')}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            size="small"
                             autoFocus
-                            fullWidth
                         />
-                        <TextField
+                        <LabeledTextField
                             label={_('Id')}
                             value={localId}
-                            onChange={(e) => setCustomId(e.target.value.trim() || null)}
-                            error={idError !== null}
-                            helperText={
-                                idError ??
-                                _(
-                                    'Becomes data/locations/<id>.location.ts; cannot be renamed later.'
-                                )
+                            onChange={(e) =>
+                                setCustomId(e.target.value.trim() || null)
                             }
-                            size="small"
-                            fullWidth
+                            error={idError}
+                            helperText={_(
+                                'Becomes data/locations/<id>.location.ts; cannot be renamed later.'
+                            )}
                             slotProps={{
                                 input: {
                                     startAdornment: prefix ? (

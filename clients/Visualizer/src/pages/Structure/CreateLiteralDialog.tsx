@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { structNameError, type TLiteralDto } from '@story/protocol';
+import { LabeledTextField } from '@story/ui';
 import { FormLabel } from '../../components/inputs/form/FormLabel';
 import { structNameMessage } from '../../components/inputs/StructureInput/structureRows';
 import type { StructureStore } from '../../stores/StructureStore';
@@ -100,35 +101,28 @@ export const CreateLiteralDialog = observer(
                     <DialogTitle>{_('New literal')}</DialogTitle>
                     <DialogContent>
                         <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
+                            <LabeledTextField
                                 autoFocus
                                 required
                                 label={_('name')}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                error={!!showNameError}
-                                helperText={
+                                error={
                                     showNameError
                                         ? structNameMessage(showNameError)
-                                        : _('e.g. TMood')
+                                        : null
                                 }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'name',
+                                helperText={_('e.g. TMood')}
+                                slotProps={{
+                                    htmlInput: {
+                                        'spellCheck': false,
+                                        'aria-label': 'name',
+                                    },
                                 }}
                             />
                             <FormLabel
                                 label={_('values')}
-                                warning={
-                                    touched
-                                        ? (valuesError ?? undefined)
-                                        : undefined
-                                }
-                                helperText={
-                                    touched
-                                        ? (valuesError ?? undefined)
-                                        : undefined
-                                }
+                                error={touched ? valuesError : null}
                             >
                                 <LiteralValuesInput
                                     value={rows}
@@ -136,48 +130,58 @@ export const CreateLiteralDialog = observer(
                                     ariaLabel={_('values')}
                                 />
                             </FormLabel>
-                            <RadioGroup
-                                row
-                                value={scope}
-                                onChange={(e) =>
-                                    setScope(
-                                        e.target.value === 'local'
-                                            ? 'local'
-                                            : 'global'
-                                    )
-                                }
-                            >
-                                <FormControlLabel
-                                    value="global"
-                                    control={<Radio size="small" />}
-                                    label={_('Global (%s)', LITERALS_FILE)}
-                                />
-                                <FormControlLabel
-                                    value="local"
-                                    control={<Radio size="small" />}
-                                    label={_('Local to a file')}
-                                />
-                            </RadioGroup>
-                            {scope === 'local' && (
-                                <Autocomplete
-                                    freeSolo
-                                    size="small"
-                                    options={storyFiles(structure)}
-                                    inputValue={file}
-                                    onInputChange={(_e, value) =>
-                                        setFile(value)
+                            <FormLabel label={_('scope')}>
+                                <RadioGroup
+                                    row
+                                    value={scope}
+                                    onChange={(e) =>
+                                        setScope(
+                                            e.target.value === 'local'
+                                                ? 'local'
+                                                : 'global'
+                                        )
                                     }
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label={_('file')}
-                                            error={touched && !!fileError}
-                                            helperText={
-                                                touched ? fileError : undefined
-                                            }
-                                        />
-                                    )}
-                                />
+                                >
+                                    <FormControlLabel
+                                        value="global"
+                                        control={<Radio size="small" />}
+                                        label={_('Global (%s)', LITERALS_FILE)}
+                                    />
+                                    <FormControlLabel
+                                        value="local"
+                                        control={<Radio size="small" />}
+                                        label={_('Local to a file')}
+                                    />
+                                </RadioGroup>
+                            </FormLabel>
+                            {scope === 'local' && (
+                                <FormLabel
+                                    label={_('file')}
+                                    error={touched ? fileError : null}
+                                >
+                                    <Autocomplete
+                                        freeSolo
+                                        fullWidth
+                                        size="small"
+                                        options={storyFiles(structure)}
+                                        inputValue={file}
+                                        onInputChange={(_e, value) =>
+                                            setFile(value)
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                error={touched && !!fileError}
+                                                slotProps={{
+                                                    htmlInput: {
+                                                        ...params.inputProps,
+                                                        'aria-label': _('file'),
+                                                    },
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </FormLabel>
                             )}
                             {error && (
                                 <Alert

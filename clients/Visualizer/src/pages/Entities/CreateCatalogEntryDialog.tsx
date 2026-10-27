@@ -7,7 +7,6 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
-    TextField,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
@@ -18,6 +17,7 @@ import {
     type TStructTypeDto,
     type TValueRecord,
 } from '@story/protocol';
+import { LabeledTextField } from '@story/ui';
 import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
 import { typeContextOf } from '../../components/inputs/structureContext';
 
@@ -94,25 +94,27 @@ export const CreateCatalogEntryDialog = observer(
                     <DialogTitle>{_('New %s', type.name)}</DialogTitle>
                     <DialogContent>
                         <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
+                            <LabeledTextField
                                 autoFocus
                                 required
                                 label={_('id')}
                                 value={id}
                                 onChange={(e) => setId(e.target.value)}
-                                error={!!showIdError}
-                                helperText={
+                                error={
                                     showIdError
                                         ? idErrorMessage(idProblem)
-                                        : _(
-                                              'The key in %s; stored as the value of %s fields.',
-                                              type.catalog?.file ?? catalog,
-                                              type.name
-                                          )
+                                        : null
                                 }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'id',
+                                helperText={_(
+                                    'The key in %s; stored as the value of %s fields.',
+                                    type.catalog?.file ?? catalog,
+                                    type.name
+                                )}
+                                slotProps={{
+                                    htmlInput: {
+                                        'spellCheck': false,
+                                        'aria-label': 'id',
+                                    },
                                 }}
                             />
                             <ObjectInput

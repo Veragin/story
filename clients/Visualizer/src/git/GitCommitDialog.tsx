@@ -9,7 +9,6 @@ import {
     DialogTitle,
     FormControlLabel,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
@@ -19,7 +18,7 @@ import {
     type TApiErrorBody,
     type TGitChangeKind,
 } from '@story/protocol';
-import { showToast } from '@story/ui';
+import { LabeledTextField, showToast } from '@story/ui';
 import { errorBodyMessage } from '../api';
 import type { GitStore } from './GitStore';
 
@@ -136,7 +135,7 @@ export const GitCommitDialog = observer(
                                             </div>
                                         );
                                     })}
-                                    <TextField
+                                    <LabeledTextField
                                         autoFocus
                                         required
                                         multiline

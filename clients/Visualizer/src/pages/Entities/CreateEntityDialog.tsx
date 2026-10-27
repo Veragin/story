@@ -7,10 +7,10 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
-    TextField,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { TEntityDto, TEntityKind } from '@story/protocol';
+import { LabeledTextField } from '@story/ui';
 import { ApiError } from '../../api';
 import { FormLiteralInput } from '../../components/inputs/form/FormLiteralInput';
 import type { EntityStore } from '../../stores/EntityStore';
@@ -121,26 +121,28 @@ export const CreateEntityDialog = observer(
                     <DialogTitle>{TITLE[kind]()}</DialogTitle>
                     <DialogContent>
                         <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
+                            <LabeledTextField
                                 autoFocus
                                 required
                                 label={_('id')}
                                 value={form.id}
                                 onChange={(e) => set({ id: e.target.value })}
-                                error={!!showIdError}
-                                helperText={
+                                error={
                                     showIdError
                                         ? idErrorMessage(idProblem)
-                                        : _(
-                                              'Used in code and file names; cannot be changed later.'
-                                          )
+                                        : null
                                 }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'id',
+                                helperText={_(
+                                    'Used in code and file names; cannot be changed later.'
+                                )}
+                                slotProps={{
+                                    htmlInput: {
+                                        'spellCheck': false,
+                                        'aria-label': 'id',
+                                    },
                                 }}
                             />
-                            <TextField
+                            <LabeledTextField
                                 label={_('name')}
                                 value={form.name}
                                 placeholder={form.id}
@@ -148,7 +150,7 @@ export const CreateEntityDialog = observer(
                                 helperText={_('Defaults to the id.')}
                             />
                             {fields.description !== 'none' && (
-                                <TextField
+                                <LabeledTextField
                                     label={_('description')}
                                     required={fields.description === 'required'}
                                     multiline
@@ -157,7 +159,11 @@ export const CreateEntityDialog = observer(
                                     onChange={(e) =>
                                         set({ description: e.target.value })
                                     }
-                                    error={touched && descriptionMissing}
+                                    error={
+                                        touched && descriptionMissing
+                                            ? _('Required')
+                                            : null
+                                    }
                                 />
                             )}
                             {fields.type && (

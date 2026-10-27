@@ -7,9 +7,9 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
-    TextField,
 } from '@mui/material';
 import { STORY_LIMITS } from '@story/protocol';
+import { LabeledTextField } from './LabeledTextField';
 import { resetPasswordErrorMessage } from './passwordErrorMessage';
 
 type TProps = {
@@ -88,33 +88,30 @@ export const ResetPasswordDialog = ({
                         </Alert>
                     )}
                     <Stack spacing={2}>
-                        <TextField
+                        <LabeledTextField
                             type="password"
                             label={_('New password')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            error={errors.password !== undefined}
-                            helperText={
-                                errors.password ??
-                                _('At least %d characters', L.passwordMinLength)
-                            }
+                            error={errors.password}
+                            helperText={_(
+                                'At least %d characters',
+                                L.passwordMinLength
+                            )}
                             disabled={busy}
                             autoComplete="new-password"
                             autoFocus
-                            fullWidth
-                            inputProps={{ 'data-field': 'password' }}
+                            dataField="password"
                         />
-                        <TextField
+                        <LabeledTextField
                             type="password"
                             label={_('Confirm password')}
                             value={passwordConfirm}
                             onChange={(e) => setPasswordConfirm(e.target.value)}
-                            error={errors.passwordConfirm !== undefined}
-                            helperText={errors.passwordConfirm}
+                            error={errors.passwordConfirm}
                             disabled={busy}
                             autoComplete="new-password"
-                            fullWidth
-                            inputProps={{ 'data-field': 'passwordConfirm' }}
+                            dataField="passwordConfirm"
                         />
                     </Stack>
                 </DialogContent>

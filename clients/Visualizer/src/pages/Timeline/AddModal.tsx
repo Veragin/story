@@ -8,10 +8,10 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
-    TextField,
     ToggleButton,
     ToggleButtonGroup,
 } from '@mui/material';
+import { LabeledTextField } from '@story/ui';
 import { ApiError } from '../../api';
 import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
 import { errorMessage, type TimelineStore } from './store/TimelineStore';
@@ -96,9 +96,8 @@ export const AddModal = observer(({ store, time, close }: TAddProps) => {
                             {_('Time trigger')}
                         </ToggleButton>
                     </ToggleButtonGroup>
-                    <TextField
+                    <LabeledTextField
                         autoFocus
-                        size="small"
                         label={
                             kind === 'chapter'
                                 ? _('Chapter id')
@@ -107,8 +106,8 @@ export const AddModal = observer(({ store, time, close }: TAddProps) => {
                         value={id}
                         onChange={(e) => setId(e.target.value.trim())}
                         onKeyDown={(e) => e.key === 'Enter' && void submit()}
-                        error={!!idError}
-                        helperText={idError ?? _('Cannot be changed later')}
+                        error={idError}
+                        dataField="id"
                     />
                     {kind === 'chapter' ? (
                         <FormTypeInput

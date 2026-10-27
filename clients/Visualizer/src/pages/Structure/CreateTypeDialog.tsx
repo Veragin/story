@@ -9,7 +9,6 @@ import {
     FormControlLabel,
     Stack,
     Switch,
-    TextField,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
@@ -17,6 +16,8 @@ import {
     type TFieldDesc,
     type TStructTypeDto,
 } from '@story/protocol';
+import { LabeledTextField } from '@story/ui';
+import { FormLabel } from '../../components/inputs/form/FormLabel';
 import { structNameMessage } from '../../components/inputs/StructureInput/structureRows';
 import type { StructureStore } from '../../stores/StructureStore';
 import { failureMessage } from '../../stores/writeResult';
@@ -88,58 +89,61 @@ export const CreateTypeDialog = observer(
                     <DialogTitle>{_('New type')}</DialogTitle>
                     <DialogContent>
                         <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
+                            <LabeledTextField
                                 autoFocus
                                 required
                                 label={_('name')}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                error={!!showNameError}
-                                helperText={
+                                error={
                                     showNameError
                                         ? structNameMessage(showNameError)
-                                        : _(
-                                              'Goes into types/%s.ts',
-                                              name || 'T…'
-                                          )
+                                        : null
                                 }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'name',
+                                helperText={_(
+                                    'Goes into types/%s.ts',
+                                    name || 'T…'
+                                )}
+                                slotProps={{
+                                    htmlInput: {
+                                        'spellCheck': false,
+                                        'aria-label': 'name',
+                                    },
                                 }}
                             />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={hasCatalog}
-                                        onChange={(e) =>
-                                            setHasCatalog(e.target.checked)
-                                        }
-                                        inputProps={{
-                                            'aria-label': 'catalog',
-                                        }}
-                                    />
-                                }
-                                label={_(
-                                    'Has instances (a catalog), so fields can reference it'
-                                )}
-                            />
+                            <FormLabel label={_('catalog')}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={hasCatalog}
+                                            onChange={(e) =>
+                                                setHasCatalog(e.target.checked)
+                                            }
+                                            inputProps={{
+                                                'aria-label': 'catalog',
+                                            }}
+                                        />
+                                    }
+                                    label={_(
+                                        'Has instances (a catalog), so fields can reference it'
+                                    )}
+                                />
+                            </FormLabel>
                             {hasCatalog && (
-                                <TextField
+                                <LabeledTextField
                                     label={_('catalog name')}
                                     value={catalogName}
                                     onChange={(e) => setPlural(e.target.value)}
-                                    error={!!catalogError}
-                                    helperText={
-                                        catalogError ??
-                                        _(
-                                            'data/catalogs/%s.ts; its entries are edited in Entities.',
-                                            catalogName || '…'
-                                        )
-                                    }
-                                    inputProps={{
-                                        'spellCheck': false,
-                                        'aria-label': 'catalog name',
+                                    error={catalogError}
+                                    helperText={_(
+                                        'data/catalogs/%s.ts; its entries are edited in Entities.',
+                                        catalogName || '…'
+                                    )}
+                                    slotProps={{
+                                        htmlInput: {
+                                            'spellCheck': false,
+                                            'aria-label': 'catalog name',
+                                        },
                                     }}
                                 />
                             )}

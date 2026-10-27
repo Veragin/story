@@ -6,11 +6,10 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    TextField,
 } from '@mui/material';
 import styled from '@emotion/styled';
 import { STORY_LIMITS } from '@story/protocol';
-import { Row, spacingCss } from '@story/ui';
+import { LabeledTextField, Row, spacingCss } from '@story/ui';
 import {
     DEFAULT_MAP_HEIGHT,
     DEFAULT_MAP_WIDTH,
@@ -62,24 +61,20 @@ export const MapSizeDialog = ({
                         {_('The size of the map, in tiles.')}
                     </DialogContentText>
                     <SFields>
-                        <TextField
+                        <LabeledTextField
                             label={_('Width')}
                             type="number"
                             value={width}
                             onChange={(e) => setWidth(e.target.value)}
-                            error={widthError !== null}
-                            helperText={widthError}
-                            size="small"
+                            error={widthError}
                             autoFocus
                         />
-                        <TextField
+                        <LabeledTextField
                             label={_('Height')}
                             type="number"
                             value={height}
                             onChange={(e) => setHeight(e.target.value)}
-                            error={heightError !== null}
-                            helperText={heightError}
-                            size="small"
+                            error={heightError}
                         />
                     </SFields>
                 </DialogContent>

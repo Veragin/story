@@ -8,6 +8,7 @@ export type TFormProps = {
     actions?: ReactNode;
     helperText?: string;
     warning?: string;
+    error?: string | null;
 };
 
 export type TFormInputProps<V, C extends V = V> = TFormProps & {
@@ -23,6 +24,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
     actions,
     helperText,
     warning,
+    error,
     value,
     onChange,
     disabled,
@@ -36,6 +38,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
         actions,
         helperText,
         warning,
+        error,
         disabled,
         isSet: value !== undefined,
         onAdd: () => onChange(emptyValue),
@@ -48,7 +51,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
                   ...rest,
                   value: value ?? emptyValue,
                   onChange: (next: C) => onChange(next),
-                  hasError: diagnostics.length > 0,
+                  hasError: diagnostics.length > 0 || !!error,
                   ariaLabel: label,
                   disabled,
               },

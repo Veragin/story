@@ -24,7 +24,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { observer } from 'mobx-react-lite';
 import { isGitBranchName, type TGitBranchDto } from '@story/protocol';
-import { showToast } from '@story/ui';
+import { LabeledTextField, showToast } from '@story/ui';
+import { FormLabel } from '../components/inputs/form/FormLabel';
 import { useVisualizerStore } from '../context';
 import { askDeleteBranch, cleanBeforeSwitch } from './gitActions';
 import type { GitStore } from './GitStore';
@@ -181,8 +182,7 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
             {(store.busy || fetching) && <LinearProgress />}
             <DialogContent>
                 <Stack gap={2} sx={{ pt: 1 }}>
-                    <TextField
-                        size="small"
+                    <LabeledTextField
                         label={_('Filter')}
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
@@ -197,39 +197,48 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
                             if (name && !nameError) void create();
                         }}
                     >
-                        <Stack direction="row" gap={1} alignItems="flex-start">
-                            <TextField
-                                size="small"
-                                fullWidth
-                                label={_('New branch from current')}
-                                value={newBranch}
-                                onChange={(e) => setNewBranch(e.target.value)}
-                                error={nameError !== null}
-                                helperText={
-                                    nameError ??
-                                    (store.dirty
-                                        ? _(
-                                              'The uncommitted changes come along'
-                                          )
-                                        : ' ')
-                                }
-                                slotProps={{
-                                    htmlInput: {
-                                        'aria-label': 'new branch',
-                                        'spellCheck': false,
-                                    },
-                                }}
-                            />
-                            <Button
-                                type="submit"
-                                variant="outlined"
-                                disabled={
-                                    store.busy || !name || nameError !== null
-                                }
+                        <FormLabel
+                            label={_('New branch from current')}
+                            error={nameError}
+                            helperText={
+                                store.dirty
+                                    ? _('The uncommitted changes come along')
+                                    : undefined
+                            }
+                        >
+                            <Stack
+                                direction="row"
+                                gap={1}
+                                alignItems="flex-start"
                             >
-                                {_('Create')}
-                            </Button>
-                        </Stack>
+                                <TextField
+                                    size="small"
+                                    fullWidth
+                                    value={newBranch}
+                                    onChange={(e) =>
+                                        setNewBranch(e.target.value)
+                                    }
+                                    error={nameError !== null}
+                                    slotProps={{
+                                        htmlInput: {
+                                            'aria-label': 'new branch',
+                                            'spellCheck': false,
+                                        },
+                                    }}
+                                />
+                                <Button
+                                    type="submit"
+                                    variant="outlined"
+                                    disabled={
+                                        store.busy ||
+                                        !name ||
+                                        nameError !== null
+                                    }
+                                >
+                                    {_('Create')}
+                                </Button>
+                            </Stack>
+                        </FormLabel>
                     </form>
                     {error && (
                         <Alert

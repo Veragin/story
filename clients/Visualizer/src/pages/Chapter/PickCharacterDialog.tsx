@@ -6,9 +6,8 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    MenuItem,
-    TextField,
 } from '@mui/material';
+import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
 import type { ChapterGraphStore } from './ChapterGraphStore';
 
 export const PickCharacterDialog = observer(
@@ -29,21 +28,20 @@ export const PickCharacterDialog = observer(
                     {_('Remove character from %s', store.chapterTitle)}
                 </DialogTitle>
                 <DialogContent>
-                    <TextField
-                        select
-                        fullWidth
-                        size="small"
+                    <FormTypeInput
                         label={_('Character')}
                         value={characterId}
-                        sx={{ mt: 1 }}
-                        onChange={(e) => setCharacterId(e.target.value)}
-                    >
-                        {options.map((c) => (
-                            <MenuItem key={c.id} value={c.id}>
-                                {_('%s (%d passages)', c.name, c.passageCount)}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        onChange={(next) => setCharacterId(next ?? '')}
+                        options={options.map((c) => ({
+                            id: c.id,
+                            label: _(
+                                '%s (%d passages)',
+                                c.name,
+                                c.passageCount
+                            ),
+                        }))}
+                        dataField="characterId"
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button color="inherit" onClick={onClose}>

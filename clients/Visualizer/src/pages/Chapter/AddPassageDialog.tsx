@@ -7,10 +7,10 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    MenuItem,
     Stack,
-    TextField,
 } from '@mui/material';
+import { LabeledTextField } from '@story/ui';
+import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
 import type { TPassageType } from '@story/protocol';
 import type { ChapterGraphStore } from './ChapterGraphStore';
 import { errorText, idError } from './dialogUtils';
@@ -89,51 +89,44 @@ export const AddPassageDialog = observer(
                         </Alert>
                     ) : (
                         <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
-                                select
-                                size="small"
+                            <FormTypeInput
                                 label={_('Character')}
                                 value={characterId}
-                                onChange={(e) => setCharacterId(e.target.value)}
-                            >
-                                {characters.map((c) => (
-                                    <MenuItem key={c.id} value={c.id}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                            <TextField
-                                size="small"
+                                onChange={(next) => setCharacterId(next ?? '')}
+                                options={characters.map((c) => ({
+                                    id: c.id,
+                                    label: c.name,
+                                }))}
+                                dataField="characterId"
+                            />
+                            <LabeledTextField
                                 label={_('Local id')}
                                 value={localId}
                                 autoFocus
-                                error={localError !== null || exists}
-                                helperText={
+                                error={
                                     localError ??
                                     (exists
                                         ? _('This passage already exists')
-                                        : `${store.chapterId}-${characterId}-${localId || '…'}`)
+                                        : null)
                                 }
+                                helperText={`${store.chapterId}-${characterId}-${localId || '…'}`}
                                 onChange={(e) =>
                                     setLocalId(e.target.value.trim())
                                 }
                             />
-                            <TextField
-                                select
-                                size="small"
+                            <FormTypeInput
                                 label={_('Type')}
                                 value={type}
-                                onChange={(e) => {
-                                    const next = e.target.value;
-                                    if (isPassageType(next)) setType(next);
+                                onChange={(next) => {
+                                    if (next && isPassageType(next))
+                                        setType(next);
                                 }}
-                            >
-                                {PASSAGE_TYPES.map((t) => (
-                                    <MenuItem key={t.type} value={t.type}>
-                                        {t.label()}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                                options={PASSAGE_TYPES.map((t) => ({
+                                    id: t.type,
+                                    label: t.label(),
+                                }))}
+                                dataField="type"
+                            />
                             {error && <Alert severity="error">{error}</Alert>}
                         </Stack>
                     )}

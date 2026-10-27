@@ -7,10 +7,10 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    MenuItem,
     Stack,
-    TextField,
 } from '@mui/material';
+import { LabeledTextField } from '@story/ui';
+import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
 import type { ChapterGraphStore } from './ChapterGraphStore';
 import { errorText, idError } from './dialogUtils';
 
@@ -49,31 +49,24 @@ export const AddCharacterDialog = observer(
                                 )}
                             </Alert>
                         ) : (
-                            <TextField
-                                select
-                                size="small"
+                            <FormTypeInput
                                 label={_('Character')}
                                 value={characterId}
-                                onChange={(e) => setCharacterId(e.target.value)}
-                            >
-                                {options.map((c) => (
-                                    <MenuItem key={c.id} value={c.id}>
-                                        {c.name} ({c.id})
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                                onChange={(next) => setCharacterId(next ?? '')}
+                                options={options.map((c) => ({
+                                    id: c.id,
+                                    label: `${c.name} (${c.id})`,
+                                }))}
+                                dataField="characterId"
+                            />
                         )}
-                        <TextField
-                            size="small"
+                        <LabeledTextField
                             label={_('Start passage id')}
                             value={startId}
-                            error={startError !== null}
-                            helperText={
-                                startError ??
-                                _(
-                                    'Local id of the start passage (default intro)'
-                                )
-                            }
+                            error={startError}
+                            helperText={_(
+                                'Local id of the start passage (default intro)'
+                            )}
                             onChange={(e) => setStartId(e.target.value.trim())}
                         />
                         {error && <Alert severity="error">{error}</Alert>}

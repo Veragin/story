@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import styled from '@emotion/styled';
-import { Button, TextField } from '@mui/material';
-import { Row, spacingCss } from '@story/ui';
+import { Button } from '@mui/material';
+import { LabeledTextField, Row, spacingCss } from '@story/ui';
 import type { MapStore } from '../../MapStore';
 import { isPaletteNameTaken } from '../../palette';
 import { ColorSwatchInput } from '../../../components/ColorSwatchInput';
+import { FormLabel } from '../../../components/inputs/form/FormLabel';
 import { ToolSection } from '../ToolWindow/ToolSection';
 
 type Props = {
@@ -35,29 +36,21 @@ export const TileTypeForm = ({ mapStore, onBack, editId }: Props) => {
     return (
         <ToolSection label={editId ? _('Edit tile type') : undefined}>
             <SForm onSubmit={onSubmit}>
-                <SRow>
+                <FormLabel label={_('Color')}>
                     <ColorSwatchInput
                         label={_('Color')}
                         value={color}
                         onChange={setColor}
                         size={36}
                     />
-                    <TextField
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        label={_('Name')}
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        autoFocus
-                        error={nameTaken}
-                        helperText={
-                            nameTaken
-                                ? _('This name is already used')
-                                : undefined
-                        }
-                    />
-                </SRow>
+                </FormLabel>
+                <LabeledTextField
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    label={_('Name')}
+                    autoFocus
+                    error={nameTaken ? _('This name is already used') : null}
+                />
                 <SButtons>
                     <Button color="inherit" size="small" onClick={onBack}>
                         {_('Cancel')}
@@ -79,11 +72,6 @@ export const TileTypeForm = ({ mapStore, onBack, editId }: Props) => {
 const SForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: ${spacingCss(1)};
-`;
-
-const SRow = styled(Row)`
-    align-items: flex-start;
     gap: ${spacingCss(1)};
 `;
 

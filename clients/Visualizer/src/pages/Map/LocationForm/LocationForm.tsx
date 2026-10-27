@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import { Alert, Button, TextField } from '@mui/material';
-import { Row, SmallText, spacingCss } from '@story/ui';
+import { Alert, Button } from '@mui/material';
+import { LabeledTextField, Row, SmallText, spacingCss } from '@story/ui';
 import type { TLocationDto } from '@story/protocol';
 import { ApiError } from '../../../api';
 import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
@@ -115,13 +115,11 @@ export const LocationForm = ({
                 if (!readOnly) void save();
             }}
         >
-            <TextField
+            <LabeledTextField
                 label={_('Id')}
                 value={location.id}
                 slotProps={{ input: { readOnly: true } }}
                 helperText={_('The id cannot be changed.')}
-                size="small"
-                fullWidth
             />
             <SmallText>{location.file}</SmallText>
             <FormStringInput

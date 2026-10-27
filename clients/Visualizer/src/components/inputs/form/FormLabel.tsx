@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { Button, IconButton, styled, Tooltip, Typography } from '@mui/material';
+import { Button, IconButton, styled, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import { spacingCss } from '@story/ui';
+import { LabeledField } from '@story/ui';
 import { InputDiagnostics } from '../InputDiagnostics';
 import type { TFormProps } from './formProps';
 
@@ -21,14 +21,13 @@ export const FormLabel = ({
     actions,
     helperText,
     warning,
+    error,
     isSet = true,
     onAdd,
     onRemove,
     disabled,
     children,
 }: TProps) => {
-    const hasError = diagnostics.length > 0;
-
     if (optional && !isSet) {
         return (
             <SAddRow data-form-field={label}>
@@ -48,22 +47,14 @@ export const FormLabel = ({
     }
 
     return (
-        <SRoot data-form-field={label}>
-            <SGrid>
-                <SHeader>
-                    <Typography
-                        variant="caption"
-                        color={
-                            hasError
-                                ? 'error'
-                                : warning
-                                  ? 'warning.main'
-                                  : 'text.secondary'
-                        }
-                    >
-                        {label}
-                    </Typography>
-                    <SSpacer />
+        <LabeledField
+            label={label}
+            helperText={helperText}
+            warning={warning}
+            error={error}
+            invalid={diagnostics.length > 0}
+            actions={
+                <>
                     {actions}
                     {optional && onRemove && (
                         <Tooltip title={_('Remove %s', label)}>
@@ -80,70 +71,17 @@ export const FormLabel = ({
                             </span>
                         </Tooltip>
                     )}
-                </SHeader>
-                <SBody>
-                    {children}
-                    {warning && (
-                        <Typography variant="caption" color="warning.main">
-                            {warning}
-                        </Typography>
-                    )}
-                    {helperText && (
-                        <Typography variant="caption" color="text.secondary">
-                            {helperText}
-                        </Typography>
-                    )}
-                    <InputDiagnostics diagnostics={diagnostics} />
-                </SBody>
-            </SGrid>
-        </SRoot>
+                </>
+            }
+        >
+            {children}
+            <InputDiagnostics diagnostics={diagnostics} />
+        </LabeledField>
     );
 };
-
-const SRoot = styled('div')`
-    container-type: inline-size;
-    width: 100%;
-    min-width: 0;
-`;
-
-const SGrid = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    @container (min-width: 560px) {
-        display: grid;
-        grid-template-columns: 160px minmax(0, 1fr);
-        column-gap: ${spacingCss(1)};
-        align-items: start;
-    }
-`;
-
-const SHeader = styled('div')`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 28px;
-
-    @container (min-width: 560px) {
-        min-height: 40px;
-        overflow-wrap: anywhere;
-    }
-`;
-
-const SBody = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-`;
 
 const SAddRow = styled('div')`
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-`;
-
-const SSpacer = styled('span')`
-    flex: 1;
 `;

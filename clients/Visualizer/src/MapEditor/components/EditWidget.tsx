@@ -1,7 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import styled from '@emotion/styled';
-import { TextField } from '@mui/material';
-import { Column, spacingCss } from '@story/ui';
+import { Column, LabeledTextField, spacingCss } from '@story/ui';
 import type { MapStore } from '../MapStore';
 import { ToolSection } from './ToolWindow/ToolSection';
 import { ToolHint } from './ToolWindow/ToolHint';
@@ -32,7 +31,7 @@ export const EditWidget = observer(({ mapStore }: Props) => {
             label={`${selectedTile.i}, ${selectedTile.j} · ${color?.name ?? tile.tile}`}
         >
             <SColumn data-testid="tile-edit-widget">
-                <TextField
+                <LabeledTextField
                     value={tile.label ?? ''}
                     onChange={(e) =>
                         mapStore.setTileText(selectedTile, {
@@ -40,10 +39,8 @@ export const EditWidget = observer(({ mapStore }: Props) => {
                         })
                     }
                     label={_('Label')}
-                    variant="outlined"
-                    size="small"
                 />
-                <TextField
+                <LabeledTextField
                     value={tile.description ?? ''}
                     onChange={(e) =>
                         mapStore.setTileText(selectedTile, {
@@ -51,8 +48,6 @@ export const EditWidget = observer(({ mapStore }: Props) => {
                         })
                     }
                     label={_('Description')}
-                    variant="outlined"
-                    size="small"
                     multiline
                     minRows={3}
                     maxRows={10}

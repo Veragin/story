@@ -6,8 +6,8 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    TextField,
 } from '@mui/material';
+import { LabeledTextField } from './LabeledTextField';
 import { passwordErrorMessage } from './passwordErrorMessage';
 import { PasswordResetRequestForm } from './PasswordResetRequestForm';
 
@@ -86,18 +86,16 @@ export const PasswordDialog = ({
                                 {message}
                             </Alert>
                         )}
-                        <TextField
+                        <LabeledTextField
                             type="password"
                             label={_('Password')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            error={error !== null}
-                            helperText={error ?? ' '}
+                            error={error}
                             disabled={busy}
                             autoComplete="current-password"
                             autoFocus
-                            fullWidth
-                            margin="dense"
+                            dataField="password"
                         />
                         {onRequestReset && (
                             <Button

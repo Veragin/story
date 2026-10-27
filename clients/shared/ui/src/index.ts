@@ -6,6 +6,8 @@ export * from './components/PasswordDialog';
 export * from './components/PasswordResetRequestForm';
 export * from './components/ResetPasswordDialog';
 export * from './components/CollapsibleSection';
+export * from './components/LabeledField';
+export * from './components/LabeledTextField';
 export * from './components/storyForm/storyForm';
 export * from './components/storyForm/StoryFormFields';
 export * from './components/storyForm/StoryFormPage';
