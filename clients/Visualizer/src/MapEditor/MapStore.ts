@@ -1,10 +1,11 @@
 import { action, makeObservable, observable } from 'mobx';
-import type { Camera } from '../canvas';
+import type { Camera, TPoint, TSize } from '../canvas';
 import { getUiState, setUiState } from '../ui-state';
 import { Draw } from './MapEngine/Draw';
 import { MouseListener } from './MapEngine/MouseListener';
 import { MAX_BRUSH_SIZE } from './MapEngine/constants';
-import { findNeighbor, isInsideMap } from './MapEngine/utils';
+import { findNeighbor, isInsideMap, mapWorldBounds, minimapSize } from './MapEngine/utils';
+import { createColorId } from './palette';
 import type { TMapDocument, TMapTile, TTile, TTileTool } from './types';
 
 export interface IMapHost {
@@ -55,6 +56,7 @@ export class MapStore {
             paint: action,
             setTileText: action,
             setPaletteColor: action,
+            addPaletteColor: action,
             deleteColor: action,
             onDataReplaced: action,
             persist: false,
@@ -127,6 +129,23 @@ export class MapStore {
         this.render();
     };
 
+    isOnMinimap = (screen: TPoint, size: TSize): boolean => {
+        const map = this.data;
+        if (!map || !this.showMinimap) return false;
+        const mini = minimapSize(size, map);
+        return screen.x < mini.width && screen.y > size.height - mini.height;
+    };
+
+    moveByMinimap = (screen: TPoint, size: TSize) => {
+        const map = this.data;
+        if (!map) return;
+        const mini = minimapSize(size, map);
+        const bounds = mapWorldBounds(map);
+        const fx = Math.min(1, Math.max(0, screen.x / mini.width));
+        const fy = Math.min(1, Math.max(0, (screen.y - (size.height - mini.height)) / mini.height));
+        this.camera.centerOn({ x: bounds.x + fx * bounds.width, y: bounds.y + fy * bounds.height }, size);
+    };
+
     getTile = (tile: TTile): TMapTile | undefined => this.data?.data[tile.i]?.[tile.j];
 
     paint = (center: TTile): boolean => {
@@ -163,6 +182,12 @@ export class MapStore {
         this.selectedColorId = colorId;
         this.persist();
         this.edited();
+    };
+
+    addPaletteColor = (entry: { name: string; color: string }) => {
+        const map = this.data;
+        if (!map) return;
+        this.setPaletteColor(createColorId(map.palette, entry.name), entry);
     };
 
     deleteColor = () => {

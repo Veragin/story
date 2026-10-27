@@ -12,12 +12,12 @@ import { BrushSizeSlider } from '../BrushSizeSlider';
 
 type Props = {
     mapStore: MapStore;
-    onAddNewColor: (id?: string) => void;
+    onOpenTileTypeForm: (id?: string) => void;
     onDeleteColor: () => void;
 };
 
 export const ColorPicker = observer(
-    ({ mapStore, onAddNewColor, onDeleteColor }: Props) => {
+    ({ mapStore, onOpenTileTypeForm, onDeleteColor }: Props) => {
         void mapStore.revision;
         const palette = mapStore.data?.palette ?? {};
 
@@ -26,29 +26,29 @@ export const ColorPicker = observer(
                 label={<BrushSizeSlider mapStore={mapStore} />}
                 actions={
                     <Row>
-                        <Tooltip title={_('Add new color')}>
+                        <Tooltip title={_('Add tile type')}>
                             <IconButton
                                 size="small"
                                 color="inherit"
-                                onClick={() => onAddNewColor()}
-                                aria-label={_('Add new color')}
+                                onClick={() => onOpenTileTypeForm()}
+                                aria-label={_('Add tile type')}
                             >
                                 <AddRoundedIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title={_('Edit color')}>
+                        <Tooltip title={_('Edit tile type')}>
                             <IconButton
                                 size="small"
                                 color="inherit"
                                 onClick={() =>
-                                    onAddNewColor(mapStore.selectedColorId)
+                                    onOpenTileTypeForm(mapStore.selectedColorId)
                                 }
-                                aria-label={_('Edit color')}
+                                aria-label={_('Edit tile type')}
                             >
                                 <EditRoundedIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title={_('Delete color')}>
+                        <Tooltip title={_('Delete tile type')}>
                             <span>
                                 <IconButton
                                     size="small"
@@ -57,7 +57,7 @@ export const ColorPicker = observer(
                                         mapStore.selectedColorId === 'none'
                                     }
                                     onClick={onDeleteColor}
-                                    aria-label={_('Delete color')}
+                                    aria-label={_('Delete tile type')}
                                 >
                                     <DeleteRoundedIcon fontSize="small" />
                                 </IconButton>

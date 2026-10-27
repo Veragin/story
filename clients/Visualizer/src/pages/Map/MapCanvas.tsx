@@ -6,6 +6,7 @@ import { Scene } from '../../canvas';
 import { modals } from '../../shell';
 import { LocationsLayer } from './LocationsLayer';
 import type { MapPageStore } from './MapPageStore';
+import { MinimapInteraction } from './MinimapInteraction';
 
 type Props = {
     store: MapPageStore;
@@ -33,6 +34,7 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         const layer = new LocationsLayer(scene, store, (id) =>
             openRef.current(id)
         );
+        const minimap = new MinimapInteraction(scene, store.tiles);
 
         const measure = () =>
             store.setViewport({
@@ -54,6 +56,7 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         return () => {
             offModal();
             observer?.disconnect();
+            minimap.destroy();
             layer.destroy();
             scene.destroy();
             detachTiles();

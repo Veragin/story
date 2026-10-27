@@ -10,18 +10,17 @@ type Props = {
 };
 
 export const DeleteAlert = ({ mapStore, onBack }: Props) => (
-    <ToolSection label={_('Delete color')}>
+    <ToolSection label={_('Delete tile type')}>
         <SText>
-            {_('Are you sure you want to delete color')}{' '}
+            {_('Are you sure you want to delete tile type')}{' '}
             <b>{mapStore.data?.palette[mapStore.selectedColorId]?.name}</b>?{' '}
-            {_('All tiles with that color will be set to None.')}
+            {_('All tiles of that type will be set to None.')}
         </SText>
         <SButtons>
-            <Button size="small" color="inherit" onClick={onBack}>
-                {_('Back')}
+            <Button color="inherit" onClick={onBack}>
+                {_('Cancel')}
             </Button>
             <Button
-                size="small"
                 variant="contained"
                 color="error"
                 onClick={() => {

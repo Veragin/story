@@ -41,18 +41,16 @@ export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
                 {_('Tiles')}
             </ToggleButton>
         </ToggleButtonGroup>
-        {store.mode === 'tiles' && (
-            <Tooltip title={_('Minimap')}>
-                <IconButton
-                    color={store.tiles.showMinimap ? 'secondary' : 'inherit'}
-                    onClick={() => store.tiles.toggleShowMinimap()}
-                    aria-label={_('Minimap')}
-                    aria-pressed={store.tiles.showMinimap}
-                >
-                    <MapIcon />
-                </IconButton>
-            </Tooltip>
-        )}
+        <Tooltip title={_('Minimap')}>
+            <IconButton
+                color={store.tiles.showMinimap ? 'secondary' : 'inherit'}
+                onClick={() => store.tiles.toggleShowMinimap()}
+                aria-label={_('Minimap')}
+                aria-pressed={store.tiles.showMinimap}
+            >
+                <MapIcon />
+            </IconButton>
+        </Tooltip>
         <Tooltip title={_('Show the whole map')}>
             <IconButton
                 color="inherit"

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import type { MapStore } from '../../MapStore';
 import { ColorPicker } from './ColorPicker';
-import { AddNewColor } from './AddNewColor';
+import { TileTypeForm } from './TileTypeForm';
 import { DeleteAlert } from './DeleteAlert';
 
 type Props = {
@@ -10,19 +10,19 @@ type Props = {
 };
 
 export const Palette = observer(({ mapStore }: Props) => {
-    const [addNewColor, setAddNewColor] = useState<null | undefined | string>(
+    const [tileTypeForm, setTileTypeForm] = useState<null | undefined | string>(
         null
     );
     const [addDeleteColor, setDeleteColor] = useState(false);
 
     if (!mapStore.data) return null;
 
-    if (addNewColor !== null) {
+    if (tileTypeForm !== null) {
         return (
-            <AddNewColor
+            <TileTypeForm
                 mapStore={mapStore}
-                onBack={() => setAddNewColor(null)}
-                initId={addNewColor}
+                onBack={() => setTileTypeForm(null)}
+                editId={tileTypeForm}
             />
         );
     }
@@ -37,7 +37,7 @@ export const Palette = observer(({ mapStore }: Props) => {
     return (
         <ColorPicker
             mapStore={mapStore}
-            onAddNewColor={(id) => setAddNewColor(id)}
+            onOpenTileTypeForm={(id) => setTileTypeForm(id)}
             onDeleteColor={() => setDeleteColor(true)}
         />
     );
