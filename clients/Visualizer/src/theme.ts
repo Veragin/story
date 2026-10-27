@@ -1,4 +1,4 @@
-import { alpha, createTheme, type ThemeOptions } from '@mui/material';
+import { createTheme, type ThemeOptions } from '@mui/material';
 
 const FORM = {
     text: '#ffffff',
@@ -9,17 +9,38 @@ const FORM = {
     accent: '#66bb6a',
 };
 
+const TOGGLE = {
+    text: 'rgba(255, 255, 255, 0.7)',
+    track: 'rgba(255, 255, 255, 0.05)',
+    trackBorder: 'rgba(255, 255, 255, 0.12)',
+    hover: 'rgba(255, 255, 255, 0.08)',
+    selected: '#2e7d32',
+    selectedHover: '#388e3c',
+};
+
 const formComponents: ThemeOptions['components'] = {
     MuiToggleButton: {
         styleOverrides: {
             root: {
-                'color': FORM.text,
-                'borderColor': FORM.border,
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-                '&.Mui-selected, &.Mui-selected:hover': {
-                    color: FORM.accent,
-                    borderColor: FORM.accent,
-                    backgroundColor: alpha(FORM.accent, 0.16),
+                'gap': 4,
+                'padding': '4px 12px',
+                'border': `1px solid ${TOGGLE.trackBorder}`,
+                'borderRadius': 8,
+                'color': TOGGLE.text,
+                'textTransform': 'none',
+                'transition': 'background-color 120ms, color 120ms',
+                '&:hover': {
+                    color: FORM.text,
+                    backgroundColor: TOGGLE.hover,
+                },
+                '&.Mui-selected': {
+                    'color': FORM.text,
+                    'backgroundColor': TOGGLE.selected,
+                    '&:hover': { backgroundColor: TOGGLE.selectedHover },
+                },
+                '&.Mui-focusVisible': {
+                    outline: `2px solid ${FORM.accent}`,
+                    outlineOffset: 1,
                 },
                 '&.Mui-disabled': {
                     color: 'rgba(255, 255, 255, 0.3)',
@@ -30,8 +51,21 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiToggleButtonGroup: {
         styleOverrides: {
-            // MUI blanks the left border of later grouped buttons
-            grouped: { '&.Mui-selected': { borderLeftColor: FORM.accent } },
+            root: {
+                gap: 2,
+                padding: 2,
+                borderRadius: 10,
+                border: `1px solid ${TOGGLE.trackBorder}`,
+                backgroundColor: TOGGLE.track,
+            },
+            grouped: {
+                // outranks MUI's first/middle/last button radius and border resets
+                '&.MuiToggleButton-root': {
+                    margin: 0,
+                    border: 0,
+                    borderRadius: 7,
+                },
+            },
         },
     },
     MuiOutlinedInput: {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, styled } from '@mui/material';
+import { Button, styled, ToggleButton } from '@mui/material';
 import { Camera } from '../Camera';
 import { boundsOf, rectToPolygon } from '../geometry';
 import { LineTool } from '../controllers/LineTool';
@@ -281,21 +281,23 @@ export const CanvasPlayground = () => {
     return (
         <SRoot>
             <SToolbar>
-                <Button
+                <ToggleButton
+                    value="editable"
                     size="small"
-                    variant={editable ? 'contained' : 'outlined'}
-                    onClick={toggleEditable}
+                    selected={editable}
+                    onChange={toggleEditable}
                 >
                     {editable ? 'Editable' : 'View mode'}
-                </Button>
-                <Button
+                </ToggleButton>
+                <ToggleButton
+                    value="line"
                     size="small"
-                    variant={lineActive ? 'contained' : 'outlined'}
+                    selected={lineActive}
                     disabled={!editable}
-                    onClick={() => rigRef.current?.lineTool.toggle()}
+                    onChange={() => rigRef.current?.lineTool.toggle()}
                 >
                     Line tool
-                </Button>
+                </ToggleButton>
                 <Button
                     size="small"
                     variant="outlined"

@@ -6,6 +6,7 @@ import {
     MenuItem,
     styled,
     TextField,
+    ToggleButton,
     Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,8 +26,6 @@ import { TriggerModal } from './TriggerModal';
 import { openTimelineHelpModal } from './TimelineHelpModal';
 
 const ALL = '__all__';
-
-const toggleSx = (on: boolean) => ({ color: on ? '#ffc107' : '#ffffff55' });
 
 const createStore = () =>
     new TimelineStore(api, apiEvents, {
@@ -142,13 +141,14 @@ export const TimelinePage = observer(() => {
                                 : _('Show connections')
                         }
                     >
-                        <IconButton
-                            onClick={store.toggleConnections}
-                            sx={toggleSx(store.showConnections)}
-                            aria-pressed={store.showConnections}
+                        <ToggleButton
+                            value="showConnections"
+                            size="small"
+                            selected={store.showConnections}
+                            onChange={store.toggleConnections}
                         >
-                            <AccountTreeIcon />
-                        </IconButton>
+                            <AccountTreeIcon fontSize="small" />
+                        </ToggleButton>
                     </Tooltip>
                     <Tooltip
                         title={
@@ -157,13 +157,14 @@ export const TimelinePage = observer(() => {
                                 : _('Show time triggers')
                         }
                     >
-                        <IconButton
-                            onClick={store.toggleTriggers}
-                            sx={toggleSx(store.showTriggers)}
-                            aria-pressed={store.showTriggers}
+                        <ToggleButton
+                            value="showTriggers"
+                            size="small"
+                            selected={store.showTriggers}
+                            onChange={store.toggleTriggers}
                         >
-                            <AlarmIcon />
-                        </IconButton>
+                            <AlarmIcon fontSize="small" />
+                        </ToggleButton>
                     </Tooltip>
                     <Tooltip title={_('Help')}>
                         <IconButton

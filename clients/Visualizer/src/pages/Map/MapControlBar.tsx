@@ -1,5 +1,4 @@
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
 import {
     IconButton,
     ToggleButton,
@@ -11,7 +10,6 @@ import PlaceIcon from '@mui/icons-material/Place';
 import BrushIcon from '@mui/icons-material/Brush';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
-import { spacingCss } from '@story/ui';
 import { ControlBar } from '../../shell';
 import type { MapPageStore, TMapMode } from './MapPageStore';
 import { openMapHelpModal } from './MapHelpModal';
@@ -31,15 +29,15 @@ export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
         >
             <ToggleButton value="view" aria-label={_('View')}>
                 <VisibilityIcon fontSize="small" />
-                <SLabel>{_('View')}</SLabel>
+                {_('View')}
             </ToggleButton>
             <ToggleButton value="locations" aria-label={_('Locations')}>
                 <PlaceIcon fontSize="small" />
-                <SLabel>{_('Locations')}</SLabel>
+                {_('Locations')}
             </ToggleButton>
             <ToggleButton value="tiles" aria-label={_('Tiles')}>
                 <BrushIcon fontSize="small" />
-                <SLabel>{_('Tiles')}</SLabel>
+                {_('Tiles')}
             </ToggleButton>
         </ToggleButtonGroup>
         <Tooltip title={_('Show the whole map')}>
@@ -62,8 +60,3 @@ export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
         </Tooltip>
     </ControlBar>
 ));
-
-const SLabel = styled.span`
-    margin-left: ${spacingCss(0.5)};
-    text-transform: none;
-`;
