@@ -19,6 +19,7 @@ import type { TMapDocument } from '../../MapEditor/types';
 import type { TConfirmOptions } from '../../shell/modals';
 import { getUiState, setUiState } from '../../ui-state';
 import { mergeMaps, sameMap, toMapDocument } from './mergeMap';
+import { nameAsText, withNameText } from './locationName';
 import { descendantLocationIds, isOnMap, locationIdPrefix, mapAncestors, parentLocationId } from './locationTree';
 
 export const MAP_MODES = ['view', 'locations', 'tiles'] as const;
@@ -57,6 +58,8 @@ const UI_CAMERA_KEY = 'map:camera';
 export const LOCATION_ID_RE = /^[a-z][A-Za-z0-9_]*$/;
 const MAX_STALE_RETRIES = 3;
 
+const LOCATION_FILL_ALPHA = '73';
+
 const LOCATION_COLORS = ['#e57373', '#64b5f6', '#81c784', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292', '#aed581'];
 
 export const defaultLocationColor = (id: string) => {
@@ -80,7 +83,7 @@ export const locationColor = (id: string, shape: TLocationShapeDto | undefined):
 };
 
 export const locationStyle = (color: string): Pick<TLocationShapeDto, 'fill' | 'stroke'> => ({
-    fill: `${color.slice(0, 7)}59`,
+    fill: `${color.slice(0, 7)}${LOCATION_FILL_ALPHA}`,
     stroke: color.slice(0, 7),
 });
 
@@ -694,6 +697,16 @@ export class MapPageStore implements IMapHost {
             if (this.selectedLocationId === id) this.selectedLocationId = null;
         });
         return 'deleted';
+    };
+
+    renameLocation = async (id: string, text: string) => {
+        const location = this.locations.get(id);
+        if (!location || nameAsText(location.name) === text) return;
+        try {
+            await this.saveLocation(id, { name: withNameText(location.name, text) }, location.version);
+        } catch (e) {
+            this.setNotice({ kind: 'error', text: _('Could not rename %s: %s', id, errorMessage(e)) });
+        }
     };
 
     saveLocation = async (id: string, patch: Omit<TUpdateEntityBody<'locations'>, 'version'>, version: string) => {

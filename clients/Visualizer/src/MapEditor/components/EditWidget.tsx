@@ -1,12 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import styled from '@emotion/styled';
-import { Column, Row, SmallText, spacingCss } from '@story/ui';
-import type { MapStore } from '../MapStore';
-import {
-    WIDGET_BORDER_COLOR,
-    WIDGET_BORDER_WIDTH,
-} from '../MapEngine/constants';
 import { TextField } from '@mui/material';
+import { Column, spacingCss } from '@story/ui';
+import type { MapStore } from '../MapStore';
+import { ToolSection } from './ToolWindow/ToolSection';
+import { ToolHint } from './ToolWindow/ToolHint';
 
 type Props = {
     mapStore: MapStore;
@@ -16,76 +14,54 @@ export const EditWidget = observer(({ mapStore }: Props) => {
     const selectedTile = mapStore.selectedTile;
     // re-render on every edit and on live refresh: the document itself is not observable
     void mapStore.revision;
-    if (mapStore.tool !== 'select') return null;
 
     const tile = selectedTile ? mapStore.getTile(selectedTile) : undefined;
     if (!selectedTile || !tile) {
         return (
-            <SContainer>
-                <SmallText>
+            <ToolSection>
+                <ToolHint>
                     {_('Click a tile to edit its label and description.')}
-                </SmallText>
-            </SContainer>
+                </ToolHint>
+            </ToolSection>
         );
     }
     const color = mapStore.data?.palette[tile.tile];
 
     return (
-        <SContainer data-testid="tile-edit-widget">
-            <SRow>
-                <SmallText>i: {selectedTile.i}</SmallText>
-                <SmallText>j: {selectedTile.j}</SmallText>
-                <SmallText>{color?.name ?? tile.tile}</SmallText>
-            </SRow>
-            <TextField
-                value={tile.label ?? ''}
-                onChange={(e) =>
-                    mapStore.setTileText(selectedTile, {
-                        label: e.target.value,
-                    })
-                }
-                label={_('Label')}
-                variant="outlined"
-                size="small"
-            />
-            <TextField
-                value={tile.description ?? ''}
-                onChange={(e) =>
-                    mapStore.setTileText(selectedTile, {
-                        description: e.target.value,
-                    })
-                }
-                label={_('Description')}
-                variant="outlined"
-                size="small"
-                multiline
-                minRows={3}
-                maxRows={10}
-            />
-        </SContainer>
+        <ToolSection
+            label={`${selectedTile.i}, ${selectedTile.j} · ${color?.name ?? tile.tile}`}
+        >
+            <SColumn data-testid="tile-edit-widget">
+                <TextField
+                    value={tile.label ?? ''}
+                    onChange={(e) =>
+                        mapStore.setTileText(selectedTile, {
+                            label: e.target.value,
+                        })
+                    }
+                    label={_('Label')}
+                    variant="outlined"
+                    size="small"
+                />
+                <TextField
+                    value={tile.description ?? ''}
+                    onChange={(e) =>
+                        mapStore.setTileText(selectedTile, {
+                            description: e.target.value,
+                        })
+                    }
+                    label={_('Description')}
+                    variant="outlined"
+                    size="small"
+                    multiline
+                    minRows={3}
+                    maxRows={10}
+                />
+            </SColumn>
+        </ToolSection>
     );
 });
 
-const SContainer = styled(Column)`
-    position: absolute;
-    top: ${spacingCss(1)};
-    left: ${spacingCss(1)};
-    width: 240px;
-    max-height: calc(100% - 16px);
-    overflow: auto;
-    z-index: 2;
-
-    border: ${WIDGET_BORDER_WIDTH}px solid ${WIDGET_BORDER_COLOR};
-    background-color: #000;
-    color: #fff;
-    border-radius: 6px;
-
-    padding: ${spacingCss(2)} ${spacingCss(1)};
-    gap: ${spacingCss(2)};
-    align-items: stretch;
-`;
-
-const SRow = styled(Row)`
-    gap: ${spacingCss(2)};
-    justify-content: center;
+const SColumn = styled(Column)`
+    gap: ${spacingCss(1.25)};
 `;

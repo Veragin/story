@@ -10,14 +10,15 @@ import PlaceIcon from '@mui/icons-material/Place';
 import BrushIcon from '@mui/icons-material/Brush';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
+import MapIcon from '@mui/icons-material/Map';
 import { ControlBar } from '../../shell';
 import type { MapPageStore, TMapMode } from './MapPageStore';
 import { openMapHelpModal } from './MapHelpModal';
-import { SaveIndicator } from './SaveIndicator';
+import { SaveError } from './SaveError';
 
 export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
     <ControlBar>
-        <SaveIndicator store={store} />
+        <SaveError store={store} />
         <ToggleButtonGroup
             size="small"
             exclusive
@@ -40,6 +41,18 @@ export const MapControlBar = observer(({ store }: { store: MapPageStore }) => (
                 {_('Tiles')}
             </ToggleButton>
         </ToggleButtonGroup>
+        {store.mode === 'tiles' && (
+            <Tooltip title={_('Minimap')}>
+                <IconButton
+                    color={store.tiles.showMinimap ? 'secondary' : 'inherit'}
+                    onClick={() => store.tiles.toggleShowMinimap()}
+                    aria-label={_('Minimap')}
+                    aria-pressed={store.tiles.showMinimap}
+                >
+                    <MapIcon />
+                </IconButton>
+            </Tooltip>
+        )}
         <Tooltip title={_('Show the whole map')}>
             <IconButton
                 color="inherit"

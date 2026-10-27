@@ -111,9 +111,9 @@ describe('location colours', () => {
     it('reads the colour from the stroke, a hex fill or an rgba() fill, else a stable default', async () => {
         const { locationColor, locationStyle, defaultLocationColor } = await import('../MapPageStore');
         expect(locationColor('a', { polygon: [], stroke: '#336699' })).toBe('#336699');
-        expect(locationColor('a', { polygon: [], fill: '#33669959' })).toBe('#336699');
+        expect(locationColor('a', { polygon: [], fill: '#33669973' })).toBe('#336699');
         expect(locationColor('a', { polygon: [], fill: 'rgba(159, 82, 85, 0.35)' })).toBe('#9f5255');
         expect(locationColor('a', { polygon: [] })).toBe(defaultLocationColor('a'));
-        expect(locationStyle('#336699')).toEqual({ fill: '#33669959', stroke: '#336699' });
+        expect(locationStyle('#336699')).toEqual({ fill: '#33669973', stroke: '#336699' });
     });
 });

@@ -4,8 +4,6 @@ import { reaction } from 'mobx';
 import styled from '@emotion/styled';
 import { Scene } from '../../canvas';
 import { modals } from '../../shell';
-import { Palette } from '../../MapEditor/components/Palette/Palette';
-import { EditWidget } from '../../MapEditor/components/EditWidget';
 import { LocationsLayer } from './LocationsLayer';
 import type { MapPageStore } from './MapPageStore';
 
@@ -66,12 +64,6 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         <SStage ref={stageRef}>
             <SCanvas ref={tilesRef} data-testid="map-tiles-canvas" />
             <SCanvas ref={sceneRef} data-testid="map-locations-canvas" />
-            {store.mode === 'tiles' && (
-                <>
-                    <Palette mapStore={store.tiles} />
-                    <EditWidget mapStore={store.tiles} />
-                </>
-            )}
         </SStage>
     );
 });

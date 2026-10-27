@@ -1,5 +1,6 @@
 import { reaction } from 'mobx';
 import { PolygonShape, SelectionController, VertexEditController, type Scene, type Shape } from '../../canvas';
+import { readableTextColor } from '../../color';
 import { locationColor, locationStyle, type MapPageStore } from './MapPageStore';
 
 export type TLocationShapeData = { locationId: string };
@@ -66,14 +67,14 @@ export class LocationsLayer {
         }
         for (const [id, def] of Object.entries(defs)) {
             const color = locationColor(id, def);
-            const style = { ...locationStyle(color), ...(def.fill ? { fill: def.fill } : {}) };
+            const fill = isCustomFill(def.fill, color) ? def.fill : locationStyle(color).fill;
             const missing = !store.locations.has(id);
             const props = {
-                fill: style.fill,
+                fill,
                 stroke: { color, width: 2, screenWidth: true, dash: missing ? [6, 4] : undefined },
-                hoverStyle: { fill: `${color}88` },
+                hoverStyle: { fill: `${color}a0` },
                 label: missing ? _('%s (no location file)', id) : store.locationName(id),
-                labelStyle: { color: '#fff', fontSize: 16, fontWeight: 600 },
+                labelStyle: { color: readableTextColor(color), fontSize: 16, fontWeight: 600 },
                 draggable: mode === 'locations',
                 cursor: 'pointer',
             };
@@ -112,6 +113,10 @@ const locationIdOf = ({ data }: Shape): string | undefined =>
     typeof data === 'object' && data !== null && 'locationId' in data && typeof data.locationId === 'string'
         ? data.locationId
         : undefined;
+
+// a fill derived from the stroke colour follows the current default opacity
+const isCustomFill = (fill: string | undefined, color: string): fill is string =>
+    fill !== undefined && !fill.toLowerCase().startsWith(color);
 
 const samePoints = (a: { x: number; y: number }[], b: { x: number; y: number }[]) =>
     a.length === b.length && a.every((p, i) => p.x === b[i].x && p.y === b[i].y);

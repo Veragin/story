@@ -4,11 +4,11 @@ import styled from '@emotion/styled';
 import { Alert, Button, CircularProgress } from '@mui/material';
 import { Column, Row, spacingCss } from '@story/ui';
 import { router, useKey } from '../../shell';
-import { TileToolbar } from '../../MapEditor/components/TileToolbar';
+import { TileTools } from '../../MapEditor/components/TileTools';
 import type { MapPageStore } from './MapPageStore';
 import { MapControlBar } from './MapControlBar';
 import { MapCanvas } from './MapCanvas';
-import { LocationToolbar, SToolRow } from './LocationToolbar';
+import { LocationTools } from './LocationTools';
 import { openLocationModal } from './LocationModal';
 import { openAddLocationModal } from './AddLocationModal';
 import { LocationSidebar } from './LocationSidebar';
@@ -54,21 +54,6 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
     return (
         <>
             <MapControlBar store={store} />
-            {store.mode === 'locations' && (
-                <SToolRow data-testid="map-tooling-row">
-                    <LocationToolbar
-                        store={store}
-                        onAdd={() => track(openAddLocationModal(store))}
-                        onOpen={openLocation}
-                        onDelete={deleteLocation}
-                    />
-                </SToolRow>
-            )}
-            {store.mode === 'tiles' && (
-                <SToolRow data-testid="map-tooling-row">
-                    <TileToolbar mapStore={store.tiles} />
-                </SToolRow>
-            )}
             {store.notice && (
                 <SNotice
                     severity={store.notice.kind}
@@ -134,6 +119,18 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                 <SMapArea>
                     <MapCanvas store={store} onOpenLocation={onCanvasAction} />
                     <MapBreadcrumbs store={store} />
+                    {store.mode === 'locations' && (
+                        <LocationTools
+                            store={store}
+                            onAdd={() => track(openAddLocationModal(store))}
+                            onOpen={openLocation}
+                            onEdit={editLocation}
+                            onDelete={deleteLocation}
+                        />
+                    )}
+                    {store.mode === 'tiles' && (
+                        <TileTools mapStore={store.tiles} />
+                    )}
                     {store.mode === 'view' && store.selectedLocationId && (
                         <LocationSidebar
                             store={store}
@@ -165,7 +162,8 @@ const SCenter = styled(Column)`
 const SNotice = styled(Alert)`
     position: absolute;
     top: 56px;
-    right: ${spacingCss(2)};
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 5;
     max-width: 480px;
     & ul {
