@@ -1,4 +1,5 @@
-import { Chip, Tooltip } from '@mui/material';
+import { Chip, styled, Tooltip } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import FiberManualRecord from '@mui/icons-material/FiberManualRecord';
 
 type TProps = {
@@ -10,10 +11,11 @@ export const UnsavedIndicator = ({ variant = 'chip' }: TProps) =>
         <Chip size="small" color="warning" label={_('Unsaved')} />
     ) : (
         <Tooltip title={_('Unsaved changes')}>
-            <FiberManualRecord
-                color="warning"
-                aria-label={_('Unsaved changes')}
-                sx={{ fontSize: 10, ml: 1 }}
-            />
+            <SDot color="warning" aria-label={_('Unsaved changes')} />
         </Tooltip>
     );
+
+const SDot = styled(FiberManualRecord)`
+    font-size: 10px;
+    margin-left: ${spacingCss(1)};
+`;

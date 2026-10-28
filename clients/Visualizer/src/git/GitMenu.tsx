@@ -4,9 +4,10 @@ import {
     ListItemText,
     Menu,
     MenuItem,
+    styled,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { showToast } from '@story/ui';
+import { showToast, spacingCss } from '@story/ui';
 import { ErrorAlert } from '../components/feedback/ErrorAlert';
 import {
     discardChanges,
@@ -137,11 +138,11 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
             >
                 <ListItemText primary={_('Settings…')} />
             </MenuItem>
-            <ErrorAlert
-                error={store.lastError}
-                onClose={store.clearError}
-                sx={{ mx: 1, mt: 1 }}
-            />
+            <SErrorAlert error={store.lastError} onClose={store.clearError} />
         </Menu>
     );
 });
+
+const SErrorAlert = styled(ErrorAlert)`
+    margin: ${spacingCss(1)} ${spacingCss(1)} 0;
+`;

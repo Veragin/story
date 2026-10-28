@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react';
+import { type ElementType, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button, Container, Stack, Typography } from '@mui/material';
+import { Button, Container, Stack, styled, Typography } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import type { TCreateStoryBody, TSetupGitBody } from '@story/protocol';
-import { PasswordDialog, ResetPasswordDialog, showToast } from '@story/ui';
+import {
+    PasswordDialog,
+    ResetPasswordDialog,
+    showToast,
+    spacingCss,
+} from '@story/ui';
 import { createLandingApi } from './api';
 import { CreateStoryPage } from './CreateStoryPage';
 import { dropResetLink, readResetLink, type TResetLink } from './resetLink';
@@ -74,20 +79,11 @@ export const App = observer(() => {
                     onClose={() => navigate('list')}
                 />
             ) : (
-                <Container maxWidth="md" sx={{ py: 4 }}>
-                    <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={2}
-                        sx={{ mb: 3 }}
-                    >
-                        <Typography
-                            variant="h4"
-                            component="h1"
-                            sx={{ flex: 1 }}
-                        >
+                <SPage maxWidth="md">
+                    <SHeader direction="row" alignItems="center" spacing={2}>
+                        <STitle variant="h4" component="h1">
                             {_('Stories')}
-                        </Typography>
+                        </STitle>
                         <Button
                             variant="contained"
                             startIcon={<Add />}
@@ -95,9 +91,9 @@ export const App = observer(() => {
                         >
                             {_('New story')}
                         </Button>
-                    </Stack>
+                    </SHeader>
                     <StoryList store={store} />
-                </Container>
+                </SPage>
             )}
             <PasswordDialog
                 open={store.prompt !== null}
@@ -116,3 +112,16 @@ export const App = observer(() => {
         </>
     );
 });
+
+const SPage = styled(Container)`
+    padding-top: ${spacingCss(4)};
+    padding-bottom: ${spacingCss(4)};
+`;
+
+const SHeader = styled(Stack)`
+    margin-bottom: ${spacingCss(3)};
+`;
+
+const STitle = styled(Typography)<{ component: ElementType }>`
+    flex: 1;
+`;

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Alert,
     Button,
     Dialog,
     DialogActions,
@@ -8,6 +7,7 @@ import {
     DialogContentText,
     DialogTitle,
 } from '@mui/material';
+import { StackedAlert } from '@story/ui';
 import { errorMessage } from './api';
 
 type TProps = {
@@ -46,11 +46,7 @@ export const AddStoryFilesDialog = ({
         >
             <DialogTitle>{_('Import %s', fileName)}</DialogTitle>
             <DialogContent dividers>
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
+                {error && <StackedAlert severity="error">{error}</StackedAlert>}
                 <DialogContentText>
                     {_(
                         'The files in the zip are added to "%s". Files of the same path are replaced.',

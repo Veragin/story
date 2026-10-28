@@ -9,6 +9,7 @@ import {
     ListItemIcon,
     ListItemText,
     Stack,
+    styled,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -119,9 +120,9 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
                 disabled={store.busy || branch.current}
                 onClick={() => void switchTo(branch.name)}
             >
-                <ListItemIcon sx={{ minWidth: 32 }}>
+                <SCheck>
                     {branch.current && <CheckIcon fontSize="small" />}
-                </ListItemIcon>
+                </SCheck>
                 <ListItemText
                     primary={
                         <Stack direction="row" gap={1} alignItems="center">
@@ -179,9 +180,7 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
                 onChange={(next) => setFilter(next ?? '')}
                 dataField="filter"
             />
-            <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
-                {shown.map(renderBranch)}
-            </List>
+            <SBranches dense>{shown.map(renderBranch)}</SBranches>
             <FormField
                 label={_('New branch from current')}
                 error={nameError}
@@ -216,3 +215,12 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
         </AppDialog>
     );
 });
+
+const SCheck = styled(ListItemIcon)`
+    min-width: 32px;
+`;
+
+const SBranches = styled(List)`
+    max-height: 360px;
+    overflow: auto;
+`;

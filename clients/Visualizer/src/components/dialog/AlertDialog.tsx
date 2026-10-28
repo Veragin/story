@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { DialogContentText } from '@mui/material';
+import { DialogContentText, styled } from '@mui/material';
 import { AppDialog } from './AppDialog';
 import { DialogButtons } from './DialogButtons';
 
@@ -18,12 +18,10 @@ export const AlertDialog = ({ title, message, onClose }: TProps) => (
             <DialogButtons closeOnly closeLabel={_('OK')} onClose={onClose} />
         }
     >
-        {typeof message === 'string' ? (
-            <DialogContentText sx={{ whiteSpace: 'pre-wrap' }}>
-                {message}
-            </DialogContentText>
-        ) : (
-            message
-        )}
+        {typeof message === 'string' ? <SMessage>{message}</SMessage> : message}
     </AppDialog>
 );
+
+const SMessage = styled(DialogContentText)`
+    white-space: pre-wrap;
+`;

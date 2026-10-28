@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AddButton } from '../../../../components/buttons/AddButton';
 import { isCode, type TLinkDto, type TMaybeCode } from '@story/protocol';
 import { CodeBlock } from '../CodeBlock';
 import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
@@ -8,7 +7,7 @@ import { LinkEditor } from './LinkEditor';
 import { linkHasDiagnostics } from './linkSummary';
 import { LinkSummary } from './LinkSummary';
 import { replaceAt } from './listUtils';
-import { SLink } from './styles';
+import { SAddButton, SLink } from './styles';
 import type { TDiag, TOptionsProps } from './types';
 
 type TProps = TOptionsProps & {
@@ -29,11 +28,10 @@ export const Links = ({
     const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
     if (value === undefined) {
         return (
-            <AddButton
+            <SAddButton
                 label={_('Links')}
                 tone="inherit"
                 onClick={() => onChange([])}
-                sx={{ alignSelf: 'flex-start' }}
             />
         );
     }
@@ -109,12 +107,7 @@ export const Links = ({
                     </SLink>
                 );
             })}
-            <AddButton
-                label={_('Add link')}
-                tone="inherit"
-                onClick={add}
-                sx={{ alignSelf: 'flex-start' }}
-            />
+            <SAddButton label={_('Add link')} tone="inherit" onClick={add} />
         </FormSection>
     );
 };

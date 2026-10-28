@@ -66,14 +66,9 @@ export const TopBar = observer(() => {
 
     return (
         <SBar>
-            <SBack
-                color="inherit"
-                size="small"
-                startIcon={<ArrowBackIcon />}
-                href={landingUrl()}
-            >
-                {_('Stories')}
-            </SBack>
+            <Button color="inherit" size="small" href={landingUrl()}>
+                <ArrowBackIcon />
+            </Button>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -89,17 +84,16 @@ export const TopBar = observer(() => {
                     />
                 ))}
             </STabs>
-            <Button
+            <SPlayButton
                 color="inherit"
                 size="small"
                 startIcon={<PlayArrowIcon />}
                 href={playerUrl(STORY_ID)}
                 target="_blank"
                 rel="noopener"
-                sx={{ flexShrink: 0, textTransform: 'none' }}
             >
                 {_('Play')}
-            </Button>
+            </SPlayButton>
             <GitButton />
             <SControlBar ref={shell.setControlBarEl} />
         </SBar>
@@ -116,12 +110,6 @@ const SBar = styled(Row)`
     background-color: ${appTheme.palette.primary.dark};
     border-bottom: 1px solid ${appTheme.palette.primary.main};
     color: white;
-`;
-
-const SBack = styled(Button)`
-    flex-shrink: 0;
-    text-transform: none;
-    opacity: 0.8;
 `;
 
 const STabs = styled(Tabs)`
@@ -145,4 +133,9 @@ const SControlBar = styled(Row)`
     & > * {
         flex-shrink: 0;
     }
+`;
+
+const SPlayButton = styled(Button)<{ target: string; rel: string }>`
+    flex-shrink: 0;
+    text-transform: none;
 `;

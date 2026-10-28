@@ -1,13 +1,7 @@
 import type { ReactNode } from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    Container,
-    Stack,
-    Typography,
-} from '@mui/material';
+import { Button, Container, Stack, styled, Typography } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
+import { spacingCss, StackedAlert } from '@story/ui';
 
 type TProps = {
     title: string;
@@ -36,13 +30,8 @@ export const StoryFormPage = ({
     onSubmit,
     onClose,
 }: TProps) => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-        <Stack
-            direction="row"
-            spacing={2}
-            alignItems="center"
-            sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}
-        >
+    <SPage>
+        <SHeader direction="row" spacing={2} alignItems="center">
             <Button
                 color="inherit"
                 startIcon={<ArrowBack />}
@@ -55,31 +44,18 @@ export const StoryFormPage = ({
             <Typography variant="h6" component="h1" noWrap>
                 {title}
             </Typography>
-        </Stack>
-        <Container maxWidth="sm" sx={{ flex: 1, py: 3 }}>
+        </SHeader>
+        <SContent maxWidth="sm">
             {notice}
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+            {error && <StackedAlert severity="error">{error}</StackedAlert>}
             {children}
-        </Container>
-        <Box
-            sx={{
-                position: 'sticky',
-                bottom: 0,
-                bgcolor: 'background.paper',
-                borderTop: 1,
-                borderColor: 'divider',
-            }}
-        >
+        </SContent>
+        <SFooter>
             <Container maxWidth="sm">
-                <Stack
+                <SFooterActions
                     direction="row"
                     spacing={1}
                     justifyContent="flex-end"
-                    sx={{ py: 1.5 }}
                 >
                     <Button color="inherit" onClick={onClose} disabled={saving}>
                         {_('Cancel')}
@@ -92,8 +68,36 @@ export const StoryFormPage = ({
                     >
                         {saving ? savingLabel : submitLabel}
                     </Button>
-                </Stack>
+                </SFooterActions>
             </Container>
-        </Box>
-    </Box>
+        </SFooter>
+    </SPage>
 );
+
+const SPage = styled('div')`
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+`;
+
+const SHeader = styled(Stack)`
+    padding: ${spacingCss(1)} ${spacingCss(2)};
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+`;
+
+const SContent = styled(Container)`
+    flex: 1;
+    padding-top: ${spacingCss(3)};
+    padding-bottom: ${spacingCss(3)};
+`;
+
+const SFooter = styled('div')`
+    position: sticky;
+    bottom: 0;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    border-top: 1px solid ${({ theme }) => theme.palette.divider};
+`;
+
+const SFooterActions = styled(Stack)`
+    padding: ${spacingCss(1.5)} 0;
+`;

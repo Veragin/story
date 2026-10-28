@@ -136,8 +136,7 @@ export const ChapterPage = observer(
 
                 <SContent>
                     {store.status === 'error' ? (
-                        <ErrorAlert
-                            sx={{ m: 2 }}
+                        <SErrorAlert
                             error={_(
                                 'Could not load chapter %s: %s',
                                 chapterId,
@@ -214,4 +213,8 @@ const SSide = styled('div')`
     overflow-y: auto;
     background: #1a1a1a;
     color: #fff;
+`;
+
+const SErrorAlert = styled(ErrorAlert)`
+    margin: ${spacingCss(2)};
 `;

@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import { entityStore, structureStore } from '../../context';
 import { ErrorAlert } from '../../components/feedback/ErrorAlert';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -52,7 +54,7 @@ export const StructurePage = observer(({ section, name }: TProps) => {
     return (
         <PageContainer>
             <MasterDetailPage list={<StructureList editor={e} />}>
-                <ErrorAlert error={structure.error} sx={{ m: 2 }} />
+                <SErrorAlert error={structure.error} />
                 {!structure.loaded && structure.loading ? (
                     <LoadingState />
                 ) : e.section === 'literals' ? (
@@ -64,3 +66,7 @@ export const StructurePage = observer(({ section, name }: TProps) => {
         </PageContainer>
     );
 });
+
+const SErrorAlert = styled(ErrorAlert)`
+    margin: ${spacingCss(2)};
+`;

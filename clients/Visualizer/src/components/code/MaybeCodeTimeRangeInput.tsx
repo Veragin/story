@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mui/material';
+import { Stack, styled } from '@mui/material';
 import { isCode, type TMaybeCode, type TTimeRangeDto } from '@story/protocol';
 import type { TInputProps } from '../inputs/inputTypes';
 import { TimeRangeInput } from '../inputs/TimeRangeInput';
@@ -46,7 +46,7 @@ export const MaybeCodeTimeRangeInput = ({
     return (
         <Stack direction="row" gap={1.5} alignItems="flex-start">
             {TIME_RANGE_ENDS.map(({ key, label }) => (
-                <Box key={key} flex={1} minWidth={0}>
+                <SEnd key={key}>
                     <MaybeCodeTimeInput
                         value={value[key]}
                         onChange={(next) => onChange({ ...value, [key]: next })}
@@ -57,8 +57,13 @@ export const MaybeCodeTimeRangeInput = ({
                             props.dataField && `${props.dataField}.${key}`
                         }
                     />
-                </Box>
+                </SEnd>
             ))}
         </Stack>
     );
 };
+
+const SEnd = styled('div')`
+    flex: 1;
+    min-width: 0;
+`;

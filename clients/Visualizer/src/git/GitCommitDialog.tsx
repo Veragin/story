@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Typography } from '@mui/material';
+import { Alert, styled, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     GIT_CHANGE_KINDS,
@@ -103,12 +103,12 @@ export const GitCommitDialog = observer(
                 actions={actions}
             >
                 {committed ? (
-                    <Alert severity="warning" sx={{ whiteSpace: 'pre-wrap' }}>
+                    <SAlert severity="warning">
                         {_(
                             'Committed locally, but the push failed: %s',
                             errorBodyMessage(pushError)
                         )}
-                    </Alert>
+                    </SAlert>
                 ) : (
                     <>
                         {changes.length === 0 && (
@@ -128,15 +128,12 @@ export const GitCommitDialog = observer(
                                     >
                                         <div>
                                             {files.map((c) => (
-                                                <Typography
+                                                <SPath
                                                     key={c.path}
                                                     variant="body2"
-                                                    sx={{
-                                                        fontFamily: 'monospace',
-                                                    }}
                                                 >
                                                     {c.path}
-                                                </Typography>
+                                                </SPath>
                                             ))}
                                         </div>
                                     </FormSection>
@@ -164,3 +161,11 @@ export const GitCommitDialog = observer(
         );
     }
 );
+
+const SAlert = styled(Alert)`
+    white-space: pre-wrap;
+`;
+
+const SPath = styled(Typography)`
+    font-family: monospace;
+`;

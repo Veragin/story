@@ -12,7 +12,6 @@ export type TActionButtonProps = {
     'fullWidth'?: boolean;
     'edge'?: IconButtonProps['edge'];
     'className'?: string;
-    'sx'?: ButtonProps['sx'];
     'data-action'?: string;
 };
 

@@ -2,6 +2,7 @@ export * from './components/Basic';
 export * from './components/Text';
 export * from './components/css';
 export * from './components/Modal';
+export * from './components/StackedAlert';
 export * from './components/PasswordDialog';
 export * from './components/PasswordResetRequestForm';
 export * from './components/ResetPasswordDialog';

@@ -21,7 +21,7 @@ export const CreateStoryFields = ({
     errors,
     disabled,
 }: TProps) => (
-    <Stack spacing={2} sx={{ pt: 1 }}>
+    <SFields spacing={2}>
         <LabeledTextField
             label={_('Name')}
             value={value.name}
@@ -137,8 +137,12 @@ export const CreateStoryFields = ({
                 label={_('Anyone may play it without the password')}
             />
         </LabeledField>
-    </Stack>
+    </SFields>
 );
+
+const SFields = styled(Stack)`
+    padding-top: ${spacingCss(1)};
+`;
 
 const SMapSize = styled('div')`
     display: flex;

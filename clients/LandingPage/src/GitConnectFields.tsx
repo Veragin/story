@@ -1,4 +1,5 @@
-import { Stack, TextField } from '@mui/material';
+import { Stack, styled, TextField } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import type { TGitConnectErrors, TGitConnectValue } from './gitConnectForm';
 
 type TProps = {
@@ -14,7 +15,7 @@ export const GitConnectFields = ({
     errors,
     disabled,
 }: TProps) => (
-    <Stack spacing={2} sx={{ pt: 1 }}>
+    <SFields spacing={2}>
         <TextField
             fullWidth
             size="small"
@@ -48,5 +49,9 @@ export const GitConnectFields = ({
             disabled={disabled}
             inputProps={{ 'data-field': 'gitToken' }}
         />
-    </Stack>
+    </SFields>
 );
+
+const SFields = styled(Stack)`
+    padding-top: ${spacingCss(1)};
+`;

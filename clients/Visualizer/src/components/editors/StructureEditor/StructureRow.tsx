@@ -65,7 +65,7 @@ export const StructureRow = ({
                         />
                     </Tooltip>
                 )}
-                <TextField
+                <SKeyField
                     size="small"
                     value={field.key}
                     disabled={off}
@@ -80,7 +80,6 @@ export const StructureRow = ({
                     onChange={(e) =>
                         set({ ...field, key: e.target.value.trim() })
                     }
-                    sx={{ flex: '0 1 160px', minWidth: 96 }}
                 />
                 <FieldTypePicker
                     value={field.type}
@@ -158,4 +157,9 @@ const SLock = styled(LockIcon)`
     margin-top: 10px;
     font-size: 16px;
     color: ${({ theme }) => theme.palette.text.secondary};
+`;
+
+const SKeyField = styled(TextField)`
+    flex: 0 1 160px;
+    min-width: 96px;
 `;

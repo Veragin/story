@@ -1,4 +1,4 @@
-import { Alert, Button } from '@mui/material';
+import { Alert, Button, styled } from '@mui/material';
 
 type TProps = {
     message: string;
@@ -6,9 +6,8 @@ type TProps = {
 };
 
 export const LoadErrorState = ({ message, onRetry }: TProps) => (
-    <Alert
+    <SAlert
         severity="error"
-        sx={{ whiteSpace: 'pre-wrap' }}
         action={
             <Button color="inherit" size="small" onClick={onRetry}>
                 {_('Retry')}
@@ -16,5 +15,9 @@ export const LoadErrorState = ({ message, onRetry }: TProps) => (
         }
     >
         {message}
-    </Alert>
+    </SAlert>
 );
+
+const SAlert = styled(Alert)`
+    white-space: pre-wrap;
+`;

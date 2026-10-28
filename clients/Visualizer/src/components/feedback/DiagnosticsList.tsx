@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Alert, AlertTitle, type AlertProps, styled } from '@mui/material';
+import { Alert, AlertTitle, styled } from '@mui/material';
 import type { TDiagnosticDto } from '@story/protocol';
 import { formatDiagnostic } from '../../api/diagnostics';
 import { BulletList } from './BulletList';
@@ -8,12 +8,17 @@ type TProps = {
     diagnostics: readonly TDiagnosticDto[];
     title?: string;
     children?: ReactNode;
-    sx?: AlertProps['sx'];
+    className?: string;
 };
 
-export const DiagnosticsList = ({ diagnostics, title, children, sx }: TProps) =>
+export const DiagnosticsList = ({
+    diagnostics,
+    title,
+    children,
+    className,
+}: TProps) =>
     diagnostics.length > 0 ? (
-        <Alert severity="error" sx={sx} data-notice="diagnostics">
+        <Alert severity="error" className={className} data-notice="diagnostics">
             {title && <AlertTitle>{title}</AlertTitle>}
             {children}
             <BulletList>

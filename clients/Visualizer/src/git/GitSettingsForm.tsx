@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button } from '@mui/material';
+import { Alert, Button, styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     GIT_DEFAULT_BRANCH,
@@ -168,14 +168,13 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
                             dataField="token"
                         />
                         {config?.hasToken && (
-                            <Button
+                            <SRemoveTokenButton
                                 color="inherit"
                                 disabled={store.busy}
                                 onClick={() => void removeToken()}
-                                sx={{ flexShrink: 0 }}
                             >
                                 {_('Remove token')}
-                            </Button>
+                            </SRemoveTokenButton>
                         )}
                     </InlineRow>
                 </FormField>
@@ -224,13 +223,12 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
                 <ErrorAlert error={error} />
                 <ActionRow>
                     {config && !disconnecting && (
-                        <Button
+                        <SDisconnectButton
                             color="error"
                             onClick={() => setDisconnecting(true)}
-                            sx={{ mr: 'auto' }}
                         >
                             {_('Disconnect…')}
-                        </Button>
+                        </SDisconnectButton>
                     )}
                     <Button
                         type="submit"
@@ -244,3 +242,11 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
         </form>
     );
 });
+
+const SRemoveTokenButton = styled(Button)`
+    flex-shrink: 0;
+`;
+
+const SDisconnectButton = styled(Button)`
+    margin-right: auto;
+`;

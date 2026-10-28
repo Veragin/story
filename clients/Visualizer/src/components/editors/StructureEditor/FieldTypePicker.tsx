@@ -109,7 +109,7 @@ export const FieldTypePicker = observer(
         return (
             <SPicker data-type-kind={value.t}>
                 <SLine>
-                    <TextField
+                    <SKindSelect
                         select
                         size="small"
                         value={value.t}
@@ -125,7 +125,6 @@ export const FieldTypePicker = observer(
                             if (isTypeKind(e.target.value))
                                 onChange(defaultOf(e.target.value));
                         }}
-                        sx={{ minWidth: 120 }}
                     >
                         {KINDS.map((kind) => (
                             <option key={kind} value={kind}>
@@ -137,7 +136,7 @@ export const FieldTypePicker = observer(
                                 {KIND_LABEL.code()}
                             </option>
                         )}
-                    </TextField>
+                    </SKindSelect>
                     {value.t === 'literal' && (
                         <AutocompleteInput
                             value={value.name}
@@ -277,4 +276,8 @@ const SCode = styled('code')`
     background: ${({ theme }) => theme.palette.surface.code};
     border-radius: 4px;
     white-space: pre-wrap;
+`;
+
+const SKindSelect = styled(TextField)`
+    min-width: 120px;
 `;

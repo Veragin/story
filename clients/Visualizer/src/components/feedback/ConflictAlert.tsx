@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Alert, AlertTitle, type AlertProps, Button } from '@mui/material';
+import { Alert, AlertTitle, Button } from '@mui/material';
 
 type TProps = {
     deleted?: boolean;
@@ -8,7 +8,7 @@ type TProps = {
     onKeepMine?: () => void | Promise<unknown>;
     disabled?: boolean;
     action?: ReactNode;
-    sx?: AlertProps['sx'];
+    className?: string;
 };
 
 export const ConflictAlert = ({
@@ -18,11 +18,11 @@ export const ConflictAlert = ({
     onKeepMine,
     disabled,
     action,
-    sx,
+    className,
 }: TProps) => (
     <Alert
         severity="warning"
-        sx={sx}
+        className={className}
         data-notice="conflict"
         action={
             <>

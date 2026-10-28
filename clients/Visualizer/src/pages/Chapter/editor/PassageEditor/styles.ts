@@ -1,5 +1,6 @@
 import { Paper, styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
+import { AddButton } from '../../../../components/buttons/AddButton';
 
 export const SPanel = styled(Paper)`
     display: flex;
@@ -35,4 +36,8 @@ export const SLink = styled('div')`
     gap: ${spacingCss(0.75)};
     padding: ${spacingCss(0.75)} 0 ${spacingCss(0.75)} ${spacingCss(1.25)};
     border-left: 3px solid rgba(100, 181, 246, 0.5);
+`;
+
+export const SAddButton = styled(AddButton)`
+    align-self: flex-start;
 `;

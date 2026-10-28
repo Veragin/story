@@ -1,18 +1,18 @@
-import { Alert, type AlertProps } from '@mui/material';
+import { Alert, styled } from '@mui/material';
 
 type TProps = {
     error?: string | null;
     onClose?: () => void;
-    sx?: AlertProps['sx'];
+    className?: string;
 };
 
-export const ErrorAlert = ({ error, onClose, sx }: TProps) =>
+export const ErrorAlert = ({ error, onClose, className }: TProps) =>
     error ? (
-        <Alert
-            severity="error"
-            onClose={onClose}
-            sx={[{ whiteSpace: 'pre-wrap' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
-        >
+        <SAlert severity="error" onClose={onClose} className={className}>
             {error}
-        </Alert>
+        </SAlert>
     ) : null;
+
+const SAlert = styled(Alert)`
+    white-space: pre-wrap;
+`;

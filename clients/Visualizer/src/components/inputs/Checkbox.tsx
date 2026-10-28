@@ -1,4 +1,5 @@
-import { Checkbox as MuiCheckbox } from '@mui/material';
+import { Checkbox as MuiCheckbox, styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import { INPUT_SIZE } from './inputDefaults';
 import type { TInputProps } from './inputTypes';
 
@@ -10,7 +11,7 @@ export const Checkbox = ({
     ariaLabel,
     dataField,
 }: TInputProps<boolean>) => (
-    <MuiCheckbox
+    <SCheckbox
         size={INPUT_SIZE}
         checked={value}
         color={hasError ? 'error' : 'primary'}
@@ -18,6 +19,10 @@ export const Checkbox = ({
         inputProps={{ 'aria-label': ariaLabel }}
         data-field={dataField}
         onChange={(e) => onChange(e.target.checked)}
-        sx={{ alignSelf: 'flex-start', p: 0.5 }}
     />
 );
+
+const SCheckbox = styled(MuiCheckbox)`
+    align-self: flex-start;
+    padding: ${spacingCss(0.5)};
+`;

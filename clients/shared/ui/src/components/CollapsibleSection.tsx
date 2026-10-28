@@ -4,6 +4,7 @@ import {
     AccordionDetails,
     AccordionSummary,
     Stack,
+    styled,
     Typography,
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
@@ -41,13 +42,8 @@ export const CollapsibleSection = ({
             variant="outlined"
         >
             <AccordionSummary expandIcon={<ExpandMore />}>
-                <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems="baseline"
-                    sx={{ minWidth: 0 }}
-                >
-                    <Typography sx={{ flexShrink: 0 }}>{title}</Typography>
+                <SSummary direction="row" spacing={2} alignItems="baseline">
+                    <STitle>{title}</STitle>
                     {!isExpanded && summary && (
                         <Typography
                             variant="body2"
@@ -57,9 +53,17 @@ export const CollapsibleSection = ({
                             {summary}
                         </Typography>
                     )}
-                </Stack>
+                </SSummary>
             </AccordionSummary>
             <AccordionDetails>{children}</AccordionDetails>
         </Accordion>
     );
 };
+
+const SSummary = styled(Stack)`
+    min-width: 0;
+`;
+
+const STitle = styled(Typography)`
+    flex-shrink: 0;
+`;

@@ -21,10 +21,9 @@ export const StatusBar = observer(() => {
             <Text>{e.timeManager.renderTime(s.time, 'dateTime')}</Text>
             <SCharacter>
                 {portrait && (
-                    <Avatar
+                    <SAvatar
                         src={portrait}
                         alt={character.image ?? character.name}
-                        sx={{ width: 28, height: 28 }}
                     />
                 )}
                 <Text>{character.name}</Text>
@@ -87,4 +86,9 @@ export const SButtons = styled(Row)`
     gap: ${spacingCss(1)};
     flex: 1;
     justify-content: flex-end;
+`;
+
+const SAvatar = styled(Avatar)`
+    width: 28px;
+    height: 28px;
 `;

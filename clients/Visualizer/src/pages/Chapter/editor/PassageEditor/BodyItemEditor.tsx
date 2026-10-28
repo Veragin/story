@@ -1,4 +1,4 @@
-import { Typography } from '@mui/material';
+import { styled, Typography } from '@mui/material';
 import { DeleteButton } from '../../../../components/buttons/DeleteButton';
 import type { TBodyItemDto } from '@story/protocol';
 import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
@@ -36,9 +36,9 @@ export const BodyItemEditor = ({
     return (
         <SItem variant="outlined">
             <STitleRow>
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                <STitle variant="caption">
                     {_('Body item %d', index + 1)}
-                </Typography>
+                </STitle>
                 <SSpacer />
                 <DeleteButton
                     iconOnly
@@ -86,3 +86,7 @@ export const BodyItemEditor = ({
         </SItem>
     );
 };
+
+const STitle = styled(Typography)`
+    font-weight: 600;
+`;

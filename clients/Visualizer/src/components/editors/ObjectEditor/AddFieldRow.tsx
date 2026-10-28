@@ -27,7 +27,7 @@ export const AddFieldRow = ({ existingKeys, onAdd, disabled }: TProps) => {
 
     return (
         <SRow data-add-field>
-            <TextField
+            <SKeyField
                 size="small"
                 value={key}
                 error={!!error}
@@ -44,7 +44,6 @@ export const AddFieldRow = ({ existingKeys, onAdd, disabled }: TProps) => {
                     if (e.key === 'Enter') add();
                 }}
                 onChange={(e) => setKey(e.target.value.trim())}
-                sx={{ width: 160, flexShrink: 0 }}
             />
             <FieldTypePicker
                 value={type}
@@ -52,12 +51,11 @@ export const AddFieldRow = ({ existingKeys, onAdd, disabled }: TProps) => {
                 disabled={disabled}
                 ariaLabel={_('New field')}
             />
-            <AddButton
+            <SAddButton
                 label={_('Add field')}
                 disabled={!canAdd}
                 data-action="add-custom-field"
                 onClick={add}
-                sx={{ flexShrink: 0, mt: 0.5 }}
             />
         </SRow>
     );
@@ -67,4 +65,14 @@ const SRow = styled('div')`
     display: flex;
     align-items: flex-start;
     gap: ${spacingCss(0.5)};
+`;
+
+const SKeyField = styled(TextField)`
+    width: 160px;
+    flex-shrink: 0;
+`;
+
+const SAddButton = styled(AddButton)`
+    flex-shrink: 0;
+    margin-top: ${spacingCss(0.5)};
 `;

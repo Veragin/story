@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import {
-    Alert,
     Button,
     Dialog,
     DialogActions,
@@ -10,6 +9,7 @@ import {
 } from '@mui/material';
 import { STORY_LIMITS } from '@story/protocol';
 import { LabeledTextField } from './LabeledTextField';
+import { StackedAlert } from './StackedAlert';
 import { resetPasswordErrorMessage } from './passwordErrorMessage';
 
 type TProps = {
@@ -77,15 +77,13 @@ export const ResetPasswordDialog = ({
                     {title ?? _('New password for %s', storyName)}
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="info" sx={{ mb: 2 }}>
+                    <StackedAlert severity="info">
                         {_(
                             'Everyone logged in to this story will be logged out; you will be logged in with the new password.'
                         )}
-                    </Alert>
+                    </StackedAlert>
                     {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
+                        <StackedAlert severity="error">{error}</StackedAlert>
                     )}
                     <Stack spacing={2}>
                         <LabeledTextField

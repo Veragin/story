@@ -1,7 +1,7 @@
-import { AddButton } from '../../../../components/buttons/AddButton';
 import type { TBodyItemDto } from '@story/protocol';
 import { BodyItemEditor } from './BodyItemEditor';
 import { replaceAt } from './listUtils';
+import { SAddButton } from './styles';
 import type { TListProps } from './types';
 
 export const BodyItems = ({
@@ -25,7 +25,7 @@ export const BodyItems = ({
                 itemOptions={itemOptions}
             />
         ))}
-        <AddButton
+        <SAddButton
             label={_('Add body item')}
             tone="inherit"
             onClick={() =>
@@ -34,7 +34,6 @@ export const BodyItems = ({
                     { condition: { code: 'true' }, text: '', links: [] },
                 ])
             }
-            sx={{ alignSelf: 'flex-start' }}
         />
     </>
 );
