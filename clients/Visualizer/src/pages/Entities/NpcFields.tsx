@@ -1,55 +1,56 @@
 import { observer } from 'mobx-react-lite';
 import type { TNpcDto } from '@story/protocol';
-import { FormImageInput } from '../../components/form/FormImageInput';
-import { FormStringInput } from '../../components/form/FormStringInput';
-import { DataTypeInput } from './DataTypeInput';
+import { FormImageEditor } from '../../components/editors/FormImageEditor';
+import { FormMaybeCodeTextInput } from '../../components/code/FormMaybeCodeTextInput';
+import { DataTypeField } from './DataTypeField';
 import type { TEntityFieldsProps } from './entityFormProps';
 import { ENTITY_TYPE_NAMES } from './entityFields';
-import { InitInput } from './InitInput';
-import { UserFieldsInput } from './UserFieldsInput';
+import { InitField } from './InitField';
+import { UserFields } from './UserFields';
 
 const TYPES = ENTITY_TYPE_NAMES.npcs;
 
 export const NpcFields = observer(
     ({ store, structure, draft }: TEntityFieldsProps<TNpcDto>) => (
         <>
-            <FormStringInput
-                label="name"
+            <FormMaybeCodeTextInput
+                label={_('Name')}
                 value={draft.name}
                 onChange={(next) => store.setField('name', next)}
                 diagnostics={store.exactDiagnostics('name')}
                 dataField="name"
             />
-            <FormStringInput
-                label="description"
+            <FormMaybeCodeTextInput
+                label={_('Description')}
                 multiline
                 value={draft.description}
                 onChange={(next) => store.setField('description', next)}
                 diagnostics={store.exactDiagnostics('description')}
                 dataField="description"
             />
-            <FormImageInput
+            <FormImageEditor
+                label={_('Image')}
                 api={store.entities.api}
                 owner="npcs"
                 id={draft.id}
-                description={draft.image}
-                onDescriptionChange={(next) => store.setField('image', next)}
+                value={draft.image}
+                onChange={(next) => store.setField('image', next)}
                 diagnostics={store.fieldDiagnostics('image')}
             />
-            <UserFieldsInput
+            <UserFields
                 store={store}
                 structure={structure}
                 typeName={TYPES.entity}
                 values={draft.userFields}
             />
-            <InitInput
+            <InitField
                 store={store}
                 structure={structure}
                 baseType={TYPES.data}
                 dataType={draft.dataType}
                 value={draft.init}
             />
-            <DataTypeInput
+            <DataTypeField
                 store={store}
                 entity={draft}
                 dataType={draft.dataType}

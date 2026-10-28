@@ -1,60 +1,38 @@
 import { Paper, styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 
 export const SPanel = styled(Paper)`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: ${spacingCss(1.25)};
     min-height: 100%;
-    padding: 12px;
+    padding: ${spacingCss(1.5)};
     box-sizing: border-box;
     background: transparent;
-`;
-
-export const SHeader = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
 `;
 
 export const STitleRow = styled('div')`
     display: flex;
     align-items: center;
-    gap: 6px;
-`;
-
-export const SButtons = styled('div')`
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: ${spacingCss(0.75)};
 `;
 
 export const SSpacer = styled('span')`
     flex: 1;
 `;
 
-export const SFields = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
-
 export const SItem = styled(Paper)`
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: ${spacingCss(1)};
+    padding: ${spacingCss(1)} ${spacingCss(1.25)};
     background: rgba(255, 255, 255, 0.03);
 `;
 
 export const SLink = styled('div')`
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 6px 0 6px 10px;
+    gap: ${spacingCss(0.75)};
+    padding: ${spacingCss(0.75)} 0 ${spacingCss(0.75)} ${spacingCss(1.25)};
     border-left: 3px solid rgba(100, 181, 246, 0.5);
-`;
-
-export const SList = styled('ul')`
-    margin: 0;
-    padding-left: 16px;
 `;

@@ -1,15 +1,13 @@
 import type { TLinkCostObjectDto } from '@story/protocol';
-import { FormArrayInput } from '../../../../components/form/FormArrayInput';
-import type {
-    TDiagnosticsOf,
-    TOption,
-} from '../../../../components/inputs/inputTypes';
-import { TypeInput } from '../../../../components/inputs/TypeInput';
-import { isString } from '../../../../components/inputs/valueSource';
+import { FormArrayEditor } from '../../../../components/editors/FormArrayEditor';
+import type { TDiagnosticsOf } from '../../../../components/inputs/inputTypes';
+import type { TOption } from '../../../../structure/option';
+import { AutocompleteInput } from '../../../../components/inputs/AutocompleteInput';
+import { isString } from '../../../../values/valueSource';
 import { setField } from '../PassageEditor/listUtils';
 import { isCostItem } from '../costCode';
 import { CostItemRow } from './CostItemRow';
-import { FormDeltaTimeInput } from './FormDeltaTimeInput';
+import { FormMaybeCodeDeltaTimeInput } from '../../../../components/code/FormMaybeCodeDeltaTimeInput';
 
 type TProps = {
     value: TLinkCostObjectDto;
@@ -35,7 +33,7 @@ export const CostObjectFields = ({
     const firstItem = items[0]?.id ?? '';
     return (
         <>
-            <FormDeltaTimeInput
+            <FormMaybeCodeDeltaTimeInput
                 label={_('Time (min)')}
                 value={value.time}
                 onChange={(time) => set('time', time)}
@@ -44,7 +42,7 @@ export const CostObjectFields = ({
                 disabled={disabled}
                 dataField={`${dataField}.time`}
             />
-            <FormArrayInput
+            <FormArrayEditor
                 label={_('Items')}
                 value={value.items}
                 onChange={(list) => set('items', list?.filter(isCostItem))}
@@ -65,7 +63,7 @@ export const CostObjectFields = ({
                 disabled={disabled}
                 dataField={`${dataField}.items`}
             />
-            <FormArrayInput
+            <FormArrayEditor
                 label={_('Tools')}
                 value={value.tools}
                 onChange={(list) => set('tools', list?.filter(isString))}
@@ -73,7 +71,7 @@ export const CostObjectFields = ({
                 newItem={() => firstItem}
                 renderItem={(tool, change, index) =>
                     isString(tool) && (
-                        <TypeInput
+                        <AutocompleteInput
                             value={tool}
                             onChange={change}
                             options={items}

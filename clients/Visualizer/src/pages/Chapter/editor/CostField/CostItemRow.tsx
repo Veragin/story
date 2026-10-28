@@ -1,11 +1,9 @@
 import { styled } from '@mui/material';
-import { spacingCss } from '@story/ui';
-import type {
-    TInputProps,
-    TOption,
-} from '../../../../components/inputs/inputTypes';
+import { InlineRow } from '../../../../components/layout/InlineRow';
+import type { TInputProps } from '../../../../components/inputs/inputTypes';
+import type { TOption } from '../../../../structure/option';
 import { NumberInput } from '../../../../components/inputs/NumberInput';
-import { TypeInput } from '../../../../components/inputs/TypeInput';
+import { AutocompleteInput } from '../../../../components/inputs/AutocompleteInput';
 import type { TCostItem } from '../costCode';
 
 type TProps = TInputProps<TCostItem> & {
@@ -19,16 +17,14 @@ export const CostItemRow = ({
     disabled,
     ariaLabel,
 }: TProps) => (
-    <SRow>
-        <SItem>
-            <TypeInput
-                value={value.id}
-                onChange={(id) => onChange({ ...value, id })}
-                options={items}
-                disabled={disabled}
-                ariaLabel={_('%s item', ariaLabel)}
-            />
-        </SItem>
+    <InlineRow>
+        <AutocompleteInput
+            value={value.id}
+            onChange={(id) => onChange({ ...value, id })}
+            options={items}
+            disabled={disabled}
+            ariaLabel={_('%s item', ariaLabel)}
+        />
         <SAmount>
             <NumberInput
                 value={value.amount}
@@ -38,25 +34,10 @@ export const CostItemRow = ({
                 placeholder={_('Amount')}
             />
         </SAmount>
-    </SRow>
+    </InlineRow>
 );
-
-const SRow = styled('div')`
-    display: flex;
-    gap: ${spacingCss(1)};
-    align-items: flex-start;
-`;
-
-const SItem = styled('div')`
-    flex: 1;
-    min-width: 0;
-`;
 
 const SAmount = styled('div')`
     flex: none;
     width: 96px;
-
-    & .MuiTextField-root {
-        width: 100%;
-    }
 `;

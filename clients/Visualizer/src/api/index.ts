@@ -6,7 +6,9 @@ import { goToLanding, STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
 export { ApiError } from './ApiError';
+export { formatDiagnostic, NO_DIAGNOSTICS } from './diagnostics';
 export { errorBodyMessage, errorMessage } from './errorMessage';
+export { isImageDto, isLocationDto, isSourceDto, isStaleError } from './staleConflict';
 export { ApiEvents } from './events';
 export { createMockApi, displayText, extractEdges, type TMockApi } from './mockApi';
 export { createMockSeed } from './mockData';

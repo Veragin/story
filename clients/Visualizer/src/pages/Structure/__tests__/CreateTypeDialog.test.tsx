@@ -28,7 +28,7 @@ describe('CreateTypeDialog', () => {
             <CreateTypeDialog
                 structure={stores.structure}
                 onCreated={created}
-                onCancel={() => {}}
+                onClose={() => {}}
             />
         );
     });
@@ -45,17 +45,17 @@ describe('CreateTypeDialog', () => {
         });
 
     it('derives the catalog name with the English plural rule, and keeps an edited one', async () => {
-        typeInto(get<HTMLInputElement>('input[aria-label="name"]'), 'TCity');
+        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TCity');
         expect(
-            get<HTMLInputElement>('input[aria-label="catalog name"]').value
+            get<HTMLInputElement>('input[aria-label="Catalog name"]').value
         ).toBe('cities');
         typeInto(
-            get<HTMLInputElement>('input[aria-label="catalog name"]'),
+            get<HTMLInputElement>('input[aria-label="Catalog name"]'),
             'towns'
         );
-        typeInto(get<HTMLInputElement>('input[aria-label="name"]'), 'TTown');
+        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TTown');
         expect(
-            get<HTMLInputElement>('input[aria-label="catalog name"]').value
+            get<HTMLInputElement>('input[aria-label="Catalog name"]').value
         ).toBe('towns');
 
         await submit();
@@ -71,15 +71,15 @@ describe('CreateTypeDialog', () => {
     });
 
     it('refuses a taken name and creates a type without a catalog', async () => {
-        typeInto(get<HTMLInputElement>('input[aria-label="name"]'), 'TRace');
+        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TRace');
         expect(get('[role=dialog]').textContent).toContain(
             'That name is already used'
         );
         await submit();
         expect(created).not.toHaveBeenCalled();
 
-        typeInto(get<HTMLInputElement>('input[aria-label="name"]'), 'TMood');
-        click('input[aria-label="catalog"]');
+        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TMood');
+        click('input[aria-label="Has a catalog"]');
         await submit();
         expect(created).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'TMood', fields: [] })

@@ -1,14 +1,14 @@
 import { Alert, Button } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { FormHeader } from '../../components/FormHeader';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { StructureInput } from '../../components/inputs/StructureInput/StructureInput';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { StructureEditor } from '../../components/editors/StructureEditor/StructureEditor';
+import { Notices } from '../../components/feedback/Notices';
 import { modals, router } from '../../shell';
 import { CatalogLink } from './CatalogLink';
 import type { StructureEditorStore } from './StructureEditorStore';
@@ -71,13 +71,13 @@ export const TypeEditor = observer(({ editor }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
+            <EditorHeader
                 title={base.name}
                 store={resource}
                 onDelete={
                     base.origin === 'story' ? () => void onDelete() : undefined
                 }
-                deleteTooltip={deleteBlocker}
+                deleteBlocker={deleteBlocker}
             />
             <FormMeta>
                 <span>
@@ -115,8 +115,8 @@ export const TypeEditor = observer(({ editor }: TProps) => {
                 </Alert>
             )}
             <FormFields>
-                <StructureInput
-                    ariaLabel={_('fields')}
+                <StructureEditor
+                    ariaLabel={_('Fields')}
                     value={draft.rows}
                     onChange={(rows) => editor.setRows(rows)}
                     literals={{

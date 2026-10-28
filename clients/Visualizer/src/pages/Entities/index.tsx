@@ -5,6 +5,7 @@ import { observer } from 'mobx-react-lite';
 import type { TEntityKind } from '@story/protocol';
 import { apiEvents } from '../../api';
 import { entityStore, structureStore } from '../../context';
+import { MasterDetailPage } from '../../components/layout/MasterDetailPage';
 import { PageContainer, router } from '../../shell';
 import { CatalogEntryForm } from './CatalogEntryForm';
 import { CatalogFormStore } from './CatalogFormStore';
@@ -13,7 +14,7 @@ import { EntityFormStore } from './EntityFormStore';
 import { EntityForm } from './EntityForm';
 import { EntityList } from './EntityList';
 
-type Props = {
+type TProps = {
     kind?: TEntityKind;
     catalog?: string;
     id?: string;
@@ -44,7 +45,7 @@ const getCatalogFormStore = () =>
 
 const catalogTab = (catalog: string) => `catalog:${catalog}`;
 
-export const EntitiesPage = observer(({ kind, catalog, id }: Props) => {
+export const EntitiesPage = observer(({ kind, catalog, id }: TProps) => {
     const s = getEntityFormStore();
     const c = getCatalogFormStore();
 
@@ -80,6 +81,8 @@ export const EntitiesPage = observer(({ kind, catalog, id }: Props) => {
     const catalogType = structureStore.types.find(
         (type) => type.catalog?.name === catalog
     );
+    const kindLabel =
+        KINDS.find((k) => k.kind === s.kind)?.label() ?? capitalize(s.kind);
     const tabs = [
         ...KINDS.map((k) => ({
             value: k.kind,
@@ -109,58 +112,53 @@ export const EntitiesPage = observer(({ kind, catalog, id }: Props) => {
 
     return (
         <PageContainer>
-            <SPage>
-                <SKinds
-                    value={
-                        tabs.some((tab) => tab.value === current)
-                            ? current
-                            : false
-                    }
-                    textColor="inherit"
-                    indicatorColor="primary"
-                >
-                    {tabs.map((tab) => (
-                        <Tab
-                            key={tab.value}
-                            value={tab.value}
-                            label={tab.label}
-                            href={tab.href}
-                        />
-                    ))}
-                </SKinds>
-                {catalog ? (
-                    <SBody>
+            <MasterDetailPage
+                header={
+                    <SKinds
+                        value={
+                            tabs.some((tab) => tab.value === current)
+                                ? current
+                                : false
+                        }
+                        textColor="inherit"
+                        indicatorColor="primary"
+                    >
+                        {tabs.map((tab) => (
+                            <Tab
+                                key={tab.value}
+                                value={tab.value}
+                                label={tab.label}
+                                href={tab.href}
+                            />
+                        ))}
+                    </SKinds>
+                }
+                list={
+                    catalog ? (
                         <CatalogList
                             store={c}
                             structure={structureStore}
                             catalog={catalog}
                             type={catalogType}
                         />
-                        <SFormArea>
-                            <CatalogEntryForm store={c} type={catalogType} />
-                        </SFormArea>
-                    </SBody>
+                    ) : (
+                        <EntityList
+                            store={s}
+                            structure={structureStore}
+                            title={kindLabel}
+                        />
+                    )
+                }
+            >
+                {catalog ? (
+                    <CatalogEntryForm store={c} type={catalogType} />
                 ) : (
-                    <SBody>
-                        <EntityList store={s} structure={structureStore} />
-                        <SFormArea>
-                            <EntityForm store={s} structure={structureStore} />
-                        </SFormArea>
-                    </SBody>
+                    <EntityForm store={s} structure={structureStore} />
                 )}
-            </SPage>
+            </MasterDetailPage>
         </PageContainer>
     );
 });
-
-const SPage = styled('div')`
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    color: ${({ theme }) => theme.palette.text.primary};
-    background: ${({ theme }) => theme.palette.background.default};
-`;
 
 const SKinds = styled(Tabs)`
     flex: 0 0 auto;
@@ -171,16 +169,4 @@ const SKinds = styled(Tabs)`
         min-height: 40px;
         text-transform: none;
     }
-`;
-
-const SBody = styled('div')`
-    display: flex;
-    flex: 1;
-    min-height: 0;
-`;
-
-const SFormArea = styled('div')`
-    flex: 1;
-    min-width: 0;
-    overflow: auto;
 `;

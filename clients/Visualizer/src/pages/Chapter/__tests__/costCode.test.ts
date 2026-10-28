@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isCostItem, parseCost, parseDelta } from '../editor/costCode';
+import { isCostItem, parseCost } from '../editor/costCode';
+import { parseDelta } from '../../../values/deltaTime';
 
 describe('parseDelta', () => {
     it('reads the DeltaTime factories', () => {

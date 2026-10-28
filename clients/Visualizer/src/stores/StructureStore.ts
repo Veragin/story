@@ -17,8 +17,8 @@ import {
 } from '@story/protocol';
 import { ApiError, errorMessage, type ApiEvents, type TVisualizerApi } from '../api';
 import { failureMessage, failureOf, type TWriteResult } from './writeResult';
-import type { TOption } from '../components/inputs/inputTypes';
-import type { IStructureContext } from '../components/inputs/structureContext';
+import type { TOption } from '../structure/option';
+import type { IStructureContext } from '../structure/structureContext';
 import type { EntityStore } from './EntityStore';
 import { RefCountedSubscription } from './RefCountedSubscription';
 

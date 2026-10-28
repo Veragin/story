@@ -2,11 +2,11 @@ import { ReactNode, useState } from 'react';
 import { TimeManager } from '@story/shared';
 import { visualizerStoreContext, type TVisualizerStore } from './context';
 
-type Props = {
+type TProps = {
     children: ReactNode;
 };
 
-export const Wrapper = ({ children }: Props) => {
+export const Wrapper = ({ children }: TProps) => {
     const [store] = useState<TVisualizerStore>(() => ({
         timeManager: new TimeManager(),
     }));

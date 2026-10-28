@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button, Typography } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { AddButton } from '../../../../components/buttons/AddButton';
 import { isCode, type TLinkDto, type TMaybeCode } from '@story/protocol';
 import { CodeBlock } from '../CodeBlock';
-import { ItemDiagnostics } from './ItemDiagnostics';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
+import { FormSection } from '../../../../components/form/FormSection';
 import { LinkEditor } from './LinkEditor';
 import { linkHasDiagnostics } from './linkSummary';
 import { LinkSummary } from './LinkSummary';
@@ -29,29 +29,24 @@ export const Links = ({
     const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
     if (value === undefined) {
         return (
-            <Button
-                size="small"
-                color="inherit"
-                startIcon={<AddIcon fontSize="small" />}
+            <AddButton
+                label={_('Links')}
+                tone="inherit"
                 onClick={() => onChange([])}
                 sx={{ alignSelf: 'flex-start' }}
-            >
-                {_('Links')}
-            </Button>
+            />
         );
     }
     if (isCode(value)) {
         return (
-            <>
-                <Typography variant="caption" color="text.secondary">
-                    {_('Links (code)')}
-                </Typography>
+            <FormSection title={_('Links (code)')}>
                 <CodeBlock
                     code={value.code}
                     onChange={(code) => onChange({ code })}
                     diagnostics={diag(path)}
+                    ariaLabel={_('Links code')}
                 />
-            </>
+            </FormSection>
         );
     }
     const add = () => {
@@ -80,8 +75,8 @@ export const Links = ({
             return next;
         });
     return (
-        <>
-            <ItemDiagnostics diagnostics={diag(path)} />
+        <FormSection title={_('Links')}>
+            <DiagnosticsList diagnostics={diag(path)} />
             {value.map((link, j) => {
                 const linkPath = `${path}.${j}`;
                 const hasError = linkHasDiagnostics(diag, linkPath);
@@ -114,15 +109,12 @@ export const Links = ({
                     </SLink>
                 );
             })}
-            <Button
-                size="small"
-                color="inherit"
-                startIcon={<AddIcon fontSize="small" />}
+            <AddButton
+                label={_('Add link')}
+                tone="inherit"
                 onClick={add}
                 sx={{ alignSelf: 'flex-start' }}
-            >
-                {_('Add link')}
-            </Button>
-        </>
+            />
+        </FormSection>
     );
 };

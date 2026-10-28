@@ -1,18 +1,19 @@
-import { CircularProgress, Link } from '@mui/material';
+import { Link } from '@mui/material';
+import { LoadingState } from '../../components/feedback/LoadingState';
 import { observer } from 'mobx-react-lite';
 import { isCode, type TStructTypeDto } from '@story/protocol';
-import { FormHeader } from '../../components/FormHeader';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { ObjectEditor } from '../../components/editors/ObjectEditor/ObjectEditor';
+import { Notices } from '../../components/feedback/Notices';
 import { router } from '../../shell';
 import type { CatalogFormStore } from './CatalogFormStore';
-import { confirmDelete } from './confirmDelete';
+import { confirmDelete } from './entityDialogs';
 import { displayName } from './entityFields';
 
 type TProps = {
@@ -28,7 +29,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
     if (store.loading && !draft)
         return (
             <FormCenter>
-                <CircularProgress size={24} />
+                <LoadingState />
             </FormCenter>
         );
     if (store.notFound) {
@@ -76,7 +77,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
+            <EditorHeader
                 title={displayName(draft.name, base.id)}
                 store={resource}
                 onDelete={() => void onDelete()}
@@ -100,7 +101,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
             </FormMeta>
             {notices}
             <FormFields>
-                <ObjectInput
+                <ObjectEditor
                     ariaLabel={base.type}
                     value={draft}
                     onChange={(next) => {

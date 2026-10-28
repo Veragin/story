@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import type { TTransitionPassageDto } from '@story/protocol';
-import { FormTypeInput } from '../../../../components/form/FormTypeInput';
+import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
@@ -19,7 +19,7 @@ export const TransitionFields = observer(
                 diag={diag}
                 preamble={preamble}
             />
-            <FormTypeInput
+            <FormMaybeCodeAutocompleteInput
                 label={_('Next passage (another chapter)')}
                 value={draft.nextPassageId}
                 onChange={(v) =>

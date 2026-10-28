@@ -1,20 +1,22 @@
-import { MenuItem, styled, TextField } from '@mui/material';
+import { styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import {
-    isCode,
     isDeltaTime,
     type TLinkCostDto,
     type TMaybeCode,
 } from '@story/protocol';
-import { CodeValue } from '../../../../components/inputs/CodeValue';
+import { CodeFallback } from '../../../../components/code/CodeFallback';
+import { DeltaTimeInput } from '../../../../components/inputs/DeltaTimeInput';
 import type {
     TDiagnosticsOf,
     TInputProps,
-    TOption,
 } from '../../../../components/inputs/inputTypes';
-import { DEFAULT_COST_TIME, parseCost } from '../costCode';
+import { InlineRow } from '../../../../components/layout/InlineRow';
+import { SelectInput } from '../../../../components/inputs/SelectInput';
+import type { TOption } from '../../../../structure/option';
+import { DEFAULT_DELTA_TIME } from '../../../../values/deltaTime';
+import { parseCost } from '../costCode';
 import { CostObjectFields } from './CostObjectFields';
-import { DeltaTimeInput } from './DeltaTimeInput';
 
 type TCostKind = 'time' | 'object';
 
@@ -23,84 +25,74 @@ type TProps = TInputProps<TMaybeCode<TLinkCostDto>, TLinkCostDto> & {
     diagnosticsOf: TDiagnosticsOf;
 };
 
+const kindOptions = (): TOption[] => [
+    { id: 'time', label: _('Time only') },
+    { id: 'object', label: _('Time, items, tools') },
+];
+
 const withKind = (cost: TLinkCostDto, kind: TCostKind): TLinkCostDto => {
     if (kind === 'object') return isDeltaTime(cost) ? { time: cost } : cost;
     if (isDeltaTime(cost)) return cost;
-    return cost.time && isDeltaTime(cost.time) ? cost.time : DEFAULT_COST_TIME;
+    return cost.time && isDeltaTime(cost.time) ? cost.time : DEFAULT_DELTA_TIME;
 };
 
 export const CostInput = ({
     value,
-    onChange,
     items,
     diagnosticsOf,
-    hasError,
-    disabled,
-    ariaLabel,
-    dataField,
+    ...props
 }: TProps) => {
-    if (isCode(value)) {
-        return (
-            <CodeValue
-                code={value.code}
-                parse={parseCost}
-                fallback={DEFAULT_COST_TIME}
-                onChange={onChange}
-                hasError={hasError}
-                disabled={disabled}
-                ariaLabel={ariaLabel}
-            />
-        );
-    }
-    const simple = isDeltaTime(value);
+    const { onChange, hasError, disabled, ariaLabel, dataField } = props;
     return (
-        <SCost data-field={dataField}>
-            <SRow>
-                <TextField
-                    select
-                    size="small"
-                    value={simple ? 'time' : 'object'}
-                    error={hasError}
-                    disabled={disabled}
-                    sx={{ width: 200 }}
-                    slotProps={{
-                        htmlInput: { 'aria-label': _('%s kind', ariaLabel) },
-                    }}
-                    onChange={(e) =>
-                        onChange(
-                            withKind(
-                                value,
-                                e.target.value === 'time' ? 'time' : 'object'
-                            )
-                        )
-                    }
-                >
-                    <MenuItem value="time">{_('Time only')}</MenuItem>
-                    <MenuItem value="object">
-                        {_('Time, items, tools')}
-                    </MenuItem>
-                </TextField>
-                {simple && (
-                    <DeltaTimeInput
-                        value={value}
-                        onChange={onChange}
-                        hasError={hasError}
-                        disabled={disabled}
-                        ariaLabel={_('%s minutes', ariaLabel)}
-                    />
-                )}
-            </SRow>
-            {!simple && (
-                <CostObjectFields
-                    value={value}
-                    onChange={onChange}
-                    items={items}
-                    diagnosticsOf={diagnosticsOf}
-                    disabled={disabled}
-                    dataField={dataField}
-                />
+        <CodeFallback
+            {...props}
+            value={value}
+            parse={parseCost}
+            fallback={DEFAULT_DELTA_TIME}
+        >
+            {(cost) => (
+                <SCost data-field={dataField}>
+                    <InlineRow>
+                        <SKind>
+                            <SelectInput
+                                value={isDeltaTime(cost) ? 'time' : 'object'}
+                                onChange={(kind) =>
+                                    onChange(
+                                        withKind(
+                                            cost,
+                                            kind === 'time' ? 'time' : 'object'
+                                        )
+                                    )
+                                }
+                                options={kindOptions()}
+                                hasError={hasError}
+                                disabled={disabled}
+                                ariaLabel={_('%s kind', ariaLabel)}
+                            />
+                        </SKind>
+                        {isDeltaTime(cost) && (
+                            <DeltaTimeInput
+                                value={cost}
+                                onChange={onChange}
+                                hasError={hasError}
+                                disabled={disabled}
+                                ariaLabel={_('%s minutes', ariaLabel)}
+                            />
+                        )}
+                    </InlineRow>
+                    {!isDeltaTime(cost) && (
+                        <CostObjectFields
+                            value={cost}
+                            onChange={onChange}
+                            items={items}
+                            diagnosticsOf={diagnosticsOf}
+                            disabled={disabled}
+                            dataField={dataField}
+                        />
+                    )}
+                </SCost>
             )}
-        </SCost>
+        </CodeFallback>
     );
 };
 
@@ -110,8 +102,6 @@ const SCost = styled('div')`
     gap: ${spacingCss(0.75)};
 `;
 
-const SRow = styled('div')`
-    display: flex;
-    gap: ${spacingCss(1)};
-    align-items: flex-start;
+const SKind = styled('div')`
+    max-width: 200px;
 `;

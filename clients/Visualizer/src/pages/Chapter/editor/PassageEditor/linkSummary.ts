@@ -1,5 +1,5 @@
 import { isCode, isDeltaTime, type TLinkDto, type TMaybeCode } from '@story/protocol';
-import type { TOption } from '../../../../components/inputs/inputTypes';
+import type { TOption } from '../../../../structure/option';
 import { formatDelta } from '../costCode';
 import type { TDiag } from './types';
 

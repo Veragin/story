@@ -1,4 +1,54 @@
 import { createTheme, type ThemeOptions } from '@mui/material';
+import type { CSSProperties } from 'react';
+
+type TSurfacePalette = {
+    code: string;
+    overlay: string;
+};
+
+type TBorderPalette = {
+    subtle: string;
+    strong: string;
+};
+
+declare module '@mui/material/styles' {
+    interface Palette {
+        surface: TSurfacePalette;
+        border: TBorderPalette;
+    }
+    interface PaletteOptions {
+        surface?: TSurfacePalette;
+        border?: TBorderPalette;
+    }
+    interface TypeText {
+        code: string;
+    }
+    interface TypographyVariants {
+        meta: CSSProperties;
+        small: CSSProperties;
+    }
+    interface TypographyVariantsOptions {
+        meta?: CSSProperties;
+        small?: CSSProperties;
+    }
+}
+
+declare module '@mui/material/Typography' {
+    interface TypographyPropsVariantOverrides {
+        meta: true;
+        small: true;
+    }
+}
+
+const SURFACE: TSurfacePalette = {
+    code: '#111',
+    overlay: 'rgba(17, 17, 17, 0.92)',
+};
+
+const BORDER: TBorderPalette = {
+    subtle: 'rgba(255, 255, 255, 0.12)',
+    strong: 'rgba(255, 255, 255, 0.25)',
+};
 
 const FORM = {
     text: '#ffffff',
@@ -12,7 +62,6 @@ const FORM = {
 const TOGGLE = {
     text: 'rgba(255, 255, 255, 0.7)',
     track: 'rgba(255, 255, 255, 0.05)',
-    trackBorder: 'rgba(255, 255, 255, 0.12)',
     hover: 'rgba(255, 255, 255, 0.08)',
     selected: '#2e7d32',
     selectedHover: '#388e3c',
@@ -24,7 +73,7 @@ const formComponents: ThemeOptions['components'] = {
             root: {
                 'gap': 4,
                 'padding': '4px 12px',
-                'border': `1px solid ${TOGGLE.trackBorder}`,
+                'border': `1px solid ${BORDER.subtle}`,
                 'borderRadius': 8,
                 'color': TOGGLE.text,
                 'textTransform': 'none',
@@ -55,7 +104,7 @@ const formComponents: ThemeOptions['components'] = {
                 gap: 2,
                 padding: 2,
                 borderRadius: 10,
-                border: `1px solid ${TOGGLE.trackBorder}`,
+                border: `1px solid ${BORDER.subtle}`,
                 backgroundColor: TOGGLE.track,
             },
             grouped: {
@@ -70,7 +119,7 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiOutlinedInput: {
         styleOverrides: {
-            root: {
+            root: ({ theme }) => ({
                 'color': FORM.text,
                 '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: FORM.border,
@@ -80,12 +129,12 @@ const formComponents: ThemeOptions['components'] = {
                 },
                 '&.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: FORM.accent },
                 '&.Mui-error .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#f44336',
+                    borderColor: theme.palette.error.main,
                 },
                 '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
                     borderColor: FORM.borderDisabled,
                 },
-            },
+            }),
         },
     },
     MuiInputLabel: {
@@ -98,6 +147,7 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiSelect: {
         styleOverrides: {
+            root: { color: FORM.text },
             icon: { color: FORM.label },
         },
     },
@@ -116,7 +166,10 @@ export const darkTheme = createTheme({
         text: {
             primary: '#ffffff',
             secondary: 'rgba(255, 255, 255, 0.7)',
+            code: '#e6db74',
         },
+        surface: SURFACE,
+        border: BORDER,
         divider: 'rgba(255, 255, 255, 0.2)',
         grey: {
             50: '#fafafa',
@@ -130,6 +183,10 @@ export const darkTheme = createTheme({
             800: '#424242',
             900: '#212121',
         },
+    },
+    typography: {
+        meta: { fontSize: '12px' },
+        small: { fontSize: '13px' },
     },
     components: {
         MuiPaper: {
@@ -149,14 +206,6 @@ export const darkTheme = createTheme({
                     '& .MuiFormHelperText-root': {
                         color: 'rgba(255, 255, 255, 0.6)',
                     },
-                },
-            },
-        },
-        MuiSelect: {
-            styleOverrides: {
-                ...formComponents.MuiSelect?.styleOverrides,
-                root: {
-                    color: '#ffffff',
                 },
             },
         },

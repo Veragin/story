@@ -1,10 +1,10 @@
-import { IconButton, Tooltip, Typography } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Typography } from '@mui/material';
+import { DeleteButton } from '../../../../components/buttons/DeleteButton';
 import type { TBodyItemDto } from '@story/protocol';
-import { FormFunctionInput } from '../../../../components/form/FormFunctionInput';
-import { FormStringInput } from '../../../../components/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/form/FormTypeInput';
-import { ItemDiagnostics } from './ItemDiagnostics';
+import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
+import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { Links } from './Links';
 import { setField } from './listUtils';
 import { SItem, SSpacer, STitleRow } from './styles';
@@ -40,18 +40,14 @@ export const BodyItemEditor = ({
                     {_('Body item %d', index + 1)}
                 </Typography>
                 <SSpacer />
-                <Tooltip title={_('Remove body item')}>
-                    <IconButton
-                        size="small"
-                        aria-label={_('Remove body item')}
-                        onClick={onRemove}
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
+                <DeleteButton
+                    iconOnly
+                    label={_('Remove body item')}
+                    onClick={onRemove}
+                />
             </STitleRow>
-            <ItemDiagnostics diagnostics={diag(path)} />
-            <FormFunctionInput
+            <DiagnosticsList diagnostics={diag(path)} />
+            <FormFunctionEditor
                 label={_('Condition')}
                 value={item.condition}
                 onChange={(v) => set('condition', v)}
@@ -61,7 +57,7 @@ export const BodyItemEditor = ({
                 diagnostics={diag(`${path}.condition`)}
                 dataField={`${path}.condition`}
             />
-            <FormTypeInput
+            <FormMaybeCodeAutocompleteInput
                 label={_('Redirect')}
                 value={item.redirect}
                 onChange={(v) => set('redirect', v)}
@@ -70,7 +66,7 @@ export const BodyItemEditor = ({
                 diagnostics={diag(`${path}.redirect`)}
                 dataField={`${path}.redirect`}
             />
-            <FormStringInput
+            <FormMaybeCodeTextInput
                 label={_('Text')}
                 multiline
                 value={item.text}

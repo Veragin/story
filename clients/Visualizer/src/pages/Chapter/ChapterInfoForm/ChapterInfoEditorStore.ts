@@ -1,6 +1,6 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import type { TChapterDto, TDiagnosticDto, TUpdateChapterBody } from '@story/protocol';
-import { ApiError, type TVisualizerApi } from '../../../api';
+import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics } from '../editor/diagnostics';
 import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
@@ -74,7 +74,7 @@ export class ChapterInfoEditorStore {
                 if (saved && saved.version !== chapter.version && this.dirty) this.conflict = { current: chapter };
             });
         } catch (e) {
-            runInAction(() => (this.error = e instanceof Error ? e.message : String(e)));
+            runInAction(() => (this.error = errorMessage(e)));
         }
     }
 
@@ -107,7 +107,7 @@ export class ChapterInfoEditorStore {
                 this.saving = false;
                 if (e instanceof ApiError && e.isStale) this.conflict = { current: (e.current as TChapterDto) ?? null };
                 else if (e instanceof ApiError && e.isInvalid) this.diagnostics = e.diagnostics;
-                else this.error = e instanceof Error ? e.message : String(e);
+                else this.error = errorMessage(e);
             });
             return false;
         }

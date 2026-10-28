@@ -1,68 +1,52 @@
 import { observer } from 'mobx-react-lite';
-import { IconButton, Tooltip } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import EditIcon from '@mui/icons-material/Edit';
 import { Row } from '@story/ui';
+import { AddButton } from '../../../components/buttons/AddButton';
+import { DeleteButton } from '../../../components/buttons/DeleteButton';
+import { TooltipIconButton } from '../../../components/buttons/TooltipIconButton';
 import type { MapStore } from '../../MapStore';
-import { ToolSection } from '../ToolWindow/ToolSection';
+import { PanelSection } from '../../../components/layout/PanelSection';
 import { List } from './List';
 import { Color } from './Color';
 import { BrushSizeSlider } from '../BrushSizeSlider';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
     onOpenTileTypeForm: (id?: string) => void;
     onDeleteColor: () => void;
 };
 
 export const ColorPicker = observer(
-    ({ mapStore, onOpenTileTypeForm, onDeleteColor }: Props) => {
+    ({ mapStore, onOpenTileTypeForm, onDeleteColor }: TProps) => {
         void mapStore.revision;
         const palette = mapStore.data?.palette ?? {};
 
         return (
-            <ToolSection
+            <PanelSection
                 label={<BrushSizeSlider mapStore={mapStore} />}
                 actions={
                     <Row>
-                        <Tooltip title={_('Add tile type')}>
-                            <IconButton
-                                size="small"
-                                color="inherit"
-                                onClick={() => onOpenTileTypeForm()}
-                                aria-label={_('Add tile type')}
-                            >
-                                <AddRoundedIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title={_('Edit tile type')}>
-                            <IconButton
-                                size="small"
-                                color="inherit"
-                                onClick={() =>
-                                    onOpenTileTypeForm(mapStore.selectedColorId)
-                                }
-                                aria-label={_('Edit tile type')}
-                            >
-                                <EditRoundedIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title={_('Delete tile type')}>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    color="error"
-                                    disabled={
-                                        mapStore.selectedColorId === 'none'
-                                    }
-                                    onClick={onDeleteColor}
-                                    aria-label={_('Delete tile type')}
-                                >
-                                    <DeleteRoundedIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
+                        <AddButton
+                            iconOnly
+                            label={_('Add tile type')}
+                            tone="inherit"
+                            onClick={() => onOpenTileTypeForm()}
+                        />
+                        <TooltipIconButton
+                            title={_('Edit tile type')}
+                            icon={EditIcon}
+                            tone="inherit"
+                            onClick={() =>
+                                onOpenTileTypeForm(mapStore.selectedColorId)
+                            }
+                        />
+                        <DeleteButton
+                            iconOnly
+                            label={_('Delete tile type')}
+                            tone="error"
+                            disabled={mapStore.selectedColorId === 'none'}
+                            onClick={onDeleteColor}
+                        />
                     </Row>
                 }
             >
@@ -77,7 +61,7 @@ export const ColorPicker = observer(
                         />
                     ))}
                 </List>
-            </ToolSection>
+            </PanelSection>
         );
     }
 );

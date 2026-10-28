@@ -1,20 +1,20 @@
 import { useState, type FormEvent } from 'react';
-import styled from '@emotion/styled';
 import { Button } from '@mui/material';
-import { LabeledTextField, Row, spacingCss } from '@story/ui';
 import type { MapStore } from '../../MapStore';
 import { isPaletteNameTaken } from '../../palette';
-import { ColorSwatchInput } from '../../../components/ColorSwatchInput';
-import { FormLabel } from '../../../components/form/FormLabel';
-import { ToolSection } from '../ToolWindow/ToolSection';
+import { FormColorInput } from '../../../components/form/FormColorInput';
+import { FormFields } from '../../../components/form/FormFields';
+import { FormTextInput } from '../../../components/form/FormTextInput';
+import { ActionRow } from '../../../components/layout/ActionRow';
+import { PanelSection } from '../../../components/layout/PanelSection';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
     editId?: string;
     onBack: () => void;
 };
 
-export const TileTypeForm = ({ mapStore, onBack, editId }: Props) => {
+export const TileTypeForm = ({ mapStore, onBack, editId }: TProps) => {
     const palette = mapStore.data?.palette ?? {};
     const initial = editId ? palette[editId] : undefined;
     const [name, setName] = useState(initial?.name ?? '');
@@ -34,24 +34,22 @@ export const TileTypeForm = ({ mapStore, onBack, editId }: Props) => {
     };
 
     return (
-        <ToolSection label={editId ? _('Edit tile type') : undefined}>
-            <SForm onSubmit={onSubmit}>
-                <FormLabel label={_('Color')}>
-                    <ColorSwatchInput
-                        label={_('Color')}
-                        value={color}
-                        onChange={setColor}
-                        size={36}
-                    />
-                </FormLabel>
-                <LabeledTextField
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+        <PanelSection label={editId ? _('Edit tile type') : undefined}>
+            <FormFields as="form" onSubmit={onSubmit}>
+                <FormColorInput
+                    label={_('Color')}
+                    value={color}
+                    onChange={(next = color) => setColor(next)}
+                />
+                <FormTextInput
                     label={_('Name')}
+                    value={name}
+                    onChange={(next = '') => setName(next)}
                     autoFocus
                     error={nameTaken ? _('This name is already used') : null}
+                    dataField="name"
                 />
-                <SButtons>
+                <ActionRow>
                     <Button color="inherit" size="small" onClick={onBack}>
                         {_('Cancel')}
                     </Button>
@@ -63,19 +61,8 @@ export const TileTypeForm = ({ mapStore, onBack, editId }: Props) => {
                     >
                         {editId ? _('Save') : _('Create')}
                     </Button>
-                </SButtons>
-            </SForm>
-        </ToolSection>
+                </ActionRow>
+            </FormFields>
+        </PanelSection>
     );
 };
-
-const SForm = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: ${spacingCss(1)};
-`;
-
-const SButtons = styled(Row)`
-    justify-content: flex-end;
-    gap: ${spacingCss(1)};
-`;

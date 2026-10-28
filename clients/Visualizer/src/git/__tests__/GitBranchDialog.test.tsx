@@ -115,7 +115,7 @@ describe('GitBranchDialog', () => {
         await press(buttonByText('Commit & push'));
 
         typeInto(
-            get<HTMLTextAreaElement>('textarea[aria-label=message]'),
+            get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
             'Before switching'
         );
         const [, commit] = $$('button[type=submit]');

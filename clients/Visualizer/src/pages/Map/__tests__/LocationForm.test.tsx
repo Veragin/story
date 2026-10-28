@@ -38,6 +38,7 @@ describe('LocationForm', () => {
                     location={DTO}
                     readOnly={readOnly}
                     onSave={onSave}
+                    onCancel={vi.fn()}
                 />
             </InStructure>
         );

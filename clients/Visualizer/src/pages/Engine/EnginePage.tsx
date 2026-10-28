@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     ENGINE_SECTIONS,
@@ -10,7 +9,8 @@ import { api, apiEvents } from '../../api';
 import {
     SideMenu,
     type TSideMenuEntry,
-} from '../../components/SideMenu/SideMenu';
+} from '../../components/layout/SideMenu';
+import { MasterDetailPage } from '../../components/layout/MasterDetailPage';
 import { PageContainer, router } from '../../shell';
 import { EngineEditorStore } from './EngineEditorStore';
 import { EngineSectionEditor } from './EngineSectionEditor';
@@ -67,27 +67,14 @@ export const EnginePage = observer(
 
         return (
             <PageContainer>
-                <SPage>
-                    <SideMenu groups={[{ title: _('Engine'), entries }]} />
-                    <SEditorArea>
-                        <EngineSectionEditor editor={editor} />
-                    </SEditorArea>
-                </SPage>
+                <MasterDetailPage
+                    list={
+                        <SideMenu groups={[{ title: _('Engine'), entries }]} />
+                    }
+                >
+                    <EngineSectionEditor editor={editor} />
+                </MasterDetailPage>
             </PageContainer>
         );
     }
 );
-
-const SPage = styled('div')`
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    color: ${({ theme }) => theme.palette.text.primary};
-    background: ${({ theme }) => theme.palette.background.default};
-`;
-
-const SEditorArea = styled('div')`
-    flex: 1;
-    min-width: 0;
-    overflow: auto;
-`;

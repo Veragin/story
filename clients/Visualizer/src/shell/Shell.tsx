@@ -1,18 +1,19 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { CircularProgress, styled } from '@mui/material';
+import { styled } from '@mui/material';
 import { Column } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
 import { ModalHost } from './ModalHost';
 import { LoginPrompt } from './LoginPrompt';
+import { LoadingState } from '../components/feedback/LoadingState';
 import { MapPage } from '../pages/Map';
 import { TimelinePage } from '../pages/Timeline';
 import { ChapterPage } from '../pages/Chapter/ChapterPage';
 import { EntitiesPage } from '../pages/Entities';
 import { StructurePage } from '../pages/Structure/StructurePage';
 import { StorySettingsPage } from '../pages/Settings/StorySettingsPage';
-import { StructureContext } from '../components/inputs/structureContext';
+import { StructureContext } from '../structure/structureContext';
 import { structureStore } from '../context';
 
 // CodeMirror stays out of the main bundle until the tab opens
@@ -26,8 +27,7 @@ const CanvasPlayground = lazy(async () => ({
         .CanvasPlayground,
 }));
 const InputsPlayground = lazy(async () => ({
-    default: (await import('../components/inputs/playground/InputsPlayground'))
-        .InputsPlayground,
+    default: (await import('../dev/InputsPlayground')).InputsPlayground,
 }));
 
 const renderPage = (route: TRoute) => {
@@ -71,7 +71,7 @@ export const Shell = observer(() => {
             <TopBar />
             <StructureContext.Provider value={structureStore}>
                 <SPage>
-                    <Suspense fallback={<CircularProgress />}>
+                    <Suspense fallback={<LoadingState />}>
                         {renderPage(router.route)}
                     </Suspense>
                 </SPage>

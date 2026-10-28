@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
-import { Divider, Typography } from '@mui/material';
 import { isCode, type TScreenPassageDto } from '@story/protocol';
-import { FormImageInput } from '../../../../components/form/FormImageInput';
-import { FormStringInput } from '../../../../components/form/FormStringInput';
+import { FormImageEditor } from '../../../../components/editors/FormImageEditor';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
+import { FormSection } from '../../../../components/form/FormSection';
 import { CodeBlock } from '../CodeBlock';
 import { BodyItems } from './BodyItems';
 import { ExecuteField } from './ExecuteField';
@@ -19,7 +19,7 @@ export const ScreenFields = observer(
         preamble,
     }: TFieldsProps<TScreenPassageDto>) => (
         <>
-            <FormStringInput
+            <FormMaybeCodeTextInput
                 label={_('Title')}
                 value={draft.title}
                 onChange={(v) =>
@@ -28,13 +28,14 @@ export const ScreenFields = observer(
                 diagnostics={diag('title')}
                 dataField="title"
             />
-            <FormImageInput
+            <FormImageEditor
+                label={_('Image')}
                 api={api}
                 owner="passages"
                 id={draft.passageId}
-                description={draft.image}
-                onDescriptionChange={(v) =>
-                    edit((d) => d.type === 'screen' && (d.image = v))
+                value={draft.image}
+                onChange={(v) =>
+                    edit((d) => d.type === 'screen' && (d.image = v ?? ''))
                 }
                 diagnostics={diag('image')}
             />
@@ -44,27 +45,31 @@ export const ScreenFields = observer(
                 diag={diag}
                 preamble={preamble}
             />
-            <Divider />
-            <Typography variant="subtitle2">{_('Body')}</Typography>
-            {isCode(draft.body) ? (
-                <CodeBlock
-                    code={draft.body.code}
-                    onChange={(code) =>
-                        edit((d) => d.type === 'screen' && (d.body = { code }))
-                    }
-                    diagnostics={diag('body')}
-                />
-            ) : (
-                <BodyItems
-                    items={draft.body}
-                    onChange={(body) =>
-                        edit((d) => d.type === 'screen' && (d.body = body))
-                    }
-                    diag={diag}
-                    passageOptions={passageOptions}
-                    itemOptions={itemOptions}
-                />
-            )}
+            <FormSection title={_('Body')}>
+                {isCode(draft.body) ? (
+                    <CodeBlock
+                        code={draft.body.code}
+                        onChange={(code) =>
+                            edit(
+                                (d) =>
+                                    d.type === 'screen' && (d.body = { code })
+                            )
+                        }
+                        diagnostics={diag('body')}
+                        ariaLabel={_('Body code')}
+                    />
+                ) : (
+                    <BodyItems
+                        items={draft.body}
+                        onChange={(body) =>
+                            edit((d) => d.type === 'screen' && (d.body = body))
+                        }
+                        diag={diag}
+                        passageOptions={passageOptions}
+                        itemOptions={itemOptions}
+                    />
+                )}
+            </FormSection>
         </>
     )
 );

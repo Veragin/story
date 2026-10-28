@@ -1,5 +1,5 @@
 import type { TDiagnosticDto, TPassageDto } from '@story/protocol';
-import type { TOption } from '../../../../components/inputs/inputTypes';
+import type { TOption } from '../../../../structure/option';
 import type { TVisualizerApi } from '../../../../api';
 
 export type TDiag = (path: string) => TDiagnosticDto[];

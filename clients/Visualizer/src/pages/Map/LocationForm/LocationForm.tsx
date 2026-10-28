@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
-import styled from '@emotion/styled';
-import { Alert, Button } from '@mui/material';
-import { LabeledTextField, Row, SmallText, spacingCss } from '@story/ui';
 import type { TLocationDto } from '@story/protocol';
-import { ApiError } from '../../../api';
-import { FormArrayInput } from '../../../components/form/FormArrayInput';
-import { FormStringInput } from '../../../components/form/FormStringInput';
+import { errorMessage, isLocationDto, isStaleError } from '../../../api';
+import { DialogButtons } from '../../../components/dialog/DialogButtons';
+import { ConflictAlert } from '../../../components/feedback/ConflictAlert';
+import { ErrorAlert } from '../../../components/feedback/ErrorAlert';
+import { HintText } from '../../../components/feedback/HintText';
+import { FormFields } from '../../../components/form/FormFields';
+import { FormTextInput } from '../../../components/form/FormTextInput';
+import { ActionRow } from '../../../components/layout/ActionRow';
+import { FormArrayEditor } from '../../../components/editors/FormArrayEditor';
+import { FormMaybeCodeTextInput } from '../../../components/code/FormMaybeCodeTextInput';
 import { LOCAL_CHARACTER_TYPE } from '../../../typeRefs';
 import {
     locationPatch,
@@ -21,7 +25,7 @@ export type TLocationFormProps = {
     readOnly?: boolean;
     onSave: (patch: TLocationPatch, version: string) => Promise<TLocationDto>;
     onSaved?: (dto: TLocationDto) => void;
-    onCancel?: () => void;
+    onCancel: () => void;
 };
 
 export const LocationForm = ({
@@ -72,16 +76,10 @@ export const LocationForm = ({
             setConflict(null);
             onSaved?.(saved);
         } catch (e) {
-            if (e instanceof ApiError && e.isStale) {
-                setConflict((e.current as TLocationDto | null) ?? location);
-            } else if (e instanceof ApiError && e.isInvalid) {
-                setError(
-                    e.diagnostics
-                        .map((d) => `${d.file}:${d.line} ${d.message}`)
-                        .join('\n')
-                );
+            if (isStaleError(e, isLocationDto)) {
+                setConflict(e.current ?? location);
             } else {
-                setError(e instanceof Error ? e.message : String(e));
+                setError(errorMessage(e));
             }
         } finally {
             setSaving(false);
@@ -109,27 +107,30 @@ export const LocationForm = ({
         setDraft((d) => ({ ...d, ...p }));
 
     return (
-        <SForm
+        <FormFields
+            as="form"
             onSubmit={(e) => {
                 e.preventDefault();
                 if (!readOnly) void save();
             }}
         >
-            <LabeledTextField
+            <FormTextInput
                 label={_('Id')}
                 value={location.id}
-                slotProps={{ input: { readOnly: true } }}
+                onChange={() => undefined}
+                readOnly
                 helperText={_('The id cannot be changed.')}
+                dataField="id"
             />
-            <SmallText>{location.file}</SmallText>
-            <FormStringInput
+            <HintText>{location.file}</HintText>
+            <FormMaybeCodeTextInput
                 label={_('Name')}
                 value={draft.name}
                 onChange={(name = '') => set({ name })}
                 disabled={readOnly}
                 dataField="name"
             />
-            <FormStringInput
+            <FormMaybeCodeTextInput
                 label={_('Description')}
                 multiline
                 value={draft.description}
@@ -137,7 +138,7 @@ export const LocationForm = ({
                 disabled={readOnly}
                 dataField="description"
             />
-            <FormArrayInput
+            <FormArrayEditor
                 label={_('Local characters')}
                 itemType={LOCAL_CHARACTER_TYPE}
                 value={draft.localCharacters}
@@ -149,65 +150,29 @@ export const LocationForm = ({
             />
 
             {conflict && (
-                <Alert
-                    severity="warning"
-                    action={
-                        <>
-                            <Button
-                                color="inherit"
-                                size="small"
-                                onClick={reload}
-                            >
-                                {_('Reload')}
-                            </Button>
-                            <Button
-                                color="inherit"
-                                size="small"
-                                onClick={keepMine}
-                            >
-                                {_('Keep mine')}
-                            </Button>
-                        </>
-                    }
-                >
-                    {_('Changed on disk.')}
-                </Alert>
+                <ConflictAlert
+                    what={_('location')}
+                    onReload={reload}
+                    onKeepMine={keepMine}
+                    disabled={saving}
+                />
             )}
-            {error && (
-                <Alert severity="error" style={{ whiteSpace: 'pre-wrap' }}>
-                    {error}
-                </Alert>
-            )}
+            <ErrorAlert error={error} />
 
-            <SButtons>
-                {onCancel && (
-                    <Button color="inherit" onClick={onCancel}>
-                        {readOnly ? _('Close') : _('Cancel')}
-                    </Button>
+            <ActionRow>
+                {readOnly ? (
+                    <DialogButtons closeOnly onClose={onCancel} />
+                ) : (
+                    <DialogButtons
+                        onClose={onCancel}
+                        label={_('Save')}
+                        busyLabel={_('Saving…')}
+                        busy={saving}
+                        disabled={!dirty || conflict !== null}
+                        submit
+                    />
                 )}
-                {!readOnly && (
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={saving || !dirty || conflict !== null}
-                    >
-                        {saving ? _('Saving…') : _('Save')}
-                    </Button>
-                )}
-            </SButtons>
-        </SForm>
+            </ActionRow>
+        </FormFields>
     );
 };
-
-const SForm = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: ${spacingCss(1.5)};
-    color: #fff;
-    padding-top: ${spacingCss(1)};
-`;
-
-const SButtons = styled(Row)`
-    justify-content: flex-end;
-    gap: ${spacingCss(1)};
-`;

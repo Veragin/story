@@ -1,19 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import {
-    Alert,
-    Button,
-    IconButton,
-    styled,
-    Tooltip,
-    Typography,
-} from '@mui/material';
+import { Button, styled, Typography } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CodeIcon from '@mui/icons-material/Code';
 import {
     api as defaultApi,
@@ -21,14 +14,18 @@ import {
     type ApiEvents,
     type TVisualizerApi,
 } from '../../api';
-import { ResizableSplitter } from '../../components/ResizableSplitter';
-import { openSourceEditor } from '../../components/openSourceEditor';
+import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
+import { DeleteButton } from '../../components/buttons/DeleteButton';
+import { ResizableSplitter } from '../../components/layout/ResizableSplitter';
+import { SaveStatus } from '../../components/feedback/SaveStatus';
+import { ErrorAlert } from '../../components/feedback/ErrorAlert';
+import { openSourceEditor } from '../../components/code/openSourceEditor';
 import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { ChapterGraphStore } from './ChapterGraphStore';
-import { openChapterInfoDialog } from './ChapterInfoForm/openChapterInfoDialog';
 import {
     confirmDeletePassage,
     openAddCharacter,
+    openChapterInfoDialog,
     openAddPassage,
     openRemoveCharacter,
 } from './dialogs';
@@ -76,49 +73,57 @@ export const ChapterPage = observer(
                     <STitle variant="body2" title={chapterId}>
                         {store.chapterTitle}
                     </STitle>
-                    <SaveStatus store={store} />
-                    <ToolButton
+                    <SaveStatus
+                        status={store.saveStatus}
+                        error={store.saveError}
+                        labels={{
+                            saving: _('Saving layout…'),
+                            saved: _('Layout saved'),
+                            error: _('Layout not saved'),
+                        }}
+                    />
+                    <TooltipIconButton
                         title={_('Add character')}
                         onClick={() => openAddCharacter(store)}
-                    >
-                        <PersonAddIcon fontSize="small" />
-                    </ToolButton>
-                    <ToolButton
+                        icon={PersonAddIcon}
+                        tone="inherit"
+                    />
+                    <TooltipIconButton
                         title={_('Remove character')}
                         disabled={store.chapterCharacters.length === 0}
                         onClick={() => openRemoveCharacter(store)}
-                    >
-                        <PersonRemoveIcon fontSize="small" />
-                    </ToolButton>
-                    <ToolButton
+                        icon={PersonRemoveIcon}
+                        tone="inherit"
+                    />
+                    <TooltipIconButton
                         title={_('Add passage')}
                         onClick={() => openAddPassage(store)}
-                    >
-                        <NoteAddIcon fontSize="small" />
-                    </ToolButton>
-                    <ToolButton
+                        icon={NoteAddIcon}
+                        tone="inherit"
+                    />
+                    <TooltipIconButton
                         title={_('Edit chapter info')}
                         onClick={() => openChapterInfoDialog(chapterId, api)}
-                    >
-                        <EditNoteIcon fontSize="small" />
-                    </ToolButton>
-                    <ToolButton
-                        title={_('Delete selected passage')}
+                        icon={EditNoteIcon}
+                        tone="inherit"
+                    />
+                    <DeleteButton
+                        iconOnly
+                        label={_('Delete selected passage')}
+                        tone="inherit"
                         disabled={!store.selectedId}
                         onClick={() => void confirmDeletePassage(store)}
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </ToolButton>
-                    <ToolButton
+                    />
+                    <TooltipIconButton
                         title={
                             store.selectedId
                                 ? _('Edit passage source')
                                 : _('Edit chapter source')
                         }
                         onClick={() => editSource()}
-                    >
-                        <CodeIcon fontSize="small" />
-                    </ToolButton>
+                        icon={CodeIcon}
+                        tone="inherit"
+                    />
                     <Button
                         color="inherit"
                         size="small"
@@ -131,13 +136,14 @@ export const ChapterPage = observer(
 
                 <SContent>
                     {store.status === 'error' ? (
-                        <Alert severity="error" sx={{ m: 2 }}>
-                            {_(
+                        <ErrorAlert
+                            sx={{ m: 2 }}
+                            error={_(
                                 'Could not load chapter %s: %s',
                                 chapterId,
                                 store.loadError ?? ''
                             )}
-                        </Alert>
+                        />
                     ) : (
                         <ResizableSplitter
                             leftContent={<ChapterGraphCanvas store={store} />}
@@ -189,69 +195,12 @@ export const ChapterPage = observer(
     }
 );
 
-const ToolButton = ({
-    title,
-    disabled,
-    onClick,
-    children,
-}: {
-    title: string;
-    disabled?: boolean;
-    onClick: () => void;
-    children: ReactNode;
-}) => (
-    <Tooltip title={title}>
-        <span>
-            <IconButton
-                color="inherit"
-                size="small"
-                disabled={disabled}
-                onClick={onClick}
-                aria-label={title}
-            >
-                {children}
-            </IconButton>
-        </span>
-    </Tooltip>
-);
-
-const SaveStatus = observer(({ store }: { store: ChapterGraphStore }) => {
-    const text =
-        store.saveStatus === 'pending' || store.saveStatus === 'saving'
-            ? _('Saving layout…')
-            : store.saveStatus === 'saved'
-              ? _('Layout saved')
-              : store.saveStatus === 'error'
-                ? _('Layout not saved')
-                : '';
-    if (!text) return null;
-    return (
-        <Tooltip title={store.saveError ?? ''}>
-            <SStatus
-                variant="caption"
-                data-error={store.saveStatus === 'error' ? 'true' : undefined}
-            >
-                {text}
-            </SStatus>
-        </Tooltip>
-    );
-});
-
 const STitle = styled(Typography)`
-    margin-right: 8px;
+    margin-right: ${spacingCss(1)};
     max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-`;
-
-const SStatus = styled(Typography)`
-    margin-right: 8px;
-    opacity: 0.7;
-    &[data-error='true'] {
-        color: #f44336;
-        opacity: 1;
-    }
 `;
 
 const SContent = styled('div')`

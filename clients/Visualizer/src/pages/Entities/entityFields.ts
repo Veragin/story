@@ -11,7 +11,7 @@ import {
 
 const SERVER_FIELDS = ['version', 'file', 'line', 'exportName', 'kind', 'id'] as const;
 
-const isServerField = (key: string) => (SERVER_FIELDS as readonly string[]).includes(key);
+const isServerField = (key: string) => SERVER_FIELDS.some((field) => field === key);
 
 // same rule as the server's ID_RE; case-insensitive uniqueness because npc files are `<Id>.ts`
 const ENTITY_ID_RE = /^[a-z][A-Za-z0-9_]*$/;

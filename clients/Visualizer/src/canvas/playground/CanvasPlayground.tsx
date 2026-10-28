@@ -351,7 +351,7 @@ const SToolbar = styled('div')`
 `;
 
 const SInfo = styled('span')`
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
     opacity: 0.7;
 `;
 
@@ -374,7 +374,7 @@ const STooltip = styled('div')`
     padding: 4px 8px;
     border-radius: 4px;
     background: #333e;
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
 `;
 
 const SLog = styled('div')`

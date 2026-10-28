@@ -8,7 +8,7 @@ import {
     createMockSeed,
     type TMockApi,
 } from '../../../api';
-import { StructureContext } from '../../../components/inputs/structureContext';
+import { StructureContext } from '../../../structure/structureContext';
 import {
     $,
     $$,
@@ -80,17 +80,17 @@ describe('EntityForm', () => {
         );
         expect(labels).toEqual(
             expect.arrayContaining([
-                'name',
-                'startPassageId',
+                'Name',
+                'Start passage',
                 'energy',
                 'nickname',
-                'init',
+                'Init',
                 'health',
                 'inventory',
             ])
         );
         expect(
-            get('[data-form-field="init"] [data-key="knowsMagic"]')
+            get('[data-form-field="Init"] [data-key="knowsMagic"]')
         ).toBeTruthy();
     });
 
@@ -134,6 +134,6 @@ describe('EntityForm', () => {
         ]);
         expect(dataType?.code).toBe('{ knowsMagic: boolean; field: string }');
         await flush();
-        expect($('[data-form-field="init"] [data-key="field"]')).toBeTruthy();
+        expect($('[data-form-field="Init"] [data-key="field"]')).toBeTruthy();
     });
 });

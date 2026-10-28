@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { TChapterId } from '@story/types';
 import { reaction } from 'mobx';
 import { styled } from '@mui/material';
 import {
@@ -85,6 +84,8 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
 
         const boxes = new Map<string, RectShape<TShapeData>>();
         const lines = new Map<string, LineShape<TShapeData>>();
+        const boxData = (shape: Shape | null) =>
+            shape ? boxes.get(shape.id)?.data : undefined;
         let dragging: string | null = null;
         let fitted = savedCamera !== null;
 
@@ -324,19 +325,19 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                 store.setPosition(shape.id, { x: shape.x, y: shape.y });
             }),
             scene.events.on('action', ({ shape }) => {
-                const data = (shape as Shape<TShapeData>).data;
+                const data = boxData(shape);
                 if (data?.kind === 'passage') store.openEditor(data.node.id);
                 else if (data?.kind === 'ghost' && data.ghost.resolved) {
                     const chapterId = data.ghost.passageId.split('-')[0];
                     if (chapterId)
                         router.navigate({
                             page: 'chapter',
-                            chapterId: chapterId as TChapterId,
+                            chapterId,
                         });
                 }
             }),
             scene.events.on('pointermove', ({ shape, screen }) => {
-                const data = (shape as Shape<TShapeData> | null)?.data;
+                const data = boxData(shape);
                 const text =
                     data?.kind === 'passage'
                         ? `${data.node.id} · ${_('double-click to edit')}`
@@ -402,5 +403,5 @@ const STooltip = styled('div')`
     border-radius: 4px;
     background: #333e;
     color: #eee;
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
 `;

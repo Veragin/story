@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
-import { Typography } from '@mui/material';
-import { FormFunctionInput } from '../../../../components/form/FormFunctionInput';
+import { HintText } from '../../../../components/feedback/HintText';
+import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
 import type { TFieldsProps } from './types';
 
 export const ExecuteField = observer(
@@ -11,7 +11,7 @@ export const ExecuteField = observer(
         preamble,
     }: Pick<TFieldsProps, 'draft' | 'edit' | 'diag' | 'preamble'>) => (
         <>
-            <FormFunctionInput
+            <FormFunctionEditor
                 label={_('Execute')}
                 value={draft.execute}
                 onChange={(v) =>
@@ -27,11 +27,11 @@ export const ExecuteField = observer(
                 dataField="execute"
             />
             {preamble && (
-                <Typography variant="caption" color="text.secondary">
+                <HintText>
                     {_(
                         'The passage function has statements before its return; they run on every build of the passage and are kept as they are. Move them into Execute in the source to run them once per entry.'
                     )}
-                </Typography>
+                </HintText>
             )}
         </>
     )

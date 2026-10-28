@@ -9,7 +9,7 @@ import type {
     TTriggerDto,
     TUpdateTriggerBody,
 } from '@story/protocol';
-import { ApiError, displayText, type ApiEvents, type TVisualizerApi } from '../../../api';
+import { ApiError, displayText, errorMessage, type ApiEvents, type TVisualizerApi } from '../../../api';
 import { getUiState, setUiState } from '../../../ui-state';
 import {
     clampPxPerSecond,
@@ -48,15 +48,6 @@ const DEFAULT_TOGGLES: TToggles = {
     showTriggers: true,
     characterId: null,
     pps: DEFAULT_PX_PER_SECOND,
-};
-
-export const errorMessage = (e: unknown) => {
-    if (e instanceof ApiError) {
-        if (e.isNotImplemented) return _('The server does not implement this yet (501).');
-        if (e.isInvalid) return e.diagnostics.map((d) => `${d.file}:${d.line} ${d.message}`).join('\n') || e.message;
-        return e.body.message ?? e.message;
-    }
-    return e instanceof Error ? e.message : String(e);
 };
 
 export class TimelineStore {

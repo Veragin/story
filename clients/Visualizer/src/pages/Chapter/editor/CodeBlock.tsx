@@ -1,13 +1,15 @@
 import type { TDiagnosticDto } from '@story/protocol';
-import { CodeTextArea } from '../../../components/inputs/CodeTextArea';
-import { InputDiagnostics } from '../../../components/inputs/InputDiagnostics';
+import { CodeTextArea } from '../../../components/code/CodeTextArea';
+import { FieldDiagnostics } from '../../../components/form/FieldDiagnostics';
 
 export const CodeBlock = ({
     code,
     onChange,
     diagnostics,
+    ariaLabel,
 }: {
     code: string;
+    ariaLabel: string;
     onChange: (code: string) => void;
     diagnostics: TDiagnosticDto[];
 }) => (
@@ -17,7 +19,8 @@ export const CodeBlock = ({
             onChange={onChange}
             hasError={diagnostics.length > 0}
             minRows={3}
+            ariaLabel={ariaLabel}
         />
-        <InputDiagnostics diagnostics={diagnostics} />
+        <FieldDiagnostics diagnostics={diagnostics} />
     </>
 );

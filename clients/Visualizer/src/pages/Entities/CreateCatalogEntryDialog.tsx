@@ -1,13 +1,4 @@
 import { useState } from 'react';
-import {
-    Alert,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-} from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     isCode,
@@ -17,13 +8,16 @@ import {
     type TStructTypeDto,
     type TValueRecord,
 } from '@story/protocol';
-import { LabeledTextField } from '@story/ui';
-import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
-import { typeContextOf } from '../../components/inputs/structureContext';
-
+import { errorMessage } from '../../api';
+import { AppDialog } from '../../components/dialog/AppDialog';
+import { DialogButtons } from '../../components/dialog/DialogButtons';
+import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
+import { ObjectEditor } from '../../components/editors/ObjectEditor/ObjectEditor';
+import { FormTextInput } from '../../components/form/FormTextInput';
+import { typeContextOf } from '../../structure/structureContext';
 import type { EntityStore } from '../../stores/EntityStore';
 import type { StructureStore } from '../../stores/StructureStore';
-import { writeResult } from '../../stores/writeResult';
+import { failureOf } from '../../stores/writeResult';
 import { idErrorMessage, validateEntityId } from './entityFields';
 
 type TProps = {
@@ -32,7 +26,7 @@ type TProps = {
     entities: EntityStore;
     structure: StructureStore;
     onCreated: (entry: TCatalogEntryDto) => void;
-    onCancel: () => void;
+    onClose: () => void;
 };
 
 const initialValues = (
@@ -46,111 +40,82 @@ const initialValues = (
     return isValueRecord(values) ? values : {};
 };
 
+const createError = (e: unknown) => {
+    const failure = failureOf(e);
+    if (failure.status === 'invalid')
+        return failure.diagnostics
+            .map((d) => `${d.field ?? d.file}: ${d.message}`)
+            .join('\n');
+    if (failure.status === 'exists') return idErrorMessage('exists');
+    return errorMessage(e);
+};
+
 export const CreateCatalogEntryDialog = observer(
-    ({ type, catalog, entities, structure, onCreated, onCancel }: TProps) => {
+    ({ type, catalog, entities, structure, onCreated, onClose }: TProps) => {
         const [id, setId] = useState('');
         const [values, setValues] = useState(() =>
             initialValues(type, structure)
         );
-        const [touched, setTouched] = useState(false);
-        const [busy, setBusy] = useState(false);
-        const [error, setError] = useState<string | null>(null);
 
         const idProblem = validateEntityId(
             id.trim(),
             entities.catalogOf(catalog).map((entry) => entry.id)
         );
+
+        const { busy, error, touched, submit } = useDialogSubmit(
+            async () =>
+                onCreated(
+                    await entities.createCatalogEntry(catalog, {
+                        id: id.trim(),
+                        values,
+                    })
+                ),
+            { canSubmit: !idProblem, toError: createError }
+        );
         const showIdError = (touched || id !== '') && idProblem;
 
-        const submit = async () => {
-            setTouched(true);
-            if (idProblem || busy) return;
-            setBusy(true);
-            setError(null);
-            const result = await writeResult(() =>
-                entities.createCatalogEntry(catalog, { id: id.trim(), values })
-            );
-            setBusy(false);
-            if (result.status === 'ok') onCreated(result.value);
-            else if (result.status === 'invalid')
-                setError(
-                    result.diagnostics
-                        .map((d) => `${d.field ?? d.file}: ${d.message}`)
-                        .join('\n')
-                );
-            else if (result.status === 'exists')
-                setError(idErrorMessage('exists'));
-            else if (result.status === 'error') setError(result.message);
-        };
-
         return (
-            <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        void submit();
+            <AppDialog
+                title={_('New %s', type.name)}
+                onClose={onClose}
+                onSubmit={submit}
+                error={error}
+                actions={
+                    <DialogButtons
+                        onClose={onClose}
+                        label={_('Create')}
+                        busyLabel={_('Creating…')}
+                        busy={busy}
+                        disabled={touched && !!idProblem}
+                        submit
+                    />
+                }
+            >
+                <FormTextInput
+                    autoFocus
+                    spellCheck={false}
+                    label={_('Id')}
+                    value={id}
+                    onChange={(next = '') => setId(next)}
+                    error={showIdError ? idErrorMessage(idProblem) : null}
+                    helperText={_(
+                        'The key in %s; stored as the value of %s fields.',
+                        type.catalog?.file ?? catalog,
+                        type.name
+                    )}
+                    dataField="id"
+                />
+                <ObjectEditor
+                    ariaLabel={type.name}
+                    value={values}
+                    onChange={(next) => {
+                        if (!isCode(next)) setValues(next);
                     }}
-                >
-                    <DialogTitle>{_('New %s', type.name)}</DialogTitle>
-                    <DialogContent>
-                        <Stack gap={2} sx={{ pt: 1 }}>
-                            <LabeledTextField
-                                autoFocus
-                                required
-                                label={_('id')}
-                                value={id}
-                                onChange={(e) => setId(e.target.value)}
-                                error={
-                                    showIdError
-                                        ? idErrorMessage(idProblem)
-                                        : null
-                                }
-                                helperText={_(
-                                    'The key in %s; stored as the value of %s fields.',
-                                    type.catalog?.file ?? catalog,
-                                    type.name
-                                )}
-                                slotProps={{
-                                    htmlInput: {
-                                        'spellCheck': false,
-                                        'aria-label': 'id',
-                                    },
-                                }}
-                            />
-                            <ObjectInput
-                                ariaLabel={type.name}
-                                value={values}
-                                onChange={(next) => {
-                                    if (!isCode(next)) setValues(next);
-                                }}
-                                fields={type.fields}
-                                hideViewToggle
-                                dataField="values"
-                            />
-                            {error && (
-                                <Alert
-                                    severity="error"
-                                    sx={{ whiteSpace: 'pre-wrap' }}
-                                >
-                                    {error}
-                                </Alert>
-                            )}
-                        </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button color="inherit" onClick={onCancel}>
-                            {_('Cancel')}
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={busy || (touched && !!idProblem)}
-                        >
-                            {_('Create')}
-                        </Button>
-                    </DialogActions>
-                </form>
-            </Dialog>
+                    fields={type.fields}
+                    hideViewToggle
+                    dataField="values"
+                />
+            </AppDialog>
         );
     }
 );

@@ -1,12 +1,16 @@
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
+import {
+    styled,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
+} from '@mui/material';
 import BrushIcon from '@mui/icons-material/Brush';
 import AdsClickIcon from '@mui/icons-material/AdsClick';
 import { spacingCss } from '@story/ui';
 import type { MapStore } from '../MapStore';
 import type { TTileTool } from '../types';
-import { ToolWindow } from './ToolWindow/ToolWindow';
+import { Panel } from '../../components/layout/Panel';
 import { Palette } from './Palette/Palette';
 import { EditWidget } from './EditWidget';
 
@@ -17,7 +21,7 @@ export const TileTools = observer(({ mapStore }: { mapStore: MapStore }) => {
     const color = tile ? mapStore.data?.palette[tile.tile] : undefined;
 
     return (
-        <ToolWindow
+        <Panel
             title={_('Tiles')}
             info={
                 hover && (
@@ -59,7 +63,7 @@ export const TileTools = observer(({ mapStore }: { mapStore: MapStore }) => {
         >
             {mapStore.tool === 'paint' && <Palette mapStore={mapStore} />}
             {mapStore.tool === 'select' && <EditWidget mapStore={mapStore} />}
-        </ToolWindow>
+        </Panel>
     );
 });
 

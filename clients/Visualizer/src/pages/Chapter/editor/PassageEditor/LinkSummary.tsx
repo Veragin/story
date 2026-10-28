@@ -1,10 +1,13 @@
-import { IconButton, styled, Tooltip } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { TooltipIconButton } from '../../../../components/buttons/TooltipIconButton';
+import { DeleteButton } from '../../../../components/buttons/DeleteButton';
 import type { TLinkDto } from '@story/protocol';
-import type { TOption } from '../../../../components/inputs/inputTypes';
-import { linkSummary, type TSummaryPart } from './linkSummary';
+import type { TOption } from '../../../../structure/option';
+import { linkSummary } from './linkSummary';
+import { SummaryParts } from './SummaryParts';
 
 type TProps = {
     link: TLinkDto;
@@ -14,17 +17,6 @@ type TProps = {
     onRemove: () => void;
     hasError: boolean;
 };
-
-const Parts = ({ parts }: { parts: TSummaryPart[] }) =>
-    parts.map((p, i) =>
-        'code' in p ? (
-            <Tooltip key={i} title={<SCodeTip>{p.code}</SCodeTip>}>
-                <SFn>ƒ</SFn>
-            </Tooltip>
-        ) : (
-            <span key={i}>{p.text}</span>
-        )
-    );
 
 export const LinkSummary = ({
     link,
@@ -41,48 +33,32 @@ export const LinkSummary = ({
             <SLine onClick={hasError ? undefined : onToggle}>
                 {text.length > 0 ? (
                     <SText>
-                        <Parts parts={text} />
+                        <SummaryParts parts={text} />
                     </SText>
                 ) : (
                     <SNoText>{_('(no text)')}</SNoText>
                 )}{' '}
                 <SDetails>
-                    <Parts parts={details} />
+                    <SummaryParts parts={details} />
                 </SDetails>
             </SLine>
-            <Tooltip
+            <TooltipIconButton
                 title={
                     hasError
                         ? _('The link has errors: it stays open')
                         : toggleLabel
                 }
-            >
-                <span>
-                    <IconButton
-                        size="small"
-                        aria-label={toggleLabel}
-                        aria-expanded={expanded}
-                        data-action="toggle-link"
-                        disabled={hasError}
-                        onClick={onToggle}
-                    >
-                        {expanded ? (
-                            <ExpandLessIcon fontSize="small" />
-                        ) : (
-                            <ExpandMoreIcon fontSize="small" />
-                        )}
-                    </IconButton>
-                </span>
-            </Tooltip>
-            <Tooltip title={_('Remove link')}>
-                <IconButton
-                    size="small"
-                    aria-label={_('Remove link')}
-                    onClick={onRemove}
-                >
-                    <DeleteIcon fontSize="small" />
-                </IconButton>
-            </Tooltip>
+                icon={expanded ? ExpandLessIcon : ExpandMoreIcon}
+                aria-expanded={expanded}
+                data-action="toggle-link"
+                disabled={hasError}
+                onClick={onToggle}
+            />
+            <DeleteButton
+                iconOnly
+                label={_('Remove link')}
+                onClick={onRemove}
+            />
         </SRow>
     );
 };
@@ -90,7 +66,7 @@ export const LinkSummary = ({
 const SRow = styled('div')`
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: ${spacingCss(0.25)};
     &[data-error='true'] {
         color: ${({ theme }) => theme.palette.error.main};
     }
@@ -99,7 +75,7 @@ const SRow = styled('div')`
 const SLine = styled('div')`
     flex: 1;
     min-width: 0;
-    font-size: 14px;
+    font-size: ${({ theme }) => theme.typography.body2.fontSize};
     line-height: 1.4;
     cursor: pointer;
     word-break: break-word;
@@ -116,17 +92,4 @@ const SNoText = styled('span')`
 
 const SDetails = styled('span')`
     color: ${({ theme }) => theme.palette.text.secondary};
-`;
-
-const SFn = styled('span')`
-    font-style: italic;
-    font-family: serif;
-    padding: 0 1px;
-    cursor: help;
-    color: #e6db74;
-`;
-
-const SCodeTip = styled('span')`
-    font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
-    white-space: pre-wrap;
 `;

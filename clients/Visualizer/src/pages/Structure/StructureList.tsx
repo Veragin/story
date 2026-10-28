@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import {
     SideMenu,
     type TSideMenuGroup,
-} from '../../components/SideMenu/SideMenu';
-import { modals, router, type TStructureSection } from '../../shell';
-import { CreateLiteralDialog } from './CreateLiteralDialog';
-import { CreateTypeDialog } from './CreateTypeDialog';
+} from '../../components/layout/SideMenu';
+import { router, type TStructureSection } from '../../shell';
+import { askNewLiteral, askNewType } from './structureDialogs';
 import type { StructureEditorStore } from './StructureEditorStore';
 
 type TProps = {
@@ -32,29 +31,15 @@ export const StructureList = observer(({ editor }: TProps) => {
     const select = (section: TStructureSection, name: string) =>
         router.navigate({ page: 'structure', section, name });
 
-    const newType = () =>
-        modals.open((close) => (
-            <CreateTypeDialog
-                structure={structure}
-                onCancel={close}
-                onCreated={(type) => {
-                    close();
-                    select('types', type.name);
-                }}
-            />
-        ));
+    const newType = async () => {
+        const type = await askNewType(structure);
+        if (type) select('types', type.name);
+    };
 
-    const newLiteral = () =>
-        modals.open((close) => (
-            <CreateLiteralDialog
-                structure={structure}
-                onCancel={close}
-                onCreated={(literal) => {
-                    close();
-                    select('literals', literal.name);
-                }}
-            />
-        ));
+    const newLiteral = async () => {
+        const literal = await askNewLiteral(structure);
+        if (literal) select('literals', literal.name);
+    };
 
     const groups: TGroup[] = [
         {
@@ -64,7 +49,7 @@ export const StructureList = observer(({ editor }: TProps) => {
                 name: literal.name,
                 secondary: literal.scope === 'local' ? literal.file : undefined,
             })),
-            onNew: newLiteral,
+            onNew: () => void newLiteral(),
         },
         {
             title: _('Story types'),
@@ -75,7 +60,7 @@ export const StructureList = observer(({ editor }: TProps) => {
                     ? _('catalog %s', type.catalog.name)
                     : undefined,
             })),
-            onNew: newType,
+            onNew: () => void newType(),
         },
         {
             title: _('Engine types (extendable)'),

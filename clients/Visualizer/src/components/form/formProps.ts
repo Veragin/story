@@ -3,7 +3,7 @@ import type { TDiagnosticDto } from '@story/protocol';
 
 export type TFormProps = {
     label: string;
-    diagnostics?: TDiagnosticDto[];
+    diagnostics?: readonly TDiagnosticDto[];
     optional?: boolean;
     actions?: ReactNode;
     helperText?: string;
@@ -11,11 +11,15 @@ export type TFormProps = {
     error?: string | null;
 };
 
-export type TFormInputProps<V, C extends V = V> = TFormProps & {
+export type TFormInputProps<V, C = V> = TFormProps & {
     value: V | undefined;
     onChange: (value: C | undefined) => void;
     disabled?: boolean;
+    dataField?: string;
 };
+
+export const isInvalid = ({ diagnostics = [], error }: Pick<TFormProps, 'diagnostics' | 'error'>) =>
+    diagnostics.length > 0 || !!error;
 
 export const splitFormProps = <V, C extends V, R extends object>({
     label,
@@ -28,6 +32,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
     value,
     onChange,
     disabled,
+    dataField,
     emptyValue,
     ...rest
 }: TFormInputProps<V, C> & R & { emptyValue: NoInfer<C> }) => ({
@@ -51,8 +56,9 @@ export const splitFormProps = <V, C extends V, R extends object>({
                   ...rest,
                   value: value ?? emptyValue,
                   onChange: (next: C) => onChange(next),
-                  hasError: diagnostics.length > 0 || !!error,
+                  hasError: isInvalid({ diagnostics, error }),
                   ariaLabel: label,
                   disabled,
+                  dataField,
               },
 });

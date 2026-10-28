@@ -6,7 +6,6 @@ export { ControlBar } from './ControlBar';
 export { shell } from './shellStore';
 export { modals } from './modals';
 export { ModalHost } from './ModalHost';
-export { ConfirmDialog } from './ConfirmDialog';
 export type { TConfirmOptions, TModalRender } from './modals';
 export { keyboard, useKey, isEditableTarget } from './keyboard';
 export type { TKeyHandler, TKeyOptions } from './keyboard';

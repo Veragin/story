@@ -1,6 +1,6 @@
 import { action, computed, makeObservable, observable, reaction, runInAction, toJS } from 'mobx';
 import type { TDiagnosticDto, TPassageDto, TPassageType, TUpdatePassageBody } from '@story/protocol';
-import { ApiError, type TVisualizerApi } from '../../../api';
+import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics, passageFieldPaths, type TDiagnosticIndex } from './diagnostics';
 
@@ -144,7 +144,7 @@ export class PassageEditorStore {
                 } else if (e instanceof ApiError && e.isInvalid) {
                     this.diagnostics = e.diagnostics;
                 } else {
-                    this.error = e instanceof Error ? e.message : String(e);
+                    this.error = errorMessage(e);
                 }
             });
             return false;

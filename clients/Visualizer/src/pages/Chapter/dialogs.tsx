@@ -1,11 +1,13 @@
 import type { TReferenceDto } from '@story/protocol';
+import { errorMessage, type TVisualizerApi } from '../../api';
+import { entityStore, structureStore } from '../../context';
 import { modals } from '../../shell';
 import { ReferencedError, type ChapterGraphStore } from './ChapterGraphStore';
 import { AddCharacterDialog } from './AddCharacterDialog';
 import { AddPassageDialog } from './AddPassageDialog';
 import { PickCharacterDialog } from './PickCharacterDialog';
-import { ReferencesDialog } from './ReferencesDialog';
-import { errorText } from './dialogUtils';
+import { ReferencesDialog } from '../../components/dialog/ReferencesDialog';
+import { ChapterInfoDialog } from './ChapterInfoForm/ChapterInfoDialog';
 
 const showReferences = (
     title: string,
@@ -53,10 +55,10 @@ export const confirmRemoveCharacter = async (
                 e.references
             );
         } else {
-            await modals.confirm({
-                title: _('Could not remove %s', summary.name),
-                message: errorText(e),
-            });
+            await modals.alert(
+                errorMessage(e),
+                _('Could not remove %s', summary.name)
+            );
         }
     }
 };
@@ -100,10 +102,21 @@ export const confirmDeletePassage = async (
                 e.references
             );
         } else {
-            await modals.confirm({
-                title: _('Could not delete %s', passageId),
-                message: errorText(e),
-            });
+            await modals.alert(
+                errorMessage(e),
+                _('Could not delete %s', passageId)
+            );
         }
     }
 };
+
+export const openChapterInfoDialog = (chapterId: string, api: TVisualizerApi) =>
+    modals.open((close) => (
+        <ChapterInfoDialog
+            chapterId={chapterId}
+            api={api}
+            structure={structureStore}
+            entities={entityStore}
+            onClose={close}
+        />
+    ));

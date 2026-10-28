@@ -1,18 +1,18 @@
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { IconButton, Tooltip } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import { styled } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import { Row, spacingCss } from '@story/ui';
-import { ColorSwatchInput } from '../../components/ColorSwatchInput';
-import { ToolWindow } from '../../MapEditor/components/ToolWindow/ToolWindow';
-import { ToolSection } from '../../MapEditor/components/ToolWindow/ToolSection';
-import { ToolHint } from '../../MapEditor/components/ToolWindow/ToolHint';
+import { spacingCss } from '@story/ui';
+import { AddButton } from '../../components/buttons/AddButton';
+import { DeleteButton } from '../../components/buttons/DeleteButton';
+import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
+import { ColorInput } from '../../components/inputs/ColorInput';
+import { Panel } from '../../components/layout/Panel';
+import { PanelSection } from '../../components/layout/PanelSection';
+import { HintText } from '../../components/feedback/HintText';
 import { locationColor, type MapPageStore } from './MapPageStore';
 import { LocationNameEditor } from './LocationNameEditor';
 
-type Props = {
+type TProps = {
     store: MapPageStore;
     onAdd: () => void;
     onOpen: (locationId: string) => void;
@@ -21,32 +21,28 @@ type Props = {
 };
 
 export const LocationTools = observer(
-    ({ store, onAdd, onOpen, onEdit, onDelete }: Props) => {
+    ({ store, onAdd, onOpen, onEdit, onDelete }: TProps) => {
         const id = store.selectedLocationId;
         void store.revision;
         const shape = id ? store.map?.locations[id] : undefined;
 
         return (
-            <ToolWindow
+            <Panel
                 title={_('Locations')}
                 actions={
-                    <Tooltip title={_('Add location')}>
-                        <IconButton
-                            size="small"
-                            color="inherit"
-                            onClick={onAdd}
-                            aria-label={_('Add location')}
-                        >
-                            <AddRoundedIcon />
-                        </IconButton>
-                    </Tooltip>
+                    <AddButton
+                        iconOnly
+                        label={_('Add location')}
+                        tone="inherit"
+                        onClick={onAdd}
+                    />
                 }
             >
-                <ToolSection>
+                <PanelSection>
                     {id && shape ? (
                         <SRow key={id}>
-                            <ColorSwatchInput
-                                label={_('Location colour')}
+                            <ColorInput
+                                ariaLabel={_('Location colour')}
                                 value={locationColor(id, shape)}
                                 onChange={(color) =>
                                     store.setLocationColor(id, color)
@@ -57,39 +53,31 @@ export const LocationTools = observer(
                                 locationId={id}
                                 onEditInForm={onEdit}
                             />
-                            <Tooltip title={_('Open')}>
-                                <IconButton
-                                    size="small"
-                                    color="inherit"
-                                    onClick={() => onOpen(id)}
-                                    aria-label={_('Open')}
-                                >
-                                    <OpenInNewIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title={_('Delete')}>
-                                <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => onDelete(id)}
-                                    aria-label={_('Delete')}
-                                >
-                                    <DeleteRoundedIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
+                            <TooltipIconButton
+                                title={_('Open')}
+                                icon={OpenInNewIcon}
+                                tone="inherit"
+                                onClick={() => onOpen(id)}
+                            />
+                            <DeleteButton
+                                iconOnly
+                                tone="error"
+                                onClick={() => onDelete(id)}
+                            />
                         </SRow>
                     ) : (
-                        <ToolHint>
+                        <HintText>
                             {_('Click a location on the map to select it.')}
-                        </ToolHint>
+                        </HintText>
                     )}
-                </ToolSection>
-            </ToolWindow>
+                </PanelSection>
+            </Panel>
         );
     }
 );
 
-const SRow = styled(Row)`
+const SRow = styled('div')`
+    display: flex;
     align-items: center;
     gap: ${spacingCss(0.75)};
     margin-right: ${spacingCss(-0.75)};

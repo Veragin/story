@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { TLinearPassageDto } from '@story/protocol';
-import { FormStringInput } from '../../../../components/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/form/FormTypeInput';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
+import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
@@ -20,7 +20,7 @@ export const LinearFields = observer(
                 diag={diag}
                 preamble={preamble}
             />
-            <FormStringInput
+            <FormMaybeCodeTextInput
                 label={_('Description')}
                 multiline
                 value={draft.description}
@@ -32,7 +32,7 @@ export const LinearFields = observer(
                 diagnostics={diag('description')}
                 dataField="description"
             />
-            <FormTypeInput
+            <FormMaybeCodeAutocompleteInput
                 label={_('Next passage')}
                 value={draft.nextPassageId}
                 onChange={(v) =>

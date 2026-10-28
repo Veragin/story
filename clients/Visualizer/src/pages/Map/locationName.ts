@@ -1,5 +1,5 @@
 import { isCode, type TMaybeCode } from '@story/protocol';
-import { parseStringLiteral, quoteString } from '../../components/inputs/codeLiterals';
+import { parseStringLiteral, quoteString } from '../../values/codeLiterals';
 
 const TRANSLATED_RE = /^_\(\s*([\s\S]*?)\s*\)$/;
 

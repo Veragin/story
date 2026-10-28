@@ -1,15 +1,15 @@
 import { capitalize } from '@story/shared';
-import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { spacingCss } from '@story/ui';
 import type { TDataTypeDto, TTypeRef } from '@story/protocol';
-import { FormArrayInput } from '../../../components/form/FormArrayInput';
-import { FormDataTypeInput } from '../../../components/form/FormDataTypeInput';
-import { FormObjectInput } from '../../../components/form/FormObjectInput';
-import { FormStringInput } from '../../../components/form/FormStringInput';
-import { FormTypeInput } from '../../../components/form/FormTypeInput';
+import { FormFields } from '../../../components/form/FormFields';
+import { FormArrayEditor } from '../../../components/editors/FormArrayEditor';
+import { DataTypeSection } from '../../Structure/DataTypeSection';
+import { FormObjectEditor } from '../../../components/editors/FormObjectEditor';
+import { FormMaybeCodeTextInput } from '../../../components/code/FormMaybeCodeTextInput';
+import { FormMaybeCodeAutocompleteInput } from '../../../components/code/FormMaybeCodeAutocompleteInput';
+import { FormMaybeCodeTimeRangeInput } from '../../../components/code/FormMaybeCodeTimeRangeInput';
 import {
-    NO_DIAGNOSTICS,
+    noDiagnosticsOf,
     nestedDiagnostics,
     type TDiagnosticsOf,
 } from '../../../components/inputs/inputTypes';
@@ -18,14 +18,13 @@ import {
     typeContextOf,
     useStructureContext,
     withoutRefOption,
-} from '../../../components/inputs/structureContext';
+} from '../../../structure/structureContext';
 import {
     isArrayOf,
     isTextRecord,
     toMaybeCode,
-} from '../../../components/inputs/valueSource';
+} from '../../../values/valueSource';
 import { migrateInit, type TChapterInfoValue } from './chapterInfo';
-import { TimeRangeInput } from './TimeRangeInput';
 
 type TChapterInfoFormProps = {
     chapterId: string;
@@ -58,7 +57,7 @@ export const ChapterInfoForm = observer(
         file,
         value,
         onChange,
-        diagnostics = NO_DIAGNOSTICS,
+        diagnostics = noDiagnosticsOf,
         disabled,
     }: TChapterInfoFormProps) => {
         const structure = useStructureContext();
@@ -88,8 +87,8 @@ export const ChapterInfoForm = observer(
         const fields = value.dataType?.fields;
 
         return (
-            <SForm>
-                <FormStringInput
+            <FormFields>
+                <FormMaybeCodeTextInput
                     label={_('Title')}
                     value={value.title}
                     onChange={(next) => set('title', next)}
@@ -97,7 +96,7 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="title"
                 />
-                <FormStringInput
+                <FormMaybeCodeTextInput
                     label={_('Description')}
                     multiline
                     value={value.description}
@@ -106,7 +105,7 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="description"
                 />
-                <FormTypeInput
+                <FormMaybeCodeAutocompleteInput
                     label={_('Location')}
                     value={value.location}
                     onChange={(next) => set('location', next)}
@@ -115,16 +114,26 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="location"
                 />
-                <TimeRangeInput
+                <FormMaybeCodeTimeRangeInput
+                    label={_('Time range')}
+                    helperText={_('day.month. hour:minute')}
                     value={value.timeRange}
                     onChange={(next) => set('timeRange', next)}
-                    diagnostics={diagnostics}
+                    endHasError={(end) =>
+                        diagnostics(`timeRange.${end}`).length > 0
+                    }
+                    diagnostics={[
+                        ...diagnostics('timeRange'),
+                        ...diagnostics('timeRange.start'),
+                        ...diagnostics('timeRange.end'),
+                    ]}
                     disabled={disabled}
+                    dataField="timeRange"
                 />
                 <StructureContext.Provider
                     value={withoutRefOption(structure, CHAPTER_REF, chapterId)}
                 >
-                    <FormArrayInput
+                    <FormArrayEditor
                         label={_('Child chapters')}
                         itemType={CHILD_TYPE}
                         value={value.children}
@@ -140,7 +149,7 @@ export const ChapterInfoForm = observer(
                         dataField="children"
                     />
                 </StructureContext.Provider>
-                <FormObjectInput
+                <FormObjectEditor
                     label={_('Init')}
                     value={value.init}
                     onChange={(next = {}) => set('init', next)}
@@ -152,7 +161,7 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="init"
                 />
-                <FormDataTypeInput
+                <DataTypeSection
                     value={value.dataType}
                     onChange={setDataType}
                     newName={`T${capitalize(chapterId)}ChapterData`}
@@ -161,14 +170,7 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="dataType"
                 />
-            </SForm>
+            </FormFields>
         );
     }
 );
-
-const SForm = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: ${spacingCss(1.5)};
-    min-width: 0;
-`;

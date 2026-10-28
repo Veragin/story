@@ -1,7 +1,7 @@
 import '@story/shared';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { StructureContext } from '../../../components/inputs/structureContext';
+import { StructureContext } from '../../../structure/structureContext';
 import {
     $,
     click,

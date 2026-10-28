@@ -1,16 +1,20 @@
 import { observer } from 'mobx-react-lite';
-import { FormHeader } from '../../components/FormHeader';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { FormLabel } from '../../components/form/FormLabel';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { FormStringListInput } from '../../components/form/FormStringListInput';
+import { Notices } from '../../components/feedback/Notices';
 import { modals, router } from '../../shell';
-import { LiteralValuesInput } from './LiteralValuesInput';
 import type { StructureEditorStore } from './StructureEditorStore';
+import {
+    literalRowState,
+    literalRowsWithValues,
+    renamedHint,
+} from './literalRows';
 import { usagesOf } from './structureText';
 
 type TProps = {
@@ -55,7 +59,7 @@ export const LiteralEditor = observer(({ editor }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
+            <EditorHeader
                 title={base.name}
                 store={literal}
                 onDelete={() => void onDelete()}
@@ -73,22 +77,25 @@ export const LiteralEditor = observer(({ editor }: TProps) => {
             </FormMeta>
             {notices}
             <FormFields>
-                <FormLabel
-                    label={_('values')}
+                <FormStringListInput
+                    label={_('Values')}
                     helperText={_(
                         'Renaming a value renames it where it is used; a used value cannot be removed.'
                     )}
                     diagnostics={literal.diagnostics.filter(
                         (d) => d.field === 'values'
                     )}
-                >
-                    <LiteralValuesInput
-                        value={draft}
-                        onChange={editor.setLiteralRows}
-                        disabled={literal.saving}
-                        ariaLabel={_('Values of %s', base.name)}
-                    />
-                </FormLabel>
+                    value={draft.map((row) => row.value)}
+                    onChange={(values) =>
+                        editor.setLiteralRows(
+                            literalRowsWithValues(draft, values ?? [])
+                        )
+                    }
+                    hintOf={(index) => renamedHint(draft[index])}
+                    stateOf={(index) => literalRowState(draft[index])}
+                    disabled={literal.saving}
+                    dataField="values"
+                />
             </FormFields>
         </FormPage>
     );

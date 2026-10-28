@@ -11,14 +11,13 @@ import {
     type TReferenceDto,
     type TSourceOwner,
 } from '@story/protocol';
-import { ApiError, displayText, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
-import type { TOption } from '../../components/inputs/inputTypes';
+import { ApiError, displayText, errorMessage, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
+import type { TOption } from '../../structure/option';
 import { getUiState, setUiState } from '../../ui-state';
+import type { TSaveStatus } from '../../components/feedback/SaveStatus';
 import { BOX, GAP, placeMissing } from './graph/autoLayout';
 import { buildGraph, type TGraph } from './graph/buildGraph';
 import { PassageEditorStore } from './editor/PassageEditorStore';
-
-export type TSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 type TChapterGraphOptions = {
     chapterId: string;
@@ -227,7 +226,7 @@ export class ChapterGraphStore {
         } catch (e) {
             runInAction(() => {
                 this.status = 'error';
-                this.loadError = e instanceof Error ? e.message : String(e);
+                this.loadError = errorMessage(e);
             });
         }
     }
@@ -421,7 +420,7 @@ export class ChapterGraphStore {
             }
             runInAction(() => {
                 this.saveStatus = 'error';
-                this.saveError = e instanceof Error ? e.message : String(e);
+                this.saveError = errorMessage(e);
             });
         }
     }

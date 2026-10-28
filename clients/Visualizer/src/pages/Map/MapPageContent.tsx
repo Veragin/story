@@ -1,16 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { Alert, Button, CircularProgress } from '@mui/material';
-import { Column, Row, spacingCss } from '@story/ui';
+import { Alert, Button, styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 import { router, useKey } from '../../shell';
+import { LoadErrorState } from '../../components/feedback/LoadErrorState';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { ReferenceList } from '../../components/feedback/ReferenceList';
+import { ActionRow } from '../../components/layout/ActionRow';
 import { TileTools } from '../../MapEditor/components/TileTools';
 import type { MapPageStore } from './MapPageStore';
 import { MapControlBar } from './MapControlBar';
 import { MapCanvas } from './MapCanvas';
 import { LocationTools } from './LocationTools';
-import { openLocationModal } from './LocationModal';
-import { openAddLocationModal } from './AddLocationModal';
+import {
+    openAddLocation,
+    openLocation as openLocationDialog,
+} from './mapDialogs';
 import { LocationSidebar } from './LocationSidebar';
 import { MapBreadcrumbs } from './MapBreadcrumbs';
 import { addLocationMap, openLocationMap } from './openLocationMap';
@@ -26,9 +31,9 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
         return () => set.forEach((close) => close());
     }, []);
 
-    const openLocation = (id: string) => track(openLocationModal(store, id));
+    const openLocation = (id: string) => track(openLocationDialog(store, id));
     const editLocation = (id: string) =>
-        track(openLocationModal(store, id, { readOnly: false }));
+        track(openLocationDialog(store, id, { readOnly: false }));
     const deleteLocation = (id: string) => void store.deleteLocation(id);
     const openMap = (id: string) => void openLocationMap(store, id);
     const addMap = (id: string) => void addLocationMap(store, id);
@@ -62,33 +67,26 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                     {store.notice.text}
                     {store.notice.references &&
                         store.notice.references.length > 0 && (
-                            <ul>
-                                {store.notice.references.map((r, i) => (
-                                    <li key={i}>
-                                        {r.file}:{r.line}
-                                        {r.text ? ` — ${r.text}` : ''}
-                                    </li>
-                                ))}
-                            </ul>
+                            <ReferenceList
+                                references={store.notice.references}
+                            />
                         )}
                 </SNotice>
             )}
             {store.loadState === 'loading' && (
                 <SCenter>
-                    <CircularProgress />
+                    <LoadingState />
                 </SCenter>
             )}
             {store.loadState === 'error' && (
                 <SCenter>
-                    <Alert severity="error">
-                        {_('Could not load the map: %s', store.loadError ?? '')}
-                    </Alert>
-                    <Button
-                        variant="contained"
-                        onClick={() => void store.load()}
-                    >
-                        {_('Retry')}
-                    </Button>
+                    <LoadErrorState
+                        message={_(
+                            'Could not load the map: %s',
+                            store.loadError ?? ''
+                        )}
+                        onRetry={() => void store.load()}
+                    />
                 </SCenter>
             )}
             {store.loadState === 'missing' && (
@@ -99,7 +97,7 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                             store.locationName(store.mapId)
                         )}
                     </Alert>
-                    <Row style={{ gap: 8 }}>
+                    <ActionRow>
                         <Button
                             variant="contained"
                             onClick={() => void addThisMap()}
@@ -112,7 +110,7 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                         >
                             {_('Back')}
                         </Button>
-                    </Row>
+                    </ActionRow>
                 </SCenter>
             )}
             {store.loadState === 'ready' && (
@@ -122,7 +120,7 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                     {store.mode === 'locations' && (
                         <LocationTools
                             store={store}
-                            onAdd={() => track(openAddLocationModal(store))}
+                            onAdd={() => track(openAddLocation(store))}
                             onOpen={openLocation}
                             onEdit={editLocation}
                             onDelete={deleteLocation}
@@ -147,13 +145,17 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
     );
 });
 
-const SMapArea = styled(Column)`
+const SMapArea = styled('div')`
     position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
 `;
 
-const SCenter = styled(Column)`
+const SCenter = styled('div')`
+    display: flex;
+    flex-direction: column;
     margin: auto;
     gap: ${spacingCss(2)};
     align-items: center;
@@ -166,8 +168,4 @@ const SNotice = styled(Alert)`
     transform: translateX(-50%);
     z-index: 5;
     max-width: 480px;
-    & ul {
-        margin: ${spacingCss(0.5)} 0 0;
-        padding-left: ${spacingCss(2)};
-    }
 `;

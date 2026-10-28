@@ -1,14 +1,13 @@
 import '@story/shared'; // installs the global `_`
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TMaybeCode } from '@story/protocol';
 import { NumberInput } from '../NumberInput';
-import { $, click, fire, get, mount, typeInto, unmount } from './dom';
+import { fire, get, mount, typeInto, unmount } from './dom';
 import { Controlled } from './harness';
 
 describe('NumberInput', () => {
     afterEach(unmount);
 
-    const render = (initial: TMaybeCode<number>) => {
+    const render = (initial: number) => {
         const onChange = vi.fn();
         mount(
             <Controlled initial={initial} onChange={onChange}>
@@ -48,21 +47,5 @@ describe('NumberInput', () => {
         typeInto(input(), '1e');
         fire(input(), new FocusEvent('focusout', { bubbles: true }));
         expect(input().value).toBe('10');
-    });
-
-    it('shows code read-only and converts a plain number', () => {
-        const onChange = render({ code: '42' });
-        expect($(INPUT)).toBeNull();
-        expect(document.body.textContent).toContain('42');
-        click('[data-action="convert-to-value"]');
-        expect(onChange).toHaveBeenLastCalledWith(42);
-        expect(input().value).toBe('42');
-    });
-
-    it('offers reset for code that is not a number', () => {
-        const onChange = render({ code: 's.health * 2' });
-        expect($('[data-action="convert-to-value"]')).toBeNull();
-        click('[data-action="reset-value"]');
-        expect(onChange).toHaveBeenLastCalledWith(0);
     });
 });

@@ -1,5 +1,6 @@
 import type { TApiErrorBody, TApiErrorCode } from '@story/protocol';
 import { ApiError } from './ApiError';
+import { formatDiagnostic } from './diagnostics';
 
 type TGitErrorCode = Extract<TApiErrorCode, `git_${string}`>;
 
@@ -30,7 +31,8 @@ export const errorBodyMessage = (body: TApiErrorBody, status?: number): string =
 
 export const errorMessage = (e: unknown): string => {
     if (e instanceof ApiError) {
-        if (e.isNotImplemented) return 'The server does not implement this route yet (501).';
+        if (e.isNotImplemented) return _('The server does not implement this yet (501).');
+        if (e.isInvalid && e.diagnostics.length > 0) return e.diagnostics.map(formatDiagnostic).join('\n');
         return errorBodyMessage(e.body, e.status);
     }
     return e instanceof Error ? e.message : String(e);

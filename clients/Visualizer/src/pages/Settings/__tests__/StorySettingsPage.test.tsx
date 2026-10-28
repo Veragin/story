@@ -109,7 +109,7 @@ describe('StorySettingsPage', () => {
             'Git repository'
         );
         const authorEmail = () =>
-            get<HTMLInputElement>('input[aria-label="author email"]').value;
+            get<HTMLInputElement>('input[aria-label="Author email"]').value;
         expect(authorEmail()).toBe('example@story.local');
 
         typeInto(field('email'), 'me@example.com');

@@ -1,6 +1,5 @@
 import { action, makeObservable, observable } from 'mobx';
 import { isEngineSection, type TEngineSection } from '@story/protocol';
-import type { TChapterId } from '@story/types';
 import { getUiState, setUiState } from '../ui-state';
 
 export const ENTITY_KINDS = ['characters', 'locations', 'npcs', 'items'] as const;
@@ -15,7 +14,7 @@ export type TSettingsSection = (typeof SETTINGS_SECTIONS)[number];
 export type TRoute =
     | { page: 'map'; mapId?: string }
     | { page: 'timeline' }
-    | { page: 'chapter'; chapterId: TChapterId }
+    | { page: 'chapter'; chapterId: string }
     | { page: 'entities'; kind?: TEntityKind; id?: string }
     | { page: 'catalog'; catalog: string; id?: string }
     | { page: 'structure'; section?: TStructureSection; name?: string }
@@ -57,7 +56,7 @@ export const parseHash = (hash: string): TRoute | null => {
         case 'timeline':
             if (parts.length === 1) return { page: 'timeline' };
             if (parts.length === 3 && parts[1] === 'chapter' && parts[2]) {
-                return { page: 'chapter', chapterId: parts[2] as TChapterId };
+                return { page: 'chapter', chapterId: parts[2] };
             }
             return null;
         case 'entities': {

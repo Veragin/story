@@ -1,9 +1,9 @@
-import { Alert, styled, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { spacingCss } from '@story/ui';
 import { isCode, type TItemDto, type TValueRecord } from '@story/protocol';
-import { InputDiagnostics } from '../../components/inputs/InputDiagnostics';
-import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
+import { ErrorAlert } from '../../components/feedback/ErrorAlert';
+import { HintText } from '../../components/feedback/HintText';
+import { FieldDiagnostics } from '../../components/form/FieldDiagnostics';
+import { ObjectEditor } from '../../components/editors/ObjectEditor/ObjectEditor';
 import type { TEntityFieldsProps } from './entityFormProps';
 import {
     ENTITY_TYPE_NAMES,
@@ -33,19 +33,15 @@ export const ItemFields = observer(
         };
         return (
             <>
-                <SMeta>
+                <HintText>
                     {_('in')} <code>{draft.source}</code>
-                </SMeta>
-                {structure.writeError && (
-                    <Alert
-                        severity="error"
-                        onClose={structure.dismissWriteError}
-                    >
-                        {structure.writeError}
-                    </Alert>
-                )}
-                <ObjectInput
-                    ariaLabel={_('item')}
+                </HintText>
+                <ErrorAlert
+                    error={structure.writeError}
+                    onClose={structure.dismissWriteError}
+                />
+                <ObjectEditor
+                    ariaLabel={_('Item')}
                     hideViewToggle
                     value={{
                         name: draft.name,
@@ -69,7 +65,7 @@ export const ItemFields = observer(
                     }
                     dataField="item"
                 />
-                <Typography variant="caption" color="text.secondary">
+                <HintText>
                     {base && target !== base.source
                         ? _(
                               'Saving moves the item from %s to %s.',
@@ -79,21 +75,11 @@ export const ItemFields = observer(
                         : _(
                               'food goes to foodInfo, tool to toolInfo, the rest to itemInfo.'
                           )}
-                </Typography>
-                <InputDiagnostics
+                </HintText>
+                <FieldDiagnostics
                     diagnostics={store.exactDiagnostics('props')}
                 />
             </>
         );
     }
 );
-
-const SMeta = styled('div')`
-    display: flex;
-    gap: ${spacingCss(2)};
-    font-size: 12px;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    & code {
-        color: ${({ theme }) => theme.palette.text.primary};
-    }
-`;

@@ -1,16 +1,11 @@
-import { createElement, ReactNode } from 'react';
+import { createElement, type ComponentProps, type ReactNode } from 'react';
 import { action, computed, makeObservable, observable } from 'mobx';
-import { ConfirmDialog } from './ConfirmDialog';
+import { AlertDialog } from '../components/dialog/AlertDialog';
+import { ConfirmDialog } from '../components/dialog/ConfirmDialog';
 
 export type TModalRender = (close: () => void) => ReactNode;
 
-export type TConfirmOptions = {
-    title: string;
-    message?: ReactNode;
-    danger?: boolean;
-    confirmLabel?: string;
-    cancelLabel?: string;
-};
+export type TConfirmOptions = Omit<ComponentProps<typeof ConfirmDialog>, 'onConfirm' | 'onClose'>;
 
 export type TModalEntry = {
     id: number;
@@ -70,7 +65,21 @@ export class ModalStore {
         });
 
     confirm = (options: TConfirmOptions): Promise<boolean> =>
-        this.ask<boolean>((onAnswer) => createElement(ConfirmDialog, { ...options, onAnswer }), false);
+        this.ask<boolean>(
+            (answer) =>
+                createElement(ConfirmDialog, {
+                    ...options,
+                    onConfirm: () => answer(true),
+                    onClose: () => answer(false),
+                }),
+            false
+        );
+
+    alert = (message: ReactNode, title?: string): Promise<void> =>
+        this.ask<void>(
+            (answer) => createElement(AlertDialog, { title, message, onClose: () => answer() }),
+            undefined
+        );
 }
 
 export const modals = new ModalStore();

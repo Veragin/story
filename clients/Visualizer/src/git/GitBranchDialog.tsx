@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Box,
     Button,
     Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
     LinearProgress,
     List,
     ListItem,
@@ -16,18 +9,22 @@ import {
     ListItemIcon,
     ListItemText,
     Stack,
-    TextField,
-    Tooltip,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { observer } from 'mobx-react-lite';
 import { isGitBranchName, type TGitBranchDto } from '@story/protocol';
-import { LabeledTextField, showToast } from '@story/ui';
-import { FormLabel } from '../components/form/FormLabel';
+import { showToast } from '@story/ui';
+import { DeleteButton } from '../components/buttons/DeleteButton';
+import { AppDialog } from '../components/dialog/AppDialog';
+import { DialogButtons } from '../components/dialog/DialogButtons';
+import { ErrorAlert } from '../components/feedback/ErrorAlert';
+import { FormField } from '../components/form/FormField';
+import { FormTextInput } from '../components/form/FormTextInput';
+import { TextInput } from '../components/inputs/TextInput';
+import { InlineRow } from '../components/layout/InlineRow';
 import { useVisualizerStore } from '../context';
-import { askDeleteBranch, cleanBeforeSwitch } from './gitActions';
+import { askDeleteBranch, cleanBeforeSwitch } from './gitDialogs';
 import type { GitStore } from './GitStore';
 import { relativeAge } from './relativeAge';
 
@@ -107,19 +104,13 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
             disablePadding
             secondaryAction={
                 !branch.current && (
-                    <Tooltip title={_('Delete branch')}>
-                        <span>
-                            <IconButton
-                                edge="end"
-                                size="small"
-                                aria-label={_('Delete %s', branch.name)}
-                                disabled={store.busy}
-                                onClick={() => void remove(branch)}
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
+                    <DeleteButton
+                        iconOnly
+                        label={_('Delete %s', branch.name)}
+                        edge="end"
+                        disabled={store.busy}
+                        onClick={() => void remove(branch)}
+                    />
                 )
             }
         >
@@ -136,10 +127,10 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
                         <Stack direction="row" gap={1} alignItems="center">
                             <span>{branch.name}</span>
                             {!branch.local && (
-                                <Chip size="small" label={_('remote')} />
+                                <Chip size="small" label={_('Remote')} />
                             )}
                             {!branch.remote && (
-                                <Chip size="small" label={_('local')} />
+                                <Chip size="small" label={_('Local')} />
                             )}
                         </Stack>
                     }
@@ -163,99 +154,65 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
     const error = store.lastError ?? loadError;
 
     return (
-        <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>
-                <Stack direction="row" alignItems="center" gap={1}>
-                    <Box component="span" sx={{ flex: 1 }}>
-                        {_('Branches')}
-                    </Box>
-                    <Button
-                        size="small"
-                        startIcon={<RefreshIcon />}
-                        disabled={store.busy || fetching}
-                        onClick={() => void fetchBranches()}
-                    >
-                        {_('Fetch')}
-                    </Button>
-                </Stack>
-            </DialogTitle>
-            {(store.busy || fetching) && <LinearProgress />}
-            <DialogContent>
-                <Stack gap={2} sx={{ pt: 1 }}>
-                    <LabeledTextField
-                        label={_('Filter')}
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        slotProps={{ htmlInput: { 'aria-label': 'filter' } }}
-                    />
-                    <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
-                        {shown.map(renderBranch)}
-                    </List>
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            if (name && !nameError) void create();
-                        }}
-                    >
-                        <FormLabel
-                            label={_('New branch from current')}
-                            error={nameError}
-                            helperText={
-                                store.dirty
-                                    ? _('The uncommitted changes come along')
-                                    : undefined
-                            }
-                        >
-                            <Stack
-                                direction="row"
-                                gap={1}
-                                alignItems="flex-start"
-                            >
-                                <TextField
-                                    size="small"
-                                    fullWidth
-                                    value={newBranch}
-                                    onChange={(e) =>
-                                        setNewBranch(e.target.value)
-                                    }
-                                    error={nameError !== null}
-                                    slotProps={{
-                                        htmlInput: {
-                                            'aria-label': 'new branch',
-                                            'spellCheck': false,
-                                        },
-                                    }}
-                                />
-                                <Button
-                                    type="submit"
-                                    variant="outlined"
-                                    disabled={
-                                        store.busy ||
-                                        !name ||
-                                        nameError !== null
-                                    }
-                                >
-                                    {_('Create')}
-                                </Button>
-                            </Stack>
-                        </FormLabel>
-                    </form>
-                    {error && (
-                        <Alert
-                            severity="error"
-                            onClose={store.lastError ? clearError : undefined}
-                            sx={{ whiteSpace: 'pre-wrap' }}
-                        >
-                            {error}
-                        </Alert>
-                    )}
-                </Stack>
-            </DialogContent>
-            <DialogActions>
-                <Button color="inherit" onClick={onClose}>
-                    {_('Close')}
+        <AppDialog
+            title={_('Branches')}
+            titleActions={
+                <Button
+                    size="small"
+                    startIcon={<RefreshIcon />}
+                    disabled={store.busy || fetching}
+                    onClick={() => void fetchBranches()}
+                >
+                    {_('Fetch')}
                 </Button>
-            </DialogActions>
-        </Dialog>
+            }
+            onClose={onClose}
+            onSubmit={() => {
+                if (name && !nameError) void create();
+            }}
+            actions={<DialogButtons closeOnly onClose={onClose} />}
+        >
+            {(store.busy || fetching) && <LinearProgress />}
+            <FormTextInput
+                label={_('Filter')}
+                value={filter}
+                onChange={(next) => setFilter(next ?? '')}
+                dataField="filter"
+            />
+            <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
+                {shown.map(renderBranch)}
+            </List>
+            <FormField
+                label={_('New branch from current')}
+                error={nameError}
+                helperText={
+                    store.dirty
+                        ? _('The uncommitted changes come along')
+                        : undefined
+                }
+            >
+                <InlineRow>
+                    <TextInput
+                        value={newBranch}
+                        onChange={setNewBranch}
+                        hasError={nameError !== null}
+                        spellCheck={false}
+                        ariaLabel={_('New branch from current')}
+                        dataField="newBranch"
+                    />
+                    <Button
+                        type="submit"
+                        variant="outlined"
+                        disabled={store.busy || !name || nameError !== null}
+                    >
+                        {_('Create')}
+                    </Button>
+                </InlineRow>
+            </FormField>
+            <ErrorAlert
+                error={error}
+                onClose={store.lastError ? clearError : undefined}
+            />
+        </AppDialog>
     );
 });

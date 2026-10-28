@@ -15,6 +15,7 @@ import {
     type TStoryRouteName,
 } from '@story/protocol';
 import { ApiError } from './ApiError';
+import { errorMessage } from './errorMessage';
 import { STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
@@ -98,7 +99,7 @@ export const createRequest = ({
             } catch (e) {
                 throw new ApiError(
                     0,
-                    { error: 'internal', message: `Network error: ${e instanceof Error ? e.message : String(e)}` },
+                    { error: 'internal', message: `Network error: ${errorMessage(e)}` },
                     route
                 );
             }

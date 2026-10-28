@@ -1,4 +1,5 @@
 import type { TDiagnosticDto } from '@story/protocol';
+import { NO_DIAGNOSTICS } from '../../api/diagnostics';
 
 export type TInputProps<V, C = V> = {
     value: V;
@@ -10,11 +11,9 @@ export type TInputProps<V, C = V> = {
     dataField?: string;
 };
 
-export type TOption = { id: string; label?: string };
+export type TDiagnosticsOf = (path: string) => readonly TDiagnosticDto[];
 
-export type TDiagnosticsOf = (path: string) => TDiagnosticDto[];
-
-export const NO_DIAGNOSTICS: TDiagnosticsOf = () => [];
+export const noDiagnosticsOf: TDiagnosticsOf = () => NO_DIAGNOSTICS;
 
 export const nestedDiagnostics =
     (diagnosticsOf: TDiagnosticsOf, key: string | number): TDiagnosticsOf =>

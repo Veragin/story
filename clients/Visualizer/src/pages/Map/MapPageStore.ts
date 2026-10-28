@@ -9,7 +9,7 @@ import {
     type TUpdateEntityBody,
 } from '@story/protocol';
 import { isOneOf } from '@story/shared';
-import { ApiError, displayText, type ApiEvents, type TVisualizerApi } from '../../api';
+import { ApiError, displayText, errorMessage, type ApiEvents, type TVisualizerApi } from '../../api';
 import { Camera, type TCameraState, type TPoint, type TSize } from '../../canvas';
 import { createDefaultMapData } from '../../MapEditor/createDefaultMapData';
 import { MAP_BORDER, MAX_ZOOM, MIN_ZOOM } from '../../MapEditor/MapEngine/constants';
@@ -18,14 +18,13 @@ import { MapStore, type IMapHost } from '../../MapEditor/MapStore';
 import type { TMapDocument } from '../../MapEditor/types';
 import type { TConfirmOptions } from '../../shell/modals';
 import { getUiState, setUiState } from '../../ui-state';
+import type { TSaveStatus } from '../../components/feedback/SaveStatus';
 import { mergeMaps, sameMap, toMapDocument } from './mergeMap';
 import { nameAsText, withNameText } from './locationName';
 import { descendantLocationIds, isOnMap, locationIdPrefix, mapAncestors, parentLocationId } from './locationTree';
 
 export const MAP_MODES = ['view', 'locations', 'tiles'] as const;
 export type TMapMode = (typeof MAP_MODES)[number];
-
-export type TSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 export type TMapNotice = { kind: 'info' | 'warning' | 'error'; text: string; references?: TReferenceDto[] };
 
@@ -86,11 +85,6 @@ export const locationStyle = (color: string): Pick<TLocationShapeDto, 'fill' | '
     fill: `${color.slice(0, 7)}${LOCATION_FILL_ALPHA}`,
     stroke: color.slice(0, 7),
 });
-
-const errorMessage = (e: unknown) => {
-    if (e instanceof ApiError && e.isNotImplemented) return _('The story server does not implement this yet');
-    return e instanceof Error ? e.message : String(e);
-};
 
 export class MapPageStore implements IMapHost {
     readonly api: TVisualizerApi;

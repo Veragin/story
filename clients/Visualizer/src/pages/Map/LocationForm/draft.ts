@@ -1,5 +1,5 @@
 import type { TLocationDto, TValue } from '@story/protocol';
-import { isArrayOf, isTextRecord, toMaybeCode } from '../../../components/inputs/valueSource';
+import { isArrayOf, isTextRecord, toMaybeCode } from '../../../values/valueSource';
 import { deepEqual } from '../../../deepEqual';
 
 export type TLocationDraft = Pick<TLocationDto, 'name' | 'description' | 'localCharacters'>;

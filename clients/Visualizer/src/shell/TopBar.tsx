@@ -140,7 +140,7 @@ const SBack = styled(Button)`
     flex-shrink: 0;
     text-transform: none;
     opacity: 0.8;
-` as typeof Button;
+`;
 
 const SStoryName = styled(Typography)`
     flex-shrink: 1;
@@ -151,7 +151,7 @@ const SStoryName = styled(Typography)`
     font-weight: 600;
 `;
 
-const SSettings = styled(IconButton)`
+const SSettings = styled(IconButton)<{ href: string }>`
     flex-shrink: 0;
     margin-left: -${spacingCss(1.5)};
     opacity: 0.8;
@@ -160,7 +160,7 @@ const SSettings = styled(IconButton)`
         opacity: 1;
         color: ${appTheme.palette.secondary.main};
     }
-` as typeof IconButton;
+`;
 
 const STabs = styled(Tabs)`
     min-height: ${TOP_BAR_HEIGHT}px;
@@ -169,7 +169,7 @@ const STabs = styled(Tabs)`
 const STab = styled(Tab)`
     min-height: ${TOP_BAR_HEIGHT}px;
     text-transform: none;
-` as typeof Tab;
+`;
 
 const SControlBar = styled(Row)`
     flex: 1;

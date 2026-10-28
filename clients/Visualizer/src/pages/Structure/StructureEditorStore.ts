@@ -6,7 +6,7 @@ import {
     structureRows,
     type TNewLiteral,
     type TStructureRow,
-} from '../../components/inputs/StructureInput/structureRows';
+} from '../../structure/structureRows';
 import type { TStructureSection } from '../../shell';
 import { DraftResource } from '../../stores/DraftResource';
 import type { EntityStore } from '../../stores/EntityStore';

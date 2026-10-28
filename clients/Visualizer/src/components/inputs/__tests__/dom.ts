@@ -1,5 +1,7 @@
-import { act, type ReactNode } from 'react';
+import { ThemeProvider } from '@mui/material';
+import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { darkTheme } from '../../../theme';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -48,18 +50,21 @@ export const flush = () => act(() => Promise.resolve());
 
 let root: Root | null = null;
 
+// styles read the app's custom theme tokens, as under main.tsx
+const themed = (node: ReactNode) => createElement(ThemeProvider, { theme: darkTheme }, node);
+
 export const mount = (node: ReactNode) => {
     const container = document.body.appendChild(document.createElement('div'));
     const created = createRoot(container);
     root = created;
-    act(() => created.render(node));
+    act(() => created.render(themed(node)));
 };
 
 export const mountAsync = async (node: ReactNode) => {
     const container = document.body.appendChild(document.createElement('div'));
     const created = createRoot(container);
     root = created;
-    await act(() => Promise.resolve(created.render(node)));
+    await act(() => Promise.resolve(created.render(themed(node))));
 };
 
 export const unmount = () => {

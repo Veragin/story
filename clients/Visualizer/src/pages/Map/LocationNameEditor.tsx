@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { IconButton, TextField, Tooltip } from '@mui/material';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import { Row, spacingCss } from '@story/ui';
+import { styled } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import { spacingCss } from '@story/ui';
+import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
+import { TextInput } from '../../components/inputs/TextInput';
 import type { MapPageStore } from './MapPageStore';
 import { nameAsText } from './locationName';
 
-type Props = {
+type TProps = {
     store: MapPageStore;
     locationId: string;
     onEditInForm: (locationId: string) => void;
 };
 
 export const LocationNameEditor = observer(
-    ({ store, locationId, onEditInForm }: Props) => {
+    ({ store, locationId, onEditInForm }: TProps) => {
         const [draft, setDraft] = useState<string | null>(null);
         const draftRef = useRef<string | null>(null);
-        const inputRef = useRef<HTMLInputElement>(null);
         const location = store.locations.get(locationId);
         const name = store.locationName(locationId);
 
@@ -43,24 +43,14 @@ export const LocationNameEditor = observer(
 
         if (draft !== null) {
             return (
-                <TextField
-                    size="small"
-                    fullWidth
+                <TextInput
+                    ariaLabel={_('Location name')}
                     autoFocus
                     value={draft}
-                    onChange={(e) => updateDraft(e.target.value)}
-                    inputRef={inputRef}
+                    onChange={updateDraft}
                     onBlur={commit}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') inputRef.current?.blur();
-                        if (e.key === 'Escape') {
-                            e.stopPropagation();
-                            updateDraft(null);
-                        }
-                    }}
-                    slotProps={{
-                        htmlInput: { 'aria-label': _('Location name') },
-                    }}
+                    onEnter={commit}
+                    onEscape={() => updateDraft(null)}
                 />
             );
         }
@@ -69,16 +59,12 @@ export const LocationNameEditor = observer(
             <SRow>
                 <SName title={name}>{name}</SName>
                 {location && (
-                    <Tooltip title={_('Rename')}>
-                        <IconButton
-                            size="small"
-                            color="inherit"
-                            onClick={startEditing}
-                            aria-label={_('Rename')}
-                        >
-                            <EditRoundedIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    <TooltipIconButton
+                        title={_('Rename')}
+                        icon={EditIcon}
+                        tone="inherit"
+                        onClick={startEditing}
+                    />
                 )}
             </SRow>
         );
@@ -95,18 +81,19 @@ const flushDraft = (
     if (text) void store.renameLocation(locationId, text);
 };
 
-const SRow = styled(Row)`
+const SRow = styled('div')`
+    display: flex;
     flex: 1;
     min-width: 0;
     align-items: center;
     gap: ${spacingCss(0.25)};
 `;
 
-const SName = styled.span`
+const SName = styled('span')`
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 15px;
+    font-size: ${({ theme }) => theme.typography.subtitle1.fontSize};
     font-weight: 600;
 `;

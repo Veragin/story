@@ -1,45 +1,53 @@
 import { observer } from 'mobx-react-lite';
-import { modals, router } from '../../shell';
+import { SideMenu } from '../../components/layout/SideMenu';
+import { router } from '../../shell';
 import type { StructureStore } from '../../stores/StructureStore';
-import { CreateEntityDialog } from './CreateEntityDialog';
+import { openCreateEntity } from './entityDialogs';
 import type { EntityFormStore } from './EntityFormStore';
 import { displayName } from './entityFields';
-import { ResourceList } from './ResourceList';
 
 type TProps = {
     store: EntityFormStore;
     structure: StructureStore;
+    title: string;
 };
 
-export const EntityList = observer(({ store, structure }: TProps) => {
+export const EntityList = observer(({ store, structure, title }: TProps) => {
     const { kind } = store;
 
-    const add = () =>
-        modals.open((close) => (
-            <CreateEntityDialog
-                kind={kind}
-                entities={store.entities}
-                structure={structure}
-                onCancel={close}
-                onCreated={(entity) => {
-                    close();
-                    router.navigate({ page: 'entities', kind, id: entity.id });
-                }}
-            />
-        ));
+    const add = () => openCreateEntity(kind, store.entities, structure);
+
+    const { listError } = store.entities;
 
     return (
-        <ResourceList
-            onAdd={add}
+        <SideMenu
             loading={store.entities.listLoading}
-            error={store.entities.listError}
-            items={store.list.map((e) => ({
-                id: e.id,
-                primary: displayName(e.name, e.id),
-                href: router.href({ page: 'entities', kind, id: e.id }),
-                selected: store.selectedId === e.id,
-                unsaved: store.hasDraft(kind, e.id),
-            }))}
+            loadError={
+                listError
+                    ? {
+                          message: listError,
+                          retry: () => void store.entities.loadList(kind),
+                      }
+                    : null
+            }
+            groups={[
+                {
+                    title,
+                    onNew: add,
+                    newAction: 'new-entity',
+                    entries: store.list.map((e) => ({
+                        name: e.id,
+                        label: displayName(e.name, e.id),
+                        href: router.href({
+                            page: 'entities',
+                            kind,
+                            id: e.id,
+                        }),
+                        selected: store.selectedId === e.id,
+                        unsaved: store.hasDraft(kind, e.id),
+                    })),
+                },
+            ]}
         />
     );
 });

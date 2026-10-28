@@ -5,11 +5,11 @@ import { ColorPicker } from './ColorPicker';
 import { TileTypeForm } from './TileTypeForm';
 import { DeleteAlert } from './DeleteAlert';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
 };
 
-export const Palette = observer(({ mapStore }: Props) => {
+export const Palette = observer(({ mapStore }: TProps) => {
     const [tileTypeForm, setTileTypeForm] = useState<null | undefined | string>(
         null
     );

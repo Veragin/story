@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import {
-    Alert,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-} from '@mui/material';
-import { LabeledTextField } from '@story/ui';
-import { FormTypeInput } from '../../components/form/FormTypeInput';
+import { Alert, Button } from '@mui/material';
 import type { TPassageType } from '@story/protocol';
+import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
+import { FormTextInput } from '../../components/form/FormTextInput';
+import { AppDialog } from '../../components/dialog/AppDialog';
+import { DialogButtons } from '../../components/dialog/DialogButtons';
+import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import type { ChapterGraphStore } from './ChapterGraphStore';
-import { errorText, idError } from './dialogUtils';
+import { idError } from './dialogUtils';
 
 const PASSAGE_TYPES: { type: TPassageType; label: () => string }[] = [
     { type: 'screen', label: () => _('screen — text with links') },
@@ -24,32 +19,31 @@ const PASSAGE_TYPES: { type: TPassageType; label: () => string }[] = [
 const isPassageType = (value: string): value is TPassageType =>
     PASSAGE_TYPES.some((t) => t.type === value);
 
+type TProps = {
+    store: ChapterGraphStore;
+    onClose: () => void;
+    onAddCharacter: () => void;
+};
+
 export const AddPassageDialog = observer(
-    ({
-        store,
-        onClose,
-        onAddCharacter,
-    }: {
-        store: ChapterGraphStore;
-        onClose: () => void;
-        onAddCharacter: () => void;
-    }) => {
+    ({ store, onClose, onAddCharacter }: TProps) => {
         const characters = store.chapterCharacters;
         const [characterId, setCharacterId] = useState(characters[0]?.id ?? '');
         const [localId, setLocalId] = useState('');
         const [type, setType] = useState<TPassageType>('screen');
-        const [busy, setBusy] = useState(false);
-        const [error, setError] = useState<string | null>(null);
         const localError = localId === '' ? null : idError(localId);
         const exists = store.passages.some(
             (p) =>
                 p.passageId === `${store.chapterId}-${characterId}-${localId}`
         );
+        const canSubmit =
+            characters.length > 0 &&
+            !!localId &&
+            localError === null &&
+            !exists;
 
-        const submit = async () => {
-            setBusy(true);
-            setError(null);
-            try {
+        const { busy, error, submit } = useDialogSubmit(
+            async () => {
                 const passage = await store.createPassage({
                     characterId,
                     localId,
@@ -57,99 +51,89 @@ export const AddPassageDialog = observer(
                 });
                 onClose();
                 store.openEditor(passage.passageId);
-            } catch (e) {
-                setError(errorText(e));
-                setBusy(false);
-            }
-        };
+            },
+            { canSubmit }
+        );
 
         return (
-            <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-                <DialogTitle>{_('Add passage')}</DialogTitle>
-                <DialogContent>
-                    {characters.length === 0 ? (
-                        <Alert
-                            severity="info"
-                            action={
-                                <Button
-                                    color="inherit"
-                                    size="small"
-                                    onClick={() => {
-                                        onClose();
-                                        onAddCharacter();
-                                    }}
-                                >
-                                    {_('Add character')}
-                                </Button>
-                            }
-                        >
-                            {_(
-                                'This chapter has no characters yet. Use "Add character" first.'
-                            )}
-                        </Alert>
-                    ) : (
-                        <Stack gap={2} sx={{ pt: 1 }}>
-                            <FormTypeInput
-                                label={_('Character')}
-                                value={characterId}
-                                onChange={(next) => setCharacterId(next ?? '')}
-                                options={characters.map((c) => ({
-                                    id: c.id,
-                                    label: c.name,
-                                }))}
-                                dataField="characterId"
-                            />
-                            <LabeledTextField
-                                label={_('Local id')}
-                                value={localId}
-                                autoFocus
-                                error={
-                                    localError ??
-                                    (exists
-                                        ? _('This passage already exists')
-                                        : null)
-                                }
-                                helperText={`${store.chapterId}-${characterId}-${localId || '…'}`}
-                                onChange={(e) =>
-                                    setLocalId(e.target.value.trim())
-                                }
-                            />
-                            <FormTypeInput
-                                label={_('Type')}
-                                value={type}
-                                onChange={(next) => {
-                                    if (next && isPassageType(next))
-                                        setType(next);
+            <AppDialog
+                title={_('Add passage')}
+                size="xs"
+                onClose={onClose}
+                onSubmit={submit}
+                error={error}
+                actions={
+                    <DialogButtons
+                        onClose={onClose}
+                        label={_('Create')}
+                        busyLabel={_('Creating…')}
+                        busy={busy}
+                        disabled={!canSubmit}
+                        submit
+                    />
+                }
+            >
+                {characters.length === 0 ? (
+                    <Alert
+                        severity="info"
+                        action={
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={() => {
+                                    onClose();
+                                    onAddCharacter();
                                 }}
-                                options={PASSAGE_TYPES.map((t) => ({
-                                    id: t.type,
-                                    label: t.label(),
-                                }))}
-                                dataField="type"
-                            />
-                            {error && <Alert severity="error">{error}</Alert>}
-                        </Stack>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button color="inherit" onClick={onClose}>
-                        {_('Cancel')}
-                    </Button>
-                    <Button
-                        variant="contained"
-                        disabled={
-                            busy ||
-                            characters.length === 0 ||
-                            !localId ||
-                            localError !== null ||
-                            exists
+                            >
+                                {_('Add character')}
+                            </Button>
                         }
-                        onClick={() => void submit()}
                     >
-                        {_('Create')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        {_(
+                            'This chapter has no characters yet. Use "Add character" first.'
+                        )}
+                    </Alert>
+                ) : (
+                    <>
+                        <FormAutocompleteInput
+                            label={_('Character')}
+                            value={characterId}
+                            onChange={(next) => setCharacterId(next ?? '')}
+                            options={characters.map((c) => ({
+                                id: c.id,
+                                label: c.name,
+                            }))}
+                            dataField="characterId"
+                        />
+                        <FormTextInput
+                            label={_('Local id')}
+                            value={localId}
+                            autoFocus
+                            error={
+                                localError ??
+                                (exists
+                                    ? _('This passage already exists')
+                                    : null)
+                            }
+                            helperText={`${store.chapterId}-${characterId}-${localId || '…'}`}
+                            onChange={(next) => setLocalId((next ?? '').trim())}
+                            dataField="localId"
+                        />
+                        <FormAutocompleteInput
+                            label={_('Type')}
+                            value={type}
+                            onChange={(next) => {
+                                if (next && isPassageType(next)) setType(next);
+                            }}
+                            options={PASSAGE_TYPES.map((t) => ({
+                                id: t.type,
+                                label: t.label(),
+                            }))}
+                            dataField="type"
+                        />
+                    </>
+                )}
+            </AppDialog>
         );
     }
 );

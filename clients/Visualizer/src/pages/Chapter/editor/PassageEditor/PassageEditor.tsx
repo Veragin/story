@@ -1,12 +1,18 @@
 import { observer } from 'mobx-react-lite';
-import type { TOption } from '../../../../components/inputs/inputTypes';
+import CloseIcon from '@mui/icons-material/Close';
+import CodeIcon from '@mui/icons-material/Code';
+import { TooltipIconButton } from '../../../../components/buttons/TooltipIconButton';
+import {
+    EditorHeader,
+    type IEditorSource,
+} from '../../../../components/layout/EditorHeader';
+import type { TOption } from '../../../../structure/option';
 import type { TVisualizerApi } from '../../../../api';
-import { useKey } from '../../../../shell';
 import type { PassageEditorStore } from '../PassageEditorStore';
 import { PassageAlerts } from './PassageAlerts';
 import { PassageFields } from './PassageFields';
-import { PassageHeader } from './PassageHeader';
-import { SFields, SPanel } from './styles';
+import { FormFields } from '../../../../components/form/FormFields';
+import { SPanel } from './styles';
 import type { TDiag } from './types';
 
 type TProps = {
@@ -34,21 +40,42 @@ export const PassageEditor = observer(
         const { draft, base, diagnosticIndex } = store;
         const diag: TDiag = (path) => diagnosticIndex.byField.get(path) ?? [];
 
-        useKey('mod+s', () => (void store.save(), true), {
-            allowInInputs: true,
-        });
+        const source: IEditorSource = {
+            dirty: store.dirty,
+            saving: store.saving,
+            stale: store.conflict,
+            discard: () => store.reset(),
+            save: () => store.save(),
+        };
 
         return (
             <SPanel elevation={0}>
-                <PassageHeader
-                    store={store}
-                    onClose={onClose}
+                <EditorHeader
+                    compact
+                    title={base.passageId}
+                    chip={base.type}
+                    subtitle={base.file}
+                    store={source}
                     onDelete={onDelete}
-                    onEditSource={onEditSource}
+                    deleteLabel={_('Delete passage')}
+                    actions={
+                        <>
+                            <TooltipIconButton
+                                title={_('Edit source')}
+                                icon={CodeIcon}
+                                onClick={onEditSource}
+                            />
+                            <TooltipIconButton
+                                title={_('Close')}
+                                icon={CloseIcon}
+                                onClick={onClose}
+                            />
+                        </>
+                    }
                 />
                 <PassageAlerts store={store} onClose={onClose} />
 
-                <SFields>
+                <FormFields>
                     <PassageFields
                         draft={draft}
                         edit={(fn) => store.edit(fn)}
@@ -59,7 +86,7 @@ export const PassageEditor = observer(
                         api={api}
                         preamble={base.preamble}
                     />
-                </SFields>
+                </FormFields>
             </SPanel>
         );
     }

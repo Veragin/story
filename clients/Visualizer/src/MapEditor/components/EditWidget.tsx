@@ -1,15 +1,15 @@
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { Column, LabeledTextField, spacingCss } from '@story/ui';
 import type { MapStore } from '../MapStore';
-import { ToolSection } from './ToolWindow/ToolSection';
-import { ToolHint } from './ToolWindow/ToolHint';
+import { HintText } from '../../components/feedback/HintText';
+import { FormFields } from '../../components/form/FormFields';
+import { FormTextInput } from '../../components/form/FormTextInput';
+import { PanelSection } from '../../components/layout/PanelSection';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
 };
 
-export const EditWidget = observer(({ mapStore }: Props) => {
+export const EditWidget = observer(({ mapStore }: TProps) => {
     const selectedTile = mapStore.selectedTile;
     // re-render on every edit and on live refresh: the document itself is not observable
     void mapStore.revision;
@@ -17,46 +17,39 @@ export const EditWidget = observer(({ mapStore }: Props) => {
     const tile = selectedTile ? mapStore.getTile(selectedTile) : undefined;
     if (!selectedTile || !tile) {
         return (
-            <ToolSection>
-                <ToolHint>
+            <PanelSection>
+                <HintText>
                     {_('Click a tile to edit its label and description.')}
-                </ToolHint>
-            </ToolSection>
+                </HintText>
+            </PanelSection>
         );
     }
     const color = mapStore.data?.palette[tile.tile];
 
     return (
-        <ToolSection
+        <PanelSection
             label={`${selectedTile.i}, ${selectedTile.j} · ${color?.name ?? tile.tile}`}
         >
-            <SColumn data-testid="tile-edit-widget">
-                <LabeledTextField
-                    value={tile.label ?? ''}
-                    onChange={(e) =>
-                        mapStore.setTileText(selectedTile, {
-                            label: e.target.value,
-                        })
-                    }
+            <FormFields data-testid="tile-edit-widget">
+                <FormTextInput
                     label={_('Label')}
-                />
-                <LabeledTextField
-                    value={tile.description ?? ''}
-                    onChange={(e) =>
-                        mapStore.setTileText(selectedTile, {
-                            description: e.target.value,
-                        })
+                    value={tile.label ?? ''}
+                    onChange={(label = '') =>
+                        mapStore.setTileText(selectedTile, { label })
                     }
+                    dataField="label"
+                />
+                <FormTextInput
                     label={_('Description')}
+                    value={tile.description ?? ''}
+                    onChange={(description = '') =>
+                        mapStore.setTileText(selectedTile, { description })
+                    }
                     multiline
                     minRows={3}
-                    maxRows={10}
+                    dataField="description"
                 />
-            </SColumn>
-        </ToolSection>
+            </FormFields>
+        </PanelSection>
     );
 });
-
-const SColumn = styled(Column)`
-    gap: ${spacingCss(1.25)};
-`;

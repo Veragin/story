@@ -1,22 +1,21 @@
-import styled from '@emotion/styled';
-import { Button } from '@mui/material';
-import { Row, spacingCss } from '@story/ui';
+import { Button, styled } from '@mui/material';
 import type { MapStore } from '../../MapStore';
-import { ToolSection } from '../ToolWindow/ToolSection';
+import { ActionRow } from '../../../components/layout/ActionRow';
+import { PanelSection } from '../../../components/layout/PanelSection';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
     onBack: () => void;
 };
 
-export const DeleteAlert = ({ mapStore, onBack }: Props) => (
-    <ToolSection label={_('Delete tile type')}>
+export const DeleteAlert = ({ mapStore, onBack }: TProps) => (
+    <PanelSection label={_('Delete tile type')}>
         <SText>
             {_('Are you sure you want to delete tile type')}{' '}
             <b>{mapStore.data?.palette[mapStore.selectedColorId]?.name}</b>?{' '}
             {_('All tiles of that type will be set to None.')}
         </SText>
-        <SButtons>
+        <ActionRow>
             <Button color="inherit" onClick={onBack}>
                 {_('Cancel')}
             </Button>
@@ -30,15 +29,10 @@ export const DeleteAlert = ({ mapStore, onBack }: Props) => (
             >
                 {_('Delete')}
             </Button>
-        </SButtons>
-    </ToolSection>
+        </ActionRow>
+    </PanelSection>
 );
 
-const SText = styled.span`
+const SText = styled('span')`
     line-height: 1.5;
-`;
-
-const SButtons = styled(Row)`
-    justify-content: flex-end;
-    gap: ${spacingCss(1)};
 `;

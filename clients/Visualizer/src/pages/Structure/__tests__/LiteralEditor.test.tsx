@@ -62,12 +62,9 @@ describe('LiteralEditor', () => {
     });
 
     const addValue = (value: string) => {
-        typeInto(
-            get<HTMLInputElement>('input[data-action="add-value"]'),
-            value
-        );
+        typeInto(get<HTMLInputElement>('input[data-field="new-value"]'), value);
         act(() => {
-            get('input[data-action="add-value"]').dispatchEvent(
+            get('input[data-field="new-value"]').dispatchEvent(
                 new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
             );
         });

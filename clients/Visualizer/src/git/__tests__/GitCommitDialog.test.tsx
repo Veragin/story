@@ -65,12 +65,12 @@ describe('GitCommitDialog', () => {
         expect(
             get<HTMLButtonElement>('[role=dialog] button[type=submit]').disabled
         ).toBe(true);
-        expect(get<HTMLInputElement>('input[aria-label=push]').checked).toBe(
+        expect(get<HTMLInputElement>('input[aria-label="Push after commit"]').checked).toBe(
             true
         );
 
         typeInto(
-            get<HTMLTextAreaElement>('textarea[aria-label=message]'),
+            get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
             'Tidy the timeline'
         );
         await submit();
@@ -84,7 +84,7 @@ describe('GitCommitDialog', () => {
     it('shows a rejected push and recovers with pull then push', async () => {
         api.simulateRemoteGitCommit({ subject: 'From elsewhere' });
         typeInto(
-            get<HTMLTextAreaElement>('textarea[aria-label=message]'),
+            get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
             'Local work'
         );
         await submit();
@@ -93,7 +93,7 @@ describe('GitCommitDialog', () => {
         expect(get('[role=dialog]').textContent).toContain(
             'Committed locally, but the push failed'
         );
-        expect($('textarea[aria-label=message]')).toBeNull();
+        expect($('textarea[aria-label=Message]')).toBeNull();
         const pullThenPush = $$('[role=dialog] button').find(
             (b) => b.textContent === 'Pull then push'
         );

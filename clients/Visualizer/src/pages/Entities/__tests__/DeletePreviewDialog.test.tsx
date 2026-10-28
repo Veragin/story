@@ -31,21 +31,22 @@ describe('DeletePreviewDialog', () => {
     afterEach(unmount);
 
     const render = async (preview: TDeleteReferencesDto) => {
-        const onAnswer = vi.fn<(answer: boolean) => void>();
+        const onDelete = vi.fn<() => void>();
         await mountAsync(
             <DeletePreviewDialog
                 title="Delete elf?"
                 message="This removes it."
                 preview={() => Promise.resolve(preview)}
-                onAnswer={onAnswer}
+                onDelete={onDelete}
+                onClose={() => undefined}
             />
         );
         await act(() => Promise.resolve());
-        return onAnswer;
+        return onDelete;
     };
 
     it('lists the values the delete clears and confirms', async () => {
-        const onAnswer = await render({ cleared: CLEARED, blocking: [] });
+        const onDelete = await render({ cleared: CLEARED, blocking: [] });
         expect(get('[data-preview="cleared"]').textContent).toContain(
             'characters/thomas race: removed'
         );
@@ -53,7 +54,7 @@ describe('DeletePreviewDialog', () => {
             'chapter village location: set to "kingdom"'
         );
         click('[data-action="confirm-delete"]');
-        expect(onAnswer).toHaveBeenCalledWith(true);
+        expect(onDelete).toHaveBeenCalled();
     });
 
     it('disables the delete while code still references it', async () => {
@@ -67,9 +68,9 @@ describe('DeletePreviewDialog', () => {
                 },
             ],
         });
-        expect(get('[data-preview="blocking"]').textContent).toContain(
-            "data/chapters/palace.ts:3 race: 'elf'"
-        );
+        const blocking = get('[data-preview="blocking"]').textContent;
+        expect(blocking).toContain('data/chapters/palace.ts:3');
+        expect(blocking).toContain("race: 'elf'");
         expect(
             get<HTMLButtonElement>('[data-action="confirm-delete"]').disabled
         ).toBe(true);

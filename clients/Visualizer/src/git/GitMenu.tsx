@@ -1,5 +1,4 @@
 import {
-    Alert,
     Divider,
     LinearProgress,
     ListItemText,
@@ -8,8 +7,10 @@ import {
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { showToast } from '@story/ui';
-import { discardChanges, forcePush } from './gitActions';
+import { ErrorAlert } from '../components/feedback/ErrorAlert';
 import {
+    discardChanges,
+    forcePush,
     openGitBranchDialog,
     openGitCommitDialog,
     openGitSettings,
@@ -136,15 +137,11 @@ export const GitMenu = observer(({ store, anchorEl, onClose }: TProps) => {
             >
                 <ListItemText primary={_('Settings…')} />
             </MenuItem>
-            {store.lastError && (
-                <Alert
-                    severity="error"
-                    onClose={store.clearError}
-                    sx={{ mx: 1, mt: 1, whiteSpace: 'pre-wrap' }}
-                >
-                    {store.lastError}
-                </Alert>
-            )}
+            <ErrorAlert
+                error={store.lastError}
+                onClose={store.clearError}
+                sx={{ mx: 1, mt: 1 }}
+            />
         </Menu>
     );
 });

@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
-import styled from '@emotion/styled';
+import { styled } from '@mui/material';
 import { Scene } from '../../canvas';
 import { modals } from '../../shell';
 import { LocationsLayer } from './LocationsLayer';
 import type { MapPageStore } from './MapPageStore';
 import { MinimapInteraction } from './MinimapInteraction';
 
-type Props = {
+type TProps = {
     store: MapPageStore;
     onOpenLocation: (locationId: string) => void;
 };
 
-export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
+export const MapCanvas = observer(({ store, onOpenLocation }: TProps) => {
     const stageRef = useRef<HTMLDivElement>(null);
     const tilesRef = useRef<HTMLCanvasElement>(null);
     const sceneRef = useRef<HTMLCanvasElement>(null);
@@ -71,15 +71,15 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
     );
 });
 
-const SStage = styled.div`
+const SStage = styled('div')`
     position: relative;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background-color: #000;
+    background-color: ${({ theme }) => theme.palette.common.black};
 `;
 
-const SCanvas = styled.canvas`
+const SCanvas = styled('canvas')`
     position: absolute;
     inset: 0;
     width: 100%;

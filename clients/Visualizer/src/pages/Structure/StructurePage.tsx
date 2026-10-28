@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { Alert, CircularProgress, styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { entityStore, structureStore } from '../../context';
-import { FormCenter } from '../../components/formLayout';
+import { ErrorAlert } from '../../components/feedback/ErrorAlert';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { MasterDetailPage } from '../../components/layout/MasterDetailPage';
 import { PageContainer, router, type TStructureSection } from '../../shell';
 import { LiteralEditor } from './LiteralEditor';
 import { StructureEditorStore } from './StructureEditorStore';
@@ -50,39 +51,16 @@ export const StructurePage = observer(({ section, name }: TProps) => {
 
     return (
         <PageContainer>
-            <SPage>
-                <StructureList editor={e} />
-                <SEditorArea>
-                    {structure.error && (
-                        <Alert severity="error" sx={{ m: 2 }}>
-                            {structure.error}
-                        </Alert>
-                    )}
-                    {!structure.loaded && structure.loading ? (
-                        <FormCenter>
-                            <CircularProgress size={24} />
-                        </FormCenter>
-                    ) : e.section === 'literals' ? (
-                        <LiteralEditor editor={e} />
-                    ) : (
-                        <TypeEditor editor={e} />
-                    )}
-                </SEditorArea>
-            </SPage>
+            <MasterDetailPage list={<StructureList editor={e} />}>
+                <ErrorAlert error={structure.error} sx={{ m: 2 }} />
+                {!structure.loaded && structure.loading ? (
+                    <LoadingState />
+                ) : e.section === 'literals' ? (
+                    <LiteralEditor editor={e} />
+                ) : (
+                    <TypeEditor editor={e} />
+                )}
+            </MasterDetailPage>
         </PageContainer>
     );
 });
-
-const SPage = styled('div')`
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    color: ${({ theme }) => theme.palette.text.primary};
-    background: ${({ theme }) => theme.palette.background.default};
-`;
-
-const SEditorArea = styled('div')`
-    flex: 1;
-    min-width: 0;
-    overflow: auto;
-`;

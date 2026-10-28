@@ -1,5 +1,4 @@
-import { Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { AddButton } from '../../../../components/buttons/AddButton';
 import type { TBodyItemDto } from '@story/protocol';
 import { BodyItemEditor } from './BodyItemEditor';
 import { replaceAt } from './listUtils';
@@ -26,10 +25,9 @@ export const BodyItems = ({
                 itemOptions={itemOptions}
             />
         ))}
-        <Button
-            size="small"
-            color="inherit"
-            startIcon={<AddIcon fontSize="small" />}
+        <AddButton
+            label={_('Add body item')}
+            tone="inherit"
             onClick={() =>
                 onChange([
                     ...items,
@@ -37,8 +35,6 @@ export const BodyItems = ({
                 ])
             }
             sx={{ alignSelf: 'flex-start' }}
-        >
-            {_('Add body item')}
-        </Button>
+        />
     </>
 );

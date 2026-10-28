@@ -43,7 +43,8 @@ clients/
     src/pages/        Map, Timeline, Chapter, Entities, Structure
     src/stores/       shared stores: StructureStore (literals, types), EntityStore (entity and catalog lists), DraftResource
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
-    src/components/   inputs/ (the value inputs and their form/ variants), Notices, FormHeader, SourceEditorDialog (CodeMirror 6)
+    src/components/   shared UI: inputs/ (pure controls), form/ (labeled fields), code/ (code-aware wrappers, SourceEditorDialog), editors/, buttons/, dialog/, feedback/, layout/
+    src/values/, src/structure/, src/hooks/  non-UI value logic, StructureContext, useRowList
   LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
     src/api.ts        typed client over GLOBAL_ROUTES (+ a story's /info)
     src/StoriesStore.ts  the list, the unlocked flags, requireUnlocked → the password prompt
@@ -110,7 +111,7 @@ The image of a passage, character or npc is the `.png` next to its `.ts` file, w
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
 - `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
 
-In the client, `clients/Visualizer/src/components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 
 The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
 
