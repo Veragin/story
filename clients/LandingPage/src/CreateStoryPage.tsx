@@ -5,12 +5,11 @@ import {
     CollapsibleSection,
     EMPTY_STORY_FORM,
     hasErrors,
-    StoryFormFields,
-    StoryFormPage,
     toCreateBody,
     validateStoryForm,
 } from '@story/ui';
 import { errorMessage } from './api';
+import { CreateStoryFields } from './CreateStoryFields';
 import { GitConnectFields } from './GitConnectFields';
 import {
     EMPTY_GIT_CONNECT,
@@ -18,6 +17,7 @@ import {
     toGitSetup,
     validateGitConnect,
 } from './gitConnectForm';
+import { StoryFormPage } from './StoryFormPage';
 
 type TProps = {
     gitAvailable: boolean;
@@ -73,11 +73,10 @@ export const CreateStoryPage = ({
             onClose={onClose}
         >
             <Stack spacing={3}>
-                <StoryFormFields
+                <CreateStoryFields
                     value={value}
                     onChange={setValue}
                     errors={submitted ? errors : {}}
-                    mode="create"
                     disabled={saving}
                 />
                 {gitAvailable && (

@@ -131,11 +131,8 @@ const initialRoute = (): TRoute => {
     return parseHash(window.location.hash) ?? parseHash(getUiState<string>(LAST_ROUTE_KEY, '')) ?? DEFAULT_ROUTE;
 };
 
-const pageRouteOf = (route: TRoute): TRoute | null => (route.page === 'settings' ? null : route);
-
 export class Router {
     route: TRoute = initialRoute();
-    private routeBeforeSettings: TRoute | null = pageRouteOf(this.route);
     private started = false;
 
     constructor() {
@@ -175,8 +172,6 @@ export class Router {
 
     href = (route: TRoute) => routeToHash(route);
 
-    leaveSettings = () => this.navigate(this.routeBeforeSettings ?? DEFAULT_ROUTE);
-
     sync = () => {
         const parsed = parseHash(window.location.hash);
         if (parsed === null) {
@@ -185,7 +180,6 @@ export class Router {
         } else {
             this.route = parsed;
         }
-        this.routeBeforeSettings = pageRouteOf(this.route) ?? this.routeBeforeSettings;
         setUiState(LAST_ROUTE_KEY, routeToHash(this.route));
     };
 

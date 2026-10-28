@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
+import { Alert, Button, styled, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { STORY_LANDING_IMAGE_ID } from '@story/protocol';
-import {
-    CollapsibleSection,
-    showToast,
-    StoryFormFields,
-    StoryFormPage,
-} from '@story/ui';
+import { CollapsibleSection, showToast } from '@story/ui';
 import { api as defaultApi, auth, type TVisualizerApi } from '../../api';
 import { FormField } from '../../components/form/FormField';
 import { FormFields } from '../../components/form/FormFields';
 import { ConflictAlert } from '../../components/feedback/ConflictAlert';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ImageEditor } from '../../components/editors/ImageEditor';
+import { FormPage } from '../../components/layout/formLayout';
 import { gitStore } from '../../context';
 import { GitSettingsForm } from '../../git/GitSettingsForm';
 import type { GitStore } from '../../git/GitStore';
@@ -22,6 +18,7 @@ import {
     storyInfo as defaultStoryInfo,
     type StoryInfoStore,
 } from '../../shell/storyInfoStore';
+import { StorySettingsFields } from './StorySettingsFields';
 import { StorySettingsStore } from './StorySettingsStore';
 
 type TProps = {
@@ -60,41 +57,27 @@ export const StorySettingsPage = observer(
             );
 
         return (
-            <Box
-                sx={{
-                    height: '100%',
-                    overflow: 'auto',
-                    bgcolor: 'background.default',
-                }}
-            >
-                <StoryFormPage
-                    title={_('Story settings')}
-                    notice={
-                        store.conflict && (
-                            <ConflictAlert
-                                what={_('story')}
-                                onReload={store.reload}
-                                onKeepMine={store.keepMine}
-                                sx={{ mb: 2 }}
-                            />
-                        )
-                    }
-                    error={store.error}
-                    saving={store.saving}
-                    submitLabel={_('Save')}
-                    savingLabel={_('Saving…')}
-                    submitBlocked={store.submitBlocked}
-                    submitAction="save-story-settings"
-                    onSubmit={() => void save()}
-                    onClose={router.leaveSettings}
-                >
+            <SScroll>
+                <FormPage>
+                    <Typography variant="h6" component="h1">
+                        {_('Story settings')}
+                    </Typography>
+                    {store.conflict && (
+                        <ConflictAlert
+                            what={_('story')}
+                            onReload={store.reload}
+                            onKeepMine={store.keepMine}
+                        />
+                    )}
+                    {store.error && (
+                        <Alert severity="error">{store.error}</Alert>
+                    )}
                     {store.value ? (
                         <FormFields>
-                            <StoryFormFields
+                            <StorySettingsFields
                                 value={store.value}
                                 onChange={store.setValue}
                                 errors={store.submitted ? store.errors : {}}
-                                mode="edit"
                                 disabled={store.saving}
                             />
                             <FormField
@@ -108,9 +91,23 @@ export const StorySettingsPage = observer(
                                     id={STORY_LANDING_IMAGE_ID}
                                     api={api}
                                     ariaLabel={_('Landing image')}
-                                    onImageChange={() => void storyInfo.reload()}
+                                    onImageChange={() =>
+                                        void storyInfo.reload()
+                                    }
                                 />
                             </FormField>
+                            <SActions>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => void save()}
+                                    disabled={
+                                        store.saving || store.submitBlocked
+                                    }
+                                    data-action="save-story-settings"
+                                >
+                                    {store.saving ? _('Saving…') : _('Save')}
+                                </Button>
+                            </SActions>
                             {git.available && (
                                 <CollapsibleSection
                                     title={_('Git repository')}
@@ -131,8 +128,19 @@ export const StorySettingsPage = observer(
                     ) : (
                         !store.error && <LoadingState />
                     )}
-                </StoryFormPage>
-            </Box>
+                </FormPage>
+            </SScroll>
         );
     }
 );
+
+const SScroll = styled('div')`
+    height: 100%;
+    overflow: auto;
+    background-color: ${({ theme }) => theme.palette.background.default};
+`;
+
+const SActions = styled('div')`
+    display: flex;
+    justify-content: flex-end;
+`;

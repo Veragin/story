@@ -8,7 +8,7 @@ import {
     toUpdateBody,
     validateStoryForm,
     type TStoryFormValue,
-} from '../src/components/storyForm/storyForm';
+} from '../src/storyForm';
 
 const valid: TStoryFormValue = {
     ...EMPTY_STORY_FORM,

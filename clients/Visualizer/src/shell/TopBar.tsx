@@ -1,16 +1,7 @@
 import { useEffect } from 'react';
-import {
-    Button,
-    IconButton,
-    styled,
-    Tab,
-    Tabs,
-    Tooltip,
-    Typography,
-} from '@mui/material';
+import { Button, styled, Tab, Tabs } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, playerUrl, STORY_ID } from '../api';
@@ -27,6 +18,12 @@ type TTab = {
 };
 
 const TABS: TTab[] = [
+    {
+        value: 'settings',
+        label: () => storyInfo.info?.name ?? STORY_ID,
+        route: { page: 'settings' },
+        pages: ['settings'],
+    },
     {
         value: 'map',
         label: () => _('Map'),
@@ -77,21 +74,6 @@ export const TopBar = observer(() => {
             >
                 {_('Stories')}
             </SBack>
-            <SStoryName variant="subtitle2" title={STORY_ID}>
-                {storyInfo.info?.name ?? STORY_ID}
-            </SStoryName>
-            <Tooltip title={_('Story settings')}>
-                <SSettings
-                    color="inherit"
-                    size="small"
-                    aria-label={_('Story settings')}
-                    data-action="story-settings"
-                    href={router.href({ page: 'settings' })}
-                    data-active={router.route.page === 'settings'}
-                >
-                    <SettingsIcon fontSize="small" />
-                </SSettings>
-            </Tooltip>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -140,26 +122,6 @@ const SBack = styled(Button)`
     flex-shrink: 0;
     text-transform: none;
     opacity: 0.8;
-`;
-
-const SStoryName = styled(Typography)`
-    flex-shrink: 1;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 600;
-`;
-
-const SSettings = styled(IconButton)<{ href: string }>`
-    flex-shrink: 0;
-    margin-left: -${spacingCss(1.5)};
-    opacity: 0.8;
-
-    &[data-active='true'] {
-        opacity: 1;
-        color: ${appTheme.palette.secondary.main};
-    }
 `;
 
 const STabs = styled(Tabs)`
