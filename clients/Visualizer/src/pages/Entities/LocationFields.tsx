@@ -1,8 +1,8 @@
 import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { TLocationDto, TTypeRef } from '@story/protocol';
-import { FormArrayInput } from '../../components/inputs/form/FormArrayInput';
-import { FormStringInput } from '../../components/inputs/form/FormStringInput';
+import { FormArrayInput } from '../../components/form/FormArrayInput';
+import { FormStringInput } from '../../components/form/FormStringInput';
 import {
     StructureContext,
     withoutRefOption,

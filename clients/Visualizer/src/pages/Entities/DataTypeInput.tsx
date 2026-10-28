@@ -1,7 +1,7 @@
 import { capitalize } from '@story/shared';
 import { observer } from 'mobx-react-lite';
 import type { TDataTypeDto, TEntityDto } from '@story/protocol';
-import { FormDataTypeInput } from '../../components/inputs/form/FormDataTypeInput';
+import { FormDataTypeInput } from '../../components/form/FormDataTypeInput';
 import type { EntityFormStore } from './EntityFormStore';
 
 type TProps = {

@@ -5,7 +5,7 @@ import { LabeledTextField, Row, spacingCss } from '@story/ui';
 import type { MapStore } from '../../MapStore';
 import { isPaletteNameTaken } from '../../palette';
 import { ColorSwatchInput } from '../../../components/ColorSwatchInput';
-import { FormLabel } from '../../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../../components/form/FormLabel';
 import { ToolSection } from '../ToolWindow/ToolSection';
 
 type Props = {

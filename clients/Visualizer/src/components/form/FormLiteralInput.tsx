@@ -1,5 +1,5 @@
 import type { TMaybeCode } from '@story/protocol';
-import { LiteralInput } from '../LiteralInput';
+import { LiteralInput } from '../inputs/LiteralInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

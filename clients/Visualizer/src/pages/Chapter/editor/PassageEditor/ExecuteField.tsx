@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { Typography } from '@mui/material';
-import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
+import { FormFunctionInput } from '../../../../components/form/FormFunctionInput';
 import type { TFieldsProps } from './types';
 
 export const ExecuteField = observer(

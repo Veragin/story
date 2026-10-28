@@ -5,11 +5,11 @@ import {
     type TTypeRef,
     type TValue,
 } from '@story/protocol';
-import type { TDiagnosticsOf } from '../inputTypes';
-import { ObjectViewToggle } from '../ObjectInput/ObjectViewToggle';
-import { useTypeContext } from '../structureContext';
-import { toMaybeCode } from '../valueSource';
-import { ValueInput } from '../ValueInput';
+import type { TDiagnosticsOf } from '../inputs/inputTypes';
+import { ObjectViewToggle } from '../inputs/ObjectInput/ObjectViewToggle';
+import { useTypeContext } from '../inputs/structureContext';
+import { toMaybeCode } from '../inputs/valueSource';
+import { ValueInput } from '../inputs/ValueInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

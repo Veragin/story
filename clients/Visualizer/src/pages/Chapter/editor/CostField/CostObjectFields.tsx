@@ -1,5 +1,5 @@
 import type { TLinkCostObjectDto } from '@story/protocol';
-import { FormArrayInput } from '../../../../components/inputs/form/FormArrayInput';
+import { FormArrayInput } from '../../../../components/form/FormArrayInput';
 import type {
     TDiagnosticsOf,
     TOption,

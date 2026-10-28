@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import type { TMaybeCode } from '@story/protocol';
 import { ApiError } from '../../api';
-import { FormStringInput } from '../../components/inputs/form/FormStringInput';
+import { FormStringInput } from '../../components/form/FormStringInput';
 import { deepEqual } from '../../deepEqual';
 import { errorMessage, type TimelineStore } from './store/TimelineStore';
 

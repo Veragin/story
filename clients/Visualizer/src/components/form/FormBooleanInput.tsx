@@ -1,21 +1,18 @@
 import type { TMaybeCode } from '@story/protocol';
-import { NumberInput } from '../NumberInput';
+import { BooleanInput } from '../inputs/BooleanInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 
-type TProps = TFormInputProps<TMaybeCode<number>, number> & {
-    placeholder?: string;
-    dataField?: string;
-};
+type TProps = TFormInputProps<TMaybeCode<boolean>, boolean>;
 
-export const FormNumberInput = (props: TProps) => {
+export const FormBooleanInput = (props: TProps) => {
     const { labelProps, inputProps } = splitFormProps({
-        emptyValue: 0,
+        emptyValue: false,
         ...props,
     });
     return (
         <FormLabel {...labelProps}>
-            {inputProps && <NumberInput {...inputProps} />}
+            {inputProps && <BooleanInput {...inputProps} />}
         </FormLabel>
     );
 };

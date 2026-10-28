@@ -2,7 +2,7 @@ import { styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import { isCode, type TMaybeCode, type TTimeRangeDto } from '@story/protocol';
 import { CodeTextArea } from '../../../components/inputs/CodeTextArea';
-import { FormLabel } from '../../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../../components/form/FormLabel';
 import { InputDiagnostics } from '../../../components/inputs/InputDiagnostics';
 import type { TDiagnosticsOf } from '../../../components/inputs/inputTypes';
 import { TimeInput } from './TimeInput';

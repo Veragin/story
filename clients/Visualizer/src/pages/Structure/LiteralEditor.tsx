@@ -6,7 +6,7 @@ import {
     FormMeta,
     FormPage,
 } from '../../components/formLayout';
-import { FormLabel } from '../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../components/form/FormLabel';
 import { Notices } from '../../components/Notices';
 import { modals, router } from '../../shell';
 import { LiteralValuesInput } from './LiteralValuesInput';

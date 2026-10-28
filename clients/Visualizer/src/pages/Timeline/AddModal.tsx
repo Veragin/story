@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { LabeledTextField } from '@story/ui';
 import { ApiError } from '../../api';
-import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
+import { FormTypeInput } from '../../components/form/FormTypeInput';
 import { errorMessage, type TimelineStore } from './store/TimelineStore';
 
 // ids end up in identifiers and passage ids (`<chapter>-<character>-<local>`)

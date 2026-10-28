@@ -10,7 +10,7 @@ import {
     Stack,
 } from '@mui/material';
 import { LabeledTextField } from '@story/ui';
-import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
+import { FormTypeInput } from '../../components/form/FormTypeInput';
 import type { ChapterGraphStore } from './ChapterGraphStore';
 import { errorText, idError } from './dialogUtils';
 

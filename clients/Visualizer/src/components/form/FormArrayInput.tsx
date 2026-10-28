@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TMaybeCode, TTypeRef, TValue } from '@story/protocol';
-import { ArrayInput } from '../ArrayInput';
-import type { TDiagnosticsOf } from '../inputTypes';
+import { ArrayInput } from '../inputs/ArrayInput';
+import type { TDiagnosticsOf } from '../inputs/inputTypes';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

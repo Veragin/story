@@ -16,7 +16,7 @@ import {
 import { observer } from 'mobx-react-lite';
 import { structNameError, type TLiteralDto } from '@story/protocol';
 import { LabeledTextField } from '@story/ui';
-import { FormLabel } from '../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../components/form/FormLabel';
 import { structNameMessage } from '../../components/inputs/StructureInput/structureRows';
 import type { StructureStore } from '../../stores/StructureStore';
 import { failureMessage } from '../../stores/writeResult';

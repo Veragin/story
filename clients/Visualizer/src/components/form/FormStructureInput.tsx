@@ -1,9 +1,9 @@
-import type { TInputProps } from '../inputTypes';
-import { StructureInput } from '../StructureInput/StructureInput';
+import type { TInputProps } from '../inputs/inputTypes';
+import { StructureInput } from '../inputs/StructureInput/StructureInput';
 import type {
     TLiteralDraft,
     TStructureRow,
-} from '../StructureInput/structureRows';
+} from '../inputs/StructureInput/structureRows';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

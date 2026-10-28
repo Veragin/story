@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import type { TCharacterDto } from '@story/protocol';
-import { FormTypeInput } from '../../components/inputs/form/FormTypeInput';
+import { FormTypeInput } from '../../components/form/FormTypeInput';
 import type { TOption } from '../../components/inputs/inputTypes';
 import type { EntityFormStore } from './EntityFormStore';
 

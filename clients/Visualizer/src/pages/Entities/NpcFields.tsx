@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { TNpcDto } from '@story/protocol';
-import { FormImageInput } from '../../components/inputs/form/FormImageInput';
-import { FormStringInput } from '../../components/inputs/form/FormStringInput';
+import { FormImageInput } from '../../components/form/FormImageInput';
+import { FormStringInput } from '../../components/form/FormStringInput';
 import { DataTypeInput } from './DataTypeInput';
 import type { TEntityFieldsProps } from './entityFormProps';
 import { ENTITY_TYPE_NAMES } from './entityFields';

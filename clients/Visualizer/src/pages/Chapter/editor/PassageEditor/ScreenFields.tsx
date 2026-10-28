@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
 import { Divider, Typography } from '@mui/material';
 import { isCode, type TScreenPassageDto } from '@story/protocol';
-import { FormImageInput } from '../../../../components/inputs/form/FormImageInput';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
+import { FormImageInput } from '../../../../components/form/FormImageInput';
+import { FormStringInput } from '../../../../components/form/FormStringInput';
 import { CodeBlock } from '../CodeBlock';
 import { BodyItems } from './BodyItems';
 import { ExecuteField } from './ExecuteField';

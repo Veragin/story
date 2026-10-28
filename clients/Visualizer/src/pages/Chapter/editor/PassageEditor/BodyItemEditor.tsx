@@ -1,9 +1,9 @@
 import { IconButton, Tooltip, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { TBodyItemDto } from '@story/protocol';
-import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormFunctionInput } from '../../../../components/form/FormFunctionInput';
+import { FormStringInput } from '../../../../components/form/FormStringInput';
+import { FormTypeInput } from '../../../../components/form/FormTypeInput';
 import { ItemDiagnostics } from './ItemDiagnostics';
 import { Links } from './Links';
 import { setField } from './listUtils';

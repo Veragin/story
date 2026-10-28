@@ -3,11 +3,11 @@ import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { spacingCss } from '@story/ui';
 import type { TDataTypeDto, TTypeRef } from '@story/protocol';
-import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
-import { FormDataTypeInput } from '../../../components/inputs/form/FormDataTypeInput';
-import { FormObjectInput } from '../../../components/inputs/form/FormObjectInput';
-import { FormStringInput } from '../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../components/inputs/form/FormTypeInput';
+import { FormArrayInput } from '../../../components/form/FormArrayInput';
+import { FormDataTypeInput } from '../../../components/form/FormDataTypeInput';
+import { FormObjectInput } from '../../../components/form/FormObjectInput';
+import { FormStringInput } from '../../../components/form/FormStringInput';
+import { FormTypeInput } from '../../../components/form/FormTypeInput';
 import {
     NO_DIAGNOSTICS,
     nestedDiagnostics,

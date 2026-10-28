@@ -1,7 +1,7 @@
 import type { TFieldDesc, TMaybeCode, TValueRecord } from '@story/protocol';
-import type { TDiagnosticsOf } from '../inputTypes';
-import { ObjectInput } from '../ObjectInput/ObjectInput';
-import { ObjectViewToggle } from '../ObjectInput/ObjectViewToggle';
+import type { TDiagnosticsOf } from '../inputs/inputTypes';
+import { ObjectInput } from '../inputs/ObjectInput/ObjectInput';
+import { ObjectViewToggle } from '../inputs/ObjectInput/ObjectViewToggle';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

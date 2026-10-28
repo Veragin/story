@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import type { TTransitionPassageDto } from '@story/protocol';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormTypeInput } from '../../../../components/form/FormTypeInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 

@@ -3,7 +3,7 @@ import { Button, IconButton, styled, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { LabeledField } from '@story/ui';
-import { InputDiagnostics } from '../InputDiagnostics';
+import { InputDiagnostics } from '../inputs/InputDiagnostics';
 import type { TFormProps } from './formProps';
 
 type TProps = TFormProps & {

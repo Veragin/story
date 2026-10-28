@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { TLinearPassageDto } from '@story/protocol';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormStringInput } from '../../../../components/form/FormStringInput';
+import { FormTypeInput } from '../../../../components/form/FormTypeInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 

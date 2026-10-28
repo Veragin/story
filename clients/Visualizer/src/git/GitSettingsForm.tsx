@@ -16,7 +16,7 @@ import {
     type TGitSetupMode,
 } from '@story/protocol';
 import { LabeledTextField, remoteUrlErrorMessage, showToast } from '@story/ui';
-import { FormLabel } from '../components/inputs/form/FormLabel';
+import { FormLabel } from '../components/form/FormLabel';
 import { modals } from '../shell';
 import { GitDisconnectPanel } from './GitDisconnectPanel';
 import type { GitStore, TGitConfigPatch, TGitResult } from './GitStore';

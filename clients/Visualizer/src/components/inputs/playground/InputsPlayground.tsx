@@ -8,15 +8,15 @@ import type {
     TValue,
     TValueRecord,
 } from '@story/protocol';
-import { FormArrayInput } from '../form/FormArrayInput';
-import { FormBooleanInput } from '../form/FormBooleanInput';
-import { FormFunctionInput } from '../form/FormFunctionInput';
-import { FormLiteralInput } from '../form/FormLiteralInput';
-import { FormNumberInput } from '../form/FormNumberInput';
-import { FormObjectInput } from '../form/FormObjectInput';
-import { FormStringInput } from '../form/FormStringInput';
-import { FormStructureInput } from '../form/FormStructureInput';
-import { FormTypeInput } from '../form/FormTypeInput';
+import { FormArrayInput } from '../../form/FormArrayInput';
+import { FormBooleanInput } from '../../form/FormBooleanInput';
+import { FormFunctionInput } from '../../form/FormFunctionInput';
+import { FormLiteralInput } from '../../form/FormLiteralInput';
+import { FormNumberInput } from '../../form/FormNumberInput';
+import { FormObjectInput } from '../../form/FormObjectInput';
+import { FormStringInput } from '../../form/FormStringInput';
+import { FormStructureInput } from '../../form/FormStructureInput';
+import { FormTypeInput } from '../../form/FormTypeInput';
 import { StructureContext } from '../structureContext';
 import {
     structureRows,

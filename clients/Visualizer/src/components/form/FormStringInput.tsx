@@ -1,23 +1,22 @@
 import type { TMaybeCode } from '@story/protocol';
-import type { TOption } from '../inputTypes';
-import { TypeInput } from '../TypeInput';
+import { StringInput } from '../inputs/StringInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 
 type TProps = TFormInputProps<TMaybeCode<string>, string> & {
-    options: readonly TOption[];
+    multiline?: boolean;
     placeholder?: string;
     dataField?: string;
 };
 
-export const FormTypeInput = (props: TProps) => {
+export const FormStringInput = (props: TProps) => {
     const { labelProps, inputProps } = splitFormProps({
-        emptyValue: props.options[0]?.id ?? '',
+        emptyValue: '',
         ...props,
     });
     return (
         <FormLabel {...labelProps}>
-            {inputProps && <TypeInput {...inputProps} />}
+            {inputProps && <StringInput {...inputProps} />}
         </FormLabel>
     );
 };

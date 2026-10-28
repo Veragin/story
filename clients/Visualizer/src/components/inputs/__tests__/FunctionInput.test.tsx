@@ -3,7 +3,7 @@ import { $, click, get, mount, typeInto, unmount } from './dom';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TFunctionDto } from '@story/protocol';
-import { FormFunctionInput } from '../form/FormFunctionInput';
+import { FormFunctionInput } from '../../form/FormFunctionInput';
 
 describe('FunctionInput (through FormFunctionInput)', () => {
     afterEach(unmount);

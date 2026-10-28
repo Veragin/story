@@ -25,7 +25,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { observer } from 'mobx-react-lite';
 import { isGitBranchName, type TGitBranchDto } from '@story/protocol';
 import { LabeledTextField, showToast } from '@story/ui';
-import { FormLabel } from '../components/inputs/form/FormLabel';
+import { FormLabel } from '../components/form/FormLabel';
 import { useVisualizerStore } from '../context';
 import { askDeleteBranch, cleanBeforeSwitch } from './gitActions';
 import type { GitStore } from './GitStore';

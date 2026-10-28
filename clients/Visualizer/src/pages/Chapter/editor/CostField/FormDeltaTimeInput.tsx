@@ -1,9 +1,9 @@
 import type { TDeltaTimeDto, TMaybeCode } from '@story/protocol';
-import { FormLabel } from '../../../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../../../components/form/FormLabel';
 import {
     splitFormProps,
     type TFormInputProps,
-} from '../../../../components/inputs/form/formProps';
+} from '../../../../components/form/formProps';
 import { DEFAULT_COST_TIME } from '../costCode';
 import { DeltaTimeInput } from './DeltaTimeInput';
 

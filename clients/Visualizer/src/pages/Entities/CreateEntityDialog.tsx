@@ -12,7 +12,7 @@ import { observer } from 'mobx-react-lite';
 import type { TEntityDto, TEntityKind } from '@story/protocol';
 import { LabeledTextField } from '@story/ui';
 import { ApiError } from '../../api';
-import { FormLiteralInput } from '../../components/inputs/form/FormLiteralInput';
+import { FormLiteralInput } from '../../components/form/FormLiteralInput';
 import type { EntityStore } from '../../stores/EntityStore';
 import type { StructureStore } from '../../stores/StructureStore';
 import {

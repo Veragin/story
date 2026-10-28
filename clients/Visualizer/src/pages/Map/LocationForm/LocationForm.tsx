@@ -4,8 +4,8 @@ import { Alert, Button } from '@mui/material';
 import { LabeledTextField, Row, SmallText, spacingCss } from '@story/ui';
 import type { TLocationDto } from '@story/protocol';
 import { ApiError } from '../../../api';
-import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
-import { FormStringInput } from '../../../components/inputs/form/FormStringInput';
+import { FormArrayInput } from '../../../components/form/FormArrayInput';
+import { FormStringInput } from '../../../components/form/FormStringInput';
 import { LOCAL_CHARACTER_TYPE } from '../../../typeRefs';
 import {
     locationPatch,

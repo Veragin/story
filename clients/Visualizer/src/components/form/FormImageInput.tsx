@@ -2,7 +2,7 @@ import { styled, Tooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import type { ComponentProps } from 'react';
 import type { TDiagnosticDto } from '@story/protocol';
-import { ImageInput } from '../ImageInput';
+import { ImageInput } from '../inputs/ImageInput';
 import { FormLabel } from './FormLabel';
 
 type TProps = Omit<ComponentProps<typeof ImageInput>, 'hasError'> & {

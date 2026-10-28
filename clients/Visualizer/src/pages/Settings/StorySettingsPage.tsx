@@ -9,7 +9,7 @@ import {
     StoryFormPage,
 } from '@story/ui';
 import { api as defaultApi, auth, type TVisualizerApi } from '../../api';
-import { FormLabel } from '../../components/inputs/form/FormLabel';
+import { FormLabel } from '../../components/form/FormLabel';
 import { ImageInput } from '../../components/inputs/ImageInput';
 import { gitStore } from '../../context';
 import { GitSettingsForm } from '../../git/GitSettingsForm';

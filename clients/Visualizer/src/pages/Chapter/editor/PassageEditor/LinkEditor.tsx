@@ -1,8 +1,8 @@
 import type { TLinkDto } from '@story/protocol';
-import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
-import { FormNumberInput } from '../../../../components/inputs/form/FormNumberInput';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormFunctionInput } from '../../../../components/form/FormFunctionInput';
+import { FormNumberInput } from '../../../../components/form/FormNumberInput';
+import { FormStringInput } from '../../../../components/form/FormStringInput';
+import { FormTypeInput } from '../../../../components/form/FormTypeInput';
 import { nestedDiagnostics } from '../../../../components/inputs/inputTypes';
 import { CostField } from '../CostField/CostField';
 import { ItemDiagnostics } from './ItemDiagnostics';

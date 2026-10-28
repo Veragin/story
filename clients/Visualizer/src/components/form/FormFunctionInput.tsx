@@ -1,5 +1,5 @@
 import type { TFunctionDto } from '@story/protocol';
-import { FunctionInput } from '../FunctionInput';
+import { FunctionInput } from '../inputs/FunctionInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 

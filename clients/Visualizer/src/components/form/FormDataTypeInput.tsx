@@ -5,14 +5,14 @@ import {
     type TDataTypeDto,
     type TDiagnosticDto,
 } from '@story/protocol';
-import { CodeTextArea } from '../CodeTextArea';
-import { InputDiagnostics } from '../InputDiagnostics';
-import { StructureInput } from '../StructureInput/StructureInput';
+import { CodeTextArea } from '../inputs/CodeTextArea';
+import { InputDiagnostics } from '../inputs/InputDiagnostics';
+import { StructureInput } from '../inputs/StructureInput/StructureInput';
 import {
     rowFields,
     rowRenames,
     structureRows,
-} from '../StructureInput/structureRows';
+} from '../inputs/StructureInput/structureRows';
 
 type TProps = {
     value: TDataTypeDto | undefined;

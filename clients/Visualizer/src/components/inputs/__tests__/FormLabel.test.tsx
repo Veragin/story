@@ -1,7 +1,7 @@
 import '@story/shared'; // installs the global `_`
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TMaybeCode } from '@story/protocol';
-import { FormStringInput } from '../form/FormStringInput';
+import { FormStringInput } from '../../form/FormStringInput';
 import { $, click, get, mount, unmount } from './dom';
 import { Controlled } from './harness';
 

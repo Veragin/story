@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import type { TDataTypeDto, TMaybeCode, TValueRecord } from '@story/protocol';
-import { FormObjectInput } from '../../components/inputs/form/FormObjectInput';
+import { FormObjectInput } from '../../components/form/FormObjectInput';
 import type { StructureStore } from '../../stores/StructureStore';
 import type { EntityFormStore } from './EntityFormStore';
 

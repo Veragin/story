@@ -1,22 +1,21 @@
 import type { TMaybeCode } from '@story/protocol';
-import { StringInput } from '../StringInput';
+import { NumberInput } from '../inputs/NumberInput';
 import { FormLabel } from './FormLabel';
 import { splitFormProps, type TFormInputProps } from './formProps';
 
-type TProps = TFormInputProps<TMaybeCode<string>, string> & {
-    multiline?: boolean;
+type TProps = TFormInputProps<TMaybeCode<number>, number> & {
     placeholder?: string;
     dataField?: string;
 };
 
-export const FormStringInput = (props: TProps) => {
+export const FormNumberInput = (props: TProps) => {
     const { labelProps, inputProps } = splitFormProps({
-        emptyValue: '',
+        emptyValue: 0,
         ...props,
     });
     return (
         <FormLabel {...labelProps}>
-            {inputProps && <StringInput {...inputProps} />}
+            {inputProps && <NumberInput {...inputProps} />}
         </FormLabel>
     );
 };

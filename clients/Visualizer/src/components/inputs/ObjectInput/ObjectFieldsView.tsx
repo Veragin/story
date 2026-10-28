@@ -9,7 +9,7 @@ import {
     type TValue,
     type TValueRecord,
 } from '@story/protocol';
-import { FormValueInput } from '../form/FormValueInput';
+import { FormValueInput } from '../../form/FormValueInput';
 import { nestedDiagnostics, type TDiagnosticsOf } from '../inputTypes';
 import { useTypeContext } from '../structureContext';
 import { AddFieldRow } from './AddFieldRow';
