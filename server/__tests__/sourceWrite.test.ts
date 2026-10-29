@@ -241,8 +241,8 @@ describe('passages', () => {
         expect(res.body.current.image).toBe('story');
     });
 
-    it('creates, updates and deletes screen, linear and transition passages', async () => {
-        for (const type of ['screen', 'linear', 'transition'] as const) {
+    it('creates, updates and deletes passages of every type', async () => {
+        for (const type of ['start', 'screen', 'linear', 'redirect', 'finish'] as const) {
             const localId = `new${type}`;
             const id = `village-thomas-${localId}`;
             let res = await t.post('/api/stories/example/chapters/village/passages', {
@@ -262,12 +262,14 @@ describe('passages', () => {
                 links: [{ text: 'Back', passageId: 'village-thomas-intro', cost: { seconds: 120 } }],
             };
             const fixedScreenItem = { ...screenItem, condition: { code: 'true' } };
-            const patch =
-                type === 'screen'
-                    ? { title: 'A new screen', image: 'A hunter at the edge of the forest', body: [screenItem] }
-                    : type === 'linear'
-                      ? { description: 'Walking', nextPassageId: 'village-thomas-intro' }
-                      : { nextPassageId: 'kingdom-thomas-visit' };
+            const patches = {
+                start: { description: 'Waking up', nextPassageId: 'village-thomas-intro' },
+                screen: { title: 'A new screen', image: 'A hunter at the edge of the forest', body: [screenItem] },
+                linear: { description: 'Walking', nextPassageId: 'village-thomas-intro' },
+                redirect: { body: [{ condition: { code: 'true' }, redirect: 'village-thomas-intro' }] },
+                finish: { nextPassageId: 'kingdom-thomas-visit' },
+            };
+            const patch = patches[type];
             res = await t.put(`/api/stories/example/passages/${id}`, { version: res.body.version, ...patch });
             if (type === 'screen') {
                 // `s` is not a parameter of the generated passage
@@ -287,7 +289,7 @@ describe('passages', () => {
             expect(listed.edges).toContainEqual(
                 expect.objectContaining({
                     from: id,
-                    to: type === 'transition' ? 'kingdom-thomas-visit' : 'village-thomas-intro',
+                    to: type === 'finish' ? 'kingdom-thomas-visit' : 'village-thomas-intro',
                     resolved: true,
                 })
             );
@@ -418,13 +420,18 @@ describe('chapters', () => {
         await expectHealthy();
         await expectTsc();
 
-        const palace = (await t.get('/api/stories/example/passages/kingdom-annie-palace')).body;
-        res = await t.put('/api/stories/example/passages/kingdom-annie-palace', {
-            version: palace.version,
-            body: [{ ...palace.body[0], redirect: 'kingdom-annie-intro' }],
+        res = await t.post('/api/stories/example/chapters/harbor/passages', {
+            characterId: 'annie',
+            localId: 'pier',
+            type: 'redirect',
         });
-        expect(res.status).toBe(200);
-        expect(res.body.body[0].redirect).toBe('kingdom-annie-intro');
+        expect(res.status).toBe(201);
+        res = await t.put('/api/stories/example/passages/harbor-annie-pier', {
+            version: res.body.version,
+            body: [{ condition: { code: 'true' }, redirect: 'harbor-annie-dock' }],
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.body[0].redirect).toBe('harbor-annie-dock');
 
         const annie = (await t.get('/api/stories/example/entities/characters/annie')).body;
         res = await t.put('/api/stories/example/entities/characters/annie', {
@@ -554,14 +561,14 @@ describe('chapters', () => {
         res = await t.post('/api/stories/example/chapters/village/passages', {
             characterId: 'annie',
             localId: 'well',
-            type: 'transition',
+            type: 'finish',
         });
         expect(res.status).toBe(201);
         const other = (
             await t.post('/api/stories/example/chapters/kingdom/passages', {
                 characterId: 'annie',
                 localId: 'leave',
-                type: 'transition',
+                type: 'finish',
             })
         ).body;
         res = await t.put('/api/stories/example/passages/kingdom-annie-leave', {

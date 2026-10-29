@@ -15,7 +15,6 @@ import { router } from '../../../shell';
 import { getUiState, setUiState } from '../../../ui-state';
 import { uiKeys, type ChapterGraphStore } from '../ChapterGraphStore';
 import { BOX } from './autoLayout';
-import { characterColor } from './colors';
 import {
     isGhostId,
     type TGhostNode,
@@ -28,20 +27,34 @@ type TShapeData =
     | { kind: 'ghost'; ghost: TGhostNode }
     | { kind: 'edge'; edge: TGraphEdge };
 
+const REDIRECT_COLOR = '#b388ff';
+
 const TYPE_FILL: Record<TGraphNode['type'], string> = {
+    start: '#1f4d3a',
     screen: '#1d3557',
     linear: '#1f4d3a',
-    transition: '#5a3d1a',
+    redirect: '#35224f',
+    finish: '#5a1f1f',
+};
+
+const TYPE_BORDER: Record<TGraphNode['type'], string> = {
+    start: '#66bb6a',
+    screen: '#78909c',
+    linear: '#78909c',
+    redirect: REDIRECT_COLOR,
+    finish: '#e53935',
 };
 
 const EDGE_COLOR: Record<TGraphEdge['kinds'][number], string> = {
     link: '#9fb3c8',
-    redirect: '#f4a261',
+    redirect: REDIRECT_COLOR,
     next: '#80cbc4',
 };
 
-const nodeLabel = (n: TGraphNode) =>
-    `${n.title}\n${n.type}${n.selfLoop ? '  ↻' : ''}`;
+const nodeLabel = (n: TGraphNode) => {
+    const lines = n.type === 'screen' ? [n.title] : [n.title, n.type];
+    return `${lines.join('\n')}${n.selfLoop ? '  ↻' : ''}`;
+};
 
 type TTooltip = { text: string; x: number; y: number } | null;
 
@@ -101,7 +114,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                     label: nodeLabel(node),
                     fill: TYPE_FILL[node.type],
                     stroke: {
-                        color: characterColor(node.characterId),
+                        color: TYPE_BORDER[node.type],
                         width: 2,
                         screenWidth: true,
                     },

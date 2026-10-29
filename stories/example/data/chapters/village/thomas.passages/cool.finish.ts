@@ -5,7 +5,7 @@ const coolPassage = (): TPassage<'village', 'thomas', TVillageThomasPassageId> =
     chapterId: 'village',
     characterId: 'thomas',
     id: 'cool',
-    type: 'transition',
+    type: 'finish',
     nextPassageId: 'village-thomas-',
 });
 

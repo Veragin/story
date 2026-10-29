@@ -1,6 +1,6 @@
 import type { TDeltaTimeDto, TFunctionDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
 
-export type TPassageType = 'screen' | 'linear' | 'transition';
+export type TPassageType = 'start' | 'screen' | 'linear' | 'redirect' | 'finish';
 
 type TPassageBaseDto = TVersioned &
     TSourceRef & {
@@ -30,21 +30,44 @@ export type TLinearPassageDto = TPassageBaseDto & {
     nextPassageId?: TMaybeCode<string>;
 };
 
-export type TTransitionPassageDto = TPassageBaseDto & {
-    type: 'transition';
+/** The chapter's entry point; shaped like a linear passage. */
+export type TStartPassageDto = Omit<TLinearPassageDto, 'type'> & {
+    type: 'start';
+};
+
+export type TRedirectPassageDto = TPassageBaseDto & {
+    type: 'redirect';
+    body: TMaybeCode<TRedirectItemDto[]>;
+};
+
+export type TFinishPassageDto = TPassageBaseDto & {
+    type: 'finish';
     /** A full passage id in another chapter, for the same character. */
     nextPassageId: TMaybeCode<string>;
 };
 
-export type TPassageDto = TScreenPassageDto | TLinearPassageDto | TTransitionPassageDto;
+export type TPassageDto =
+    | TStartPassageDto
+    | TScreenPassageDto
+    | TLinearPassageDto
+    | TRedirectPassageDto
+    | TFinishPassageDto;
+
+/** Linear-shaped passages: a description, then an optional next passage. */
+export type TDescribedPassageDto = TStartPassageDto | TLinearPassageDto;
 
 export type TBodyItemDto = {
     /** An expression, not a function; a literal `true` reads as `{ code: 'true' }`. */
     condition?: TFunctionDto;
-    /** Full passage id. */
-    redirect?: TMaybeCode<string>;
     text?: TMaybeCode<string>;
     links?: TMaybeCode<TLinkDto[]>;
+};
+
+export type TRedirectItemDto = {
+    /** An expression, not a function; the first item whose condition holds wins. */
+    condition?: TFunctionDto;
+    /** Full passage id. */
+    redirect: TMaybeCode<string>;
 };
 
 export type TLinkDto = {
@@ -86,8 +109,9 @@ export type TChapterPassagesDto = {
 
 export type TPassageEditable =
     | Partial<Pick<TScreenPassageDto, 'execute' | 'title' | 'image' | 'body'>>
-    | Partial<Pick<TLinearPassageDto, 'execute' | 'description' | 'nextPassageId'>>
-    | Partial<Pick<TTransitionPassageDto, 'execute' | 'nextPassageId'>>;
+    | Partial<Pick<TDescribedPassageDto, 'execute' | 'description' | 'nextPassageId'>>
+    | Partial<Pick<TRedirectPassageDto, 'execute' | 'body'>>
+    | Partial<Pick<TFinishPassageDto, 'execute' | 'nextPassageId'>>;
 
 export type TCreatePassageBody = {
     characterId: string;

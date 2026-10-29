@@ -579,4 +579,24 @@ describe('extractEdges', () => {
         ]);
         expect(edges).toEqual([{ from: 'c-a-x', to: 'c-a-y', kind: 'link', conditional: true, resolved: false }]);
     });
+
+    it('finds the targets of a redirect passage as redirect edges', () => {
+        const edges = extractEdges([
+            {
+                passageId: 'c-a-x',
+                chapterId: 'c',
+                characterId: 'a',
+                localId: 'x',
+                version: 'v',
+                file: 'f',
+                params: ['s'],
+                type: 'redirect',
+                body: [{ condition: { code: 's.ok' }, redirect: 'c-a-y' }, { redirect: 'c-a-z' }],
+            },
+        ]);
+        expect(edges).toEqual([
+            { from: 'c-a-x', to: 'c-a-y', kind: 'redirect', conditional: true, resolved: false },
+            { from: 'c-a-x', to: 'c-a-z', kind: 'redirect', conditional: false, resolved: false },
+        ]);
+    });
 });

@@ -5,9 +5,11 @@ import { TItemId } from './TItem';
 export type TChapterPassage<E extends TChapterId> = TPassage<E, TCharacterId, TChapterPassageId<E>>;
 
 export type TPassage<E extends TChapterId, Ch extends TCharacterId, Ids extends TChapterCharacterPassageId<E, Ch>> =
+    | TPassageStart<E, Ch, Ids>
     | TPassageScreen<E, Ch, Ids>
-    | TPassageTransition<E, Ch>
-    | TPassageLinear<E, Ch, Ids>;
+    | TPassageLinear<E, Ch, Ids>
+    | TPassageRedirect<E, Ch, Ids>
+    | TPassageFinish<E, Ch>;
 
 export type TPassageScreen<
     E extends TChapterId,
@@ -25,7 +27,6 @@ export type TPassageScreen<
     execute?: () => void;
     body: {
         condition?: boolean;
-        redirect?: Ids;
         text?: string;
         links?: TLink<Ids>[];
     }[];
@@ -48,12 +49,44 @@ export type TLinkCost =
           tools?: TItemId[];
       };
 
-export type TPassageTransition<E extends TChapterId, Ch extends TCharacterId> = {
+export type TPassageStart<
+    E extends TChapterId,
+    Ch extends TCharacterId,
+    Ids extends TChapterCharacterPassageId<E, Ch>,
+> = {
     chapterId: E;
     characterId: Ch;
     id: string;
 
-    type: 'transition';
+    type: 'start';
+    description: string;
+    execute?: () => void;
+    nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;
+};
+
+export type TPassageRedirect<
+    E extends TChapterId,
+    Ch extends TCharacterId,
+    Ids extends TChapterCharacterPassageId<E, Ch>,
+> = {
+    chapterId: E;
+    characterId: Ch;
+    id: string;
+
+    type: 'redirect';
+    execute?: () => void;
+    body: {
+        condition?: boolean;
+        redirect: Ids;
+    }[];
+};
+
+export type TPassageFinish<E extends TChapterId, Ch extends TCharacterId> = {
+    chapterId: E;
+    characterId: Ch;
+    id: string;
+
+    type: 'finish';
     execute?: () => void;
     nextPassageId: TChapterCharacterPassageId<TChapterId, Ch>;
 };

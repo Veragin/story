@@ -11,9 +11,11 @@ import type { ChapterGraphStore } from './ChapterGraphStore';
 import { idError } from './dialogUtils';
 
 const PASSAGE_TYPES: { type: TPassageType; label: () => string }[] = [
+    { type: 'start', label: () => _('start — entry point of the chapter') },
     { type: 'screen', label: () => _('screen — text with links') },
     { type: 'linear', label: () => _('linear — description, then next') },
-    { type: 'transition', label: () => _('transition — to another chapter') },
+    { type: 'redirect', label: () => _('redirect — automatic, by condition') },
+    { type: 'finish', label: () => _('finish — leave to another chapter') },
 ];
 
 const isPassageType = (value: string): value is TPassageType =>

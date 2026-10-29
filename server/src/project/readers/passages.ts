@@ -24,40 +24,57 @@ const LINK = S.object({
 
 const BODY_ITEM = S.object({
     condition: S.fn('true'),
-    redirect: S.string,
     text: S.string,
     links: S.array(LINK),
 });
 
+const REDIRECT_ITEM = S.object({
+    condition: S.fn('true'),
+    redirect: S.string,
+});
+
 const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
 
+const DESCRIBED_FIELDS: Record<string, TField> = {
+    execute: EXECUTE,
+    description: { schema: S.string },
+    nextPassageId: { schema: S.string },
+};
+
 export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
+    start: DESCRIBED_FIELDS,
     screen: {
         execute: EXECUTE,
         title: { schema: S.string },
         image: { schema: S.string },
         body: { schema: S.array(BODY_ITEM) },
     },
-    linear: {
+    linear: DESCRIBED_FIELDS,
+    redirect: {
         execute: EXECUTE,
-        description: { schema: S.string },
-        nextPassageId: { schema: S.string },
+        body: { schema: S.array(REDIRECT_ITEM) },
     },
-    transition: {
+    finish: {
         execute: EXECUTE,
         nextPassageId: { schema: S.string },
     },
 };
 
 export const PASSAGE_OPTIONAL: Record<TPassageType, string[]> = {
+    start: ['execute', 'nextPassageId'],
     screen: ['execute'],
     linear: ['execute', 'nextPassageId'],
-    transition: ['execute'],
+    redirect: ['execute'],
+    finish: ['execute'],
 };
+
+export const PASSAGE_TYPES: TPassageType[] = ['start', 'screen', 'linear', 'redirect', 'finish'];
+
+export const isPassageType = (value: unknown): value is TPassageType => PASSAGE_TYPES.some((t) => t === value);
 
 export const passageType = (src: TPassageSource): TPassageType | undefined => {
     const t = stringProp(src.obj, 'type');
-    return t === 'screen' || t === 'linear' || t === 'transition' ? t : undefined;
+    return isPassageType(t) ? t : undefined;
 };
 
 const passageOwner = (sp: SourceProject, sf: SourceFile) => {
@@ -100,6 +117,7 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
                 image: (fields.image ?? '') as never,
                 body: (fields.body ?? []) as never,
             };
+        case 'start':
         case 'linear':
             return {
                 ...base,
@@ -107,7 +125,9 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
                 description: (fields.description ?? '') as never,
                 ...(fields.nextPassageId !== undefined ? { nextPassageId: fields.nextPassageId as never } : {}),
             };
-        case 'transition':
+        case 'redirect':
+            return { ...base, type, body: (fields.body ?? []) as never };
+        case 'finish':
             return { ...base, type, nextPassageId: (fields.nextPassageId ?? '') as never };
     }
 };

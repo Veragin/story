@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type {
     TLinearPassageDto,
     TPassageDto,
+    TRedirectPassageDto,
     TScreenPassageDto,
+    TStartPassageDto,
 } from '@story/protocol';
 import { createMockApi, type TMockApi } from '../../../api';
 import {
@@ -57,7 +59,7 @@ describe('PassageEditor', () => {
                 <PassageEditor
                     store={store}
                     passageOptions={PASSAGES}
-                    transitionOptions={[{ id: 'kingdom-thomas-visit' }]}
+                    finishOptions={[{ id: 'kingdom-thomas-visit' }]}
                     itemOptions={ITEMS}
                     onClose={() => undefined}
                     onDelete={() => undefined}
@@ -236,7 +238,35 @@ describe('PassageEditor', () => {
         ).toBeNull();
     });
 
-    it('offers the passages of other chapters as a transition target', async () => {
+    it('edits the description of a start passage', async () => {
+        const start: TStartPassageDto = {
+            ...screen('village-thomas-intro'),
+            type: 'start',
+            description: 'Waking up',
+        };
+        await open(start);
+        typeInto(input('description'), 'Morning');
+        expect(store.draft.type === 'start' && store.draft.description).toBe(
+            'Morning'
+        );
+    });
+
+    it('edits the target of a redirect and adds another one', async () => {
+        const redirect: TRedirectPassageDto = {
+            ...screen('village-thomas-intro'),
+            type: 'redirect',
+            body: [{ redirect: 'village-thomas-forest' }],
+        };
+        await open(redirect);
+        expect(input('body.0.redirect').value).toBe('village-thomas-forest');
+        click('[data-action="add-redirect"]');
+        expect(store.draft.type === 'redirect' && store.draft.body).toEqual([
+            { redirect: 'village-thomas-forest' },
+            { condition: { code: 'true' }, redirect: '' },
+        ]);
+    });
+
+    it('offers the passages of other chapters as a finish target', async () => {
         await open(passage('village-thomas-cool'));
         const target = input('nextPassageId');
         expect(target.value).toBe('village-thomas-');

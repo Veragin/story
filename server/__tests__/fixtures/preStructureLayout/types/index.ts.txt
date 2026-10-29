@@ -19,7 +19,7 @@ export * from './TCharacter';
 export * from './TItem';
 /* TLocation, TLocationId */
 export * from './TLocation';
-/* TChapterPassage, TPassage, TPassageScreen, TPassageTransition, TPassageLinear,
+/* TChapterPassage, TPassage, TPassageStart, TPassageScreen, TPassageLinear, TPassageRedirect, TPassageFinish,
    TLink, TLinkCost, TChapterPassageType, getWholePassageId */
 export * from './TPassage';
 /* TTimeTrigger */

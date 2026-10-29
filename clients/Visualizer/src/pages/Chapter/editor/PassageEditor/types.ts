@@ -13,7 +13,7 @@ export type TOptionsProps = {
 
 export type TFieldsProps<D extends TPassageDto = TPassageDto> = TOptionsProps & {
     draft: D;
-    transitionOptions: TOption[];
+    finishOptions: TOption[];
     edit: TEditFn;
     diag: TDiag;
     api?: TVisualizerApi;

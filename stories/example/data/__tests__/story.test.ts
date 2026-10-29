@@ -30,18 +30,18 @@ import { fileURLToPath } from 'node:url';
 
 /** `nextPassageId` / `redirect` / link targets that do not name a registered passage. */
 const KNOWN_DANGLING_REFERENCES = [
-    // `data/chapters/village/thomas.passages/cool.transition.ts` — `nextPassageId` is
+    // `data/chapters/village/thomas.passages/cool.finish.ts` — `nextPassageId` is
     // `'village-thomas-'`, an id with an empty local part. It typechecks because
     // `TChapterCharacterPassageId` is the template literal `${E}-${Ch}-${string}` and `''`
     // satisfies `string`. `Processor.continue` would look up
     // `passages['village-thomas-']`, get `undefined`, and throw "is not a function".
     // It has not blown up yet only because nothing links to `village-thomas-cool`, which
-    // makes the transition unreachable dead content — see the reachability test below.
+    // makes the finish passage unreachable dead content — see the reachability test below.
     // Fix: point it at a real passage (or delete the file).
     'village-thomas-cool -> village-thomas-',
 ];
 
-/** Passages that no link, redirect or transition leads to, and that no character starts on. */
+/** Passages that no link, redirect or finish passage leads to, and that no character starts on. */
 const KNOWN_UNREACHABLE_PASSAGES = [
     // Dead content. Reachable only if something links to it — and if something did, it would
     // immediately hit the dangling `nextPassageId` above.
@@ -52,7 +52,7 @@ type TAnyPassage = {
     chapterId: string;
     characterId: string;
     id: string;
-    type: 'screen' | 'transition' | 'linear';
+    type: 'start' | 'screen' | 'linear' | 'redirect' | 'finish';
     title?: unknown;
     image?: unknown;
     description?: unknown;
@@ -93,12 +93,7 @@ const loadPassages = async (s: TWorldState): Promise<TLoadedPassage[]> => {
 const outgoingReferences = ({ key, passage }: TLoadedPassage): { from: string; to: string }[] => {
     const refs: string[] = [];
 
-    if (passage.type === 'transition' && passage.nextPassageId !== undefined) {
-        refs.push(passage.nextPassageId);
-    }
-    if (passage.type === 'linear' && passage.nextPassageId !== undefined) {
-        refs.push(passage.nextPassageId);
-    }
+    if (passage.nextPassageId !== undefined) refs.push(passage.nextPassageId);
     for (const block of passage.body ?? []) {
         if (block.redirect !== undefined) refs.push(block.redirect);
         for (const link of (block.links ?? []) as { passageId: string }[]) {
@@ -174,9 +169,9 @@ describe('passage schema', () => {
         }
     });
 
-    it('gives every passage one of the three TPassage types', () => {
+    it('gives every passage one of the TPassage types', () => {
         for (const { key, passage } of passages) {
-            expect(['screen', 'transition', 'linear'], `passage "${key}"`).toContain(passage.type);
+            expect(['start', 'screen', 'linear', 'redirect', 'finish'], `passage "${key}"`).toContain(passage.type);
         }
     });
 
@@ -188,11 +183,18 @@ describe('passage schema', () => {
                 expect(Array.isArray(passage.body), `screen "${key}" body`).toBe(true);
                 continue;
             }
-            if (passage.type === 'transition') {
-                expect(passage.nextPassageId, `transition "${key}" nextPassageId`).toBeTypeOf('string');
+            if (passage.type === 'redirect') {
+                expect(Array.isArray(passage.body), `redirect "${key}" body`).toBe(true);
+                for (const block of passage.body ?? []) {
+                    expect(block.redirect, `redirect "${key}" redirect`).toBeTypeOf('string');
+                }
                 continue;
             }
-            expect(passage.description, `linear "${key}" description`).toBeTypeOf('string');
+            if (passage.type === 'finish') {
+                expect(passage.nextPassageId, `finish "${key}" nextPassageId`).toBeTypeOf('string');
+                continue;
+            }
+            expect(passage.description, `${passage.type} "${key}" description`).toBeTypeOf('string');
         }
     });
 

@@ -1,17 +1,17 @@
 import { observer } from 'mobx-react-lite';
-import type { TTransitionPassageDto } from '@story/protocol';
+import type { TFinishPassageDto } from '@story/protocol';
 import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { ExecuteField } from './ExecuteField';
 import type { TFieldsProps } from './types';
 
-export const TransitionFields = observer(
+export const FinishFields = observer(
     ({
         draft,
         edit,
         diag,
-        transitionOptions,
+        finishOptions,
         preamble,
-    }: TFieldsProps<TTransitionPassageDto>) => (
+    }: TFieldsProps<TFinishPassageDto>) => (
         <>
             <ExecuteField
                 draft={draft}
@@ -25,12 +25,12 @@ export const TransitionFields = observer(
                 onChange={(v) =>
                     edit(
                         (d) =>
-                            d.type === 'transition' &&
+                            d.type === 'finish' &&
                             v !== undefined &&
                             (d.nextPassageId = v)
                     )
                 }
-                options={transitionOptions}
+                options={finishOptions}
                 placeholder="<chapter>-<character>-<local>"
                 diagnostics={diag('nextPassageId')}
                 dataField="nextPassageId"

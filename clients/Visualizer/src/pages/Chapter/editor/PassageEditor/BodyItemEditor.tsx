@@ -3,7 +3,6 @@ import { DeleteButton } from '../../../../components/buttons/DeleteButton';
 import type { TBodyItemDto } from '@story/protocol';
 import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
 import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
-import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { Links } from './Links';
 import { setField } from './listUtils';
@@ -56,15 +55,6 @@ export const BodyItemEditor = ({
                 placeholder={_('When the item is shown')}
                 diagnostics={diag(`${path}.condition`)}
                 dataField={`${path}.condition`}
-            />
-            <FormMaybeCodeAutocompleteInput
-                label={_('Redirect')}
-                value={item.redirect}
-                onChange={(v) => set('redirect', v)}
-                options={passageOptions}
-                optional
-                diagnostics={diag(`${path}.redirect`)}
-                dataField={`${path}.redirect`}
             />
             <FormMaybeCodeTextInput
                 label={_('Text')}

@@ -12,6 +12,7 @@ import {
     type TEntityDto,
     type TEntityDtoByKind,
     type TEntityKind,
+    type TFunctionDto,
     type TImageDto,
     type TImageOwner,
     type TItemDto,
@@ -82,6 +83,9 @@ export const displayText = (value: TValue | undefined, fallback: string): string
     return fallback;
 };
 
+const isConditional = (item: { condition?: TFunctionDto }) =>
+    item.condition !== undefined && item.condition.code.trim() !== 'true';
+
 export const extractEdges = (
     passages: TPassageDto[],
     known: ReadonlySet<string> = new Set(passages.map((p) => p.passageId))
@@ -103,14 +107,21 @@ export const extractEdges = (
                 continue;
             }
             for (const item of p.body) {
-                const conditional = item.condition !== undefined && item.condition.code.trim() !== 'true';
-                if (item.redirect !== undefined) add(p.passageId, item.redirect, 'redirect', conditional);
+                const conditional = isConditional(item);
                 if (item.links === undefined) continue;
                 if (isCode(item.links)) {
                     add(p.passageId, item.links, 'link');
                     continue;
                 }
                 for (const link of item.links) add(p.passageId, link.passageId, 'link', conditional);
+            }
+        } else if (p.type === 'redirect') {
+            if (isCode(p.body)) {
+                add(p.passageId, p.body, 'redirect');
+                continue;
+            }
+            for (const item of p.body) {
+                add(p.passageId, item.redirect, 'redirect', isConditional(item));
             }
         } else if (p.nextPassageId !== undefined) {
             add(p.passageId, p.nextPassageId, 'next');
@@ -553,9 +564,11 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                               image: '',
                               body: [{ condition: { code: 'true' }, text: '', links: [] }],
                           }
-                        : type === 'linear'
+                        : type === 'start' || type === 'linear'
                           ? { ...base, type, description: title ?? '' }
-                          : { ...base, type, nextPassageId: '' };
+                          : type === 'redirect'
+                            ? { ...base, type, body: [] }
+                            : { ...base, type, nextPassageId: '' };
                 passages.set(passageId, passage);
                 refreshDerived();
                 emit({ kind: 'passage', id: passageId, version: passage.version, op: 'created', chapterId });

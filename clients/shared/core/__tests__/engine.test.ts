@@ -282,14 +282,14 @@ describe('Engine turn loop', () => {
             expect(s.characters.thomas.health).toBe(42);
         });
 
-        it('runs execute on a transition passage too, before moving on', async () => {
+        it('runs execute on a finish passage too, before moving on', async () => {
             const execute = vi.fn();
             const { e } = sessionWith({
                 'village-thomas-hop': () => ({
                     chapterId: 'village',
                     characterId: 'thomas',
                     id: 'hop',
-                    type: 'transition',
+                    type: 'finish',
                     execute,
                     nextPassageId: 'village-thomas-next',
                 }),
@@ -301,6 +301,44 @@ describe('Engine turn loop', () => {
             await waitForPassage(e, 'village-thomas-next');
 
             expect(execute).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('a redirect passage', () => {
+        const redirectSession = (conditions: [boolean | undefined, boolean | undefined]) =>
+            sessionWith({
+                'village-thomas-fork': () => ({
+                    chapterId: 'village',
+                    characterId: 'thomas',
+                    id: 'fork',
+                    type: 'redirect',
+                    body: [
+                        { condition: conditions[0], redirect: 'village-thomas-left' },
+                        { condition: conditions[1], redirect: 'village-thomas-right' },
+                    ],
+                }),
+                'village-thomas-left': () => screen('left', {}),
+                'village-thomas-right': () => screen('right', {}),
+            });
+
+        it('follows the first redirect whose condition holds', async () => {
+            const { e } = redirectSession([false, true]);
+            await soloThomas(e);
+
+            e.story.goToPassage(linkTo('village-thomas-fork', DeltaTime.fromMin(1)));
+            await waitForPassage(e, 'village-thomas-right');
+
+            expect(e.store.passage?.id).toBe('right');
+        });
+
+        it('treats a missing condition as true', async () => {
+            const { e } = redirectSession([undefined, true]);
+            await soloThomas(e);
+
+            e.story.goToPassage(linkTo('village-thomas-fork', DeltaTime.fromMin(1)));
+            await waitForPassage(e, 'village-thomas-left');
+
+            expect(e.store.passage?.id).toBe('left');
         });
     });
 

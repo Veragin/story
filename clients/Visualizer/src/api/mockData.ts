@@ -280,10 +280,10 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'village',
             characterId: 'thomas',
             localId: 'cool',
-            file: passageFile('village', 'thomas', 'cool.transition.ts'),
+            file: passageFile('village', 'thomas', 'cool.finish.ts'),
             exportName: 'default',
             params: [],
-            type: 'transition',
+            type: 'finish',
             nextPassageId: 'village-thomas-',
         },
         {

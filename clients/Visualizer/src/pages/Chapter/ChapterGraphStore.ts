@@ -85,7 +85,7 @@ export class ChapterGraphStore {
     rawEdges: TPassageEdgeDto[] = [];
     layout: TChapterLayoutDto | null = null;
     project: TProjectDto | null = null;
-    transitionOptions: TOption[] = [];
+    finishOptions: TOption[] = [];
 
     autoPositions: Record<string, TPoint> = {};
 
@@ -116,7 +116,7 @@ export class ChapterGraphStore {
             rawEdges: observable.ref,
             layout: observable.ref,
             project: observable.ref,
-            transitionOptions: observable.ref,
+            finishOptions: observable.ref,
             autoPositions: observable.ref,
             selectedId: observable,
             editor: observable.ref,
@@ -317,10 +317,10 @@ export class ChapterGraphStore {
         this.editor?.destroy();
         this.editor = new PassageEditorStore(passage, this.api, (saved) => this.onPassageSaved(saved));
         setUiState(uiKeys.editor(this.chapterId), passageId);
-        if (passage.type === 'transition') void this.loadTransitionOptions(passage.characterId);
+        if (passage.type === 'finish') void this.loadFinishOptions(passage.characterId);
     }
 
-    async loadTransitionOptions(characterId: string): Promise<void> {
+    async loadFinishOptions(characterId: string): Promise<void> {
         const chapters = (this.project?.chapters ?? []).filter(
             (c) => c.id !== this.chapterId && c.characterIds.includes(characterId)
         );
@@ -333,7 +333,7 @@ export class ChapterGraphStore {
                 label: entry.name,
             }))
         );
-        runInAction(() => (this.transitionOptions = options));
+        runInAction(() => (this.finishOptions = options));
     }
 
     closeEditor() {

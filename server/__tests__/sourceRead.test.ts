@@ -76,7 +76,7 @@ describe('readers', () => {
             code: 's.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2)',
         });
         expect(body.passages[0]).toMatchObject({
-            type: 'transition',
+            type: 'finish',
             exportName: 'default',
             nextPassageId: 'village-thomas-',
         });

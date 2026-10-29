@@ -156,9 +156,7 @@ export const ChapterPage = observer(
                                             passageOptions={store.passages.map(
                                                 (p) => ({ id: p.passageId })
                                             )}
-                                            transitionOptions={
-                                                store.transitionOptions
-                                            }
+                                            finishOptions={store.finishOptions}
                                             itemOptions={(
                                                 store.project?.items ?? []
                                             ).map((i) => ({

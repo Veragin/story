@@ -13,7 +13,15 @@ import { removePassagePositions } from '../../json/storeCleanup';
 import { siblingPng } from '../images';
 import { capitalize } from '@story/shared';
 import { quote } from '../ast';
-import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
+import {
+    isPassageType,
+    PASSAGE_FIELDS,
+    PASSAGE_OPTIONAL,
+    PASSAGE_TYPES,
+    passageType,
+    readPassage,
+    readPassageFile,
+} from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
 import {
     assertId,
@@ -26,10 +34,6 @@ import {
 import { applyPartial } from '../values';
 import { asBody, assertCurrentVersion, DERIVED_FIELDS, optionalText, type TWriter } from './common';
 
-const PASSAGE_TYPES: TPassageType[] = ['screen', 'linear', 'transition'];
-
-const isPassageType = (value: unknown): value is TPassageType => PASSAGE_TYPES.some((t) => t === value);
-
 const PASSAGE_DERIVED = [
     ...DERIVED_FIELDS,
     'passageId',
@@ -41,6 +45,15 @@ const PASSAGE_DERIVED = [
     'type',
 ];
 
+const newPassageFields: Record<TPassageType, (title: string, selfId: string) => string> = {
+    start: (title) => `    type: 'start',\n    description: ${title},\n`,
+    screen: (title) => `    type: 'screen',\n    title: ${title},\n    image: '',\n\n    body: [],\n`,
+    linear: (title) => `    type: 'linear',\n    description: ${title},\n`,
+    redirect: () => `    type: 'redirect',\n    body: [],\n`,
+    // points at itself so it type-checks until the author retargets it
+    finish: (_title, selfId) => `    type: 'finish',\n    nextPassageId: ${selfId},\n`,
+};
+
 export const newPassageText = (
     chapterId: string,
     characterId: string,
@@ -49,13 +62,7 @@ export const newPassageText = (
     title: string
 ) => {
     const union = characterPassageUnionName(chapterId, characterId);
-    const fields =
-        type === 'screen'
-            ? `    type: 'screen',\n    title: ${quote(title)},\n    image: '',\n\n    body: [],\n`
-            : type === 'linear'
-              ? `    type: 'linear',\n    description: ${quote(title)},\n`
-              : // points at itself so it type-checks until the author retargets it
-                `    type: 'transition',\n    nextPassageId: ${quote(`${chapterId}-${characterId}-${localId}`)},\n`;
+    const fields = newPassageFields[type](quote(title), quote(`${chapterId}-${characterId}-${localId}`));
     return `import { TPassage } from '@story/types';
 import { ${union} } from '../${chapterId}.passages';
 

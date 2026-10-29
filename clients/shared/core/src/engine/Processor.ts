@@ -1,6 +1,6 @@
 import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
-import { DeltaTime, Time } from '@story/shared';
+import { DeltaTime, Time, TPassageId } from '@story/shared';
 import { TChapter, TChapterId, TLinkClick, TLinkCost } from '@story/types';
 import { TUnkownPassageScreen } from './const';
 import { parsePassageId } from '../parsePassageId';
@@ -36,34 +36,34 @@ export class Processor {
         this.e.activePassage = passages.default[turn.passageId](this.s, this.e);
         this.e.activePassage.execute?.();
 
-        if (this.e.activePassage.type === 'transition') {
-            this.e.history.addTurn({
-                passageId: this.e.activePassage.nextPassageId,
-                time: this.s.time,
-            });
-            void this.continue();
+        if (this.e.activePassage.type === 'finish') {
+            this.redirectTo(this.e.activePassage.nextPassageId);
+            return;
+        }
+
+        if (this.e.activePassage.type === 'redirect') {
+            const redirect = this.e.activePassage.body.find((b) => b.condition !== false)?.redirect;
+            if (redirect === undefined) {
+                this.e.history.addEnd(this.e.activePassage.characterId, 'NO_ACTIONS');
+                void this.continue();
+                return;
+            }
+            this.redirectTo(redirect);
             return;
         }
 
         const activeScreenPassage = this.e.activePassage as TUnkownPassageScreen;
-        const redirect = activeScreenPassage.body.find(
-            (b) => b.condition !== false && b.redirect !== undefined
-        )?.redirect;
-        if (redirect !== undefined) {
-            this.e.history.addTurn({
-                passageId: redirect,
-                time: this.s.time,
-            });
-            void this.continue();
-            return;
-        }
-
         if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
             this.autoProcess(activeScreenPassage);
             return;
         }
 
         this.e.store.setPassage(activeScreenPassage);
+    };
+
+    private redirectTo = (passageId: TPassageId) => {
+        this.e.history.addTurn({ passageId, time: this.s.time });
+        void this.continue();
     };
 
     private autoProcess = (p: TUnkownPassageScreen) => {

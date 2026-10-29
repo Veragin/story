@@ -18,7 +18,7 @@ import type { TDiag } from './types';
 type TProps = {
     store: PassageEditorStore;
     passageOptions: TOption[];
-    transitionOptions: TOption[];
+    finishOptions: TOption[];
     itemOptions: TOption[];
     onClose: () => void;
     onDelete: () => void;
@@ -30,7 +30,7 @@ export const PassageEditor = observer(
     ({
         store,
         passageOptions,
-        transitionOptions,
+        finishOptions,
         itemOptions,
         onClose,
         onDelete,
@@ -81,7 +81,7 @@ export const PassageEditor = observer(
                         edit={(fn) => store.edit(fn)}
                         diag={diag}
                         passageOptions={passageOptions}
-                        transitionOptions={transitionOptions}
+                        finishOptions={finishOptions}
                         itemOptions={itemOptions}
                         api={api}
                         preamble={base.preamble}
