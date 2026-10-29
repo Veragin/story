@@ -1,9 +1,9 @@
 import type { TWorldState } from '@story/data';
 import { action, makeObservable, observable } from 'mobx';
-import { TUnkownPassageScreen } from './const';
+import { TPlayablePassage } from './const';
 
 export class Store {
-    passage: TUnkownPassageScreen | null = null;
+    passage: TPlayablePassage | null = null;
 
     constructor(public s: TWorldState) {
         makeObservable(this, {
@@ -12,7 +12,7 @@ export class Store {
         });
     }
 
-    setPassage = (passage: TUnkownPassageScreen | null) => {
+    setPassage = (passage: TPlayablePassage | null) => {
         this.passage = passage;
     };
 }

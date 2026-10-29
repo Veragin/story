@@ -11,17 +11,9 @@ import { version as hash } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
 import { removePassagePositions } from '../../json/storeCleanup';
 import { siblingPng } from '../images';
-import { capitalize } from '@story/shared';
+import { capitalize, isPassageType, PASSAGE_TYPES } from '@story/shared';
 import { quote } from '../ast';
-import {
-    isPassageType,
-    PASSAGE_FIELDS,
-    PASSAGE_OPTIONAL,
-    PASSAGE_TYPES,
-    passageType,
-    readPassage,
-    readPassageFile,
-} from '../readers/passages';
+import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
 import {
     assertId,

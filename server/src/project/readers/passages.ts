@@ -1,4 +1,5 @@
 import type { TChapterPassagesDto, TFunctionDto, TPassageDto, TPassageEdgeDto, TPassageType } from '@story/protocol';
+import { isPassageType } from '@story/shared';
 import { Node, type NoSubstitutionTemplateLiteral, type SourceFile, type StringLiteral, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
 import { propertyKey, stringProp, unwrap } from '../ast';
@@ -67,10 +68,6 @@ export const PASSAGE_OPTIONAL: Record<TPassageType, string[]> = {
     redirect: ['execute'],
     finish: ['execute'],
 };
-
-export const PASSAGE_TYPES: TPassageType[] = ['start', 'screen', 'linear', 'redirect', 'finish'];
-
-export const isPassageType = (value: unknown): value is TPassageType => PASSAGE_TYPES.some((t) => t === value);
 
 export const passageType = (src: TPassageSource): TPassageType | undefined => {
     const t = stringProp(src.obj, 'type');

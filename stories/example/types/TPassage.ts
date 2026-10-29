@@ -1,110 +1,58 @@
+import type {
+    TLink as TEngineLink,
+    TLinkCost as TEngineLinkCost,
+    TPassage as TEnginePassage,
+    TPassageFinish as TEnginePassageFinish,
+    TPassageId,
+    TPassageLinear as TEnginePassageLinear,
+    TPassageRedirect as TEnginePassageRedirect,
+    TPassageScreen as TEnginePassageScreen,
+    TPassageStart as TEnginePassageStart,
+} from '@story/shared';
 import { TCharacterId, TChapterCharacterPassageId, TChapterId, TChapterPassageId } from './ids';
-import { DeltaTime, TPassageId } from '@story/shared';
 import { TItemId } from './TItem';
 
 export type TChapterPassage<E extends TChapterId> = TPassage<E, TCharacterId, TChapterPassageId<E>>;
 
-export type TPassage<E extends TChapterId, Ch extends TCharacterId, Ids extends TChapterCharacterPassageId<E, Ch>> =
-    | TPassageStart<E, Ch, Ids>
-    | TPassageScreen<E, Ch, Ids>
-    | TPassageLinear<E, Ch, Ids>
-    | TPassageRedirect<E, Ch, Ids>
-    | TPassageFinish<E, Ch>;
-
-export type TPassageScreen<
+export type TPassage<
     E extends TChapterId,
     Ch extends TCharacterId,
     Ids extends TChapterCharacterPassageId<E, Ch>,
-> = {
-    chapterId: E;
-    characterId: Ch;
-    id: string;
-
-    title: string;
-    image: string;
-    type: 'screen';
-
-    execute?: () => void;
-    body: {
-        condition?: boolean;
-        text?: string;
-        links?: TLink<Ids>[];
-    }[];
-};
-
-export type TLink<Ids extends TPassageId> = {
-    text: string;
-    passageId: Ids;
-    autoPriortiy?: number;
-    cost?: TLinkCost;
-
-    onFinish?: () => void;
-};
-
-export type TLinkCost =
-    | DeltaTime
-    | {
-          time?: DeltaTime;
-          items?: { id: TItemId; amount: number }[];
-          tools?: TItemId[];
-      };
+> = TEnginePassage<E, Ch, Ids, TChapterCharacterPassageId<TChapterId, Ch>, TItemId>;
 
 export type TPassageStart<
     E extends TChapterId,
     Ch extends TCharacterId,
     Ids extends TChapterCharacterPassageId<E, Ch>,
-> = {
-    chapterId: E;
-    characterId: Ch;
-    id: string;
+> = TEnginePassageStart<E, Ch, Ids>;
 
-    type: 'start';
-    description: string;
-    execute?: () => void;
-    nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;
-};
-
-export type TPassageRedirect<
+export type TPassageScreen<
     E extends TChapterId,
     Ch extends TCharacterId,
     Ids extends TChapterCharacterPassageId<E, Ch>,
-> = {
-    chapterId: E;
-    characterId: Ch;
-    id: string;
-
-    type: 'redirect';
-    execute?: () => void;
-    body: {
-        condition?: boolean;
-        redirect: Ids;
-    }[];
-};
-
-export type TPassageFinish<E extends TChapterId, Ch extends TCharacterId> = {
-    chapterId: E;
-    characterId: Ch;
-    id: string;
-
-    type: 'finish';
-    execute?: () => void;
-    nextPassageId: TChapterCharacterPassageId<TChapterId, Ch>;
-};
+> = TEnginePassageScreen<E, Ch, Ids, TItemId>;
 
 export type TPassageLinear<
     E extends TChapterId,
     Ch extends TCharacterId,
     Ids extends TChapterCharacterPassageId<E, Ch>,
-> = {
-    chapterId: E;
-    characterId: Ch;
-    id: string;
+> = TEnginePassageLinear<E, Ch, Ids>;
 
-    type: 'linear';
-    description: string;
-    execute?: () => void;
-    nextPassageId?: Ids & TChapterCharacterPassageId<E, Ch>;
-};
+export type TPassageRedirect<
+    E extends TChapterId,
+    Ch extends TCharacterId,
+    Ids extends TChapterCharacterPassageId<E, Ch>,
+> = TEnginePassageRedirect<E, Ch, Ids>;
+
+export type TPassageFinish<E extends TChapterId, Ch extends TCharacterId> = TEnginePassageFinish<
+    E,
+    Ch,
+    TChapterCharacterPassageId<TChapterId, Ch>
+>;
+
+export type TLink<Ids extends TPassageId> = TEngineLink<Ids, TItemId>;
+
+export type TLinkCost = TEngineLinkCost<TItemId>;
 
 export type TChapterPassageType = TChapterPassage<TChapterId>['type'];
 

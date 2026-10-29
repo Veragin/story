@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Alert, Button } from '@mui/material';
-import type { TPassageType } from '@story/protocol';
+import { isPassageType, PASSAGE_TYPES, type TPassageType } from '@story/shared';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
 import { FormTextInput } from '../../components/form/FormTextInput';
 import { AppDialog } from '../../components/dialog/AppDialog';
@@ -10,16 +10,13 @@ import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import type { ChapterGraphStore } from './ChapterGraphStore';
 import { idError } from './dialogUtils';
 
-const PASSAGE_TYPES: { type: TPassageType; label: () => string }[] = [
-    { type: 'start', label: () => _('start — entry point of the chapter') },
-    { type: 'screen', label: () => _('screen — text with links') },
-    { type: 'linear', label: () => _('linear — description, then next') },
-    { type: 'redirect', label: () => _('redirect — automatic, by condition') },
-    { type: 'finish', label: () => _('finish — leave to another chapter') },
-];
-
-const isPassageType = (value: string): value is TPassageType =>
-    PASSAGE_TYPES.some((t) => t.type === value);
+const PASSAGE_TYPE_LABELS: Record<TPassageType, () => string> = {
+    start: () => _('start — entry point of the chapter'),
+    screen: () => _('screen — text with links'),
+    linear: () => _('linear — description, then next'),
+    redirect: () => _('redirect — automatic, by condition'),
+    finish: () => _('finish — leave to another chapter'),
+};
 
 type TProps = {
     store: ChapterGraphStore;
@@ -127,9 +124,9 @@ export const AddPassageDialog = observer(
                             onChange={(next) => {
                                 if (next && isPassageType(next)) setType(next);
                             }}
-                            options={PASSAGE_TYPES.map((t) => ({
-                                id: t.type,
-                                label: t.label(),
+                            options={PASSAGE_TYPES.map((passageType) => ({
+                                id: passageType,
+                                label: PASSAGE_TYPE_LABELS[passageType](),
                             }))}
                             dataField="type"
                         />

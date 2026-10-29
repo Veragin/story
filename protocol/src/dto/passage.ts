@@ -1,6 +1,7 @@
+import type { TPassageType } from '@story/shared';
 import type { TDeltaTimeDto, TFunctionDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
 
-export type TPassageType = 'start' | 'screen' | 'linear' | 'redirect' | 'finish';
+export type { TPassageType };
 
 type TPassageBaseDto = TVersioned &
     TSourceRef & {

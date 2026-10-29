@@ -4,7 +4,7 @@ import { createWorldState, type Engine, type TPassagesModule } from '@story/core
 import { itemInfo, register } from '@story/data';
 import type { TWorldState } from '@story/data';
 import type { TChapterId, TChapterPassage, TEngineSettings } from '@story/types';
-import { linkTo, newSession, PAST_ANNIE_START, TEST_STORY_ID, waitForPassage } from './support/engine';
+import { linkTo, newSession, PAST_ANNIE_START, TEST_STORY_ID, waitForLinear, waitForPassage } from './support/engine';
 
 // `Array.prototype.at` is ES2022; the libs target ES2020
 const last = <T>(items: T[]): T => items[items.length - 1];
@@ -37,6 +37,22 @@ const screen = (
     image: '',
     body: [],
     ...fields,
+});
+
+const start = (id: string): Extract<TChapterPassage<'village'>, { type: 'start' }> => ({
+    chapterId: 'village',
+    characterId: 'thomas',
+    id,
+    type: 'start',
+    description: `${id} description`,
+});
+
+const linear = (id: string): Extract<TChapterPassage<'village'>, { type: 'linear' }> => ({
+    chapterId: 'village',
+    characterId: 'thomas',
+    id,
+    type: 'linear',
+    description: `${id} description`,
 });
 
 // keeps tests independent of how the chapters' time ranges interleave
@@ -75,8 +91,7 @@ describe('Engine turn loop', () => {
 
         expect(e.activePassage.id).toBe('intro');
         expect(e.activePassage.chapterId).toBe('village');
-        expect(e.store.passage?.id).toBe('intro');
-        expect(e.store.passage?.title).toBe('Intro');
+        expect(e.store.passage).toMatchObject({ id: 'intro', type: 'screen', title: 'Intro' });
     });
 
     it('walks village-thomas-intro → village-thomas-forest and charges the link"s time', async () => {
@@ -84,7 +99,7 @@ describe('Engine turn loop', () => {
         const start = s.time.s;
 
         await e.processor.continue();
-        const intro = e.store.passage!;
+        const intro = await waitForPassage(e, 'village-thomas-intro');
 
         const actions = e.processor.getPossibleActions(intro);
         expect(actions).toHaveLength(1);
@@ -339,6 +354,123 @@ describe('Engine turn loop', () => {
             await waitForPassage(e, 'village-thomas-left');
 
             expect(e.store.passage?.id).toBe('left');
+        });
+    });
+
+    describe('a start passage', () => {
+        it('runs execute and moves straight on to nextPassageId, free of charge', async () => {
+            const execute = vi.fn();
+            const { s, e } = sessionWith({
+                'village-thomas-entry': () => ({
+                    ...start('entry'),
+                    execute,
+                    nextPassageId: 'village-thomas-next',
+                }),
+                'village-thomas-next': () => screen('next', {}),
+            });
+            await soloThomas(e);
+
+            e.story.goToPassage(linkTo('village-thomas-entry', DeltaTime.fromMin(1)));
+            const booked = s.time.s;
+            await waitForPassage(e, 'village-thomas-next');
+
+            expect(execute).toHaveBeenCalledTimes(1);
+            expect(s.time.s).toBe(booked);
+            expect(e.history.data.thomas!.map((h) => ('passageId' in h ? h.passageId : h.reason))).toEqual(
+                expect.arrayContaining(['village-thomas-entry', 'village-thomas-next'])
+            );
+        });
+
+        it('ends the character with NO_ACTIONS when it has no nextPassageId', async () => {
+            const { s, e } = sessionWith({
+                'village-annie-entry': () => ({ ...start('entry'), characterId: 'annie' }),
+                'village-thomas-probe': () => screen('probe', {}),
+            });
+            e.history.data.annie = [{ passageId: 'village-annie-entry', time: s.time }];
+            e.history.data.thomas = [
+                { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+            ];
+
+            await e.processor.continue();
+            await waitForPassage(e, 'village-thomas-probe');
+
+            expect(last(e.history.data.annie!)).toMatchObject({ reason: 'NO_ACTIONS' });
+        });
+    });
+
+    describe('a linear passage', () => {
+        it('reaches the store with a single free Continue link to nextPassageId', async () => {
+            const { s, e } = sessionWith({
+                'village-thomas-walk': () => ({ ...linear('walk'), nextPassageId: 'village-thomas-next' }),
+                'village-thomas-next': () => screen('next', {}),
+            });
+            await soloThomas(e);
+
+            e.story.goToPassage(linkTo('village-thomas-walk', DeltaTime.fromMin(1)));
+            const walk = await waitForLinear(e, 'village-thomas-walk');
+            expect(walk.description).toBe('walk description');
+
+            const actions = e.processor.getPossibleActions(walk);
+            expect(actions).toEqual([{ text: 'Continue', passageId: 'village-thomas-next' }]);
+
+            const before = s.time.s;
+            e.story.goToPassage(actions[0]);
+            await waitForPassage(e, 'village-thomas-next');
+            expect(s.time.s).toBe(before);
+        });
+
+        it('offers no link without nextPassageId and stays put like a screen without links', async () => {
+            const { e } = sessionWith({ 'village-thomas-walk': () => linear('walk') });
+            await soloThomas(e);
+
+            e.story.goToPassage(linkTo('village-thomas-walk', DeltaTime.fromMin(1)));
+            const walk = await waitForLinear(e, 'village-thomas-walk');
+
+            expect(e.processor.getPossibleActions(walk)).toEqual([]);
+            expect(last(e.history.data.thomas!)).toMatchObject({ passageId: 'village-thomas-walk' });
+        });
+
+        it('auto-advances a non-main character to nextPassageId', async () => {
+            const nextExecute = vi.fn();
+            const { s, e } = sessionWith({
+                'village-annie-walk': () => ({
+                    ...linear('walk'),
+                    characterId: 'annie',
+                    nextPassageId: 'village-annie-next',
+                }),
+                'village-annie-next': () => ({ ...screen('next', { execute: nextExecute }), characterId: 'annie' }),
+                'village-thomas-probe': () => screen('probe', {}),
+            });
+            e.history.data.annie = [{ passageId: 'village-annie-walk', time: s.time }];
+            e.history.data.thomas = [
+                { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+            ];
+
+            await e.processor.continue();
+            await waitForPassage(e, 'village-thomas-probe');
+
+            expect(nextExecute).toHaveBeenCalledTimes(1);
+            expect(e.history.data.annie!.map((h) => ('passageId' in h ? h.passageId : h.reason))).toEqual([
+                'village-annie-walk',
+                'village-annie-next',
+                'NO_ACTIONS',
+            ]);
+        });
+
+        it('ends a non-main character with NO_ACTIONS when it has no nextPassageId', async () => {
+            const { s, e } = sessionWith({
+                'village-annie-walk': () => ({ ...linear('walk'), characterId: 'annie' }),
+                'village-thomas-probe': () => screen('probe', {}),
+            });
+            e.history.data.annie = [{ passageId: 'village-annie-walk', time: s.time }];
+            e.history.data.thomas = [
+                { passageId: 'village-thomas-probe', time: s.time.moveToFutureBy(DeltaTime.fromMin(60)) },
+            ];
+
+            await e.processor.continue();
+            await waitForPassage(e, 'village-thomas-probe');
+
+            expect(last(e.history.data.annie!)).toMatchObject({ reason: 'NO_ACTIONS' });
         });
     });
 
@@ -606,7 +738,7 @@ describe('Processor cost handling', () => {
         const { e } = newSession();
         await e.processor.continue();
 
-        const passage = e.store.passage!;
+        const passage = await waitForPassage(e, 'village-thomas-intro');
         expect(e.processor.getPossibleActions(passage)).toHaveLength(1);
 
         const unaffordable = {
@@ -621,7 +753,7 @@ describe('Processor cost handling', () => {
         const { e } = newSession();
         await e.processor.continue();
 
-        const passage = e.store.passage!;
+        const passage = await waitForPassage(e, 'village-thomas-intro');
         const hidden = {
             ...passage,
             body: [{ condition: false, links: passage.body[0].links }],
