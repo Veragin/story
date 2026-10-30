@@ -27,7 +27,7 @@ import {
 import { findObjectEntry, objectEntries, readEntryValues } from '../objectCatalog';
 import type { SourceProject } from '../SourceProject';
 import { locationRef, registerEntries, type TRegisterEntry } from '../story';
-import { readFields, S, schemaOf, type TField } from '../values';
+import { readFields, S, schemaOf, type TField, type TSchema } from '../values';
 import { readDataType } from './chapters';
 import { readType, readTypeNames, type TTypeNames, userFieldsOf } from './structure';
 
@@ -232,8 +232,12 @@ export const containerForType = (sp: SourceProject, type: string): TItemContaine
 
 const ITEM_INFO_KEYS = ['name', 'type'];
 
+const ITEM_TEXT_KEYS = ['name', 'description'];
+
+export const itemSchemaOf = (key: string): TSchema => (ITEM_TEXT_KEYS.includes(key) ? S.text : S.value);
+
 export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto => {
-    const values = readEntryValues(node.item, (key) => (key === 'name' ? S.text : S.value));
+    const values = readEntryValues(node.item, itemSchemaOf);
     const typeInit = getPropInit(node.item, 'type');
     return {
         kind: 'items',

@@ -931,4 +931,32 @@ describe('entities', () => {
         expect(res.body.name).toBe('Timber');
         expect(await read('data/items/itemInfo.ts')).toMatch(/wood: \{\s*name: _\('Timber'\),\s*type: 'resource'/);
     });
+
+    it('reads an item description as text and writes it as translated text', async () => {
+        const file = path.join(t.project.root, 'data/items/itemInfo.ts');
+        await writeFile(
+            file,
+            (await read('data/items/itemInfo.ts')).replace(
+                "name: _('Wood'),",
+                "name: _('Wood'), description: _('Dry'),"
+            )
+        );
+        const wood = (await t.get('/api/stories/example/entities/items/wood')).body;
+        expect(wood.props.description).toBe('Dry');
+        let res = await t.put('/api/stories/example/entities/items/wood', {
+            version: wood.version,
+            props: { ...wood.props, description: 'Freshly cut' },
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.props.description).toBe('Freshly cut');
+        expect(await read('data/items/itemInfo.ts')).toContain("description: _('Freshly cut')");
+        res = await t.post('/api/stories/example/entities/items', {
+            id: 'plank',
+            type: 'resource',
+            name: 'Plank',
+            props: { description: 'Flat' },
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(201);
+        expect(await read('data/items/itemInfo.ts')).toContain("description: _('Flat')");
+    });
 });

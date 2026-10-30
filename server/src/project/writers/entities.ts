@@ -29,6 +29,7 @@ import {
     findEntitySource,
     findItem,
     itemNodes,
+    itemSchemaOf,
     readEntity,
     readEntitySource,
     readItemNode,
@@ -194,7 +195,7 @@ const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unkn
     ];
     for (const [k, v] of Object.entries(itemProps(dto.props))) {
         if (k === 'name' || k === 'type') throw HttpError.badRequest(`props.${k}: use the "${k}" field`);
-        parts.push([k, genValue(v, S.value, { ...ctx, path: `props.${k}` })]);
+        parts.push([k, genValue(v, itemSchemaOf(k), { ...ctx, path: `props.${k}` })]);
     }
     return entryText(parts);
 };
@@ -277,11 +278,12 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
             for (const [k, v] of Object.entries(props)) {
                 if (k === 'name' || k === 'type') throw HttpError.badRequest(`props.${k}: use the "${k}" field`);
                 const prop = getProp(n.item, k);
-                if (prop) updateValue(prop.getInitializerOrThrow(), S.value, v, { ...ctx, path: `props.${k}` });
+                const propCtx = { ...ctx, path: `props.${k}` };
+                if (prop) updateValue(prop.getInitializerOrThrow(), itemSchemaOf(k), v, propCtx);
                 else
                     n.item.addPropertyAssignment({
                         name: keyText(k),
-                        initializer: genValue(v, S.value, { ...ctx, path: `props.${k}` }),
+                        initializer: genValue(v, itemSchemaOf(k), propCtx),
                     });
             }
             for (const p of [...n.item.getProperties()]) {
