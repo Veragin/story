@@ -2,7 +2,7 @@ import { TCharacter } from '@story/types';
 
 export const Hero: TCharacter<'hero'> = {
     id: 'hero',
-    name: 'Hero',
+    name: _('Hero'),
     startPassageId: 'start-hero-intro',
 
     init: {

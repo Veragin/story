@@ -49,7 +49,7 @@ describe('passages', () => {
         });
         expect(res.status).toBe(200);
         text = await read('data/chapters/village/thomas.passages/forest.ts');
-        expect(text).toContain("text: 'Lets hunt deer'");
+        expect(text).toContain("text: _('Lets hunt deer')");
         expect(text).toContain('// keep me');
         expect(text).toContain("console.log('hunted');");
         expect(text).toContain('cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),');
@@ -223,6 +223,7 @@ describe('passages', () => {
         });
         expect(res.status).toBe(200);
         expect(res.body.title).toBe('The start');
+        expect(await read('data/chapters/village/thomas.passages/intro.ts')).toContain("title: _('The start'),");
         expect(res.body.version).not.toBe(intro.version);
         expect((await t.get('/api/stories/example/passages/village-thomas-intro')).body.version).toBe(res.body.version);
         res = await t.put('/api/stories/example/passages/village-thomas-intro', {
@@ -360,12 +361,16 @@ describe('chapters', () => {
         let res = await t.post('/api/stories/example/chapters', {
             chapterId: 'harbor',
             title: 'Harbor',
+            description: 'A port',
             location: 'village',
             timeRange: { start: '6.1. 8:00', end: '7.1. 8:00' },
         });
         expect(res.status, JSON.stringify(res.body)).toBe(201);
         expect(t.events).toEqual([expect.objectContaining({ kind: 'chapter', id: 'harbor', op: 'created' })]);
         expect(t.events[0].version).toBe(res.body.version);
+        expect(await read('data/chapters/harbor/harbor.chapter.ts')).toContain(
+            "title: _('Harbor'),\n    description: _('A port'),"
+        );
         expect(await read('data/register.ts')).toContain("harbor: () => import('./chapters/harbor/harbor.passages')");
         expect(await read('data/TWorldState.ts')).toContain(
             "harbor: { ref: TChapter<'harbor'> } & THarborChapterData;"
@@ -378,7 +383,7 @@ describe('chapters', () => {
 
         res = await t.put('/api/stories/example/chapters/harbor', {
             version: res.body.version,
-            title: { code: "_('Harbor')" },
+            title: 'Harbor town',
             timeRange: { start: '6.1. 9:00', end: { code: "Time.fromString('8.1. 8:00')" } },
             children: [{ condition: 'always', chapterId: 'wedding' }],
             init: { boats: 3, names: ['a', 'b'] },
@@ -386,12 +391,24 @@ describe('chapters', () => {
         });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body).toMatchObject({
-            title: { code: "_('Harbor')" },
+            title: 'Harbor town',
             timeRange: { start: '6.1. 9:00', end: '8.1. 8:00' },
             children: [{ condition: 'always', chapterId: 'wedding' }],
             init: { boats: 3, names: ['a', 'b'] },
         });
         const chapterText = await read('data/chapters/harbor/harbor.chapter.ts');
+        expect(chapterText).toContain("title: _('Harbor town'),");
+
+        res = await t.put('/api/stories/example/chapters/harbor', {
+            version: res.body.version,
+            title: { code: "_('Harbor')" },
+            description: { code: '_(String(2))' },
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body).toMatchObject({ title: 'Harbor', description: { code: '_(String(2))' } });
+        expect(await read('data/chapters/harbor/harbor.chapter.ts')).toContain(
+            "title: _('Harbor'),\n    description: _(String(2)),"
+        );
         expect(chapterText).toContain("import { weddingChapter } from '../wedding/wedding.chapter';");
         expect(chapterText).toContain('chapter: weddingChapter');
 
@@ -764,6 +781,7 @@ describe('entities', () => {
         });
         expect(res.status, JSON.stringify(res.body)).toBe(201);
         expect(res.body.file).toBe('data/npcs/Smith.ts');
+        expect(await read('data/npcs/Smith.ts')).toContain("name: _('Smith'),\n    description: _('Makes swords'),");
 
         res = await t.post('/api/stories/example/entities/locations', {
             id: 'forest',
@@ -771,6 +789,9 @@ describe('entities', () => {
             localCharacters: [{ name: 'Owl', description: 'Wise' }],
         });
         expect(res.status, JSON.stringify(res.body)).toBe(201);
+        const forestText = await read('data/locations/forest.location.ts');
+        expect(forestText).toContain("name: _('Forest'),\n    description: _(''),");
+        expect(forestText).toContain("{ name: _('Owl'), description: _('Wise') }");
         const village = (await t.get('/api/stories/example/entities/locations/village')).body;
         res = await t.put('/api/stories/example/entities/locations/village', {
             version: village.version,
@@ -902,12 +923,12 @@ describe('entities', () => {
 
     it('adds a missing name to an item on update', async () => {
         const file = path.join(t.project.root, 'data/items/itemInfo.ts');
-        await writeFile(file, (await read('data/items/itemInfo.ts')).replace("name: 'Wood',", ''));
+        await writeFile(file, (await read('data/items/itemInfo.ts')).replace("name: _('Wood'),", ''));
         const wood = (await t.get('/api/stories/example/entities/items/wood')).body;
         expect(wood.name).toBe('wood');
         const res = await t.put('/api/stories/example/entities/items/wood', { version: wood.version, name: 'Timber' });
         expect(res.status).toBe(200);
         expect(res.body.name).toBe('Timber');
-        expect(await read('data/items/itemInfo.ts')).toMatch(/wood: \{\s*name: 'Timber',\s*type: 'resource'/);
+        expect(await read('data/items/itemInfo.ts')).toMatch(/wood: \{\s*name: _\('Timber'\),\s*type: 'resource'/);
     });
 });

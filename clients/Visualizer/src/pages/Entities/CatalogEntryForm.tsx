@@ -14,7 +14,7 @@ import { Notices } from '../../components/feedback/Notices';
 import { router } from '../../shell';
 import type { CatalogFormStore } from './CatalogFormStore';
 import { confirmDelete } from './entityDialogs';
-import { displayName } from './entityFields';
+import { displayText } from '../../api';
 
 type TProps = {
     store: CatalogFormStore;
@@ -78,7 +78,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
     return (
         <FormPage>
             <EditorHeader
-                title={displayName(draft.name, base.id)}
+                title={displayText(draft.name, base.id)}
                 store={resource}
                 onDelete={() => void onDelete()}
             />

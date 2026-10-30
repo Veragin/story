@@ -71,24 +71,24 @@ const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
     switch (kind) {
         case 'characters':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
+                name: { schema: S.text },
+                description: { schema: S.text },
                 image: { schema: S.string, after: ['description', 'name'] },
                 startPassageId: { schema: S.string },
                 init: { schema: S.record() },
             };
         case 'npcs':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
+                name: { schema: S.text },
+                description: { schema: S.text },
                 image: { schema: S.string, after: ['description', 'name'] },
                 init: { schema: S.record() },
             };
         case 'locations':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
-                localCharacters: { schema: S.array(S.object({ name: S.string, description: S.string })) },
+                name: { schema: S.text },
+                description: { schema: S.text },
+                localCharacters: { schema: S.array(S.object({ name: S.text, description: S.text })) },
                 sublocations: { schema: S.array(S.ref(locationRef(sp))) },
                 mapId: { schema: S.string },
                 init: { schema: S.record() },
@@ -233,7 +233,7 @@ export const containerForType = (sp: SourceProject, type: string): TItemContaine
 const ITEM_INFO_KEYS = ['name', 'type'];
 
 export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto => {
-    const values = readEntryValues(node.item, (key) => (key === 'name' ? S.string : S.value));
+    const values = readEntryValues(node.item, (key) => (key === 'name' ? S.text : S.value));
     const typeInit = getPropInit(node.item, 'type');
     return {
         kind: 'items',

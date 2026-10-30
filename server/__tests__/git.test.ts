@@ -52,7 +52,7 @@ const VILLAGE_CHAPTER = path.join('data', 'chapters', 'village', 'village.chapte
 
 const renameVillage = async (dir: string, title: string) => {
     const file = path.join(dir, VILLAGE_CHAPTER);
-    await writeFile(file, (await readFile(file, 'utf8')).replace(/title: '[^']*'/, `title: '${title}'`));
+    await writeFile(file, (await readFile(file, 'utf8')).replace(/title: _\('[^']*'\)/, `title: _('${title}')`));
 };
 
 const pushedClone = async (repo: TBareRepo, change: (clone: string) => Promise<void>, branch = 'main') => {

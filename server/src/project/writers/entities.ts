@@ -19,7 +19,7 @@ import { siblingPng } from '../images';
 import { capitalize } from '@story/shared';
 import { deleteClearingReferences, deleteReferences, entityResource, type TDeletePlan } from '../clearReferences';
 import { addObjectEntry, entryText } from '../objectCatalog';
-import { asObject, getProp, getPropInit, keyText, propertyKey, quote } from '../ast';
+import { asObject, getProp, getPropInit, keyText, propertyKey, quote, translated } from '../ast';
 import {
     containerForType,
     DATA_TYPE_SUFFIX,
@@ -74,7 +74,7 @@ const NEW_ENTITY: Record<
 
 export const ${exportName}: TCharacter<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
+    name: ${translated(capitalize(id))},
 
     init: {
         health: 100,
@@ -95,8 +95,8 @@ export type ${dataType} = {};
 
 export const ${exportName}: TNpc<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
-    description: '',
+    name: ${translated(capitalize(id))},
+    description: _(''),
 
     init: {
         inventory: [],
@@ -118,8 +118,8 @@ export type ${dataType} = {};
 
 export const ${exportName}: TLocation<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
-    description: '',
+    name: ${translated(capitalize(id))},
+    description: _(''),
 
     localCharacters: [],
 
@@ -189,7 +189,7 @@ const itemProps = (value: unknown): Record<string, unknown> => {
 const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unknown>) => {
     const ctx = { sf: c.sf, path: '', file: sp.root.rel(c.sf.getFilePath()) };
     const parts: [string, string][] = [
-        ['name', genValue(dto.name ?? '', S.string, { ...ctx, path: 'name' })],
+        ['name', genValue(dto.name ?? '', S.text, { ...ctx, path: 'name' })],
         ['type', quote(String(dto.type))],
     ];
     for (const [k, v] of Object.entries(itemProps(dto.props))) {
@@ -262,11 +262,11 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
         if (body.name !== undefined) {
             const nameCtx = { ...ctx, path: 'name' };
             const prop = getProp(n.item, 'name');
-            if (prop) updateValue(prop.getInitializerOrThrow(), S.string, body.name, nameCtx);
+            if (prop) updateValue(prop.getInitializerOrThrow(), S.text, body.name, nameCtx);
             else
                 n.item.insertPropertyAssignment(0, {
                     name: 'name',
-                    initializer: genValue(body.name, S.string, nameCtx),
+                    initializer: genValue(body.name, S.text, nameCtx),
                 });
         }
         if (body.type !== undefined && body.type !== current.type) {

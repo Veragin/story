@@ -26,7 +26,6 @@ import {
     type TSourceOwner,
     type TTimelineLayoutDto,
     type TTriggerDto,
-    type TValue,
     type TValueRecord,
     type TVersion,
 } from '@story/protocol';
@@ -74,14 +73,8 @@ const MOCK_STORY: TEditStoryInfoDto = {
     email: '',
 };
 
-export const displayText = (value: TValue | undefined, fallback: string): string => {
-    if (typeof value === 'string') return value || fallback;
-    if (isCode(value)) {
-        const m = /^_\(\s*(['"`])(.*)\1\s*\)$/s.exec(value.code.trim());
-        return m?.[2] || fallback;
-    }
-    return fallback;
-};
+export const displayText = (value: unknown, fallback: string): string =>
+    typeof value === 'string' && value !== '' ? value : fallback;
 
 const isConditional = (item: { condition?: TFunctionDto }) =>
     item.condition !== undefined && item.condition.code.trim() !== 'true';

@@ -220,7 +220,7 @@ describe('image descriptions', () => {
         npc = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(npc.image).toBe('An old man with a cane');
         expect(await readFile(abs('data/npcs/Franta.ts'), 'utf8')).toContain(
-            "description: 'Franta is a very old',\n    image: 'An old man with a cane',"
+            "description: _('Franta is a very old'),\n    image: 'An old man with a cane',"
         );
 
         const thomas = (await t.get('/api/stories/example/entities/characters/thomas')).body;

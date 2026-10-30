@@ -2,7 +2,7 @@ import { TCharacter } from '@story/types';
 
 export const Thomas: TCharacter<'thomas'> = {
     id: 'thomas',
-    name: 'Thomas',
+    name: _('Thomas'),
     startPassageId: 'village-thomas-intro',
 
     init: {

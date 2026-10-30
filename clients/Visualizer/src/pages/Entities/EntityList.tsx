@@ -4,7 +4,7 @@ import { router } from '../../shell';
 import type { StructureStore } from '../../stores/StructureStore';
 import { openCreateEntity } from './entityDialogs';
 import type { EntityFormStore } from './EntityFormStore';
-import { displayName } from './entityFields';
+import { displayText } from '../../api';
 
 type TProps = {
     store: EntityFormStore;
@@ -37,7 +37,7 @@ export const EntityList = observer(({ store, structure, title }: TProps) => {
                     newAction: 'new-entity',
                     entries: store.list.map((e) => ({
                         name: e.id,
-                        label: displayName(e.name, e.id),
+                        label: displayText(e.name, e.id),
                         href: router.href({
                             page: 'entities',
                             kind,

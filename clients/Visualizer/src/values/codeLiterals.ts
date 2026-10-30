@@ -13,7 +13,4 @@ export const parseStringLiteral = (code: string): string | undefined => {
     }
 };
 
-export const codeToText = (code: string): string => {
-    const call = /^_\(\s*([\s\S]*?)\s*\)$/.exec(code.trim());
-    return parseStringLiteral(call ? call[1] : code) ?? code;
-};
+export const codeToText = (code: string): string => parseStringLiteral(code) ?? code;

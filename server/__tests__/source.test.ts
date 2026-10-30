@@ -32,12 +32,12 @@ describe('source editor', () => {
 
     it('saves formatted text with one event, and answers 409 stale on an old version', async () => {
         const before = await t.get(`${S}/chapter/village`);
-        const text = before.body.text.replace("title: 'Village Chapter'", 'title:   "Hamlet Chapter"');
+        const text = before.body.text.replace("title: _('Village Chapter')", 'title:   _( "Hamlet Chapter" )');
         t.events.length = 0;
         const saved = await t.put(`${S}/chapter/village`, { version: before.body.version, text });
         expect(saved.status).toBe(200);
         // prettier ran
-        expect(saved.body.text).toContain("title: 'Hamlet Chapter',");
+        expect(saved.body.text).toContain("title: _('Hamlet Chapter'),");
         expect(await read(CHAPTER)).toBe(saved.body.text);
         expect(saved.body.version).not.toBe(before.body.version);
         expect(t.events).toEqual([expect.objectContaining({ kind: 'chapter', id: 'village', op: 'updated' })]);

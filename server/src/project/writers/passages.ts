@@ -12,7 +12,7 @@ import { HttpError } from '../../common/HttpError';
 import { removePassagePositions } from '../../json/storeCleanup';
 import { siblingPng } from '../images';
 import { capitalize, isPassageType, PASSAGE_TYPES } from '@story/shared';
-import { quote } from '../ast';
+import { quote, translated } from '../ast';
 import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
 import {
@@ -54,7 +54,7 @@ export const newPassageText = (
     title: string
 ) => {
     const union = characterPassageUnionName(chapterId, characterId);
-    const fields = newPassageFields[type](quote(title), quote(`${chapterId}-${characterId}-${localId}`));
+    const fields = newPassageFields[type](translated(title), quote(`${chapterId}-${characterId}-${localId}`));
     return `import { TPassage } from '@story/types';
 import { ${union} } from '../${chapterId}.passages';
 

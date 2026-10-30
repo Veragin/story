@@ -26,8 +26,8 @@ import { readFields, readValue, S, type TField, type TSchema } from '../values';
 import { readTypeNames, type TTypeNames, typeLiteralFields } from './structure';
 
 export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
-    title: { schema: S.string },
-    description: { schema: S.string },
+    title: { schema: S.text },
+    description: { schema: S.text },
     timeRange: { schema: S.timeRange },
     location: { schema: S.string },
     children: {

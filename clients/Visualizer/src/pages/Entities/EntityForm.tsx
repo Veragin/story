@@ -13,7 +13,7 @@ import type { StructureStore } from '../../stores/StructureStore';
 import { confirmDelete } from './entityDialogs';
 import { EntityFields } from './EntityFields';
 import type { EntityFormStore } from './EntityFormStore';
-import { displayName } from './entityFields';
+import { displayText } from '../../api';
 
 type TProps = {
     store: EntityFormStore;
@@ -79,7 +79,7 @@ export const EntityForm = observer(({ store, structure }: TProps) => {
     return (
         <FormPage>
             <EditorHeader
-                title={displayName(draft.name, draft.id)}
+                title={displayText(draft.name, draft.id)}
                 store={store.resource}
                 onDelete={() => void onDelete()}
             />

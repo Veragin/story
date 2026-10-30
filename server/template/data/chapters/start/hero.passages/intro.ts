@@ -7,12 +7,12 @@ export const introPassage = (): TPassage<'start', 'hero', TStartHeroPassageId> =
     id: 'intro',
 
     type: 'screen',
-    title: 'Intro',
+    title: _('Intro'),
     image: '',
 
     body: [
         {
-            text: 'Your story begins here.',
+            text: _('Your story begins here.'),
         },
     ],
 });

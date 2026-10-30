@@ -31,7 +31,7 @@ describe('TriggerDialog', () => {
         const seed = createMockSeed();
         seed.triggers = seed.triggers.map((t) => ({
             ...t,
-            name: { code: "_('Robbery')" },
+            name: { code: "'Robbery'" },
         }));
         const events = new ApiEvents({ createEventSource: undefined });
         api = createMockApi({ events, seed });
@@ -61,14 +61,14 @@ describe('TriggerDialog', () => {
     it('keeps a code name untouched while the description is edited', async () => {
         expect(
             get('[data-form-field="Name"] [data-code-value]').textContent
-        ).toBe("_('Robbery')");
+        ).toBe("'Robbery'");
         typeInto(
             get<HTMLTextAreaElement>('textarea[data-field="description"]'),
             'At night'
         );
         await save();
         const saved = await api.getTrigger(TRIGGER);
-        expect(saved.name).toEqual({ code: "_('Robbery')" });
+        expect(saved.name).toEqual({ code: "'Robbery'" });
         expect(saved.description).toBe('At night');
         expect(close).toHaveBeenCalled();
     });

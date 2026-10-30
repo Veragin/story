@@ -2,8 +2,8 @@ import { TNpc } from '@story/types';
 
 export const NobleMan: TNpc<'nobleMan'> = {
     id: 'nobleMan',
-    name: 'Noble Man',
-    description: 'Noble Man is a very rich and powerful',
+    name: _('Noble Man'),
+    description: _('Noble Man is a very rich and powerful'),
 
     init: {
         inventory: [],

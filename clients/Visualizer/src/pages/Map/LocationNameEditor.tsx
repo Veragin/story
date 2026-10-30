@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { styled } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { isCode } from '@story/protocol';
 import { spacingCss } from '@story/ui';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
 import { TextInput } from '../../components/inputs/TextInput';
 import type { MapPageStore } from './MapPageStore';
-import { nameAsText } from './locationName';
 
 type TProps = {
     store: MapPageStore;
@@ -26,9 +26,8 @@ export const LocationNameEditor = observer(
             setDraft(value);
         };
         const startEditing = () => {
-            const text = location ? nameAsText(location.name) : undefined;
-            if (text === undefined) onEditInForm(locationId);
-            else updateDraft(text);
+            if (!location || isCode(location.name)) onEditInForm(locationId);
+            else updateDraft(location.name);
         };
         const commit = () => {
             flushDraft(store, locationId, draftRef);

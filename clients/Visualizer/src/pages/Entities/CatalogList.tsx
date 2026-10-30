@@ -6,7 +6,7 @@ import { router } from '../../shell';
 import type { StructureStore } from '../../stores/StructureStore';
 import type { CatalogFormStore } from './CatalogFormStore';
 import { openCreateCatalogEntry } from './entityDialogs';
-import { displayName } from './entityFields';
+import { displayText } from '../../api';
 
 type TProps = {
     store: CatalogFormStore;
@@ -31,7 +31,7 @@ export const CatalogList = observer(
                         newAction: 'new-catalog-entry',
                         entries: store.list.map((entry) => ({
                             name: entry.id,
-                            label: displayName(entry.values.name, entry.id),
+                            label: displayText(entry.values.name, entry.id),
                             href: router.href({
                                 page: 'catalog',
                                 catalog,

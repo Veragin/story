@@ -20,7 +20,6 @@ import type { TConfirmOptions } from '../../shell/modals';
 import { getUiState, setUiState } from '../../ui-state';
 import type { TSaveStatus } from '../../components/feedback/SaveStatus';
 import { mergeMaps, sameMap, toMapDocument } from './mergeMap';
-import { nameAsText, withNameText } from './locationName';
 import { descendantLocationIds, isOnMap, locationIdPrefix, mapAncestors, parentLocationId } from './locationTree';
 
 export const MAP_MODES = ['view', 'locations', 'tiles'] as const;
@@ -695,9 +694,9 @@ export class MapPageStore implements IMapHost {
 
     renameLocation = async (id: string, text: string) => {
         const location = this.locations.get(id);
-        if (!location || nameAsText(location.name) === text) return;
+        if (!location || location.name === text) return;
         try {
-            await this.saveLocation(id, { name: withNameText(location.name, text) }, location.version);
+            await this.saveLocation(id, { name: text }, location.version);
         } catch (e) {
             this.setNotice({ kind: 'error', text: _('Could not rename %s: %s', id, errorMessage(e)) });
         }

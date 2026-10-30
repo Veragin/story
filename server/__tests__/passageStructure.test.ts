@@ -76,7 +76,7 @@ describe('passage structure migration', () => {
         const intro = project.abs('data/chapters/kingdom/annie.passages/intro.ts');
         await writeFile(
             intro,
-            (await readFile(intro, 'utf8')).replace("title: 'Intro',", "title: 'Intro',\n        mood: 'calm',")
+            (await readFile(intro, 'utf8')).replace("title: _('Intro'),", "title: _('Intro'),\n        mood: 'calm',")
         );
 
         const { migrated, events } = await migrate(project);

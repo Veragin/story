@@ -10,7 +10,7 @@ import type {
 import { HttpError } from '../../common/HttpError';
 import { removePassagePositions, removeTimelineEntries } from '../../json/storeCleanup';
 import { capitalize } from '@story/shared';
-import { quote } from '../ast';
+import { quote, translated } from '../ast';
 import { chapterFields, chapterVersion, readChapter } from '../readers/chapters';
 import { passageIdOfFile } from '../readers/passages';
 import {
@@ -81,8 +81,8 @@ import { TChapter } from '@story/types';
 
 export const ${id}Chapter: TChapter<'${id}'> = {
     chapterId: '${id}',
-    title: ${quote(title)},
-    description: ${quote(description)},
+    title: ${translated(title)},
+    description: ${translated(description)},
     timeRange: {
         start: Time.fromString(${quote(start)}),
         end: Time.fromString(${quote(end)}),

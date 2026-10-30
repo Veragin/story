@@ -3,8 +3,8 @@ import { TChapter } from '@story/types';
 
 export const startChapter: TChapter<'start'> = {
     chapterId: 'start',
-    title: 'Start',
-    description: 'The first chapter.',
+    title: _('Start'),
+    description: _('The first chapter.'),
     timeRange: {
         start: Time.fromString('1.1. 8:00'),
         end: Time.fromString('1.1. 20:00'),

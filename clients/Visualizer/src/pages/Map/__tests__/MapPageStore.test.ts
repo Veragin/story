@@ -348,16 +348,11 @@ describe('MapPageStore — locations', () => {
         });
     });
 
-    it('renames a location, keeping a translated name translated', async () => {
+    it('renames a location', async () => {
         const { api, store } = await setup();
         await store.renameLocation('village', 'Town');
         expect(store.locationName('village')).toBe('Town');
         expect((await api.getEntity('locations', 'village')).name).toBe('Town');
-
-        const village = store.locations.get('village')!;
-        await store.saveLocation('village', { name: { code: "_('Town')" } }, village.version);
-        await store.renameLocation('village', 'City');
-        expect((await api.getEntity('locations', 'village')).name).toEqual({ code: "_('City')" });
     });
 
     it('reports a failed rename as a notice', async () => {

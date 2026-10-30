@@ -110,11 +110,11 @@ describe('PassageEditor', () => {
     it('shows a code title read-only and converts it', async () => {
         await open({
             ...screen('village-thomas-intro'),
-            title: { code: "_('Hi')" },
+            title: { code: "'Hi'" },
         });
         expect($('[data-field="title"]')).toBeNull();
         expect(inField('Title', '[data-code-value]').textContent).toBe(
-            "_('Hi')"
+            "'Hi'"
         );
         click('[data-form-field="Title"] [data-action="convert-to-value"]');
         expect(store.draft.type === 'screen' && store.draft.title).toBe('Hi');

@@ -6,7 +6,7 @@ void applyFormatting;
 export const kingdomLocation: TLocation<'kingdom'> = {
     id: 'kingdom',
     name: _('kingdom'),
-    description: ``,
+    description: _(''),
 
     localCharacters: [],
 

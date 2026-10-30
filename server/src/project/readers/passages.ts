@@ -16,7 +16,7 @@ import {
 import { readFields, S, type TField } from '../values';
 
 const LINK = S.object({
-    text: S.string,
+    text: S.text,
     passageId: S.string,
     autoPriortiy: S.number,
     cost: S.linkCost,
@@ -25,7 +25,7 @@ const LINK = S.object({
 
 const BODY_ITEM = S.object({
     condition: S.fn('true'),
-    text: S.string,
+    text: S.text,
     links: S.array(LINK),
 });
 
@@ -38,7 +38,7 @@ const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
 
 const DESCRIBED_FIELDS: Record<string, TField> = {
     execute: EXECUTE,
-    description: { schema: S.string },
+    description: { schema: S.text },
     nextPassageId: { schema: S.string },
 };
 
@@ -46,7 +46,7 @@ export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
     start: DESCRIBED_FIELDS,
     screen: {
         execute: EXECUTE,
-        title: { schema: S.string },
+        title: { schema: S.text },
         image: { schema: S.string },
         body: { schema: S.array(BODY_ITEM) },
     },

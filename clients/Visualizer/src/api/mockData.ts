@@ -206,7 +206,7 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'wedding',
             file: chapterFile('wedding'),
             exportName: 'weddingChapter',
-            title: { code: "_('Wedding Chapter')" },
+            title: 'Wedding Chapter',
             description: '',
             timeRange: { start: '5.1. 9:00', end: '6.1. 8:00' },
             location: 'kingdom',
@@ -354,14 +354,14 @@ export const createMockSeed = (): TMockSeed => ({
             params: ['s', 'e'],
             preamble: 'void s;\nvoid e;',
             type: 'screen',
-            title: { code: "_('visit')" },
+            title: 'visit',
             image: '',
             body: [
                 {
-                    text: { code: "_('')" },
+                    text: '',
                     links: [
                         {
-                            text: { code: "_('')" },
+                            text: '',
                             passageId: 'kingdom-thomas-visit',
                             cost: { seconds: 600 },
                         },
@@ -468,7 +468,7 @@ export const createMockSeed = (): TMockSeed => ({
             id: 'kingdom',
             file: 'data/locations/kingdom.location.ts',
             exportName: 'kingdomLocation',
-            name: { code: "_('kingdom')" },
+            name: 'kingdom',
             description: '',
             localCharacters: [],
             init: {},

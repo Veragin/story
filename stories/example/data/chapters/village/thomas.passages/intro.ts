@@ -8,16 +8,16 @@ export const introPassage = (): TPassage<'village', 'thomas', TVillageThomasPass
     id: 'intro',
 
     type: 'screen',
-    title: 'Intro',
+    title: _('Intro'),
     image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
 
     body: [
         {
             condition: true,
-            text: 'text',
+            text: _('text'),
             links: [
                 {
-                    text: 'Lets go to the forest',
+                    text: _('Lets go to the forest'),
                     passageId: 'village-thomas-forest',
                     cost: {
                         time: DeltaTime.fromMin(10),

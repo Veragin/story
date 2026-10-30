@@ -25,13 +25,17 @@ import {
     propertyRemovalEdit,
     quote,
     readJsDoc,
+    stringLiteral,
+    textLiteral,
     type TTextEdit,
+    translated,
     unwrap,
 } from './ast';
 
 export type TSchema =
     | { t: 'value' }
     | { t: 'string' }
+    | { t: 'text' }
     | { t: 'number' }
     | { t: 'boolean' }
     | { t: 'code' }
@@ -66,6 +70,7 @@ export type TWriteCtx = {
 export const S = {
     value: { t: 'value' } satisfies TSchema,
     string: { t: 'string' } satisfies TSchema,
+    text: { t: 'text' } satisfies TSchema,
     number: { t: 'number' } satisfies TSchema,
     boolean: { t: 'boolean' } satisfies TSchema,
     code: { t: 'code' } satisfies TSchema,
@@ -146,12 +151,6 @@ const readNumber = (expr: Expression): number | undefined => {
     return undefined;
 };
 
-const readString = (expr: Expression): string | undefined => {
-    const e = unwrap(expr);
-    if (Node.isStringLiteral(e) || Node.isNoSubstitutionTemplateLiteral(e)) return e.getLiteralText();
-    return undefined;
-};
-
 const readBoolean = (expr: Expression): boolean | undefined => {
     const e = unwrap(expr);
     if (Node.isTrueLiteral(e)) return true;
@@ -162,7 +161,7 @@ const readBoolean = (expr: Expression): boolean | undefined => {
 const readTime = (expr: Expression): string | undefined => {
     const call = staticCall(expr);
     if (call?.obj !== 'Time' || call.method !== 'fromString' || call.args.length !== 1) return undefined;
-    return readString(call.args[0]);
+    return stringLiteral(call.args[0]);
 };
 
 const readDelta = (expr: Expression): number | undefined => {
@@ -183,7 +182,7 @@ const readDelta = (expr: Expression): number | undefined => {
             return n === undefined ? undefined : DeltaTime.fromHour(n).s;
         }
         case 'fromString': {
-            const s = readString(arg);
+            const s = stringLiteral(arg);
             return s === undefined ? undefined : DeltaTime.fromString(s as never).s;
         }
         default:
@@ -203,7 +202,7 @@ const plainEntries = (obj: ObjectLiteralExpression): [string, Expression][] | un
 
 const readFree = (expr: Expression): TValue => {
     const e = unwrap(expr);
-    const s = readString(e);
+    const s = stringLiteral(e);
     if (s !== undefined) return s;
     const n = readNumber(e);
     if (n !== undefined) return n;
@@ -257,7 +256,9 @@ export const readValue = (expr: Expression, schema: TSchema): unknown => {
         case 'value':
             return readFree(expr);
         case 'string':
-            return readString(expr) ?? codeOf(expr);
+            return stringLiteral(expr) ?? codeOf(expr);
+        case 'text':
+            return textLiteral(expr) ?? codeOf(expr);
         case 'number':
             return readNumber(expr) ?? codeOf(expr);
         case 'boolean':
@@ -275,8 +276,8 @@ export const readValue = (expr: Expression, schema: TSchema): unknown => {
         case 'timeRange': {
             const call = staticCall(expr);
             if (call?.obj === 'TimeRange' && call.method === 'fromString' && call.args.length === 2) {
-                const start = readString(call.args[0]);
-                const end = readString(call.args[1]);
+                const start = stringLiteral(call.args[0]);
+                const end = stringLiteral(call.args[1]);
                 if (start !== undefined && end !== undefined) return { start, end };
                 return codeOf(expr);
             }
@@ -441,6 +442,9 @@ export const genValue = (value: unknown, schema: TSchema, ctx: TWriteCtx): strin
         case 'string':
             if (typeof value !== 'string') throw bad(ctx, 'a string', value);
             return quote(value);
+        case 'text':
+            if (typeof value !== 'string') throw bad(ctx, 'a string', value);
+            return translated(value);
         case 'number':
             if (typeof value !== 'number') throw bad(ctx, 'a number', value);
             return numberText(value, ctx);

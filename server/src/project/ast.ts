@@ -81,6 +81,27 @@ export const keyText = (key: string) => (IDENTIFIER_RE.test(key) ? key : quote(k
 export const quote = (s: string): string =>
     `'${JSON.stringify(s).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")}'`;
 
+export const translated = (s: string): string => `_(${quote(s)})`;
+
+const translationArgs = (expr: Expression): Node[] | undefined => {
+    const e = unwrap(expr);
+    return Node.isCallExpression(e) && e.getExpression().getText() === '_' ? e.getArguments() : undefined;
+};
+
+const firstStringLiteral = ([first]: Node[]): string | undefined =>
+    Node.isExpression(first) ? stringLiteral(first) : undefined;
+
+export const textLiteral = (expr: Expression): string | undefined => {
+    const args = translationArgs(expr);
+    if (!args) return stringLiteral(expr);
+    return args.length === 1 ? firstStringLiteral(args) : undefined;
+};
+
+export const displayText = (expr: Expression): string | undefined => {
+    const args = translationArgs(expr);
+    return args ? firstStringLiteral(args) : stringLiteral(expr);
+};
+
 export const lineOf = (node: Node) => node.getStartLineNumber();
 
 export type TTextEdit = { start: number; end: number; text: string };

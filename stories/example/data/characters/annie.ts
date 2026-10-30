@@ -2,7 +2,7 @@ import { TCharacter } from '@story/types';
 
 export const Annie: TCharacter<'annie'> = {
     id: 'annie',
-    name: 'Annie',
+    name: _('Annie'),
     startPassageId: 'kingdom-annie-intro',
 
     init: {

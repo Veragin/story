@@ -16,16 +16,16 @@ export const forestPassage = (s: TWorldState): TPassage<'village', 'thomas', TVi
     },
 
     type: 'screen',
-    title: 'Forest',
+    title: _('Forest'),
     image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
 
     body: [
         {
             condition: true,
-            text: 'text',
+            text: _('text'),
             links: [
                 {
-                    text: 'Lets hunt',
+                    text: _('Lets hunt'),
                     passageId: 'village-thomas-intro',
                     cost: s.time.s < 10 ? DeltaTime.fromMin(1) : DeltaTime.fromMin(2),
                     autoPriortiy: 2,

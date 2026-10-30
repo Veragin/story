@@ -1,6 +1,5 @@
 import { deepEqual } from '../../deepEqual';
 import {
-    isCode,
     isValueRecord,
     type TCreateEntityBody,
     type TEntityDto,
@@ -114,15 +113,6 @@ export const editableOf = (entity: TEntityDto): TEntityFields =>
     Object.fromEntries(Object.entries(entity).filter(([key]) => !isServerField(key)));
 
 export const withFields = (entity: TEntityDto, patch: Record<string, unknown>): TEntityDto => ({ ...entity, ...patch });
-
-export const displayName = (value: unknown, fallback: string): string => {
-    if (typeof value === 'string') return value || fallback;
-    if (isCode(value)) {
-        const m = /^_\(\s*(['"`])(.*)\1\s*\)$/.exec(value.code.trim());
-        return m ? m[2] : fallback;
-    }
-    return fallback;
-};
 
 export const ENTITY_TYPE_NAMES = {
     characters: { entity: 'TCharacter', data: 'TCharacterData' },

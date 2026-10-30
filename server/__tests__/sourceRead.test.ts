@@ -57,7 +57,7 @@ describe('readers', () => {
             ],
         });
         const wedding = (await t.get('/api/stories/example/chapters/wedding')).body;
-        expect(wedding.title).toEqual({ code: "_('Wedding Chapter')" });
+        expect(wedding.title).toBe('Wedding Chapter');
         expect(wedding.timeRange).toEqual({ start: '5.1. 9:00', end: '6.1. 8:00' });
         const kingdom = (await t.get('/api/stories/example/chapters/kingdom')).body;
         expect(kingdom.children).toEqual([{ condition: 'asdasd', chapterId: 'village' }]);
@@ -102,7 +102,7 @@ describe('readers', () => {
         expect(visit).toMatchObject({
             params: ['s', 'e'],
             preamble: 'void s;\nvoid e;',
-            title: { code: "_('visit')" },
+            title: 'visit',
         });
         expect(visit.body[0].links[0].cost).toEqual({ seconds: 600 });
         const annie = (await t.get('/api/stories/example/passages/kingdom-annie-intro')).body;
@@ -146,6 +146,23 @@ describe('readers', () => {
                 resolved: true,
             },
         ]);
+        await writeFile(file, before);
+    });
+
+    it('reads a formatted or non-literal `_()` text as code, naming it by its literal', async () => {
+        const file = `${t.project.root}/data/chapters/wedding/wedding.chapter.ts`;
+        const before = await readFile(file, 'utf8');
+        await writeFile(
+            file,
+            before
+                .replace("title: _('Wedding Chapter')", "title: _('Chapter %d', 2)")
+                .replace("description: _('')", 'description: _(String(2))')
+        );
+        const wedding = (await t.get('/api/stories/example/chapters/wedding')).body;
+        expect(wedding.title).toEqual({ code: "_('Chapter %d', 2)" });
+        expect(wedding.description).toEqual({ code: '_(String(2))' });
+        const { body } = await t.get('/api/stories/example/project');
+        expect(body.chapters.find((c: { id: string }) => c.id === 'wedding').name).toBe('Chapter %d');
         await writeFile(file, before);
     });
 

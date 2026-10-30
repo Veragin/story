@@ -10,16 +10,16 @@ export const introPassage = (s: TWorldState): TPassage<'kingdom', 'annie', TKing
         id: 'intro',
 
         type: 'screen',
-        title: 'Intro',
+        title: _('Intro'),
         image: '',
 
         body: [
             {
                 condition: s.characters.annie.health > 0,
-                text: 'text',
+                text: _('text'),
                 links: [
                     {
-                        text: 'Lets go to the forest',
+                        text: _('Lets go to the forest'),
                         passageId: 'kingdom-annie-palace',
                         cost: {
                             time: DeltaTime.fromMin(10),

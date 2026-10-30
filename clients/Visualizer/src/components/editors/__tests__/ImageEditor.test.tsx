@@ -92,12 +92,12 @@ describe('ImageEditor', () => {
 
     it('shows a code description read-only, with convert to text', async () => {
         const onChange = await render(image(null), {
-            code: "_('Annie at the well')",
+            code: "'Annie at the ' + place",
         });
         expect(textarea()).toBeNull();
-        expect(document.body.textContent).toContain("_('Annie at the well')");
+        expect(document.body.textContent).toContain("'Annie at the ' + place");
         click('[data-action="convert-to-value"]');
-        expect(onChange).toHaveBeenCalledWith('Annie at the well');
+        expect(onChange).toHaveBeenCalledWith("'Annie at the ' + place");
     });
 
     it('has no description without onChange', async () => {
