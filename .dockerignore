@@ -27,3 +27,6 @@
 # local; on the server they live in the `stories` volume (docker/docker-compose.prod.yml).
 stories/*
 !stories/example
+
+# ai-setup clone and Claude session transcripts
+.ai

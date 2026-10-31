@@ -44,3 +44,6 @@ stories/*
 # Secrets (docker/.env.example is the template)
 .env
 tmp
+# ai-setup (clone + Claude session history)
+.ai/setup/
+.ai/claude_home/
