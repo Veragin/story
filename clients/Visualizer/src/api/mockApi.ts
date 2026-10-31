@@ -557,11 +557,13 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                               image: '',
                               body: [{ condition: { code: 'true' }, text: '', links: [] }],
                           }
-                        : type === 'start' || type === 'linear'
-                          ? { ...base, type, description: title ?? '' }
-                          : type === 'redirect'
-                            ? { ...base, type, body: [] }
-                            : { ...base, type, nextPassageId: '' };
+                        : type === 'linear'
+                          ? { ...base, type, title: title ?? localId, image: '', body: '' }
+                          : type === 'start'
+                            ? { ...base, type, description: title ?? '' }
+                            : type === 'redirect'
+                              ? { ...base, type, body: [] }
+                              : { ...base, type, nextPassageId: '' };
                 passages.set(passageId, passage);
                 refreshDerived();
                 emit({ kind: 'passage', id: passageId, version: passage.version, op: 'created', chapterId });

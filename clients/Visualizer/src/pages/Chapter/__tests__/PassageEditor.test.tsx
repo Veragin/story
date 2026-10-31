@@ -225,10 +225,11 @@ describe('PassageEditor', () => {
         const linear: TLinearPassageDto = {
             ...screen('village-thomas-intro'),
             type: 'linear',
-            description: 'Walking',
+            body: 'Walking',
         };
         await open(linear);
-        expect(input('description').value).toBe('Walking');
+        expect(input('title').value).toBe(linear.title);
+        expect(input('body').value).toBe('Walking');
         click('[data-form-field="Next passage"] [data-action="add-field"]');
         expect(store.draft.type === 'linear' && store.draft.nextPassageId).toBe(
             'village-thomas-intro'

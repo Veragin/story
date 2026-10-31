@@ -266,7 +266,12 @@ describe('passages', () => {
             const patches = {
                 start: { description: 'Waking up', nextPassageId: 'village-thomas-intro' },
                 screen: { title: 'A new screen', image: 'A hunter at the edge of the forest', body: [screenItem] },
-                linear: { description: 'Walking', nextPassageId: 'village-thomas-intro' },
+                linear: {
+                    title: 'A new walk',
+                    image: 'A hunter on a forest path',
+                    body: 'Walking',
+                    nextPassageId: 'village-thomas-intro',
+                },
                 redirect: { body: [{ condition: { code: 'true' }, redirect: 'village-thomas-intro' }] },
                 finish: { nextPassageId: 'kingdom-thomas-visit' },
             };

@@ -25,16 +25,25 @@ export type TScreenPassageDto = TPassageBaseDto & {
     body: TMaybeCode<TBodyItemDto[]>;
 };
 
-export type TLinearPassageDto = TPassageBaseDto & {
-    type: 'linear';
-    description: TMaybeCode<string>;
+type TNextPassageDto = {
     nextPassageId?: TMaybeCode<string>;
 };
 
-/** The chapter's entry point; shaped like a linear passage. */
-export type TStartPassageDto = Omit<TLinearPassageDto, 'type'> & {
-    type: 'start';
-};
+export type TLinearPassageDto = TPassageBaseDto &
+    TNextPassageDto & {
+        type: 'linear';
+        title: TMaybeCode<string>;
+        /** A text description of the art (`''` for none); the picture is the sibling `.png`. */
+        image: TMaybeCode<string>;
+        body: TMaybeCode<string>;
+    };
+
+/** The chapter's entry point. */
+export type TStartPassageDto = TPassageBaseDto &
+    TNextPassageDto & {
+        type: 'start';
+        description: TMaybeCode<string>;
+    };
 
 export type TRedirectPassageDto = TPassageBaseDto & {
     type: 'redirect';
@@ -54,8 +63,11 @@ export type TPassageDto =
     | TRedirectPassageDto
     | TFinishPassageDto;
 
-/** Linear-shaped passages: a description, then an optional next passage. */
-export type TDescribedPassageDto = TStartPassageDto | TLinearPassageDto;
+/** Passages with an optional next passage and no links. */
+export type TSequentialPassageDto = TStartPassageDto | TLinearPassageDto;
+
+/** Passages shown with a title and an image. */
+export type TIllustratedPassageDto = TScreenPassageDto | TLinearPassageDto;
 
 export type TBodyItemDto = {
     /** An expression, not a function; a literal `true` reads as `{ code: 'true' }`. */
@@ -110,7 +122,8 @@ export type TChapterPassagesDto = {
 
 export type TPassageEditable =
     | Partial<Pick<TScreenPassageDto, 'execute' | 'title' | 'image' | 'body'>>
-    | Partial<Pick<TDescribedPassageDto, 'execute' | 'description' | 'nextPassageId'>>
+    | Partial<Pick<TStartPassageDto, 'execute' | 'description' | 'nextPassageId'>>
+    | Partial<Pick<TLinearPassageDto, 'execute' | 'title' | 'image' | 'body' | 'nextPassageId'>>
     | Partial<Pick<TRedirectPassageDto, 'execute' | 'body'>>
     | Partial<Pick<TFinishPassageDto, 'execute' | 'nextPassageId'>>;
 

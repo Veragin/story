@@ -1,11 +1,10 @@
 import { observer } from 'mobx-react-lite';
 import { isCode, type TScreenPassageDto } from '@story/protocol';
-import { FormImageEditor } from '../../../../components/editors/FormImageEditor';
-import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
 import { FormSection } from '../../../../components/form/FormSection';
 import { CodeBlock } from '../CodeBlock';
 import { BodyItems } from './BodyItems';
 import { ExecuteField } from './ExecuteField';
+import { IllustrationFields } from './IllustrationFields';
 import type { TFieldsProps } from './types';
 
 export const ScreenFields = observer(
@@ -19,25 +18,11 @@ export const ScreenFields = observer(
         preamble,
     }: TFieldsProps<TScreenPassageDto>) => (
         <>
-            <FormMaybeCodeTextInput
-                label={_('Title')}
-                value={draft.title}
-                onChange={(v) =>
-                    edit((d) => d.type === 'screen' && (d.title = v ?? ''))
-                }
-                diagnostics={diag('title')}
-                dataField="title"
-            />
-            <FormImageEditor
-                label={_('Image')}
+            <IllustrationFields
+                draft={draft}
+                edit={edit}
+                diag={diag}
                 api={api}
-                owner="passages"
-                id={draft.passageId}
-                value={draft.image}
-                onChange={(v) =>
-                    edit((d) => d.type === 'screen' && (d.image = v ?? ''))
-                }
-                diagnostics={diag('image')}
             />
             <ExecuteField
                 draft={draft}

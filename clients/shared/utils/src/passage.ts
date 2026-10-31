@@ -68,7 +68,9 @@ export type TPassageLinear<E extends string, Ch extends string, Ids extends TPas
     Ch
 > & {
     type: 'linear';
-    description: string;
+    title: string;
+    image: string;
+    body: string;
     nextPassageId?: Ids & TPassageIdFor<E, Ch>;
 };
 

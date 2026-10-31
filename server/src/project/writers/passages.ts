@@ -40,7 +40,7 @@ const PASSAGE_DERIVED = [
 const newPassageFields: Record<TPassageType, (title: string, selfId: string) => string> = {
     start: (title) => `    type: 'start',\n    description: ${title},\n`,
     screen: (title) => `    type: 'screen',\n    title: ${title},\n    image: '',\n\n    body: [],\n`,
-    linear: (title) => `    type: 'linear',\n    description: ${title},\n`,
+    linear: (title) => `    type: 'linear',\n    title: ${title},\n    image: '',\n    body: '',\n`,
     redirect: () => `    type: 'redirect',\n    body: [],\n`,
     // points at itself so it type-checks until the author retargets it
     finish: (_title, selfId) => `    type: 'finish',\n    nextPassageId: ${selfId},\n`,

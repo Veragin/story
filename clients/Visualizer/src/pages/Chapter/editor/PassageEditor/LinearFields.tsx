@@ -1,12 +1,10 @@
 import { observer } from 'mobx-react-lite';
-import type { TDescribedPassageDto, TPassageDto } from '@story/protocol';
+import type { TLinearPassageDto } from '@story/protocol';
 import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
-import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { ExecuteField } from './ExecuteField';
+import { IllustrationFields } from './IllustrationFields';
+import { NextPassageField } from './NextPassageField';
 import type { TFieldsProps } from './types';
-
-const isDescribed = (d: TPassageDto): d is TDescribedPassageDto =>
-    d.type === 'start' || d.type === 'linear';
 
 export const LinearFields = observer(
     ({
@@ -14,9 +12,16 @@ export const LinearFields = observer(
         edit,
         diag,
         passageOptions,
+        api,
         preamble,
-    }: TFieldsProps<TDescribedPassageDto>) => (
+    }: TFieldsProps<TLinearPassageDto>) => (
         <>
+            <IllustrationFields
+                draft={draft}
+                edit={edit}
+                diag={diag}
+                api={api}
+            />
             <ExecuteField
                 draft={draft}
                 edit={edit}
@@ -24,31 +29,20 @@ export const LinearFields = observer(
                 preamble={preamble}
             />
             <FormMaybeCodeTextInput
-                label={_('Description')}
+                label={_('Body')}
                 multiline
-                value={draft.description}
+                value={draft.body}
                 onChange={(v) =>
-                    edit((d) => isDescribed(d) && (d.description = v ?? ''))
+                    edit((d) => d.type === 'linear' && (d.body = v ?? ''))
                 }
-                diagnostics={diag('description')}
-                dataField="description"
+                diagnostics={diag('body')}
+                dataField="body"
             />
-            <FormMaybeCodeAutocompleteInput
-                label={_('Next passage')}
-                value={draft.nextPassageId}
-                onChange={(v) =>
-                    edit(
-                        (d) =>
-                            isDescribed(d) &&
-                            v !== undefined &&
-                            (d.nextPassageId = v)
-                    )
-                }
-                options={passageOptions}
-                // can be added but not removed again
-                optional={draft.nextPassageId === undefined}
-                diagnostics={diag('nextPassageId')}
-                dataField="nextPassageId"
+            <NextPassageField
+                draft={draft}
+                edit={edit}
+                diag={diag}
+                passageOptions={passageOptions}
             />
         </>
     )

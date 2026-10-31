@@ -28,8 +28,10 @@ const closestField = (path: string, fields: ReadonlySet<string>): string | null 
 // containers are included so a diagnostic about a whole item shows at that item
 export const passageFieldPaths = (p: TPassageDto): Set<string> => {
     const fields = new Set<string>(['execute']);
-    if (p.type === 'start' || p.type === 'linear') {
+    if (p.type === 'start') {
         fields.add('description').add('nextPassageId');
+    } else if (p.type === 'linear') {
+        fields.add('title').add('image').add('body').add('nextPassageId');
     } else if (p.type === 'finish') {
         fields.add('nextPassageId');
     } else if (p.type === 'redirect') {

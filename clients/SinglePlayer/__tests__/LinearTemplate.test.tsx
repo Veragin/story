@@ -10,7 +10,9 @@ const WALK: TUnkownPassageLinear = {
     characterId: 'thomas',
     id: 'walk',
     type: 'linear',
-    description: 'You walk on.\nThe road is long.',
+    title: 'Long walk',
+    image: 'A long road',
+    body: 'You walk on.\nThe road is long.',
     nextPassageId: 'village-thomas-forest',
 };
 
@@ -33,7 +35,7 @@ afterEach(() => {
 });
 
 describe('LinearTemplate', () => {
-    it('renders the passage image, the description lines and one Continue link', () => {
+    it('renders the passage image, the title, the body lines and one Continue link', () => {
         setStoryImages({
             'chapters/village/thomas.passages/walk.png': 'walk.png',
         });
@@ -43,6 +45,7 @@ describe('LinearTemplate', () => {
         expect(container.querySelector('img')?.getAttribute('src')).toBe(
             'walk.png'
         );
+        expect(container.textContent).toContain('Long walk');
         expect(container.textContent).toContain('You walk on.');
         expect(container.textContent).toContain('The road is long.');
         expect(linksIn(container)).toEqual(['Continue']);

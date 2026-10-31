@@ -52,7 +52,9 @@ const linear = (id: string): Extract<TChapterPassage<'village'>, { type: 'linear
     characterId: 'thomas',
     id,
     type: 'linear',
-    description: `${id} description`,
+    title: `${id} title`,
+    image: '',
+    body: `${id} body`,
 });
 
 // keeps tests independent of how the chapters' time ranges interleave
@@ -408,7 +410,7 @@ describe('Engine turn loop', () => {
 
             e.story.goToPassage(linkTo('village-thomas-walk', DeltaTime.fromMin(1)));
             const walk = await waitForLinear(e, 'village-thomas-walk');
-            expect(walk.description).toBe('walk description');
+            expect(walk.body).toBe('walk body');
 
             const actions = e.processor.getPossibleActions(walk);
             expect(actions).toEqual([{ text: 'Continue', passageId: 'village-thomas-next' }]);

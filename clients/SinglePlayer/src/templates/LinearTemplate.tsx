@@ -1,3 +1,4 @@
+import { Header } from '@story/ui';
 import { TUnkownPassageLinear } from '@story/core';
 import { useEngine } from '../context';
 import { PassageLayout } from './Components/PassageLayout';
@@ -13,8 +14,9 @@ export const LinearTemplate = ({ passage }: Props) => {
     const e = useEngine();
 
     return (
-        <PassageLayout image={passageImage(passage)}>
-            <PassageTexts texts={passage.description.split('\n')} />
+        <PassageLayout image={passageImage(passage)} imageName={passage.image}>
+            <Header>{passage.title}</Header>
+            <PassageTexts texts={passage.body.split('\n')} />
             <PassageLinks links={e.processor.getLinks(passage)} />
         </PassageLayout>
     );

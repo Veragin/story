@@ -36,21 +36,27 @@ const REDIRECT_ITEM = S.object({
 
 const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
 
-const DESCRIBED_FIELDS: Record<string, TField> = {
-    execute: EXECUTE,
-    description: { schema: S.text },
-    nextPassageId: { schema: S.string },
-};
+const NEXT_PASSAGE: TField = { schema: S.string };
 
 export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
-    start: DESCRIBED_FIELDS,
+    start: {
+        execute: EXECUTE,
+        description: { schema: S.text },
+        nextPassageId: NEXT_PASSAGE,
+    },
     screen: {
         execute: EXECUTE,
         title: { schema: S.text },
         image: { schema: S.string },
         body: { schema: S.array(BODY_ITEM) },
     },
-    linear: DESCRIBED_FIELDS,
+    linear: {
+        execute: EXECUTE,
+        title: { schema: S.text },
+        image: { schema: S.string },
+        body: { schema: S.text },
+        nextPassageId: NEXT_PASSAGE,
+    },
     redirect: {
         execute: EXECUTE,
         body: { schema: S.array(REDIRECT_ITEM) },
@@ -85,6 +91,9 @@ export const passageIdOfFile = (sp: SourceProject, sf: SourceFile): string | und
     return `${owner.chapterId}-${owner.characterId}-${passageLocalId(passageSource(sf), sf)}`;
 };
 
+const nextPassageOf = (fields: Record<string, unknown>) =>
+    fields.nextPassageId !== undefined ? { nextPassageId: fields.nextPassageId as never } : {};
+
 export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto => {
     const owner = passageOwner(sp, sf);
     const src = passageSource(sf);
@@ -115,12 +124,20 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
                 body: (fields.body ?? []) as never,
             };
         case 'start':
-        case 'linear':
             return {
                 ...base,
                 type,
                 description: (fields.description ?? '') as never,
-                ...(fields.nextPassageId !== undefined ? { nextPassageId: fields.nextPassageId as never } : {}),
+                ...nextPassageOf(fields),
+            };
+        case 'linear':
+            return {
+                ...base,
+                type,
+                title: (fields.title ?? '') as never,
+                image: (fields.image ?? '') as never,
+                body: (fields.body ?? '') as never,
+                ...nextPassageOf(fields),
             };
         case 'redirect':
             return { ...base, type, body: (fields.body ?? []) as never };
