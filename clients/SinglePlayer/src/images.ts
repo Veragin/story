@@ -7,15 +7,18 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 let files: Record<string, string> = {};
 let images: Record<string, string> = {};
 
+const imageKey = (rel: string) => {
+    const slash = rel.lastIndexOf('/');
+    const base = rel.slice(slash + 1).split('.')[0];
+    return `${rel.slice(0, slash + 1)}${lowerFirst(base)}`;
+};
+
+const isWebp = (rel: string) => rel.endsWith('.webp');
+
 export const setStoryImages = (dataFiles: Record<string, string>) => {
     files = dataFiles;
-    images = Object.fromEntries(
-        Object.entries(dataFiles).map(([rel, url]) => {
-            const slash = rel.lastIndexOf('/');
-            const base = rel.slice(slash + 1).split('.')[0];
-            return [`${rel.slice(0, slash + 1)}${lowerFirst(base)}`, url];
-        })
-    );
+    const webpLast = Object.entries(dataFiles).sort(([a], [b]) => Number(isWebp(a)) - Number(isWebp(b)));
+    images = Object.fromEntries(webpLast.map(([rel, url]) => [imageKey(rel), url]));
 };
 
 export const storyImageFiles = (

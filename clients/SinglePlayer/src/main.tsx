@@ -87,7 +87,6 @@ const setFavicon = (href: string | undefined) => {
     if (!href) return;
     const link = document.createElement('link');
     link.rel = 'icon';
-    link.type = 'image/png';
     link.href = href;
     document.head.appendChild(link);
 };

@@ -4,6 +4,9 @@ import type { TStoryDto } from './story';
 /** Story-relative; also the URL of the image relative to a standalone export. */
 export const LANDING_IMAGE_FILE = 'data/assets/landing.png';
 
+/** A `.webp` alternative to `LANDING_IMAGE_FILE`, preferred by the player when both exist. */
+export const LANDING_WEBP_FILE = 'data/assets/landing.webp';
+
 /** The manifest's file name in a standalone export, next to its `index.html`. */
 export const PLAY_MANIFEST_FILE = 'play.json';
 
@@ -13,8 +16,8 @@ export const PLAY_MANIFEST_FILE = 'play.json';
  */
 export type TPlayManifestDto = Pick<TStoryDto, 'id' | 'name' | 'author' | 'description'> &
     TVersioned & {
-        /** `LANDING_IMAGE_FILE` exists. */
+        /** `LANDING_IMAGE_FILE` or `LANDING_WEBP_FILE` exists. */
         hasLandingImage: boolean;
-        /** Story-relative `/` paths, sorted: every `.ts` and `.png` below `data/` and `types/`. */
+        /** Story-relative `/` paths, sorted: every `.ts`, `.png` and `.webp` below `data/` and `types/`. */
         files: string[];
     };

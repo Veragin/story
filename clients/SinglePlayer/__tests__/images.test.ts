@@ -20,10 +20,31 @@ describe('story paths', () => {
 });
 
 describe('passageImage', () => {
-    it('keeps only the png files of the data folder', () => {
-        expect(storyImageFiles(['data/a.png', 'data/a.ts', 'types/b.png'], (file) => `url/${file}`)).toEqual({
+    it('keeps only the png and webp files of the data folder', () => {
+        expect(
+            storyImageFiles(['data/a.png', 'data/b.webp', 'data/a.ts', 'types/b.png'], (file) => `url/${file}`)
+        ).toEqual({
             'a.png': 'url/data/a.png',
+            'b.webp': 'url/data/b.webp',
         });
+    });
+
+    it('is the webp next to the passage file', () => {
+        setStoryImages({ 'chapters/village/thomas.passages/forest.webp': 'forest-url' });
+        expect(passageImage({ ...FOREST, image: 'A misty forest' })).toBe('forest-url');
+    });
+
+    it('prefers the webp over the png of the same name', () => {
+        setStoryImages({
+            'chapters/village/thomas.passages/forest.webp': 'webp-url',
+            'chapters/village/thomas.passages/forest.png': 'png-url',
+        });
+        expect(passageImage({ ...FOREST, image: 'A misty forest' })).toBe('webp-url');
+    });
+
+    it('follows an @ link to a webp', () => {
+        setStoryImages({ 'chapters/village/thomas.passages/intro.webp': 'intro-url' });
+        expect(passageImage({ ...FOREST, image: '@intro.webp' })).toBe('intro-url');
     });
 
     it('is the png next to the passage file', () => {
