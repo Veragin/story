@@ -27,6 +27,11 @@ import { DescriptionToggleButton } from '../buttons/DescriptionToggleButton';
 import { LoadingState } from '../feedback/LoadingState';
 import { HintText } from '../feedback/HintText';
 import { ImageDescriptionInput } from './ImageDescriptionInput';
+import {
+    ACCEPTED_IMAGE_TYPES,
+    isUploadableImage,
+    toStoredImage,
+} from './imageUpload';
 import { LinkedImage } from './LinkedImage';
 import { SImagePreview } from './imagePreview';
 import { useImageFiles } from './useImageFiles';
@@ -130,8 +135,8 @@ export const ImageEditor = ({
 
     const upload = async (file: File) => {
         setError(null);
-        if (file.type !== 'image/png') {
-            setError(_('Only PNG images can be uploaded.'));
+        if (!isUploadableImage(file)) {
+            setError(_('Only PNG, WebP and JPEG images can be uploaded.'));
             return;
         }
         if (file.size > MAX_IMAGE_BYTES) {
@@ -147,7 +152,7 @@ export const ImageEditor = ({
             async () =>
                 api.uploadImage(owner, id, {
                     version: image?.version ?? '',
-                    data: await readBase64(file),
+                    data: await readBase64(await toStoredImage(file)),
                 }),
             _('The image changed on disk. Upload again to replace it.')
         );
@@ -237,7 +242,7 @@ export const ImageEditor = ({
                     )}
                     <SOverlay data-overlay>
                         <TooltipIconButton
-                            title={_('Replace image (PNG only)')}
+                            title={_('Replace image (PNG, WebP or JPEG)')}
                             icon={UploadIcon}
                             busy={busy}
                             disabled={disabled}
@@ -280,7 +285,9 @@ export const ImageEditor = ({
                         {_('Upload image')}
                     </Button>
                     <HintText>
-                        {image ? _('PNG only (%s)', image.file) : _('PNG only')}
+                        {image
+                            ? _('PNG, WebP or JPEG (%s)', image.file)
+                            : _('PNG, WebP or JPEG')}
                     </HintText>
                 </SRow>
             )}
@@ -288,7 +295,7 @@ export const ImageEditor = ({
             <input
                 ref={input}
                 type="file"
-                accept="image/png"
+                accept={ACCEPTED_IMAGE_TYPES}
                 hidden
                 onChange={(e) => {
                     const file = e.target.files?.[0];

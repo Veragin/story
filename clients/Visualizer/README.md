@@ -71,7 +71,7 @@ Tests: `yarn test` at the root runs the `visualizer-client` and `visualizer-land
     - create passage: `<ch>/<character>.passages/<local>.ts` (`export const <local>Passage`), plus the `T<Ch><Char>PassageId` union and the `Record` in `<ch>.passages.ts`
     - add character to chapter: the `<character>.passages/` folder with a start passage (default `intro`) and its id union; remove character is the reverse, including its positions in `<ch>.layout.json`
     - create entity: the entity file, `register.ts` and `TWorldState.ts`
-    - delete a passage or an entity: its image (the sibling `.png`) goes too
+    - delete a passage or an entity: its image (the sibling `.webp` and `.png`) goes too
     - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors. Deleting an entity or a catalog entry clears the values that point at it instead (optional key removed, array element removed, required field set to the first remaining id) and is refused only by code references or a required field with no id left; `GET …/references` previews it
     - create type: `types/<Name>.ts` and its line in `types/index.ts`; a catalog type also `data/catalogs/<plural>.ts` and `T<Name>Id`. Editing a type rewrites its instances in the same commit (renames, removed keys, defaults for new required fields)
 - **JSON stores** (`json/`): `data/locations/map.json` and the layouts `data/chapters/timeline.layout.json` and `data/chapters/<ch>/<ch>.layout.json`. They are validated whole-document replaces (400 on a bad shape). A missing file reads as the default with `version: ''` (for the map: an empty map of the story's `mapSize`), and a `PUT` with `version: ''` creates it.
@@ -105,11 +105,11 @@ Painting a tile is a one-line diff. Colour ids may not contain whitespace or `*`
 
 ## Images
 
-The image of a passage, character or npc is the `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`). The `image` field of a screen passage (and the optional one of a character or npc) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
+The image of a passage, character or npc is the `.webp` or `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.webp` or `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`); `.webp` wins when both exist. The `image` field of a screen passage (and the optional one of a character or npc) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
 
-- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs`) answers `TImageDto`: the `.png` path, its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
+- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs`) answers `TImageDto`: the image's path (the `.png` one when there is none), its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
-- `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
+- `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG or WebP, at most 10 MB) creates or replaces it, removing the sibling in the other format; `version: ''` means "there is none yet", a mismatch is `409 stale`. The signature is checked and nothing is converted on the server; the editor converts a JPEG to WebP before uploading.
 
 In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
 

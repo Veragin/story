@@ -38,6 +38,9 @@ import { createMockEngineApi } from './mockEngineApi';
 import { createMockStructureApi } from './mockStructureApi';
 import type { TVisualizerApi } from './types';
 
+// base64 of `RIFF`, how a webp starts
+const WEBP_BASE64_PREFIX = 'UklGR';
+
 export type TMockApiOptions = {
     seed?: TMockSeed;
     events?: ApiEvents;
@@ -749,7 +752,13 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 const current = imageOf(owner, id);
                 checkVersion(current, version);
                 // no change event, like the server: an image is not a resource of `dto/events.ts`
-                const next: TImageDto = { ...current, version: nextVersion(), url: `data:image/png;base64,${data}` };
+                const type = data.startsWith(WEBP_BASE64_PREFIX) ? 'webp' : 'png';
+                const next: TImageDto = {
+                    ...current,
+                    file: current.file.replace(/\.[^./]+$/, `.${type}`),
+                    version: nextVersion(),
+                    url: `data:image/${type};base64,${data}`,
+                };
                 images.set(`${owner}/${id}`, next);
                 return next;
             }),

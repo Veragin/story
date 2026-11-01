@@ -10,7 +10,7 @@ import type {
 import { version as hash } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
 import { removePassagePositions } from '../../json/storeCleanup';
-import { siblingPng } from '../images';
+import { deleteFiles, siblingImages } from '../images';
 import { capitalize, isPassageType, PASSAGE_TYPES } from '@story/shared';
 import { quote, translated } from '../ast';
 import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
@@ -157,7 +157,7 @@ export const deletePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
             passagesRemovePassage(s, current.chapterId, current.characterId, passageId, abs);
         });
         s.after((tx) => removePassagePositions(tx, current.chapterId, [passageId]));
-        s.after((tx) => tx.deleteFile(siblingPng(abs)));
+        s.after((tx) => deleteFiles(tx, siblingImages(abs)));
         await s.commit(
             bus,
             () => ({ kind: 'passage', id: passageId, chapterId: current.chapterId, version: null, op: 'deleted' }),

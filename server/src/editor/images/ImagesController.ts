@@ -25,8 +25,7 @@ export class ImagesController {
         @Req() req: Request,
         @Res() res: Response
     ): Promise<void> {
-        const { bytes, version } = await readImageFile(sp, owner, id);
-        sendVersionedFile(req, res, { bytes, version, contentType: 'image/png' });
+        sendVersionedFile(req, res, await readImageFile(sp, owner, id));
     }
 
     @ProtocolRoute('uploadImage')

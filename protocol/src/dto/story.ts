@@ -45,7 +45,7 @@ export type TPublicStoryInfoDto = { access: 'public' } & Pick<TStoryDto, 'id' | 
 /** What `getStoryInfo` answers with a grant. */
 export type TEditStoryInfoDto = { access: 'edit' } & TStoryDto &
     TVersioned & {
-        /** `LANDING_IMAGE_FILE` exists; derived from the file, not stored. Upload it as the `story` owner's image. */
+        /** `LANDING_IMAGE_FILE` or `LANDING_WEBP_FILE` exists; derived from the file, not stored. Upload it as the `story` owner's image. */
         hasLandingImage: boolean;
         /** `''` when none. */
         email: string;

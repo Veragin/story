@@ -20,7 +20,7 @@ type TPassageBaseDto = TVersioned &
 export type TScreenPassageDto = TPassageBaseDto & {
     type: 'screen';
     title: TMaybeCode<string>;
-    /** A text description of the art (`''` for none); the picture is the sibling `.png`, or `@<path>` links another image, relative to `file`. */
+    /** A text description of the art (`''` for none); the picture is the sibling `.webp` or `.png`, or `@<path>` links another image, relative to `file`. */
     image: TMaybeCode<string>;
     body: TMaybeCode<TBodyItemDto[]>;
 };
@@ -33,7 +33,7 @@ export type TLinearPassageDto = TPassageBaseDto &
     TNextPassageDto & {
         type: 'linear';
         title: TMaybeCode<string>;
-        /** A text description of the art (`''` for none); the picture is the sibling `.png`, or `@<path>` links another image, relative to `file`. */
+        /** A text description of the art (`''` for none); the picture is the sibling `.webp` or `.png`, or `@<path>` links another image, relative to `file`. */
         image: TMaybeCode<string>;
         body: TMaybeCode<string>;
     };
