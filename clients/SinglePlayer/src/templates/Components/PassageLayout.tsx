@@ -1,29 +1,34 @@
 import type { ReactNode } from 'react';
 import { styled } from '@mui/material';
+import { imageDescription } from '@story/shared';
 import { Row, spacingCss, WholeContainer } from '@story/ui';
+import { passageImage } from '../../images';
 import { StatusBar } from './StatusBar';
 
 type Props = {
-    image: string | undefined;
-    imageName?: string;
+    passage: Parameters<typeof passageImage>[0];
     children: ReactNode;
 };
 
-export const PassageLayout = ({ image, imageName, children }: Props) => (
-    <WholeContainer>
-        <StatusBar />
-        <SContainer>
-            {image && (
-                <SImg
-                    src={image}
-                    alt={imageName ?? ''}
-                    title={imageName || undefined}
-                />
-            )}
-            <SContent>{children}</SContent>
-        </SContainer>
-    </WholeContainer>
-);
+export const PassageLayout = ({ passage, children }: Props) => {
+    const image = passageImage(passage);
+    const description = imageDescription(passage.image);
+    return (
+        <WholeContainer>
+            <StatusBar />
+            <SContainer>
+                {image && (
+                    <SImg
+                        src={image}
+                        alt={description}
+                        title={description || undefined}
+                    />
+                )}
+                <SContent>{children}</SContent>
+            </SContainer>
+        </WholeContainer>
+    );
+};
 
 const SContainer = styled(Row)`
     width: 100%;

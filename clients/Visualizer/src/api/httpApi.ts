@@ -14,6 +14,7 @@ import {
     type TRouteResponse,
     type TStoryRouteName,
 } from '@story/protocol';
+import { isStoryImageFile } from '@story/shared';
 import { ApiError } from './ApiError';
 import { errorMessage } from './errorMessage';
 import { STORY_ID } from './story';
@@ -97,11 +98,7 @@ export const createRequest = ({
                     body: body === undefined ? undefined : JSON.stringify(body),
                 });
             } catch (e) {
-                throw new ApiError(
-                    0,
-                    { error: 'internal', message: `Network error: ${errorMessage(e)}` },
-                    route
-                );
+                throw new ApiError(0, { error: 'internal', message: `Network error: ${errorMessage(e)}` }, route);
             }
         };
         const hold = () => (method !== 'GET' && onMutation ? onMutation() : () => {});
@@ -199,6 +196,11 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         getImage: (owner, id) => request('getImage', { owner, id }),
         uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),
         deleteImage: (owner, id, body) => request('deleteImage', { owner, id }, body),
+        listImageFiles: async () =>
+            (await request('getPlayManifest', {})).files.filter(isStoryImageFile).map((file) => ({
+                file,
+                url: (options.baseUrl ?? '') + buildPath(options.storyId ?? STORY_ID, 'getPlayFile', { file }),
+            })),
 
         getMap: (mapId) => request('getMap', { mapId }),
         updateMap: (mapId, body) => request('updateMap', { mapId }, body),

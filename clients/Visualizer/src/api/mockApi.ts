@@ -760,6 +760,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 images.delete(`${owner}/${id}`);
                 return imageOf(owner, id);
             }),
+        listImageFiles: () =>
+            reply(() => [...images.values()].flatMap(({ file, url }) => (url === null ? [] : [{ file, url }]))),
 
         getMap: (mapId) => reply(() => get(maps, mapId, `map "${mapId}"`)),
         updateMap: (mapId, { version, ...file }) =>

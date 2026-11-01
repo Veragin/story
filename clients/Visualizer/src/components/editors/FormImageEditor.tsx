@@ -9,7 +9,7 @@ import { ImageEditor } from './ImageEditor';
 type TProps = TFormInputProps<TMaybeCode<string>, string> &
     Pick<
         ComponentProps<typeof ImageEditor>,
-        'owner' | 'id' | 'api' | 'onImageChange'
+        'owner' | 'id' | 'api' | 'onImageChange' | 'linkFrom'
     >;
 
 export const FormImageEditor = ({ actions, ...props }: TProps) => {

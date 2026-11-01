@@ -115,6 +115,8 @@ In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows
 
 The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
 
+A passage can link another image instead of its own: `image: '@<path>'`, the path relative to the passage file (`'@intro.png'`, `'@../../kingdom/annie.passages/palace.png'`). The player resolves it in `passageImage` and shows nothing for a path with no `.png` under `data/`. In the passage editor, typing `@` in the description hints the story's images (from the play manifest) and the linked one is previewed instead of the upload button.
+
 ## Live refresh
 
 The page never reloads because the story changed. `data/` is not in Vite's module graph, so editing a story file cannot trigger HMR in the Visualizer. Instead:

@@ -13,7 +13,7 @@ export { ApiEvents } from './events';
 export { createMockApi, displayText, extractEdges, type TMockApi } from './mockApi';
 export { createMockSeed } from './mockData';
 export { goToLanding, landingUrl, playerUrl, STORY_ID } from './story';
-export type { TVisualizerApi } from './types';
+export type { TStoryImageFile, TVisualizerApi } from './types';
 
 const useMock = import.meta.env.VITE_VISUALIZER_API === 'mock';
 

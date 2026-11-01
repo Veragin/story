@@ -32,6 +32,7 @@ export const IllustrationFields = observer(
                 api={api}
                 owner="passages"
                 id={draft.passageId}
+                linkFrom={draft.file}
                 value={draft.image}
                 onChange={(v) =>
                     edit((d) => isIllustrated(d) && (d.image = v ?? ''))

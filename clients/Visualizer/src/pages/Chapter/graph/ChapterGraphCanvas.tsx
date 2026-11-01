@@ -51,10 +51,7 @@ const EDGE_COLOR: Record<TGraphEdge['kinds'][number], string> = {
     next: '#80cbc4',
 };
 
-const nodeLabel = (n: TGraphNode) => {
-    const lines = n.type === 'screen' ? [n.title] : [n.title, n.type];
-    return `${lines.join('\n')}${n.selfLoop ? '  ↻' : ''}`;
-};
+const nodeLabel = (n: TGraphNode) => `${n.title}${n.selfLoop ? '  ↻' : ''}`;
 
 type TTooltip = { text: string; x: number; y: number } | null;
 

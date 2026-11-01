@@ -1,13 +1,16 @@
+import { imageLinkPath, isStoryImageFile, resolvePath, STORY_DATA_DIR } from '@story/shared';
 import type { TCharacterId, TNpcId } from '@story/types';
 
 // keyed like ids: npc files are named after their PascalCase export
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
+let files: Record<string, string> = {};
 let images: Record<string, string> = {};
 
-export const setStoryImages = (files: Record<string, string>) => {
+export const setStoryImages = (dataFiles: Record<string, string>) => {
+    files = dataFiles;
     images = Object.fromEntries(
-        Object.entries(files).map(([rel, url]) => {
+        Object.entries(dataFiles).map(([rel, url]) => {
             const slash = rel.lastIndexOf('/');
             const base = rel.slice(slash + 1).split('.')[0];
             return [`${rel.slice(0, slash + 1)}${lowerFirst(base)}`, url];
@@ -15,19 +18,25 @@ export const setStoryImages = (files: Record<string, string>) => {
     );
 };
 
-const DATA_DIR = 'data/';
-
-export const storyImageFiles = (files: readonly string[], fileUrl: (path: string) => string): Record<string, string> =>
+export const storyImageFiles = (
+    storyFiles: readonly string[],
+    fileUrl: (path: string) => string
+): Record<string, string> =>
     Object.fromEntries(
-        files
-            .filter((file) => file.startsWith(DATA_DIR) && file.endsWith('.png'))
-            .map((file) => [file.slice(DATA_DIR.length), fileUrl(file)])
+        storyFiles.filter(isStoryImageFile).map((file) => [file.slice(STORY_DATA_DIR.length), fileUrl(file)])
     );
 
 export const storyIcon = (): string | undefined => images['assets/story'];
 
-export const passageImage = (passage: { chapterId: string; characterId: string; id: string }): string | undefined =>
-    images[`chapters/${passage.chapterId}/${passage.characterId}.passages/${lowerFirst(passage.id)}`];
+type TIllustrated = { chapterId: string; characterId: string; id: string; image: string };
+
+export const passageImage = (passage: TIllustrated): string | undefined => {
+    const dir = `chapters/${passage.chapterId}/${passage.characterId}.passages`;
+    const link = imageLinkPath(passage.image);
+    if (link === undefined) return images[`${dir}/${lowerFirst(passage.id)}`];
+    const target = resolvePath(dir, link);
+    return target === undefined ? undefined : files[target];
+};
 
 export const characterImage = (id: TCharacterId): string | undefined => images[`characters/${lowerFirst(id)}`];
 

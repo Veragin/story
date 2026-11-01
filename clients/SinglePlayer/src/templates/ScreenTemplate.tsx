@@ -3,7 +3,6 @@ import { TUnkownPassageScreen } from '@story/core';
 import { PassageLayout } from './Components/PassageLayout';
 import { PassageLinks } from './Components/PassageLinks';
 import { PassageTexts } from './Components/PassageTexts';
-import { passageImage } from '../images';
 
 type Props = {
     passage: TUnkownPassageScreen;
@@ -15,7 +14,7 @@ export const ScreenTemplate = ({ passage }: Props) => {
     const links = body.flatMap((b) => b.links ?? []);
 
     return (
-        <PassageLayout image={passageImage(passage)} imageName={passage.image}>
+        <PassageLayout passage={passage}>
             <Header>{passage.title}</Header>
             <PassageTexts texts={texts} />
             <PassageLinks links={links} />

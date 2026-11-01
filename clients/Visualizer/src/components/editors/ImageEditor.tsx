@@ -7,6 +7,7 @@ import {
     type TImageOwner,
     type TMaybeCode,
 } from '@story/protocol';
+import { dirName, imageLinkPath, resolvePath } from '@story/shared';
 import { spacingCss } from '@story/ui';
 import {
     api as defaultApi,
@@ -17,20 +18,31 @@ import {
 } from '../../api';
 import { modals } from '../../shell/modals';
 import type { TInputProps } from '../inputs/inputTypes';
+import { CodeFallback } from '../code/CodeFallback';
 import { MaybeCodeTextInput } from '../code/MaybeCodeTextInput';
+import { codeToText } from '../../values/codeLiterals';
 import { TooltipIconButton } from '../buttons/TooltipIconButton';
 import { DeleteButton } from '../buttons/DeleteButton';
 import { DescriptionToggleButton } from '../buttons/DescriptionToggleButton';
 import { LoadingState } from '../feedback/LoadingState';
 import { HintText } from '../feedback/HintText';
+import { ImageDescriptionInput } from './ImageDescriptionInput';
+import { LinkedImage } from './LinkedImage';
+import { SImagePreview } from './imagePreview';
+import { useImageFiles } from './useImageFiles';
 
-type TProps = Omit<TInputProps<TMaybeCode<string>, string>, 'value' | 'onChange'> & {
+type TProps = Omit<
+    TInputProps<TMaybeCode<string>, string>,
+    'value' | 'onChange'
+> & {
     owner: TImageOwner;
     id: string;
     // without onChange there is no description, only the image
     value?: TMaybeCode<string>;
     onChange?: (description: string) => void;
     onImageChange?: (image: TImageDto) => void;
+    // the owner's source file; with it the description may link another image with `@<path relative to it>`
+    linkFrom?: string;
     api?: TVisualizerApi;
 };
 
@@ -54,6 +66,7 @@ export const ImageEditor = ({
     disabled,
     ariaLabel,
     dataField,
+    linkFrom,
     api = defaultApi,
 }: TProps) => {
     const [image, setImage] = useState<TImageDto | null>(null);
@@ -61,6 +74,9 @@ export const ImageEditor = ({
     const [error, setError] = useState<string | null>(null);
     const [showDescription, setShowDescription] = useState(false);
     const input = useRef<HTMLInputElement>(null);
+    const linkDir =
+        onChange && linkFrom !== undefined ? dirName(linkFrom) : undefined;
+    const imageFiles = useImageFiles(api, linkDir !== undefined);
     // a late response for a previous owner is dropped
     const current = useRef({ owner, id });
     current.current = { owner, id };
@@ -159,34 +175,64 @@ export const ImageEditor = ({
     const text = typeof value === 'string' ? value : '';
     const loading = !image && !error;
 
-    const descriptionEditor = onChange && (
-        <MaybeCodeTextInput
-            value={value ?? ''}
-            onChange={onChange}
-            multiline
-            hasError={hasError}
-            disabled={disabled}
-            placeholder={_('What the picture shows')}
-            ariaLabel={_('%s description', ariaLabel)}
-            dataField="image-description"
-        />
-    );
+    const descriptionProps = onChange && {
+        value: value ?? '',
+        onChange,
+        hasError,
+        disabled,
+        placeholder:
+            linkDir === undefined
+                ? _('What the picture shows')
+                : _('What the picture shows, or @ to link another image'),
+        ariaLabel: _('%s description', ariaLabel),
+        dataField: 'image-description',
+    };
+
+    const descriptionEditor =
+        descriptionProps &&
+        (linkDir === undefined ? (
+            <MaybeCodeTextInput {...descriptionProps} multiline />
+        ) : (
+            <CodeFallback
+                {...descriptionProps}
+                parse={codeToText}
+                convertLabel={_('Convert to text')}
+            >
+                {(description) => (
+                    <ImageDescriptionInput
+                        {...descriptionProps}
+                        value={description}
+                        files={imageFiles.files ?? []}
+                        fromDir={linkDir}
+                    />
+                )}
+            </CodeFallback>
+        ));
+
+    const link = linkDir === undefined ? undefined : imageLinkPath(text);
+    const ownImage = link === undefined ? image?.url : undefined;
+    const showsDescription =
+        link !== undefined || (!loading && (!ownImage || showDescription));
 
     const uploadIcon = busy ? <CircularProgress size={14} /> : <UploadIcon />;
 
-    return (
-        <SField data-field={dataField}>
-            {loading ? (
-                <LoadingState />
-            ) : image?.url ? (
+    const preview =
+        linkDir !== undefined && link !== undefined ? (
+            <LinkedImage
+                files={imageFiles.files}
+                target={resolvePath(linkDir, link)}
+                link={link}
+            />
+        ) : loading ? (
+            <LoadingState />
+        ) : (
+            ownImage && (
                 <SFrame data-view={showDescription ? 'description' : 'image'}>
-                    {showDescription && descriptionEditor ? (
-                        descriptionEditor
-                    ) : (
-                        <SImg
-                            src={image.url}
+                    {!(showDescription && descriptionEditor) && (
+                        <SImagePreview
+                            src={ownImage}
                             alt={text || _('Image of %s', id)}
-                            title={image.file}
+                            title={image?.file}
                         />
                     )}
                     <SOverlay data-overlay>
@@ -213,27 +259,30 @@ export const ImageEditor = ({
                         )}
                     </SOverlay>
                 </SFrame>
-            ) : (
-                <>
-                    {descriptionEditor}
-                    <SRow>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={uploadIcon}
-                            disabled={disabled || busy || !image}
-                            data-action="upload-image"
-                            onClick={pick}
-                        >
-                            {_('Upload image')}
-                        </Button>
-                        <HintText>
-                            {image
-                                ? _('PNG only (%s)', image.file)
-                                : _('PNG only')}
-                        </HintText>
-                    </SRow>
-                </>
+            )
+        );
+
+    // the description keeps its place in every mode, so typing `@` does not remount it and drop the focus
+    return (
+        <SField data-field={dataField}>
+            {preview}
+            {showsDescription && descriptionEditor}
+            {link === undefined && !loading && !ownImage && (
+                <SRow>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={uploadIcon}
+                        disabled={disabled || busy || !image}
+                        data-action="upload-image"
+                        onClick={pick}
+                    >
+                        {_('Upload image')}
+                    </Button>
+                    <HintText>
+                        {image ? _('PNG only (%s)', image.file) : _('PNG only')}
+                    </HintText>
+                </SRow>
             )}
 
             <input
@@ -250,6 +299,11 @@ export const ImageEditor = ({
             {error && (
                 <Typography variant="caption" color="error">
                     {error}
+                </Typography>
+            )}
+            {imageFiles.error && (
+                <Typography variant="caption" color="error">
+                    {imageFiles.error}
                 </Typography>
             )}
         </SField>
@@ -304,12 +358,4 @@ const SFrame = styled('div')`
             opacity: 1;
         }
     }
-`;
-
-const SImg = styled('img')`
-    display: block;
-    max-width: 100%;
-    max-height: 240px;
-    object-fit: contain;
-    border-radius: 4px;
 `;

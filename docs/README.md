@@ -115,7 +115,7 @@ The app image also builds the standalone player (`build:standalone`, `index.html
 - passage
     - means one screen that is displayed to player
     - contains image, text and options for player to decide how to continue
-    - the image is the `.png` next to the passage file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.png`); the passage's `image` field is only a text description of it. Characters and npcs get a portrait the same way (`data/characters/thomas.png`, `data/npcs/Franta.png`)
+    - the image is the `.png` next to the passage file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.png`); the passage's `image` field is only a text description of it. Passages can share one image: `image: '@<path>'` links another `.png` of `data/`, relative to the passage file (`'@intro.png'`, `'@../../kingdom/annie.passages/palace.png'`), and replaces the passage's own `.png`. Characters and npcs get a portrait the same way (`data/characters/thomas.png`, `data/npcs/Franta.png`)
     - passage is written as a file with given structure (see `data/chapters/village/village.chapter.ts`)
     - filename is in format `<chapter>.<passage>.ts`
     - **a passage file exports a function, not an object**: it receives `(s, e)` — the world state and the engine — and returns the passage:

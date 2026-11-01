@@ -67,6 +67,12 @@ import type {
     TVersionedBody,
 } from '@story/protocol';
 
+export type TStoryImageFile = {
+    /** Relative to the story folder, `/`-separated. */
+    file: string;
+    url: string;
+};
+
 export type TVisualizerApi = {
     health(): Promise<THealthDto>;
     login(password: string): Promise<void>;
@@ -126,6 +132,7 @@ export type TVisualizerApi = {
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
     uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;
     deleteImage(owner: TImageOwner, id: string, body: TVersionedBody): Promise<TImageDto>;
+    listImageFiles(): Promise<TStoryImageFile[]>;
 
     getMap(mapId: string): Promise<TMapDto>;
     updateMap(mapId: string, body: TUpdateMapBody): Promise<TMapDto>;
