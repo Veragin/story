@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, CircularProgress, styled, Typography } from '@mui/material';
+import { styled, Typography } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import {
     MAX_IMAGE_BYTES,
@@ -23,18 +24,16 @@ import { MaybeCodeTextInput } from '../code/MaybeCodeTextInput';
 import { codeToText } from '../../values/codeLiterals';
 import { TooltipIconButton } from '../buttons/TooltipIconButton';
 import { DeleteButton } from '../buttons/DeleteButton';
-import { DescriptionToggleButton } from '../buttons/DescriptionToggleButton';
 import { LoadingState } from '../feedback/LoadingState';
-import { HintText } from '../feedback/HintText';
 import { ImageDescriptionInput } from './ImageDescriptionInput';
 import {
     ACCEPTED_IMAGE_TYPES,
     isUploadableImage,
     toStoredImage,
 } from './imageUpload';
-import { LinkedImage } from './LinkedImage';
 import { SImagePreview } from './imagePreview';
 import { useImageFiles } from './useImageFiles';
+import { downloadFile } from '../../download';
 
 type TProps = Omit<
     TInputProps<TMaybeCode<string>, string>,
@@ -77,7 +76,6 @@ export const ImageEditor = ({
     const [image, setImage] = useState<TImageDto | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showDescription, setShowDescription] = useState(false);
     const input = useRef<HTMLInputElement>(null);
     const linkDir =
         onChange && linkFrom !== undefined ? dirName(linkFrom) : undefined;
@@ -91,7 +89,6 @@ export const ImageEditor = ({
         setImage(null);
         setError(null);
         setBusy(false);
-        setShowDescription(false);
         const load = async () => {
             try {
                 const dto = await api.getImage(owner, id);
@@ -117,7 +114,6 @@ export const ImageEditor = ({
             const saved = await send();
             if (alive()) {
                 setImage(saved);
-                setShowDescription(false);
                 onImageChange?.(saved);
             }
         } catch (e) {
@@ -178,7 +174,6 @@ export const ImageEditor = ({
 
     const pick = () => input.current?.click();
     const text = typeof value === 'string' ? value : '';
-    const loading = !image && !error;
 
     const descriptionProps = onChange && {
         value: value ?? '',
@@ -215,83 +210,90 @@ export const ImageEditor = ({
         ));
 
     const link = linkDir === undefined ? undefined : imageLinkPath(text);
-    const ownImage = link === undefined ? image?.url : undefined;
-    const showsDescription =
-        link !== undefined || (!loading && (!ownImage || showDescription));
+    const linkTarget =
+        linkDir === undefined || !link ? undefined : resolvePath(linkDir, link);
+    const linked = link
+        ? imageFiles.files?.find(({ file }) => file === linkTarget)
+        : undefined;
+    const ownImage = image?.url
+        ? { file: image.file, url: image.url }
+        : undefined;
+    const shown = link === undefined ? ownImage : linked;
+    const loadingOwn = link === undefined && !image && !error;
+    const loading = loadingOwn || (!!link && imageFiles.files === null);
+    const linkMissing = !!link && imageFiles.files !== null && !linked;
 
-    const uploadIcon = busy ? <CircularProgress size={14} /> : <UploadIcon />;
+    const uploadButton = (
+        <TooltipIconButton
+            title={_('Upload image')}
+            icon={UploadIcon}
+            busy={busy}
+            disabled={disabled || !image}
+            data-action="upload-image"
+            onClick={pick}
+        />
+    );
 
-    const preview =
-        linkDir !== undefined && link !== undefined ? (
-            <LinkedImage
-                files={imageFiles.files}
-                target={resolvePath(linkDir, link)}
-                link={link}
-            />
-        ) : loading ? (
-            <LoadingState />
-        ) : (
-            ownImage && (
-                <SFrame data-view={showDescription ? 'description' : 'image'}>
-                    {!(showDescription && descriptionEditor) && (
-                        <SImagePreview
-                            src={ownImage}
-                            alt={text || _('Image of %s', id)}
-                            title={image?.file}
-                        />
-                    )}
-                    <SOverlay data-overlay>
-                        <TooltipIconButton
-                            title={_('Replace image (PNG, WebP or JPEG)')}
-                            icon={UploadIcon}
-                            busy={busy}
-                            disabled={disabled}
-                            data-action="replace-image"
-                            onClick={pick}
-                        />
-                        <DeleteButton
-                            iconOnly
-                            label={_('Remove image')}
-                            disabled={disabled || busy}
-                            data-action="remove-image"
-                            onClick={() => void remove()}
-                        />
-                        {descriptionEditor && (
-                            <DescriptionToggleButton
-                                shown={showDescription}
-                                onToggle={() => setShowDescription((v) => !v)}
-                            />
-                        )}
-                    </SOverlay>
-                </SFrame>
-            )
-        );
-
-    // the description keeps its place in every mode, so typing `@` does not remount it and drop the focus
+    // the description keeps its place in every layout, so typing `@` does not remount it and drop the focus
     return (
         <SField data-field={dataField}>
-            {preview}
-            {showsDescription && descriptionEditor}
-            {link === undefined && !loading && !ownImage && (
-                <SRow>
-                    <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={uploadIcon}
-                        disabled={disabled || busy || !image}
-                        data-action="upload-image"
-                        onClick={pick}
-                    >
-                        {_('Upload image')}
-                    </Button>
-                    <HintText>
-                        {image
-                            ? _('PNG, WebP or JPEG (%s)', image.file)
-                            : _('PNG, WebP or JPEG')}
-                    </HintText>
-                </SRow>
+            <SBody>
+                {loading ? (
+                    <LoadingState />
+                ) : (
+                    shown && (
+                        <SPreview
+                            src={shown.url}
+                            alt={
+                                link === undefined
+                                    ? text || _('Image of %s', id)
+                                    : ''
+                            }
+                            title={shown.file}
+                            data-linked-image={
+                                link === undefined ? undefined : shown.file
+                            }
+                        />
+                    )
+                )}
+                <SMain data-layout={shown ? 'beside-image' : 'inline'}>
+                    {!loadingOwn && descriptionEditor}
+                    {!loading &&
+                        (shown ? (
+                            <SActions>
+                                <TooltipIconButton
+                                    title={_('Download image')}
+                                    icon={DownloadIcon}
+                                    data-action="download-image"
+                                    onClick={() =>
+                                        downloadFile(shown.url, shown.file)
+                                    }
+                                />
+                                {uploadButton}
+                                {link === undefined && (
+                                    <DeleteButton
+                                        iconOnly
+                                        label={_('Delete image')}
+                                        disabled={disabled || busy}
+                                        data-action="remove-image"
+                                        onClick={() => void remove()}
+                                    />
+                                )}
+                            </SActions>
+                        ) : (
+                            uploadButton
+                        ))}
+                </SMain>
+            </SBody>
+            {linkMissing && (
+                <Typography
+                    variant="caption"
+                    color="error"
+                    data-linked-image="missing"
+                >
+                    {_('No story image at %s', link)}
+                </Typography>
             )}
-
             <input
                 ref={input}
                 type="file"
@@ -324,45 +326,32 @@ const SField = styled('div')`
     width: 100%;
 `;
 
-const SRow = styled('div')`
+const SBody = styled('div')`
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: ${spacingCss(1)};
 `;
 
-const SOverlay = styled('div')`
-    position: absolute;
-    top: ${spacingCss(0.5)};
-    right: ${spacingCss(0.5)};
+const SPreview = styled(SImagePreview)`
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 50%;
+`;
+
+const SMain = styled('div')`
+    flex: 1 1 200px;
+    min-width: 0;
     display: flex;
+    flex-direction: column;
     gap: ${spacingCss(0.5)};
-    opacity: 0;
-    transition: opacity 120ms;
-    & .MuiIconButton-root {
-        background: rgba(0, 0, 0, 0.6);
-        color: #fff;
-        &:hover {
-            background: rgba(0, 0, 0, 0.8);
-        }
+    &[data-layout='inline'] {
+        flex-direction: row;
+        align-items: center;
     }
 `;
 
-const SFrame = styled('div')`
-    position: relative;
-    align-self: flex-start;
-    max-width: 100%;
-    &[data-view='description'] {
-        align-self: stretch;
-        padding-top: 36px;
-    }
-    &:hover > [data-overlay],
-    &:focus-within > [data-overlay],
-    &[data-view='description'] > [data-overlay] {
-        opacity: 1;
-    }
-    @media (hover: none) {
-        & > [data-overlay] {
-            opacity: 1;
-        }
-    }
+const SActions = styled('div')`
+    display: flex;
+    gap: ${spacingCss(0.5)};
 `;

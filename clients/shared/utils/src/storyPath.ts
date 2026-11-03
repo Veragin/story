@@ -2,6 +2,8 @@ const segmentsOf = (path: string) => path.split('/').filter((segment) => segment
 
 export const dirName = (file: string) => file.slice(0, Math.max(file.lastIndexOf('/'), 0));
 
+export const baseName = (file: string) => file.slice(file.lastIndexOf('/') + 1);
+
 export const resolvePath = (fromDir: string, relative: string): string | undefined => {
     const resolved = segmentsOf(fromDir);
     for (const segment of segmentsOf(relative)) {

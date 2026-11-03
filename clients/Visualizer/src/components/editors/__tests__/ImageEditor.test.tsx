@@ -54,32 +54,17 @@ describe('ImageEditor', () => {
     const TEXTAREA = '[data-field="image-description"]';
     const textarea = () => $<HTMLTextAreaElement>(TEXTAREA);
 
-    it('shows only the image when there is one, with the overlay buttons', async () => {
+    it('shows the image beside the description, with download, upload and delete', async () => {
         await render(image('data:image/png;base64,AAAA'), 'Annie at the well');
         const img = get<HTMLImageElement>('img');
         expect(img.getAttribute('src')).toBe('data:image/png;base64,AAAA');
         expect(img.getAttribute('alt')).toBe('Annie at the well');
-        expect(textarea()).toBeNull();
-        expect($('[data-action="replace-image"]')).not.toBeNull();
-        expect($('[data-action="toggle-description"]')).not.toBeNull();
-        expect($('[data-action="upload-image"]')).toBeNull();
-    });
-
-    it('toggles the frame between the image and the description', async () => {
-        await render(image('data:image/png;base64,AAAA'), 'Annie at the well');
-        const toggle = get('[data-action="toggle-description"]');
-        expect(toggle.getAttribute('aria-label')).toBe('Show description');
-
-        act(() => toggle.click());
-        expect($('img')).toBeNull();
         expect(get<HTMLTextAreaElement>(TEXTAREA).value).toBe(
             'Annie at the well'
         );
-        expect(toggle.getAttribute('aria-label')).toBe('Hide description');
-
-        act(() => toggle.click());
-        expect($('img')).not.toBeNull();
-        expect(textarea()).toBeNull();
+        expect($('[data-action="download-image"]')).not.toBeNull();
+        expect($('[data-action="upload-image"]')).not.toBeNull();
+        expect($('[data-action="remove-image"]')).not.toBeNull();
     });
 
     it('shows the description and an upload button without an image', async () => {
@@ -91,7 +76,10 @@ describe('ImageEditor', () => {
         ).toBe('What the picture shows');
         const upload = get<HTMLButtonElement>('[data-action="upload-image"]');
         expect(upload.disabled).toBe(false);
-        expect($('[data-action="toggle-description"]')).toBeNull();
+        expect(upload.textContent).toBe('');
+        expect($('[data-action="download-image"]')).toBeNull();
+        expect($('[data-action="remove-image"]')).toBeNull();
+        expect(document.body.textContent).not.toContain('PNG');
     });
 
     it('reports a description change', async () => {
@@ -119,7 +107,7 @@ describe('ImageEditor', () => {
                 ariaLabel="Image"
             />
         );
-        expect($('[data-action="toggle-description"]')).toBeNull();
+        expect(textarea()).toBeNull();
         expect($('[data-action="remove-image"]')).not.toBeNull();
         unmount();
         await mountAsync(
@@ -138,7 +126,6 @@ describe('ImageEditor', () => {
         const onChange = await render(image('data:image/png;base64,AAAA'), {
             code: 's.name + "!"',
         });
-        click('[data-action="toggle-description"]');
         click('[data-action="convert-to-value"]');
         expect(onChange).toHaveBeenCalledWith('s.name + "!"');
     });
@@ -198,11 +185,13 @@ describe('ImageEditor image links', () => {
     const options = () =>
         $$('[data-option]').map((li) => li.getAttribute('data-option'));
 
-    it('shows the linked image instead of the upload', async () => {
+    it('shows the linked image with download and upload, but no delete', async () => {
         await render('@intro.png');
         const img = get<HTMLImageElement>(`[data-linked-image="${INTRO}"]`);
         expect(img.getAttribute('src')).toBe('intro-url');
-        expect($('[data-action="upload-image"]')).toBeNull();
+        expect($('[data-action="download-image"]')).not.toBeNull();
+        expect($('[data-action="upload-image"]')).not.toBeNull();
+        expect($('[data-action="remove-image"]')).toBeNull();
         expect(description().value).toBe('@intro.png');
     });
 
@@ -216,7 +205,7 @@ describe('ImageEditor image links', () => {
         expect($('[data-linked-image="missing"]')?.textContent).toContain(
             'nowhere.png'
         );
-        expect($('[data-action="upload-image"]')).toBeNull();
+        expect($('[data-action="download-image"]')).toBeNull();
     });
 
     it('hints image paths relative to the passage only after @', async () => {
@@ -235,12 +224,10 @@ describe('ImageEditor image links', () => {
         expect(options()).toEqual(['@../../kingdom/annie.passages/palace.png']);
     });
 
-    it('asks for a path while the link is only @', async () => {
+    it('shows no image while the link is only @', async () => {
         await render('@');
         expect($('[data-linked-image]')).toBeNull();
-        expect(document.body.textContent).toContain(
-            'Type the path of the image to link'
-        );
+        expect($('[data-action="upload-image"]')).not.toBeNull();
     });
 
     it('picks the highlighted hint with the keyboard', async () => {
