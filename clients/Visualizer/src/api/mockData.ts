@@ -114,6 +114,7 @@ const createMockStructure = (): TStructureDto => ({
             locked('id', { t: 'code', code: 'L' }),
             locked('name', STRING),
             locked('description', STRING),
+            locked('image', STRING, true),
             locked('localCharacters', {
                 t: 'array',
                 of: { t: 'object', fields: [field('name', STRING), field('description', STRING)] },

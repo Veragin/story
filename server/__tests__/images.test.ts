@@ -64,7 +64,7 @@ describe('images', () => {
         expect((await t.get('/api/stories/example/images/items/bow')).status).toBe(404);
     });
 
-    it('uploads a character and an npc portrait next to their files', async () => {
+    it('uploads a character, an npc and a location image next to their files', async () => {
         let res = await t.get('/api/stories/example/images/characters/thomas');
         expect(res.body).toMatchObject({ file: 'data/characters/thomas.png', url: null });
         res = await t.put('/api/stories/example/images/characters/thomas', {
@@ -82,6 +82,14 @@ describe('images', () => {
         expect(res.status).toBe(200);
         expect(res.body.file).toBe('data/npcs/Franta.png');
         expect(existsSync(abs('data/npcs/Franta.png'))).toBe(true);
+
+        res = await t.put('/api/stories/example/images/locations/village', {
+            version: '',
+            data: fakePng(3).toString('base64'),
+        });
+        expect(res.status).toBe(200);
+        expect(res.body.file).toBe('data/locations/village.location.png');
+        expect(existsSync(abs('data/locations/village.location.png'))).toBe(true);
     });
 
     it('replaces an image only from its current version, and only with a PNG', async () => {
@@ -253,7 +261,7 @@ describe('deleteImage', () => {
 });
 
 describe('image descriptions', () => {
-    it('reads and writes `image` of characters and npcs as an optional string', async () => {
+    it('reads and writes `image` of characters, npcs and locations as an optional string', async () => {
         let npc = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(npc.image).toBeUndefined();
         let res = await t.put('/api/stories/example/entities/npcs/franta', {
@@ -274,5 +282,13 @@ describe('image descriptions', () => {
         });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body.image).toBe('A young hunter');
+
+        const village = (await t.get('/api/stories/example/entities/locations/village')).body;
+        res = await t.put('/api/stories/example/entities/locations/village', {
+            version: village.version,
+            image: 'A few huts by a river',
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.image).toBe('A few huts by a river');
     });
 });

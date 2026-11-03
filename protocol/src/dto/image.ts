@@ -4,7 +4,7 @@ import type { TVersion, TVersionedBody } from './common';
  * An owner's image is the `.webp` or `.png` next to its `.ts` file, same basename; `.webp` wins when both exist. The
  * `story` owner has one image, `STORY_LANDING_IMAGE_ID`, at `LANDING_WEBP_FILE` or `LANDING_IMAGE_FILE`.
  */
-export const IMAGE_OWNERS = ['passages', 'characters', 'npcs', 'story'] as const;
+export const IMAGE_OWNERS = ['passages', 'characters', 'npcs', 'locations', 'story'] as const;
 export type TImageOwner = (typeof IMAGE_OWNERS)[number];
 
 export const isImageOwner = (value: string): value is TImageOwner =>
@@ -15,7 +15,7 @@ export const STORY_LANDING_IMAGE_ID = 'landing';
 
 export type TImageDto = {
     owner: TImageOwner;
-    /** A full passage id, a character / npc id, or `STORY_LANDING_IMAGE_ID`. */
+    /** A full passage id, a character / npc / location id, or `STORY_LANDING_IMAGE_ID`. */
     id: string;
     /** Where the image is; the `.png` path when there is none. */
     file: string;

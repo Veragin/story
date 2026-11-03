@@ -57,7 +57,7 @@ const EXTENDABLE_FIELDS: Record<string, readonly string[]> = {
     TCharacterData: ['location', 'health', 'inventory'],
     TNpc: ['id', 'name', 'description', 'image', 'init'],
     TNpcData: ['location', 'inventory', 'isDead'],
-    TLocation: ['id', 'name', 'description', 'localCharacters', 'sublocations', 'mapId', 'init'],
+    TLocation: ['id', 'name', 'description', 'image', 'localCharacters', 'sublocations', 'mapId', 'init'],
     TItemInfo: ['name', 'type'],
 };
 

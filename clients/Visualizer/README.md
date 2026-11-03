@@ -105,13 +105,13 @@ Painting a tile is a one-line diff. Colour ids may not contain whitespace or `*`
 
 ## Images
 
-The image of a passage, character or npc is the `.webp` or `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.webp` or `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`); `.webp` wins when both exist. The `image` field of a screen passage (and the optional one of a character or npc) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
+The image of a passage, character, npc or location is the `.webp` or `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.webp` or `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`, `data/locations/village.location.ts` → `data/locations/village.location.png`); `.webp` wins when both exist. The `image` field of a screen passage (and the optional one of a character, npc or location) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
 
-- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs`) answers `TImageDto`: the image's path (the `.png` one when there is none), its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
+- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs | locations | story`) answers `TImageDto`: the image's path (the `.png` one when there is none), its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
 - `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG or WebP, at most 10 MB) creates or replaces it, removing the sibling in the other format; `version: ''` means "there is none yet", a mismatch is `409 stale`. The signature is checked and nothing is converted on the server; the editor converts a JPEG to WebP before uploading.
 
-In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows the image and the upload button in the passage editor and in the character / npc / location forms. In mock mode uploads live in memory as `data:` URLs.
 
 The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
 

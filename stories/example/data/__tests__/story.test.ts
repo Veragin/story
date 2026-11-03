@@ -338,10 +338,10 @@ describe('story art', () => {
         });
 
     it('finds art only next to the file it belongs to', () => {
-        // An image is the `.png` sibling of a passage, character or npc file, with the same
+        // An image is the `.png` sibling of a passage, character, npc or location file, with the same
         // basename (`palace.ts` → `palace.png`). One whose `.ts` was renamed or deleted is art
         // that nothing shows any more. `assets/` holds only the apps' favicon.
-        const owned = /^(chapters\/[^/]+\/[^/]+\.passages|characters|npcs)\/[^/]+\.png$/;
+        const owned = /^(chapters\/[^/]+\/[^/]+\.passages|characters|npcs|locations)\/[^/]+\.png$/;
         const orphans = pngs(dataDir)
             .filter((file) => !file.startsWith('assets/'))
             .filter((file) => !owned.test(file) || !existsSync(path.join(dataDir, file.replace(/\.png$/, '.ts'))))

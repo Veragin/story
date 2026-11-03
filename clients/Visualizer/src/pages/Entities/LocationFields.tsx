@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import type { TLocationDto, TTypeRef } from '@story/protocol';
 import { FormArrayEditor } from '../../components/editors/FormArrayEditor';
+import { FormImageEditor } from '../../components/editors/FormImageEditor';
 import { FormMaybeCodeTextInput } from '../../components/code/FormMaybeCodeTextInput';
 import {
     StructureContext,
@@ -36,6 +37,15 @@ export const LocationFields = observer(
                 onChange={(next) => store.setField('description', next)}
                 diagnostics={store.exactDiagnostics('description')}
                 dataField="description"
+            />
+            <FormImageEditor
+                label={_('Image')}
+                api={store.entities.api}
+                owner="locations"
+                id={draft.id}
+                value={draft.image}
+                onChange={(next) => store.setField('image', next)}
+                diagnostics={store.fieldDiagnostics('image')}
             />
             <FormArrayEditor
                 label={_('Local characters')}

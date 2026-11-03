@@ -4,6 +4,7 @@ export type TLocation<L extends TLocationId> = {
     id: L;
     name: string;
     description: string;
+    image?: string;
 
     localCharacters: {
         name: string;

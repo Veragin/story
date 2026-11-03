@@ -46,6 +46,8 @@ export type TLocationDto = TEntityBase<'locations'> &
     TUserFields & {
         name: TMaybeCode<string>;
         description: TMaybeCode<string>;
+        /** A text description of the picture; the picture is the sibling `.webp` or `.png`. */
+        image?: TMaybeCode<string>;
         localCharacters: TMaybeCode<TLocalCharacterDto[]>;
         /** Location ids. */
         sublocations?: TMaybeCode<string[]>;

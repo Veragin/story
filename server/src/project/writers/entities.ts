@@ -399,10 +399,11 @@ const sourceDeletePlan = (sp: SourceProject, kind: TSourceKind, id: string): TDe
             s.delete(abs);
             registerRemove(s, kind, id);
             worldStateRemove(s, kind, id);
+            s.after((tx) => deleteFiles(tx, siblingImages(abs)));
             if (kind === 'locations') {
                 s.after((tx) => removeLocationPolygon(tx, id));
                 s.after((tx) => removeLocationMap(tx, id));
-            } else s.after((tx) => deleteFiles(tx, siblingImages(abs)));
+            }
         },
     };
 };

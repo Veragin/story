@@ -88,6 +88,7 @@ const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
             return {
                 name: { schema: S.text },
                 description: { schema: S.text },
+                image: { schema: S.string, after: ['description', 'name'] },
                 localCharacters: { schema: S.array(S.object({ name: S.text, description: S.text })) },
                 sublocations: { schema: S.array(S.ref(locationRef(sp))) },
                 mapId: { schema: S.string },
@@ -99,7 +100,7 @@ const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
 const ENTITY_OPTIONAL: Record<TSourceKind, string[]> = {
     characters: ['description', 'image', 'startPassageId'],
     npcs: ['image'],
-    locations: ['sublocations', 'mapId'],
+    locations: ['image', 'sublocations', 'mapId'],
 };
 
 export type TEntitySource = {
@@ -187,6 +188,7 @@ export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharac
                 ...base,
                 kind: 'locations',
                 description: (fields.description ?? '') as TMaybeCode<string>,
+                ...opt('image'),
                 localCharacters: (fields.localCharacters ?? []) as TLocationDto['localCharacters'],
                 ...opt('sublocations'),
                 ...opt('mapId'),
