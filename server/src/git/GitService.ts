@@ -27,10 +27,12 @@ import { GitAvailability } from './GitAvailability';
 import {
     checkBranchName,
     commitAll,
+    commitPaths,
     deleteRemoteBranch,
     fetchOrigin,
     gitDir,
     mergeNoEdit,
+    pendingPathsOf,
     pushHead,
     readBranches,
     readRefs,
@@ -171,9 +173,11 @@ export class GitService {
     }
 
     commit(ctx: TServerContext, body: unknown): Promise<TGitCommitResultDto> {
-        const { message, push } = parseCommitBody(jsonObjectBody(body));
+        const { message, push, paths } = parseCommitBody(jsonObjectBody(body));
         return this.withRepo(ctx, async ({ git, current }) => {
-            const commit = await commitAll(git, message, current.record);
+            const commit = paths
+                ? await commitPaths(git, message, current.record, await pendingPathsOf(git, paths))
+                : await commitAll(git, message, current.record);
             if (commit === null) throw HttpError.of('git_nothing_to_commit', 'There are no changes to commit');
             const pushError = push ? await this.tryPush(git) : undefined;
             return {

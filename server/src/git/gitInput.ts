@@ -29,7 +29,7 @@ export type TConfigChange = Partial<Omit<TStoryGitRecord, 'tokenEncrypted'>> & {
 const SETUP_FIELDS = ['remoteUrl', 'branch', 'token', 'authorName', 'authorEmail', 'initial'];
 const UPDATE_FIELDS = ['version', 'remoteUrl', 'branch', 'token', 'authorName', 'authorEmail'];
 const DELETE_FIELDS = ['version', 'removeRepo'];
-const COMMIT_FIELDS = ['message', 'push'];
+const COMMIT_FIELDS = ['message', 'push', 'paths'];
 const CHECKOUT_FIELDS = ['branch', 'create'];
 const DELETE_BRANCH_FIELDS = ['branch', 'remote'];
 
@@ -101,7 +101,14 @@ export const parseCommitBody = (body: Record<string, unknown>): TGitCommitBody =
     rejectUnknownFields(body, COMMIT_FIELDS);
     const message = textField(body, 'message', L.messageMaxLength, { required: true, trim: false });
     if (message.trim().length < L.messageMinLength) throw HttpError.badRequest('Field "message" must not be empty');
-    return { message, push: flagField(body, 'push') };
+    return { message, push: flagField(body, 'push'), ...(body.paths !== undefined && { paths: pathsField(body) }) };
+};
+
+const pathsField = (body: Record<string, unknown>): string[] => {
+    const value = body.paths;
+    if (!Array.isArray(value) || value.length === 0 || !value.every((p) => typeof p === 'string' && p !== ''))
+        throw HttpError.badRequest('Field "paths" must be a non-empty list of paths');
+    return value;
 };
 
 export const parseCheckoutBody = (body: Record<string, unknown>): TGitCheckoutBody => {

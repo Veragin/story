@@ -12,6 +12,7 @@ import {
     parsePathList,
     parsePorcelainStatus,
     parseRefs,
+    type TPorcelainStatus,
     type TRefs,
 } from './gitStatus';
 
@@ -37,14 +38,18 @@ const readHead = async (git: GitRunner): Promise<TGitCommitDto | null> => {
     return code === 0 ? parseCommitLine(stdout) : null;
 };
 
+export const readPorcelainStatus = async (git: GitRunner): Promise<TPorcelainStatus> =>
+    parsePorcelainStatus(
+        await git.text(['--no-optional-locks', 'status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'])
+    );
+
 export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
-    const [porcelain, refs, fetchedAt, head] = await Promise.all([
-        git.text(['--no-optional-locks', 'status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all']),
+    const [status, refs, fetchedAt, head] = await Promise.all([
+        readPorcelainStatus(git),
         readRefs(git),
         lastFetchedAt(git),
         readHead(git),
     ]);
-    const status = parsePorcelainStatus(porcelain);
     return {
         branch: status.head ?? status.oid?.slice(0, SHORT_HASH_LENGTH) ?? '',
         detached: status.head === null,
@@ -81,12 +86,43 @@ export const resolveCommit = async (git: GitRunner, rev: string): Promise<string
 };
 
 // null: nothing was staged
-export const commitAll = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
-    await git.run(['add', '-A']);
+const commitIndex = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
     const { code } = await git.run(['diff', '--cached', '--quiet'], { okCodes: [1] });
     if (code === 0) return null;
     await git.run(['commit', '-q', '-F', '-'], { input: message, config: identity(author) });
     return resolveCommit(git, 'HEAD');
+};
+
+export const commitAll = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
+    await git.run(['add', '-A']);
+    return commitIndex(git, message, author);
+};
+
+// paths no longer pending are dropped; a rename brings its original path along
+export const pendingPathsOf = async (git: GitRunner, paths: readonly string[]): Promise<string[]> => {
+    const { changes, renamedFrom } = await readPorcelainStatus(git);
+    const pending = new Set(changes.map((c) => c.path));
+    return paths
+        .filter((p) => pending.has(p))
+        .flatMap((p) => {
+            const from = renamedFrom.get(p);
+            return from === undefined ? [p] : [p, from];
+        });
+};
+
+export const commitPaths = async (
+    git: GitRunner,
+    message: string,
+    author: TAuthor,
+    paths: readonly string[]
+): Promise<string | null> => {
+    // an empty pathspec would make `add -A` stage everything
+    if (paths.length === 0) return null;
+    await git.run(['reset', '-q']);
+    await git.run(['add', '-A', '--pathspec-from-file=-', '--pathspec-file-nul'], {
+        input: paths.map((p) => `:(literal)${p}`).join('\0'),
+    });
+    return commitIndex(git, message, author);
 };
 
 type TPushOptions = { branch?: string; force?: boolean };

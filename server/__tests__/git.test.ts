@@ -154,6 +154,34 @@ describe('git routes', () => {
         expect(await readFile(path.join(clone, 'data', 'note.txt'), 'utf8')).toBe('hello\n');
     });
 
+    it('commits only the given paths, a staged rename together with its origin', async () => {
+        const { call, repo, dir } = await start();
+        await setupPush(call, repo.url);
+        await writeFile(path.join(dir, 'data', 'one.txt'), 'one\n');
+        await writeFile(path.join(dir, 'data', 'two [x].txt'), 'two\n');
+        await call('POST', '/commit', { message: 'Base', push: false });
+        await git(dir, 'mv', 'data/one.txt', 'data/uno.txt');
+        await writeFile(path.join(dir, 'data', 'two [x].txt'), 'two changed\n');
+        await writeFile(path.join(dir, 'data', 'three.txt'), 'three\n');
+
+        const bad = await call('POST', '/commit', { message: 'Bad', push: false, paths: [] });
+        expect(bad.status).toBe(400);
+        const res = await call('POST', '/commit', {
+            message: 'Some',
+            push: false,
+            paths: ['data/uno.txt', 'data/two [x].txt', 'data/gone.txt'],
+        });
+        expect(res.status).toBe(200);
+        expect(res.body.status.changes).toEqual([{ path: 'data/three.txt', kind: 'added' }]);
+        expect((await git(dir, 'show', '--name-status', '--format=', 'HEAD')).trim().split('\n').sort()).toEqual([
+            'M\tdata/two [x].txt',
+            'R100\tdata/one.txt\tdata/uno.txt',
+        ]);
+
+        const stale = await call('POST', '/commit', { message: 'Stale', push: false, paths: ['data/uno.txt'] });
+        expect([stale.status, stale.body.error]).toEqual([409, 'git_nothing_to_commit']);
+    });
+
     it('a rejected push keeps the commit; pull merges the remote, then push succeeds', async () => {
         const { call, repo, dir } = await start();
         await setupPush(call, repo.url);

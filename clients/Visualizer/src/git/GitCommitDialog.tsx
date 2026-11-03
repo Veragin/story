@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, styled, Typography } from '@mui/material';
+import { Alert, styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     GIT_CHANGE_KINDS,
@@ -14,6 +14,7 @@ import { DialogButtons } from '../components/dialog/DialogButtons';
 import { FormCheckbox } from '../components/form/FormCheckbox';
 import { FormSection } from '../components/form/FormSection';
 import { FormTextInput } from '../components/form/FormTextInput';
+import { GitChangeRow } from './GitChangeRow';
 import type { GitStore } from './GitStore';
 
 type TProps = {
@@ -35,16 +36,22 @@ export const GitCommitDialog = observer(
         const [push, setPush] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [pushError, setPushError] = useState<TApiErrorBody | null>(null);
+        const [excluded, setExcluded] = useState<ReadonlySet<string>>(
+            new Set()
+        );
 
         const changes = store.status?.changes ?? [];
+        const selected = changes
+            .map((c) => c.path)
+            .filter((path) => !excluded.has(path));
         const trimmed = message.trim();
         const committed = pushError !== null;
         const close = committed ? onCommitted : onClose;
 
         const commit = async () => {
-            if (!trimmed || store.busy) return;
+            if (!trimmed || store.busy || selected.length === 0) return;
             setError(null);
-            const result = await store.commit(trimmed, push);
+            const result = await store.commit(trimmed, push, selected);
             if (!result.ok) {
                 setError(result.message);
                 return;
@@ -64,6 +71,15 @@ export const GitCommitDialog = observer(
             onCommitted();
         };
 
+        const toggle = (path: string, checked: boolean) => {
+            setExcluded((prev) => {
+                const next = new Set(prev);
+                if (checked) next.delete(path);
+                else next.add(path);
+                return next;
+            });
+        };
+
         const pullThenPush = async () => {
             setError(null);
             const result = await store.pullThenPush();
@@ -80,7 +96,7 @@ export const GitCommitDialog = observer(
                 submit
                 onClose={close}
                 label={push ? _('Commit & push') : _('Commit')}
-                disabled={store.busy || !trimmed || changes.length === 0}
+                disabled={store.busy || !trimmed || selected.length === 0}
             />
         ) : pushError.error === 'git_rejected' ? (
             <DialogButtons
@@ -128,12 +144,17 @@ export const GitCommitDialog = observer(
                                     >
                                         <div>
                                             {files.map((c) => (
-                                                <SPath
+                                                <GitChangeRow
                                                     key={c.path}
-                                                    variant="body2"
-                                                >
-                                                    {c.path}
-                                                </SPath>
+                                                    path={c.path}
+                                                    checked={
+                                                        !excluded.has(c.path)
+                                                    }
+                                                    disabled={store.busy}
+                                                    onChange={(checked) =>
+                                                        toggle(c.path, checked)
+                                                    }
+                                                />
                                             ))}
                                         </div>
                                     </FormSection>
@@ -164,8 +185,4 @@ export const GitCommitDialog = observer(
 
 const SAlert = styled(Alert)`
     white-space: pre-wrap;
-`;
-
-const SPath = styled(Typography)`
-    font-family: monospace;
 `;

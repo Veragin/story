@@ -96,7 +96,8 @@ export type TSetupGitBody = {
 /** `removeRepo` also deletes the story's `.git` folder. */
 export type TDeleteGitConfigBody = TVersionedBody & { removeRepo: boolean };
 
-export type TGitCommitBody = { message: string; push: boolean };
+/** `paths`: commits only these changes (each a `TGitChangeDto.path`); absent commits every change. */
+export type TGitCommitBody = { message: string; push: boolean; paths?: string[] };
 
 /** A failed push keeps the commit: `pushed: false` with the reason in `pushError`. */
 export type TGitCommitResultDto = {

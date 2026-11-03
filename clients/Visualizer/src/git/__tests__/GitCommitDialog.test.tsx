@@ -65,9 +65,10 @@ describe('GitCommitDialog', () => {
         expect(
             get<HTMLButtonElement>('[role=dialog] button[type=submit]').disabled
         ).toBe(true);
-        expect(get<HTMLInputElement>('input[aria-label="Push after commit"]').checked).toBe(
-            true
-        );
+        expect(
+            get<HTMLInputElement>('input[aria-label="Push after commit"]')
+                .checked
+        ).toBe(true);
 
         typeInto(
             get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
@@ -79,6 +80,47 @@ describe('GitCommitDialog', () => {
         expect(onClose).not.toHaveBeenCalled();
         expect(store.dirty).toBe(false);
         expect(store.status?.ahead).toBe(0);
+    });
+
+    it('commits only the checked files, every file checked by default', async () => {
+        await act(async () => {
+            const chapterLayout = await api.getChapterLayout('village');
+            await api.updateChapterLayout('village', chapterLayout);
+            await settle();
+        });
+        const boxes = $$<HTMLInputElement>('[data-path] input[type=checkbox]');
+        expect(boxes.map((b) => b.checked)).toEqual([true, true]);
+        const chapterPath = store.status?.changes.find(
+            (c) => c.path !== 'data/layout/timeline.ts'
+        )?.path;
+        expect(chapterPath).toBeDefined();
+
+        act(() => click('input[aria-label="data/layout/timeline.ts"]'));
+        expect(
+            get<HTMLInputElement>('input[aria-label="data/layout/timeline.ts"]')
+                .checked
+        ).toBe(false);
+        typeInto(
+            get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
+            'Only the chapter'
+        );
+        await submit();
+
+        expect(onCommitted).toHaveBeenCalled();
+        expect(store.status?.changes).toEqual([
+            { path: 'data/layout/timeline.ts', kind: 'modified' },
+        ]);
+    });
+
+    it('cannot commit with every file unchecked', () => {
+        typeInto(
+            get<HTMLTextAreaElement>('textarea[aria-label=Message]'),
+            'Nothing'
+        );
+        act(() => click('input[aria-label="data/layout/timeline.ts"]'));
+        expect(
+            get<HTMLButtonElement>('[role=dialog] button[type=submit]').disabled
+        ).toBe(true);
     });
 
     it('shows a rejected push and recovers with pull then push', async () => {

@@ -194,9 +194,9 @@ export class GitStore {
         }
     };
 
-    commit = async (message: string, push: boolean): Promise<TGitResult<TGitCommitResultDto>> => {
+    commit = async (message: string, push: boolean, paths?: string[]): Promise<TGitResult<TGitCommitResultDto>> => {
         const result = await this.run(
-            () => this.api.gitCommit({ message, push }),
+            () => this.api.gitCommit({ message, push, ...(paths && { paths }) }),
             (value) => this.setStatus(value.status)
         );
         const pushError = result.ok ? result.value.pushError : undefined;

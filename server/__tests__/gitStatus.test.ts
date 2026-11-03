@@ -44,6 +44,7 @@ describe('parsePorcelainStatus', () => {
                 { path: 'data/both.ts', kind: 'modified' },
                 { path: 'data/untracked.ts', kind: 'added' },
             ],
+            renamedFrom: new Map([['data/new name.ts', 'data/old name.ts']]),
         });
     });
 

@@ -7,6 +7,8 @@ export type TPorcelainStatus = {
     ahead: number;
     behind: number;
     changes: TGitChangeDto[];
+    /** A rename's new path → its original path. */
+    renamedFrom: Map<string, string>;
 };
 
 const REMOTE_PREFIX = 'refs/remotes/origin/';
@@ -40,7 +42,15 @@ const fieldsAfter = (record: string, count: number): [string[], string] => {
 
 // `git status --porcelain=v2 --branch -z`: a rename's original path is the next NUL-separated record
 export const parsePorcelainStatus = (output: string): TPorcelainStatus => {
-    const status: TPorcelainStatus = { oid: null, head: null, upstream: null, ahead: 0, behind: 0, changes: [] };
+    const status: TPorcelainStatus = {
+        oid: null,
+        head: null,
+        upstream: null,
+        ahead: 0,
+        behind: 0,
+        changes: [],
+        renamedFrom: new Map(),
+    };
     const records = output.split('\0');
     for (let k = 0; k < records.length; k++) {
         const record = records[k];
@@ -51,6 +61,7 @@ export const parsePorcelainStatus = (output: string): TPorcelainStatus => {
         } else if (record.startsWith('2 ')) {
             const [[, xy], path] = fieldsAfter(record, 9);
             k++;
+            status.renamedFrom.set(path, records[k]);
             status.changes.push({ path, kind: xy.includes('R') ? 'renamed' : changeKind(xy) });
         } else if (record.startsWith('u ')) {
             status.changes.push({ path: fieldsAfter(record, 10)[1], kind: 'modified' });

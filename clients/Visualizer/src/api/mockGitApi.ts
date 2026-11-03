@@ -250,17 +250,19 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 return statusOf(r);
             }),
 
-        gitCommit: ({ message, push }) =>
+        gitCommit: ({ message, push, paths }) =>
             ctx.reply(() => {
                 const { config: c, repo: r } = requireRepo();
                 const text = message.trim();
                 if (text.length < GIT_LIMITS.messageMinLength || text.length > GIT_LIMITS.messageMaxLength) {
                     badRequest('The commit message is empty or too long');
                 }
-                if (r.changes.size === 0) fail(409, { error: 'git_nothing_to_commit', message: 'Nothing to commit' });
+                if (paths?.length === 0) badRequest('Field "paths" must be a non-empty list of paths');
+                const committed = paths?.filter((p) => r.changes.has(p)) ?? [...r.changes.keys()];
+                if (committed.length === 0) fail(409, { error: 'git_nothing_to_commit', message: 'Nothing to commit' });
                 const commit = commitOf(text.split('\n')[0], c.authorName);
                 r.local.set(r.branch, [commit, ...(r.local.get(r.branch) ?? [])]);
-                r.changes.clear();
+                for (const p of committed) r.changes.delete(p);
                 let pushError: TApiErrorBody | undefined;
                 if (push) {
                     try {

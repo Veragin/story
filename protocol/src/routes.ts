@@ -420,7 +420,7 @@ export type TApiSpec = {
     deleteGitConfig: { body: TDeleteGitConfigBody; response: undefined };
     /** Refreshes `ahead` / `behind` and the remote branches. */
     gitFetch: { body: undefined; response: TGitStatusDto };
-    /** Stages everything; `409 git_nothing_to_commit` on a clean tree. A failed push keeps the commit. */
+    /** Stages everything, or only `paths`; `409 git_nothing_to_commit` on a clean tree. A failed push keeps the commit. */
     gitCommit: { body: TGitCommitBody; response: TGitCommitResultDto };
     /** `409 git_rejected` when the remote is ahead. */
     gitPush: { body: undefined; response: TGitStatusDto };
