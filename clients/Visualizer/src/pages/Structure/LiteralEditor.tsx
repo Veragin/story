@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import type { TLiteralDto } from '@story/protocol';
 import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
@@ -19,6 +20,17 @@ import { usagesOf } from './structureText';
 
 type TProps = {
     editor: StructureEditorStore;
+};
+
+const scopeText = (literal: TLiteralDto): string => {
+    switch (literal.scope) {
+        case 'global':
+            return _('Global, in');
+        case 'local':
+            return _('Local to');
+        case 'private':
+            return _('Private to class %s, in', literal.owner ?? '');
+    }
 };
 
 export const LiteralEditor = observer(({ editor }: TProps) => {
@@ -52,7 +64,13 @@ export const LiteralEditor = observer(({ editor }: TProps) => {
         });
         if (ok && (await editor.removeLiteral()))
             router.navigate(
-                { page: 'structure', section: 'literals' },
+                base.owner
+                    ? {
+                          page: 'structure',
+                          section: 'classes',
+                          name: base.owner,
+                      }
+                    : { page: 'structure', section: 'literals' },
                 { replace: true }
             );
     };
@@ -61,13 +79,17 @@ export const LiteralEditor = observer(({ editor }: TProps) => {
         <FormPage>
             <EditorHeader
                 title={base.name}
+                chip={
+                    base.owner
+                        ? _('Private literal of %s', base.owner)
+                        : undefined
+                }
                 store={literal}
                 onDelete={() => void onDelete()}
             />
             <FormMeta>
                 <span data-meta="scope">
-                    {base.scope === 'global' ? _('Global, in') : _('Local to')}{' '}
-                    <code>{base.file}</code>
+                    {scopeText(base)} <code>{base.file}</code>
                 </span>
                 <span data-meta="usages">
                     {usages.length === 0

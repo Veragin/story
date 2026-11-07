@@ -15,11 +15,17 @@ import { failureMessage } from '../../stores/writeResult';
 
 type TProps = {
     structure: StructureStore;
+    owner?: string;
     onCreated: (literal: TLiteralDto) => void;
     onClose: () => void;
 };
 
-type TScope = 'global' | 'local';
+type TScope = 'global' | 'local' | 'private';
+
+const SCOPES: readonly TScope[] = ['global', 'local', 'private'];
+
+const isScope = (value: string | undefined): value is TScope =>
+    SCOPES.some((scope) => scope === value);
 
 const LITERALS_FILE = 'types/literals.ts';
 
@@ -36,15 +42,24 @@ const storyFiles = (structure: StructureStore): string[] =>
         .filter((file) => file !== LITERALS_FILE)
         .sort();
 
+// a private literal is declared in its class's file under types/
+const ownerClasses = (structure: StructureStore): string[] =>
+    structure.classes
+        .filter((type) => type.file.startsWith('types/'))
+        .map((type) => type.name);
+
 export const CreateLiteralDialog = observer(
-    ({ structure, onCreated, onClose }: TProps) => {
+    ({ structure, owner, onCreated, onClose }: TProps) => {
         const [name, setName] = useState('');
         const [values, setValues] = useState<string[]>([]);
-        const [scope, setScope] = useState<TScope>('global');
+        const [scope, setScope] = useState<TScope>(
+            owner ? 'private' : 'global'
+        );
         const [file, setFile] = useState('');
+        const [ownerClass, setOwnerClass] = useState(owner ?? '');
 
         const taken = [...structure.typeNames, ...structure.literalNames];
-        const nameError = structNameError(name.trim(), taken);
+        const nameError = structNameError(name.trim(), taken, 'type');
         const valuesError =
             values.length === 0
                 ? _('Add at least one value')
@@ -55,7 +70,12 @@ export const CreateLiteralDialog = observer(
             scope === 'local' && !/^(data|types)\/.+\.ts$/.test(file.trim())
                 ? _('A story file under data/ or types/')
                 : null;
-        const invalid = !!nameError || !!valuesError || !!fileError;
+        const ownerError =
+            scope === 'private' && !structure.type(ownerClass.trim())
+                ? _('Pick a class')
+                : null;
+        const invalid =
+            !!nameError || !!valuesError || !!fileError || !!ownerError;
 
         const { busy, error, touched, submit, setError } = useDialogSubmit(
             async () => {
@@ -63,6 +83,9 @@ export const CreateLiteralDialog = observer(
                     name: name.trim(),
                     values,
                     ...(scope === 'local' ? { file: file.trim() } : {}),
+                    ...(scope === 'private'
+                        ? { owner: ownerClass.trim() }
+                        : {}),
                 });
                 if (result.status === 'ok') onCreated(result.value);
                 else
@@ -79,7 +102,11 @@ export const CreateLiteralDialog = observer(
 
         return (
             <AppDialog
-                title={_('New literal')}
+                title={
+                    owner
+                        ? _('New private literal of %s', owner)
+                        : _('New literal')
+                }
                 onClose={onClose}
                 onSubmit={submit}
                 error={error}
@@ -117,7 +144,7 @@ export const CreateLiteralDialog = observer(
                     row
                     value={scope}
                     onChange={(next) =>
-                        setScope(next === 'local' ? 'local' : 'global')
+                        setScope(isScope(next) ? next : 'global')
                     }
                     options={[
                         {
@@ -127,6 +154,12 @@ export const CreateLiteralDialog = observer(
                         {
                             id: 'local',
                             label: _('Local to a file'),
+                        },
+                        {
+                            id: 'private',
+                            label: ownerClass
+                                ? _('Private (class %s)', ownerClass)
+                                : _('Private to a class'),
                         },
                     ]}
                     dataField="scope"
@@ -140,6 +173,16 @@ export const CreateLiteralDialog = observer(
                         options={optionsOf(storyFiles(structure))}
                         error={touched ? fileError : null}
                         dataField="file"
+                    />
+                )}
+                {scope === 'private' && !owner && (
+                    <FormAutocompleteInput
+                        label={_('Class')}
+                        value={ownerClass}
+                        onChange={(next) => setOwnerClass(next ?? '')}
+                        options={optionsOf(ownerClasses(structure))}
+                        error={touched ? ownerError : null}
+                        dataField="owner"
                     />
                 )}
             </AppDialog>

@@ -6,6 +6,7 @@ import { ActionRow } from '../../layout/ActionRow';
 
 type TProps = {
     name: string;
+    owner?: string;
     onCreate: (values: string[]) => void;
     onCancel: () => void;
 };
@@ -14,12 +15,23 @@ const cleanValues = (values: string[]) => [
     ...new Set(values.map((value) => value.trim()).filter(Boolean)),
 ];
 
-export const NewLiteralEditor = ({ name, onCreate, onCancel }: TProps) => {
+export const NewLiteralEditor = ({
+    name,
+    owner,
+    onCreate,
+    onCancel,
+}: TProps) => {
     const [values, setValues] = useState<string[]>([]);
     return (
         <SEditor data-new-literal={name}>
             <HintText>
-                {_('New local literal %s: its first values', name)}
+                {owner
+                    ? _(
+                          'New private literal %s of %s: its first values',
+                          name,
+                          owner
+                      )
+                    : _('New local literal %s: its first values', name)}
             </HintText>
             <Autocomplete<string, true, false, true>
                 multiple
@@ -67,4 +79,3 @@ const SEditor = styled('div')`
     border: 1px dashed ${({ theme }) => theme.palette.border.strong};
     border-radius: 4px;
 `;
-

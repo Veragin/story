@@ -1,29 +1,14 @@
 import type { ReactNode } from 'react';
-import {
-    Chip,
-    List,
-    ListItemButton,
-    ListItemText,
-    ListSubheader,
-    styled,
-} from '@mui/material';
+import { List, ListSubheader, styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import { AddButton } from '../buttons/AddButton';
 import { LoadErrorState } from '../feedback/LoadErrorState';
 import { LoadingState } from '../feedback/LoadingState';
-import { UnsavedIndicator } from './UnsavedIndicator';
+import { SideMenuEntry, type TSideMenuEntry } from './SideMenuEntry';
+
+export type { TSideMenuAction, TSideMenuEntry } from './SideMenuEntry';
 
 const SIDE_MENU_WIDTH = 260;
-
-export type TSideMenuEntry = {
-    name: string;
-    label?: string;
-    secondary?: string;
-    href: string;
-    selected: boolean;
-    unsaved?: boolean;
-    chip?: string;
-};
 
 export type TSideMenuGroup = {
     title: string;
@@ -72,32 +57,7 @@ export const SideMenu = ({ groups, header, loading, loadError }: TProps) => {
                                 )}
                             </SSubheader>
                             {group.entries.map((entry) => (
-                                <ListItemButton
-                                    key={entry.name}
-                                    component="a"
-                                    href={entry.href}
-                                    selected={entry.selected}
-                                    data-name={entry.name}
-                                >
-                                    <ListItemText
-                                        primary={entry.label ?? entry.name}
-                                        secondary={entry.secondary}
-                                        secondaryTypographyProps={{
-                                            noWrap: true,
-                                        }}
-                                    />
-                                    {entry.chip && (
-                                        <Chip
-                                            size="small"
-                                            variant="outlined"
-                                            label={entry.chip}
-                                            data-chip={entry.chip}
-                                        />
-                                    )}
-                                    {entry.unsaved && (
-                                        <UnsavedIndicator variant="dot" />
-                                    )}
-                                </ListItemButton>
+                                <SideMenuEntry key={entry.name} entry={entry} />
                             ))}
                             {group.entries.length === 0 &&
                                 (loading ? (
