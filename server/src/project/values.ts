@@ -1,5 +1,5 @@
 import { DeltaTime } from '@story/shared';
-import { isCode, type TCode, type TFunctionDto, type TTypeRef, type TValue } from '@story/protocol';
+import { isCode, type TCode, type TFieldDesc, type TFunctionDto, type TTypeRef, type TValue } from '@story/protocol';
 import {
     type ArrayLiteralExpression,
     type Expression,
@@ -90,8 +90,14 @@ export const S = {
     ref: (ref: TRefResolver): TSchema => ({ t: 'ref', ref }),
 };
 
-/** How a value of a structure field is read and written. */
-export const schemaOf = (ref: TTypeRef): TSchema => {
+/** The fields of a story `type`, which a `struct` field holds as an object. */
+export type TStructFields = (name: string) => readonly TFieldDesc[];
+
+const fieldsSchema = (fields: readonly TFieldDesc[], structFields: TStructFields, within: readonly string[]) =>
+    S.object(Object.fromEntries(fields.map((field) => [field.key, refSchema(field.type, structFields, within)])));
+
+// `within`: the story types being expanded, so a hand-written recursive one stops instead of looping
+const refSchema = (ref: TTypeRef, structFields: TStructFields, within: readonly string[]): TSchema => {
     switch (ref.t) {
         // an id is stored as its string (`race: 'elf'`), not as an imported object
         case 'ref':
@@ -103,15 +109,22 @@ export const schemaOf = (ref: TTypeRef): TSchema => {
         case 'boolean':
             return S.boolean;
         case 'array':
-            return S.array(schemaOf(ref.of));
+            return S.array(refSchema(ref.of, structFields, within));
         case 'object':
-            return S.object(Object.fromEntries(ref.fields.map((field) => [field.key, schemaOf(field.type)])));
+            return fieldsSchema(ref.fields, structFields, within);
+        case 'struct':
+            return within.includes(ref.name)
+                ? S.value
+                : fieldsSchema(structFields(ref.name), structFields, [...within, ref.name]);
         case 'function':
             return S.fn();
         case 'code':
             return S.value;
     }
 };
+
+/** How a value of a structure field is read and written. */
+export const schemaOf = (ref: TTypeRef, structFields: TStructFields): TSchema => refSchema(ref, structFields, []);
 
 const codeOf = (expr: Expression): TCode => ({ code: expr.getText() });
 

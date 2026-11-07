@@ -4,7 +4,7 @@ import { ensureTypeImport, relativeModule } from './ast';
 import type { SourceProject } from './SourceProject';
 
 const declaringFile = (sp: SourceProject, typeName: string): SourceFile | undefined =>
-    sp.storyFiles().find((sf) => sf.getTypeAlias(typeName)?.isExported());
+    sp.storyFiles().find((sf) => sf.getTypeAlias(typeName)?.isExported() || sf.getClass(typeName)?.isExported());
 
 const isUnder = (dir: string, abs: string) => abs.startsWith(dir + path.sep);
 

@@ -9,7 +9,8 @@ import {
 } from '@story/protocol';
 import { version } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
-import { catalogResource, deleteClearingReferences, deleteReferences, type TDeletePlan } from '../clearReferences';
+import { deleteClearingReferences, deleteReferences, type TDeletePlan } from '../clearReferences';
+import { catalogResource } from '../valueHolders';
 import { addObjectEntry, entryText } from '../objectCatalog';
 import {
     catalogEntrySources,

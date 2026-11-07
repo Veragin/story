@@ -732,7 +732,7 @@ describe('entities', () => {
     it('adds a location to a story with an unregistered location file', async () => {
         await writeFile(
             path.join(t.project.root, 'data/locations/home.location.ts'),
-            "import { TLocation } from '@story/types';\n\nexport const homeLocation: TLocation<'home'> = {\n    id: 'home',\n    name: 'Home',\n    description: '',\n    localCharacters: [],\n    init: {},\n};\n"
+            "import type { Location } from '@story/types';\n\nexport const homeLocation: Location<'home'> = {\n    id: 'home',\n    name: 'Home',\n    description: '',\n    localCharacters: [],\n    init: {},\n};\n"
         );
         const res = await t.post('/api/stories/example/entities/locations', {
             id: 'village_herbalist',
@@ -758,7 +758,7 @@ describe('entities', () => {
         });
         expect(await read('data/register.ts')).toContain('bob: Bob');
         expect(await read('data/TWorldState.ts')).toContain(
-            "bob: { ref: TCharacter<'bob'> } & TCharacterData & Partial<TBobCharacterData>;"
+            "bob: { ref: Character<'bob'> } & TCharacterData & Partial<TBobCharacterData>;"
         );
         res = await t.put('/api/stories/example/entities/characters/bob', {
             version: res.body.version,

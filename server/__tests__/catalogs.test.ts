@@ -40,11 +40,12 @@ const expectTsc = async () => {
 beforeAll(async () => {
     t = await startSourceApp();
     const created = await t.post(`${STORY}/structure/types`, {
-        name: 'TRace',
+        kind: 'class',
+        name: 'Race',
         fields: [
             { key: 'name', type: { t: 'string' }, optional: false },
             { key: 'strength', type: { t: 'number' }, optional: true },
-            { key: 'home', type: { t: 'ref', name: 'TLocation' }, optional: true },
+            { key: 'home', type: { t: 'ref', name: 'Location' }, optional: true },
         ],
         catalog: { name: 'races' },
     });
@@ -62,7 +63,7 @@ describe('catalog entries', () => {
         expect(res.body).toMatchObject({
             kind: 'catalog',
             catalog: 'races',
-            type: 'TRace',
+            type: 'Race',
             id: 'elf',
             file: 'data/catalogs/races.ts',
             exportName: 'races',
@@ -109,11 +110,11 @@ describe('catalog entries', () => {
 describe('deleting a referenced instance', () => {
     it('clears optional and array references, defaults required ones, and emits an event per holder', async () => {
         expect((await createRace('dwarf', { name: 'Dwarf' })).status).toBe(201);
-        await addField('TCharacter', { key: 'race', type: { t: 'ref', name: 'TRace' }, optional: false });
-        await addField('TCharacterData', { key: 'rival', type: { t: 'ref', name: 'TRace' }, optional: true });
+        await addField('Character', { key: 'race', type: { t: 'ref', name: 'Race' }, optional: false });
+        await addField('TCharacterData', { key: 'rival', type: { t: 'ref', name: 'Race' }, optional: true });
         await addField('TCharacterData', {
             key: 'allies',
-            type: { t: 'array', of: { t: 'ref', name: 'TRace' } },
+            type: { t: 'array', of: { t: 'ref', name: 'Race' } },
             optional: true,
         });
         await handEdit('data/characters/annie.ts', "race: 'elf'", "race: 'dwarf'");

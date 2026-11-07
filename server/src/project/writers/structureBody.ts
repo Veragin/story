@@ -1,23 +1,40 @@
+import path from 'node:path';
 import {
+    BUILT_IN_REF_TARGETS,
+    RESERVED_CLASS_NAMES,
+    refIdTypeName,
     refTarget,
     structNameError,
     type TFieldDesc,
+    type TStructKind,
     type TStructNameError,
+    type TStructTypeDto,
     type TStructureDto,
     type TTypeRef,
 } from '@story/protocol';
 import { HttpError } from '../../common/HttpError';
 import { ENGINE_TYPES } from '../readers/structure';
+import type { SourceProject } from '../SourceProject';
 import { assertType, syntaxDiagnostic } from '../validate';
 
 const RESERVED_NAMES = ['TWorldState', ...ENGINE_TYPES];
 
 const KEY_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
-const NAME_MESSAGES: Record<Exclude<TStructNameError, 'taken'>, string> = {
-    required: 'A name is required',
-    pattern: 'A name is T followed by an upper-case letter, then letters and digits (TRace)',
-    id: 'A name ending in Id is reserved for id types',
+const NAME_MESSAGES: Record<TStructKind, Record<Exclude<TStructNameError, 'taken'>, string>> = {
+    type: {
+        required: 'A name is required',
+        pattern: 'A name is T followed by an upper-case letter, then letters and digits (TData)',
+        id: 'A name ending in Id is reserved for id types',
+        reserved: 'This name is reserved',
+    },
+    class: {
+        required: 'A name is required',
+        pattern:
+            'A class name is an upper-case letter, then letters and digits, not starting with T and an upper-case letter (Race)',
+        id: 'A name ending in Id is reserved for id types',
+        reserved: `${RESERVED_CLASS_NAMES.join(' and ')} are reserved class names`,
+    },
 };
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -30,13 +47,25 @@ const textAt = (value: unknown, field: string): string => {
     return value;
 };
 
-/** Unique across every type and literal of the story, and not an engine name. */
-export const assertStructName = (name: unknown, structure: TStructureDto): string => {
+// a class's id type must not be one another referenceable type already has (`Item` vs `TItem`)
+const idTypeTaken = (name: string, structure: TStructureDto) =>
+    [...Object.keys(BUILT_IN_REF_TARGETS), ...structure.types.map((type) => type.name)].some(
+        (other) => refIdTypeName(other) === refIdTypeName(name)
+    );
+
+/** Unique across every class, type and literal of the story, and not an engine name. */
+export const assertStructName = (name: unknown, structure: TStructureDto, kind: TStructKind): string => {
     if (typeof name !== 'string') throw HttpError.badRequest('Field "name" must be a string');
     const taken = [...structure.literals, ...structure.types].map((s) => s.name);
-    const error = structNameError(name, [...taken, ...RESERVED_NAMES]);
-    if (error === 'taken') throw HttpError.exists(`"${name}" is already a type or literal`);
-    if (error) throw HttpError.invalid([syntaxDiagnostic('', NAME_MESSAGES[error], 'name')], NAME_MESSAGES[error]);
+    const error = structNameError(name, [...taken, ...RESERVED_NAMES], kind);
+    if (error === 'taken') throw HttpError.exists(`"${name}" is already a class, type or literal`);
+    if (error) {
+        const message = NAME_MESSAGES[kind][error];
+        throw HttpError.invalid([syntaxDiagnostic('', message, 'name')], message);
+    }
+    if (kind === 'class' && idTypeTaken(name, structure)) {
+        throw HttpError.exists(`"${refIdTypeName(name)}" is already the id of another class`);
+    }
     return name;
 };
 
@@ -53,6 +82,8 @@ const parseTypeRef = (value: unknown, field: string): TTypeRef => {
             return { t: 'literal', name: textAt(value.name, `${field}.name`) };
         case 'ref':
             return { t: 'ref', name: textAt(value.name, `${field}.name`) };
+        case 'struct':
+            return { t: 'struct', name: textAt(value.name, `${field}.name`) };
         case 'array':
             return { t: 'array', of: parseTypeRef(value.of, `${field}.of`) };
         case 'object':
@@ -100,32 +131,74 @@ export const parseFields = (value: unknown, field = 'fields'): TFieldDesc[] => {
     return fields;
 };
 
-const refNames = (ref: TTypeRef): { literals: string[]; refs: string[] } => {
+type TNamedRefs = { literals: string[]; refs: string[]; structs: string[] };
+
+const NO_NAMES: TNamedRefs = { literals: [], refs: [], structs: [] };
+
+const refNames = (ref: TTypeRef): TNamedRefs => {
     switch (ref.t) {
         case 'literal':
-            return { literals: [ref.name], refs: [] };
+            return { ...NO_NAMES, literals: [ref.name] };
         case 'ref':
-            return { literals: [], refs: [ref.name] };
+            return { ...NO_NAMES, refs: [ref.name] };
+        case 'struct':
+            return { ...NO_NAMES, structs: [ref.name] };
         case 'array':
             return refNames(ref.of);
         case 'object': {
             const nested = ref.fields.map((f) => refNames(f.type));
-            return { literals: nested.flatMap((n) => n.literals), refs: nested.flatMap((n) => n.refs) };
+            return {
+                literals: nested.flatMap((n) => n.literals),
+                refs: nested.flatMap((n) => n.refs),
+                structs: nested.flatMap((n) => n.structs),
+            };
         }
         default:
-            return { literals: [], refs: [] };
+            return NO_NAMES;
     }
 };
 
-/** Every literal and `ref` a field names must exist; `selfRef` is a type being created with its catalog. */
-export const assertKnownNames = (fields: TFieldDesc[], structure: TStructureDto, selfRef?: string) => {
+export type TNamesScope = { file: string; selfRef?: string };
+
+type TNamed = { name: string; owner?: string; file: string };
+
+// a private type or literal is not exported from its class's file
+const assertVisible = (field: TFieldDesc, named: TNamed, file: string) => {
+    if (named.owner === undefined || named.file === file) return;
+    const message = `Field "${field.key}": "${named.name}" is private to class ${named.owner}`;
+    throw HttpError.invalid([syntaxDiagnostic(file, message, `fields.${field.key}`)], message);
+};
+
+/** Every literal, `ref` and `struct` a field names must exist and be visible from `scope.file`. */
+export const assertKnownNames = (fields: TFieldDesc[], structure: TStructureDto, scope: TNamesScope) => {
     for (const field of fields) {
-        const { literals, refs } = refNames(field.type);
-        const literal = literals.find((name) => !structure.literals.some((l) => l.name === name));
-        if (literal) throw HttpError.badRequest(`Field "${field.key}": no literal "${literal}"`);
-        const ref = refs.find((name) => name !== selfRef && refTarget(name, structure) === null);
+        const { literals, refs, structs } = refNames(field.type);
+        for (const name of literals) {
+            const literal = structure.literals.find((l) => l.name === name);
+            if (!literal) throw HttpError.badRequest(`Field "${field.key}": no literal "${name}"`);
+            assertVisible(field, literal, scope.file);
+        }
+        const ref = refs.find((name) => name !== scope.selfRef && refTarget(name, structure) === null);
         if (ref) throw HttpError.badRequest(`Field "${field.key}": "${ref}" has no ids to reference`);
+        for (const name of structs) {
+            const type = structure.types.find((t) => t.kind === 'type' && t.origin === 'story' && t.name === name);
+            if (!type) throw HttpError.badRequest(`Field "${field.key}": no story type "${name}"`);
+            assertVisible(field, type, scope.file);
+        }
     }
+};
+
+// private members live in the file of a class exported under types/
+export const parseOwnerClass = (sp: SourceProject, value: unknown, structure: TStructureDto): TStructTypeDto => {
+    if (typeof value !== 'string' || value === '') throw HttpError.badRequest('Field "owner" must be a class name');
+    const owner = structure.types.find((type) => type.name === value);
+    if (owner?.kind !== 'class') throw HttpError.notFound(`No class "${value}"`);
+    const abs = sp.root.abs(owner.file);
+    const exported = sp.file(abs)?.getClass(owner.name)?.isExported() === true;
+    if (!exported || !abs.startsWith(sp.root.typesDir + path.sep)) {
+        throw HttpError.badRequest(`${value} is not a class declared under types/, so it cannot have private members`);
+    }
+    return owner;
 };
 
 /** Old → new; dropped when unchanged. */

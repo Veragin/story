@@ -1,11 +1,9 @@
-import { keysOf } from '@story/shared';
 import {
-    eventIds,
+    structFieldsOf,
     type TChangeEvent,
     type TClearedReferenceDto,
     type TClearedReferencesDto,
     type TDeleteReferencesDto,
-    type TFieldDesc,
     type TReferenceDto,
     type TStructureDto,
     type TTypeRef,
@@ -14,25 +12,15 @@ import type { ArrayLiteralExpression, Expression, ObjectLiteralExpression, Prope
 import type { EventBus } from '../events/EventBus';
 import { version } from '../events/version';
 import { HttpError } from '../common/HttpError';
-import { asArray, asObject, getProp, getPropInit, lineOf, quote, stringLiteral } from './ast';
-import { objectEntries } from './objectCatalog';
-import { chapterVersion, readDataType } from './readers/chapters';
-import { DATA_TYPE_SUFFIX, ENTITY_TYPES, entitySources, itemNodes } from './readers/entities';
-import {
-    catalogObject,
-    ITEM_INFO_TYPE,
-    readCatalogs,
-    readStructure,
-    readTypeNames,
-    type TTypeNames,
-} from './readers/structure';
+import { asArray, asObject, getProp, lineOf, quote, stringLiteral } from './ast';
+import { chapterVersion } from './readers/chapters';
+import { readStructure, readTypeNames } from './readers/structure';
 import { refIdsOf } from './refIds';
 import { dedupe, diagnosticsAsReferences, referenceAt } from './registry';
 import type { EditSession, SourceProject } from './SourceProject';
-import { chapterIds, chapterObject, referencedObjectId } from './story';
+import { referencedObjectId } from './story';
+import { type THolderField, type TResource, valueHolders } from './valueHolders';
 import type { TWriter } from './writers/common';
-
-type TResource = TClearedReferenceDto['resource'];
 
 export type TDeleteTarget = { refName: string; id: string; resource: TResource };
 
@@ -41,9 +29,6 @@ export type TDeletePlan = TDeleteTarget & {
     codeReferences?: () => TReferenceDto[];
     remove: (s: EditSession) => void;
 };
-
-// a nullable field keeps its key, set to `undefined`
-type TClearField = TFieldDesc & { nullable?: boolean };
 
 type TClear =
     | { op: 'removeProp'; prop: PropertyAssignment; path: string }
@@ -59,91 +44,17 @@ export type TValueReference = {
     change: TClearedReferenceDto['change'] | null;
 };
 
-type THolder = { resource: TResource; obj: ObjectLiteralExpression; fields: TClearField[]; path: string };
-
-// `TChapter` is an engine type: the reader gives it no fields
-const CHAPTER_FIELDS: TClearField[] = [{ key: 'location', type: { t: 'ref', name: 'TLocation' }, optional: false }];
-
-// `TNpcData.location` is `TLocationId | undefined`
-const NULLABLE_FIELDS: Record<string, readonly string[]> = { TNpcData: ['location'] };
-
-const CHAPTER_DATA_SUFFIX = 'ChapterData';
-
-const fieldsOf = (structure: TStructureDto, typeName: string | undefined): TClearField[] => {
-    if (!typeName) return [];
-    if (typeName === 'TChapter') return CHAPTER_FIELDS;
-    const nullable = NULLABLE_FIELDS[typeName] ?? [];
-    const declared = structure.types.find((type) => type.name === typeName)?.fields ?? [];
-    return declared.map((field) => (nullable.includes(field.key) ? { ...field, nullable: true } : field));
-};
-
-const asOptional = (fields: TFieldDesc[] = []): TClearField[] => fields.map((field) => ({ ...field, optional: true }));
-
-export const entityResource = (kind: string, id: string): TResource => ({
-    kind: 'entity',
-    id: eventIds.entity(kind, id),
-});
-
-export const catalogResource = (catalog: string, id: string): TResource => ({
-    kind: 'catalog',
-    id: eventIds.catalog(catalog, id),
-});
-
-const entityHolders = (sp: SourceProject, structure: TStructureDto, names: TTypeNames): THolder[] =>
-    keysOf(ENTITY_TYPES).flatMap((kind) =>
-        entitySources(sp, kind).flatMap((src) => {
-            const resource = entityResource(kind, src.id);
-            const types = ENTITY_TYPES[kind];
-            const init = asObject(getPropInit(src.obj, 'init'));
-            // `init` holds the entity's own data type as `Partial`
-            const initFields = [
-                ...fieldsOf(structure, types.data),
-                ...asOptional(readDataType(src.sf, DATA_TYPE_SUFFIX[kind], names)?.fields),
-            ];
-            return [
-                { resource, obj: src.obj, fields: fieldsOf(structure, types.entity), path: '' },
-                ...(init ? [{ resource, obj: init, fields: initFields, path: 'init' }] : []),
-            ];
-        })
-    );
-
-const itemHolders = (sp: SourceProject, structure: TStructureDto): THolder[] =>
-    itemNodes(sp).map((node) => ({
-        resource: entityResource('items', node.id),
-        obj: node.item,
-        fields: fieldsOf(structure, ITEM_INFO_TYPE),
-        path: '',
-    }));
-
-const catalogHolders = (sp: SourceProject, structure: TStructureDto): THolder[] =>
-    readCatalogs(sp).flatMap((catalog) =>
-        objectEntries(catalogObject(sp, catalog.name)).map((entry) => ({
-            resource: catalogResource(catalog.name, entry.id),
-            obj: entry.value,
-            fields: fieldsOf(structure, catalog.typeName),
-            path: '',
-        }))
-    );
-
-const chapterHolders = (sp: SourceProject, structure: TStructureDto, names: TTypeNames): THolder[] =>
-    chapterIds(sp).flatMap((chapterId) => {
-        const sf = sp.file(sp.root.paths.chapterFile(chapterId));
-        if (!sf) return [];
-        const resource: TResource = { kind: 'chapter', id: chapterId };
-        const { obj } = chapterObject(sf);
-        const init = asObject(getPropInit(obj, 'init'));
-        const initFields = readDataType(sf, CHAPTER_DATA_SUFFIX, names)?.fields ?? [];
-        return [
-            { resource, obj, fields: fieldsOf(structure, 'TChapter'), path: '' },
-            ...(init ? [{ resource, obj: init, fields: initFields, path: 'init' }] : []),
-        ];
-    });
-
 const joinPath = (path: string, key: string) => (path ? `${path}.${key}` : key);
 
 const refIdOf = (expr: Expression) => stringLiteral(expr) ?? referencedObjectId(expr);
 
-type TWalk = { target: TDeleteTarget; found: { clear: TClear; value: Expression }[] };
+type TWalk = {
+    target: TDeleteTarget;
+    structure: TStructureDto;
+    found: { clear: TClear; value: Expression }[];
+    // the story types being walked, so a hand-written recursive one stops
+    within: readonly string[];
+};
 
 const visitValue = (walk: TWalk, expr: Expression, type: TTypeRef, path: string, clear: TClear) => {
     switch (type.t) {
@@ -170,13 +81,20 @@ const visitValue = (walk: TWalk, expr: Expression, type: TTypeRef, path: string,
             if (obj) visitFields(walk, obj, type.fields, path, clear);
             return;
         }
+        case 'struct': {
+            const obj = asObject(expr);
+            if (!obj || walk.within.includes(type.name)) return;
+            const fields = structFieldsOf(walk.structure, type.name);
+            visitFields({ ...walk, within: [...walk.within, type.name] }, obj, fields, path, clear);
+            return;
+        }
     }
 };
 
 const visitFields = (
     walk: TWalk,
     obj: ObjectLiteralExpression,
-    fields: TClearField[],
+    fields: readonly THolderField[],
     path: string,
     parent: TClear | undefined
 ) => {
@@ -214,14 +132,11 @@ export const findValueReferences = (sp: SourceProject, target: TDeleteTarget): T
     const structure = readStructure(sp);
     const names = readTypeNames(sp);
     const fallback = refIdsOf(sp, structure)(target.refName).find((id) => id !== target.id);
-    const holders = [
-        ...entityHolders(sp, structure, names),
-        ...itemHolders(sp, structure),
-        ...catalogHolders(sp, structure),
-        ...chapterHolders(sp, structure, names),
-    ].filter((holder) => !sameResource(holder.resource, target.resource));
+    const holders = valueHolders(sp, structure, names).filter(
+        (holder) => !sameResource(holder.resource, target.resource)
+    );
     return holders.flatMap((holder) => {
-        const walk: TWalk = { target, found: [] };
+        const walk: TWalk = { target, structure, found: [], within: [] };
         visitFields(walk, holder.obj, holder.fields, holder.path, undefined);
         return walk.found.map(({ clear, value }) => ({
             resource: holder.resource,

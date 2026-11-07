@@ -1,11 +1,20 @@
 import { keysOf } from '@story/shared';
-import { type TFieldDesc, type TStructTypeDto, type TTypeDefaultContext, typeDefault } from '@story/protocol';
-import type { ObjectLiteralExpression } from 'ts-morph';
-import { asObject, getProp, getPropInit, keyText } from './ast';
+import {
+    structFieldsOf,
+    type TFieldDesc,
+    type TStructTypeDto,
+    type TStructureDto,
+    type TTypeDefaultContext,
+    type TTypeRef,
+    typeDefault,
+} from '@story/protocol';
+import type { Expression, ObjectLiteralExpression } from 'ts-morph';
+import { asArray, asObject, getProp, getPropInit, keyText } from './ast';
 import { objectEntries } from './objectCatalog';
 import { ENTITY_TYPES, entitySources, itemNodes } from './readers/entities';
-import { catalogObject, ITEM_INFO_TYPE } from './readers/structure';
+import { catalogObject, ITEM_INFO_TYPE, readTypeNames } from './readers/structure';
 import type { SourceProject } from './SourceProject';
+import { valueHolders } from './valueHolders';
 import { genValue, schemaOf } from './values';
 
 /** `openProps`: the objects may carry keys the type does not declare (items), so none is removed. */
@@ -21,9 +30,48 @@ const entityInstances = (sp: SourceProject, typeName: string): ObjectLiteralExpr
     return [];
 };
 
-/** The object literals typed by `type`: catalog entries, entity objects, or their `init` objects. */
-export const typeInstances = (sp: SourceProject, type: TStructTypeDto): TTypeInstances => {
+type TStructWalk = { name: string; structure: TStructureDto; within: readonly string[] };
+
+const fieldsObjects = (obj: ObjectLiteralExpression, fields: readonly TFieldDesc[], walk: TStructWalk) =>
+    fields.flatMap((field) => {
+        const init = getPropInit(obj, field.key);
+        return init ? structObjects(init, field.type, walk) : [];
+    });
+
+// the objects at the places `ref` gives the story type `walk.name`
+const structObjects = (expr: Expression, ref: TTypeRef, walk: TStructWalk): ObjectLiteralExpression[] => {
+    switch (ref.t) {
+        case 'struct': {
+            const obj = asObject(expr);
+            if (!obj) return [];
+            if (ref.name === walk.name) return [obj];
+            if (walk.within.includes(ref.name)) return [];
+            const nested = { ...walk, within: [...walk.within, ref.name] };
+            return fieldsObjects(obj, structFieldsOf(walk.structure, ref.name), nested);
+        }
+        case 'array':
+            return (asArray(expr)?.getElements() ?? []).flatMap((element) => structObjects(element, ref.of, walk));
+        case 'object': {
+            const obj = asObject(expr);
+            return obj ? fieldsObjects(obj, ref.fields, walk) : [];
+        }
+        default:
+            return [];
+    }
+};
+
+// a story `type` has no instances of its own: its values sit in the fields typed by it, at any depth
+const structInstances = (sp: SourceProject, name: string, structure: TStructureDto): ObjectLiteralExpression[] =>
+    valueHolders(sp, structure, readTypeNames(sp)).flatMap((holder) =>
+        fieldsObjects(holder.obj, holder.fields, { name, structure, within: [] })
+    );
+
+/** The object literals typed by `type`: catalog entries, entity objects, their `init` objects, or nested values. */
+export const typeInstances = (sp: SourceProject, type: TStructTypeDto, structure: TStructureDto): TTypeInstances => {
     if (type.name === ITEM_INFO_TYPE) return { objects: itemNodes(sp).map((node) => node.item), openProps: true };
+    if (type.origin === 'story' && type.kind === 'type') {
+        return { objects: structInstances(sp, type.name, structure), openProps: false };
+    }
     if (type.catalog) {
         return { objects: objectEntries(catalogObject(sp, type.catalog.name)).map((e) => e.value), openProps: false };
     }
@@ -42,7 +90,8 @@ export type TInstanceChange = {
 
 const valueText = (obj: ObjectLiteralExpression, field: TFieldDesc, ctx: TTypeDefaultContext): string | null => {
     const value = typeDefault(field.type, ctx);
-    return value === null ? null : genValue(value, schemaOf(field.type), { sf: obj.getSourceFile(), path: field.key });
+    if (value === null) return null;
+    return genValue(value, schemaOf(field.type, ctx.structFields), { sf: obj.getSourceFile(), path: field.key });
 };
 
 export const migrateInstance = (obj: ObjectLiteralExpression, change: TInstanceChange, ctx: TTypeDefaultContext) => {
