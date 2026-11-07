@@ -41,7 +41,7 @@ clients/
     src/canvas/       the Canvas library: Scene, Camera, shapes, selection / vertex / line controllers (#/_canvas playground)
     src/shell/        top bar, hash router, control-bar slot, modals, keyboard helper
     src/pages/        Map, Timeline, Chapter, Entities, Structure
-    src/stores/       shared stores: StructureStore (literals, types), EntityStore (entity and catalog lists), DraftResource
+    src/stores/       shared stores: StructureStore (literals, classes, types), EntityStore (entity and catalog lists), DraftResource
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
     src/components/   shared UI: inputs/ (pure controls), form/ (labeled fields), code/ (code-aware wrappers, SourceEditorDialog), editors/, buttons/, dialog/, feedback/, layout/
     src/values/, src/structure/, src/hooks/  non-UI value logic, StructureContext, useRowList
@@ -73,7 +73,7 @@ Tests: `yarn test` at the root runs the `visualizer-client` and `visualizer-land
     - create entity: the entity file, `register.ts` and `TWorldState.ts`
     - delete a passage or an entity: its image (the sibling `.webp` and `.png`) goes too
     - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors. Deleting an entity or a catalog entry clears the values that point at it instead (optional key removed, array element removed, required field set to the first remaining id) and is refused only by code references or a required field with no id left; `GET …/references` previews it
-    - create type: `types/<Name>.ts` and its line in `types/index.ts`; a catalog type also `data/catalogs/<plural>.ts` and `T<Name>Id`. Editing a type rewrites its instances in the same commit (renames, removed keys, defaults for new required fields)
+    - create class or type: `types/<Name>.ts` and its line in `types/index.ts`; a class also `data/catalogs/<plural>.ts` and `T<Name>Id`; a private type or literal goes non-exported into its class's file. Editing a class or type rewrites its instances (for a type, its nested `struct` values) in the same commit (renames, removed keys, defaults for new required fields)
 - **JSON stores** (`json/`): `data/locations/map.json` and the layouts `data/chapters/timeline.layout.json` and `data/chapters/<ch>/<ch>.layout.json`. They are validated whole-document replaces (400 on a bad shape). A missing file reads as the default with `version: ''` (for the map: an empty map of the story's `mapSize`), and a `PUT` with `version: ''` creates it.
 
 ### `map.json`
@@ -148,5 +148,5 @@ The page never reloads because the story changed. `data/` is not in Vite's modul
     - Chapter view: automatic positions are only saved once a box is dragged. There is no reordering of body items or links, and `ChapterInfoForm` does not edit `triggerIds`.
     - Timeline: the wheel zooms time (continuous; there is no slider). Chapters and triggers whose time is code are not drawn (a hint counts them). A stale drag is discarded, not re-applied.
     - Keyboard shortcuts are off while a modal is open.
-    - Structure tab: a type or literal draft is not kept across a reload, and switching the selection drops it without asking.
-    - A catalog type cannot reach its own ids through its fields (`TRace.kin: TRaceId[]`): tsc would turn `TRaceId` into `any`, so the server refuses it.
+    - Structure tab: a class, type or literal draft is not kept across a reload, and switching the selection drops it without asking.
+    - A class cannot reach its own ids through its fields (`Race.kin: TRaceId[]`): tsc would turn `TRaceId` into `any`, so the server refuses it. A type cannot contain itself either (`type TA = { b: TA }`).
