@@ -15,14 +15,14 @@ export * from './literals';
 
 /* TChapter */
 export * from './TChapter';
-/* TCharacter, TCharacterData */
-export * from './TCharacter';
-/* TNpc, TNpcData */
-export * from './TNpc';
+/* Character, TCharacterData */
+export * from './Character';
+/* Npc, TNpcData */
+export * from './Npc';
 /* TItemId, TItem, TItemPartial, TInitInventory */
 export * from './TItem';
-/* TLocation, TLocationId */
-export * from './TLocation';
+/* Location, TLocationId */
+export * from './Location';
 /* TChapterPassage, TPassage, TPassageStart, TPassageScreen, TPassageLinear, TPassageRedirect, TPassageFinish,
    TLink, TLinkCost, TChapterPassageType, getWholePassageId */
 export * from './TPassage';

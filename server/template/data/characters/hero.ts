@@ -1,6 +1,6 @@
-import { TCharacter } from '@story/types';
+import type { Character } from '@story/types';
 
-export const Hero: TCharacter<'hero'> = {
+export const Hero: Character<'hero'> = {
     id: 'hero',
     name: _('Hero'),
     startPassageId: 'start-hero-intro',

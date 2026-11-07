@@ -1,5 +1,5 @@
 import { Time } from '@story/shared';
-import { TChapter, TCharacter, TCharacterData, TCharacterId, TLocation, TNpc, TNpcData } from '@story/types';
+import type { TChapter, Character, TCharacterData, TCharacterId, Location, Npc, TNpcData } from '@story/types';
 import type { THistoryItem } from '@story/core';
 import { TStartChapterData } from './chapters/start/start.chapter';
 import { THeroCharacterData } from './characters/hero';
@@ -12,16 +12,16 @@ export type TWorldState = {
     currentHistory: Partial<Record<TCharacterId, THistoryItem>>;
 
     characters: {
-        hero: { ref: TCharacter<'hero'> } & TCharacterData & Partial<THeroCharacterData>;
+        hero: { ref: Character<'hero'> } & TCharacterData & Partial<THeroCharacterData>;
     };
     npcs: {
-        stranger: { ref: TNpc<'stranger'> } & TNpcData & Partial<TStrangerNpcData>;
+        stranger: { ref: Npc<'stranger'> } & TNpcData & Partial<TStrangerNpcData>;
     };
 
     chapters: {
         start: { ref: TChapter<'start'> } & TStartChapterData;
     };
     locations: {
-        home: { ref: TLocation<'home'> } & THomeLocationData;
+        home: { ref: Location<'home'> } & THomeLocationData;
     };
 };

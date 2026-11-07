@@ -109,7 +109,7 @@ export const ChapterInfoForm = observer(
                     label={_('Location')}
                     value={value.location}
                     onChange={(next) => set('location', next)}
-                    options={structure.refOptions('TLocation')}
+                    options={structure.refOptions('Location')}
                     diagnostics={diagnostics('location')}
                     disabled={disabled}
                     dataField="location"

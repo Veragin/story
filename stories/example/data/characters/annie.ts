@@ -1,6 +1,6 @@
-import { TCharacter } from '@story/types';
+import type { Character } from '@story/types';
 
-export const Annie: TCharacter<'annie'> = {
+export const Annie: Character<'annie'> = {
     id: 'annie',
     name: _('Annie'),
     startPassageId: 'kingdom-annie-intro',

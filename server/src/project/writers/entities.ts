@@ -17,7 +17,8 @@ import { HttpError } from '../../common/HttpError';
 import { removeLocationMap, removeLocationPolygon } from '../../json/storeCleanup';
 import { deleteFiles, siblingImages } from '../images';
 import { capitalize } from '@story/shared';
-import { deleteClearingReferences, deleteReferences, entityResource, type TDeletePlan } from '../clearReferences';
+import { deleteClearingReferences, deleteReferences, type TDeletePlan } from '../clearReferences';
+import { entityResource } from '../valueHolders';
 import { addObjectEntry, entryText } from '../objectCatalog';
 import { asObject, getProp, getPropInit, keyText, propertyKey, quote, translated } from '../ast';
 import {
@@ -71,9 +72,9 @@ const NEW_ENTITY: Record<
         file: (id) => `data/characters/${id}.ts`,
         exportName: (id) => capitalize(id),
         dataType: (id) => `T${capitalize(id)}CharacterData`,
-        text: (id, exportName, dataType) => `import { TCharacter } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Character } from '@story/types';
 
-export const ${exportName}: TCharacter<'${id}'> = {
+export const ${exportName}: Character<'${id}'> = {
     id: '${id}',
     name: ${translated(capitalize(id))},
 
@@ -85,16 +86,16 @@ export const ${exportName}: TCharacter<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TCharacter<'${id}'> } & TCharacterData & Partial<${dataType}>`,
-        storyTypes: ['TCharacter', 'TCharacterData'],
+        worldState: (id, dataType) => `{ ref: Character<'${id}'> } & TCharacterData & Partial<${dataType}>`,
+        storyTypes: ['Character', 'TCharacterData'],
     },
     npcs: {
         file: (id) => `data/npcs/${capitalize(id)}.ts`,
         exportName: (id) => capitalize(id),
         dataType: (id) => `T${capitalize(id)}NpcData`,
-        text: (id, exportName, dataType) => `import { TNpc } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Npc } from '@story/types';
 
-export const ${exportName}: TNpc<'${id}'> = {
+export const ${exportName}: Npc<'${id}'> = {
     id: '${id}',
     name: ${translated(capitalize(id))},
     description: _(''),
@@ -108,16 +109,16 @@ export const ${exportName}: TNpc<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TNpc<'${id}'> } & TNpcData & Partial<${dataType}>`,
-        storyTypes: ['TNpc', 'TNpcData'],
+        worldState: (id, dataType) => `{ ref: Npc<'${id}'> } & TNpcData & Partial<${dataType}>`,
+        storyTypes: ['Npc', 'TNpcData'],
     },
     locations: {
         file: (id) => `data/locations/${id}.location.ts`,
         exportName: (id) => `${id}Location`,
         dataType: (id) => `T${capitalize(id)}LocationData`,
-        text: (id, exportName, dataType) => `import { TLocation } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Location } from '@story/types';
 
-export const ${exportName}: TLocation<'${id}'> = {
+export const ${exportName}: Location<'${id}'> = {
     id: '${id}',
     name: ${translated(capitalize(id))},
     description: _(''),
@@ -129,8 +130,8 @@ export const ${exportName}: TLocation<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TLocation<'${id}'> } & ${dataType}`,
-        storyTypes: ['TLocation'],
+        worldState: (id, dataType) => `{ ref: Location<'${id}'> } & ${dataType}`,
+        storyTypes: ['Location'],
     },
 };
 
@@ -363,9 +364,9 @@ export const updateEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
     });
 
 const ENTITY_REF_NAME: Record<TEntityKind, string> = {
-    characters: 'TCharacter',
-    npcs: 'TNpc',
-    locations: 'TLocation',
+    characters: 'Character',
+    npcs: 'Npc',
+    locations: 'Location',
     items: 'TItem',
 };
 

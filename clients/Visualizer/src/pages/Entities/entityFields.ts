@@ -115,9 +115,9 @@ export const editableOf = (entity: TEntityDto): TEntityFields =>
 export const withFields = (entity: TEntityDto, patch: Record<string, unknown>): TEntityDto => ({ ...entity, ...patch });
 
 export const ENTITY_TYPE_NAMES = {
-    characters: { entity: 'TCharacter', data: 'TCharacterData' },
-    npcs: { entity: 'TNpc', data: 'TNpcData' },
-    locations: { entity: 'TLocation', data: null },
+    characters: { entity: 'Character', data: 'TCharacterData' },
+    npcs: { entity: 'Npc', data: 'TNpcData' },
+    locations: { entity: 'Location', data: null },
     items: { entity: 'TItemInfo', data: null },
 } as const satisfies Record<TEntityKind, { entity: string; data: string | null }>;
 

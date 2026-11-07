@@ -1,9 +1,9 @@
-import { TLocation } from '@story/types';
+import type { Location } from '@story/types';
 
 import { applyFormatting } from '@story/shared';
 void applyFormatting;
 
-export const kingdomLocation: TLocation<'kingdom'> = {
+export const kingdomLocation: Location<'kingdom'> = {
     id: 'kingdom',
     name: _('kingdom'),
     description: _(''),

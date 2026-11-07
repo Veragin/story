@@ -4,12 +4,12 @@ import type {
     TChapter,
     TChapterId,
     TChapterPassage,
-    TCharacter,
+    Character,
     TCharacterId,
     TItemId,
-    TLocation,
+    Location,
     TLocationId,
-    TNpc,
+    Npc,
     TNpcId,
     TEngineSettings,
 } from '@story/types';
@@ -17,10 +17,10 @@ import { keysOf } from '@story/shared';
 
 /** Typed structurally: `core` must not depend on `data/` at value level. */
 export type TWorldStateRegister = {
-    characters: { readonly [Id in TCharacterId]: TCharacter<Id> };
-    npcs: { readonly [Id in TNpcId]: TNpc<Id> };
+    characters: { readonly [Id in TCharacterId]: Character<Id> };
+    npcs: { readonly [Id in TNpcId]: Npc<Id> };
     chapters: { readonly [Id in TChapterId]: TChapter<Id> };
-    locations: { readonly [Id in TLocationId]: TLocation<Id> };
+    locations: { readonly [Id in TLocationId]: Location<Id> };
 };
 
 export type TItemInfoRegister = { readonly [Id in TItemId]: { readonly name: string } };

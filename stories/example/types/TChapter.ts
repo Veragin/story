@@ -1,6 +1,6 @@
 import type { TWorldState } from '@story/data';
 import { TChapterId } from './ids';
-import { TLocationId } from './TLocation';
+import { TLocationId } from './Location';
 import { TimeRange } from '@story/shared';
 import { TTimeTrigger } from './TTimeTrigger';
 

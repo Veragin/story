@@ -1,12 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { eventIds } from '@story/protocol';
 import { Node, type SourceFile, SyntaxKind } from 'ts-morph';
 import type { EventBus } from '../../events/EventBus';
-import { isHttpError } from '../../common/HttpError';
 import { TEMPLATE_ROOT } from '../../stories/templateRoot';
-import { readStructure, TYPES_INDEX_FILE } from '../readers/structure';
+import { TYPES_INDEX_FILE } from '../readers/structure';
 import type { SourceProject } from '../SourceProject';
+import { commitMigration, notMigratedMessage } from './migrationSession';
 
 const PASSAGE_FILE = 'types/TPassage.ts';
 const BINDING_EXPORTS: ReadonlySet<string> = new Set([
@@ -75,18 +74,11 @@ export const migratePassageStructure = async (sp: SourceProject, bus: EventBus):
                 s.edit(indexAbs).replaceWithText(index.getFullText().replace(OLD_INDEX_HEADER, NEW_INDEX_HEADER));
             }
         });
-        await s.commit(bus, () => ({
-            kind: 'structure',
-            id: eventIds.structure,
-            version: readStructure(sp).version,
-            op: 'updated',
-        }));
+        await commitMigration(sp, s, bus);
         return true;
     } catch (e) {
         s.rollback();
-        const diagnostics = isHttpError(e) ? (e.body.diagnostics ?? []) : [];
-        const details = diagnostics.map((d) => `\n  ${d.file}:${d.line} ${d.message}`).join('');
-        log(`${sp.root.storyId} not migrated: ${e instanceof Error ? e.message : String(e)}${details}`);
+        log(notMigratedMessage(sp, e));
         return false;
     }
 };

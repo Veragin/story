@@ -18,7 +18,7 @@ import { UserFields } from './UserFields';
 
 const TYPES = ENTITY_TYPE_NAMES.locations;
 
-const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
+const LOCATION_REF: TTypeRef = { t: 'ref', name: 'Location' };
 
 export const LocationFields = observer(
     ({ store, structure, draft }: TEntityFieldsProps<TLocationDto>) => (
@@ -59,7 +59,7 @@ export const LocationFields = observer(
                 dataField="localCharacters"
             />
             <StructureContext.Provider
-                value={withoutRefOption(structure, 'TLocation', draft.id)}
+                value={withoutRefOption(structure, 'Location', draft.id)}
             >
                 <FormArrayEditor
                     label={_('Sublocations')}

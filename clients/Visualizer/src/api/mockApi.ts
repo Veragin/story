@@ -55,9 +55,9 @@ export type TMockApi = TVisualizerApi & {
 };
 
 const ENTITY_REF_NAMES: Record<TEntityKind, string> = {
-    characters: 'TCharacter',
-    npcs: 'TNpc',
-    locations: 'TLocation',
+    characters: 'Character',
+    npcs: 'Npc',
+    locations: 'Location',
     items: 'TItem',
 };
 
@@ -295,7 +295,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
     const locationHolder = (e: TLocationDto): TMockHolder =>
         entityHolder(
             e,
-            'TLocation',
+            'Location',
             '',
             { ...e.userFields, ...(Array.isArray(e.sublocations) ? { sublocations: e.sublocations } : {}) },
             ({ sublocations, ...userFields }) => ({ userFields, sublocations })
@@ -330,10 +330,10 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
 
     const holders = (): TMockHolder[] => [
         ...[...entities.characters.values()].flatMap((e) => [
-            userFieldsHolder(e, 'TCharacter'),
+            userFieldsHolder(e, 'Character'),
             ...initHolder(e, 'TCharacterData'),
         ]),
-        ...[...entities.npcs.values()].flatMap((e) => [userFieldsHolder(e, 'TNpc'), ...initHolder(e, 'TNpcData')]),
+        ...[...entities.npcs.values()].flatMap((e) => [userFieldsHolder(e, 'Npc'), ...initHolder(e, 'TNpcData')]),
         ...[...entities.locations.values()].map(locationHolder),
         ...[...entities.items.values()].map(itemHolder),
         ...[...chapters.values()].map(chapterHolder),

@@ -6,6 +6,7 @@ import { HttpError } from '../common/HttpError';
 import {
     ensureDefaultImport,
     ensureNamedImport,
+    ensureTypeImport,
     findImportOf,
     getProp,
     importedNames,
@@ -86,8 +87,7 @@ export const worldStateAdd = (
     const lit = worldStateSection(sf, section);
     if (lit.getProperty(id)) throw HttpError.exists(`TWorldState.${section}.${id} already exists`);
     if (dataType && targetFile) ensureNamedImport(sf, dataType, relativeModule(sf.getFilePath(), targetFile));
-    const have = importedNames(sf);
-    for (const name of storyTypes) if (!have.has(name)) ensureNamedImport(sf, name, '@story/types');
+    for (const name of storyTypes) ensureTypeImport(sf, name, '@story/types');
     lit.addProperty({ name: keyText(id), type: typeText });
 };
 

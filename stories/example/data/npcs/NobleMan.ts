@@ -1,6 +1,6 @@
-import { TNpc } from '@story/types';
+import type { Npc } from '@story/types';
 
-export const NobleMan: TNpc<'nobleMan'> = {
+export const NobleMan: Npc<'nobleMan'> = {
     id: 'nobleMan',
     name: _('Noble Man'),
     description: _('Noble Man is a very rich and powerful'),
