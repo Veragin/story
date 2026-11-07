@@ -10,8 +10,10 @@ export type TTypeRef =
     | { t: 'boolean' }
     /** A string-literal union (`TItemType`); the value is one of its members. */
     | { t: 'literal'; name: string }
-    /** A referenceable type (`TLocation`, `TRace`); the value is an id, written as `T<Name>Id`. */
+    /** A referenceable class (`Location`, `Race`); the value is an id, written as `T<Name>Id`. */
     | { t: 'ref'; name: string }
+    /** A story `type` (`TData`); the value is an object of its fields. */
+    | { t: 'struct'; name: string }
     | { t: 'array'; of: TTypeRef }
     /** An inline `{ … }`. */
     | { t: 'object'; fields: TFieldDesc[] }
@@ -30,8 +32,8 @@ export type TFieldDesc = {
     description?: string;
 };
 
-/** `global`: declared in `types/literals.ts`; `local`: declared in the file that uses it. */
-export type TLiteralScope = 'global' | 'local';
+/** `global`: declared in `types/literals.ts`; `local`: declared in the file that uses it; `private`: not exported from its class's file. */
+export type TLiteralScope = 'global' | 'local' | 'private';
 
 /** The name is unique across the whole story, global and local alike. */
 export type TLiteralDto = TVersioned &
@@ -39,9 +41,14 @@ export type TLiteralDto = TVersioned &
         name: string;
         scope: TLiteralScope;
         values: string[];
+        /** The class whose file declares this private literal. */
+        owner?: string;
     };
 
 export type TTypeOrigin = 'story' | 'extendable' | 'engine';
+
+/** `class`: has instances, fields reference it by id; `type`: a named structure, used as a nested object. */
+export type TStructKind = 'class' | 'type';
 
 export type TCatalogRefDto = {
     /** The plural export name, e.g. `races`. */
@@ -55,7 +62,10 @@ export type TCatalogRefDto = {
 export type TStructTypeDto = TVersioned &
     TSourceRef & {
         name: string;
+        kind: TStructKind;
         origin: TTypeOrigin;
+        /** The class whose file declares this private type. */
+        owner?: string;
         /** Empty for `engine`. */
         fields: TFieldDesc[];
         /** The read-only source of an `engine` or unparsable type. */
@@ -71,12 +81,23 @@ export type TStructureDto = TVersioned & {
     diagnostics?: TDiagnosticDto[];
 };
 
-export type TCreateTypeBody = {
-    name: string;
-    fields: TFieldDesc[];
-    /** Creates `data/catalogs/<name>.ts` and `T<Name>Id`. */
-    catalog?: { name: string };
-};
+export type TCreateTypeBody =
+    | {
+          kind: 'class';
+          name: string;
+          fields: TFieldDesc[];
+          /** Creates `data/catalogs/<name>.ts` and `T<Name>Id`. */
+          catalog: { name: string };
+          owner?: never;
+      }
+    | {
+          kind: 'type';
+          name: string;
+          fields: TFieldDesc[];
+          catalog?: never;
+          /** Declares a private type in that class's file. */
+          owner?: string;
+      };
 
 /** 422 `invalid` when an instance still does not type-check; retry with `resetIncompatible`. */
 export type TUpdateTypeBody = TVersionedBody & {
@@ -101,6 +122,8 @@ export type TCreateLiteralBody = {
     values: string[];
     /** Declares a local literal in that file; without it, a global one in `types/literals.ts`. */
     file?: string;
+    /** Declares a private literal in that class's file. */
+    owner?: string;
 };
 
 export type TUpdateLiteralBody = TVersionedBody & {
@@ -157,10 +180,10 @@ export type TRefTarget =
     | { source: 'catalog'; catalog: string };
 
 export const BUILT_IN_REF_TARGETS = {
-    TLocation: { source: 'entities', kind: 'locations' },
+    Location: { source: 'entities', kind: 'locations' },
     TItem: { source: 'entities', kind: 'items' },
-    TCharacter: { source: 'entities', kind: 'characters' },
-    TNpc: { source: 'entities', kind: 'npcs' },
+    Character: { source: 'entities', kind: 'characters' },
+    Npc: { source: 'entities', kind: 'npcs' },
     TChapter: { source: 'chapters' },
 } as const satisfies Record<string, TRefTarget>;
 
@@ -173,17 +196,36 @@ export const refTarget = (name: string, structure: TStructureDto): TRefTarget | 
     return catalog ? { source: 'catalog', catalog: catalog.name } : null;
 };
 
-/** `TRace` → `TRaceId`: how a `ref` field is written in the type. */
-export const refIdTypeName = (refName: string): string => `${refName}Id`;
+const TYPE_PREFIX_RE = /^T[A-Z]/;
 
-/** `TRaceId` → `TRace`; `null` when the name is not an id type. */
-export const refNameOfIdType = (idType: string): string | null =>
-    /^T[A-Z]\w*Id$/.test(idType) ? idType.slice(0, -2) : null;
+const ID_TYPE_RE = /^T[A-Z]\w*Id$/;
+
+const PREFIXED_REF_NAMES: Readonly<Record<string, string>> = { TItemId: 'TItem', TChapterId: 'TChapter' };
+
+/** `Race` → `TRaceId`, `TItem` → `TItemId`: how a `ref` field is written in the type. */
+export const refIdTypeName = (refName: string): string =>
+    TYPE_PREFIX_RE.test(refName) ? `${refName}Id` : `T${refName}Id`;
+
+/** `TRaceId` → `Race`, `TItemId` → `TItem`; `null` when the name is not an id type. */
+export const refNameOfIdType = (idType: string): string | null => {
+    if (!ID_TYPE_RE.test(idType)) return null;
+    return PREFIXED_REF_NAMES[idType] ?? idType.slice(1, -2);
+};
+
+/** The one of `refNames` whose id type is `idType`, whichever naming it uses. */
+export const refNameAmong = (idType: string, refNames: Iterable<string>): string | undefined => {
+    for (const refName of refNames) if (refIdTypeName(refName) === idType) return refName;
+    return undefined;
+};
 
 export type TTypeDefaultContext = {
     literalValues: (name: string) => readonly string[];
     idsOf: (refName: string) => readonly string[];
+    structFields: (name: string) => readonly TFieldDesc[];
 };
+
+export const structFieldsOf = (structure: TStructureDto, name: string): readonly TFieldDesc[] =>
+    structure.types.find((type) => type.kind === 'type' && type.name === name)?.fields ?? [];
 
 export const typeDefaultContext = (
     structure: TStructureDto,
@@ -191,9 +233,20 @@ export const typeDefaultContext = (
 ): TTypeDefaultContext => ({
     literalValues: (name) => structure.literals.find((literal) => literal.name === name)?.values ?? [],
     idsOf,
+    structFields: (name) => structFieldsOf(structure, name),
 });
 
-export const typeDefault = (ref: TTypeRef, ctx: TTypeDefaultContext): TValue => {
+const requiredDefaults = (
+    fields: readonly TFieldDesc[],
+    ctx: TTypeDefaultContext,
+    within: readonly string[]
+): TValueRecord =>
+    Object.fromEntries(
+        fields.filter((field) => !field.optional).map((field) => [field.key, defaultOf(field.type, ctx, within)])
+    );
+
+// `within`: the story types being filled, so a recursive one stops instead of looping
+const defaultOf = (ref: TTypeRef, ctx: TTypeDefaultContext, within: readonly string[]): TValue => {
     switch (ref.t) {
         case 'string':
             return '';
@@ -205,12 +258,14 @@ export const typeDefault = (ref: TTypeRef, ctx: TTypeDefaultContext): TValue => 
             return ctx.literalValues(ref.name)[0] ?? '';
         case 'ref':
             return ctx.idsOf(ref.name)[0] ?? '';
+        case 'struct':
+            return within.includes(ref.name)
+                ? null
+                : requiredDefaults(ctx.structFields(ref.name), ctx, [...within, ref.name]);
         case 'array':
             return [];
         case 'object':
-            return Object.fromEntries(
-                ref.fields.filter((field) => !field.optional).map((field) => [field.key, typeDefault(field.type, ctx)])
-            );
+            return requiredDefaults(ref.fields, ctx, within);
         case 'function':
             return code('() => {}');
         case 'code':
@@ -218,6 +273,8 @@ export const typeDefault = (ref: TTypeRef, ctx: TTypeDefaultContext): TValue => 
             return null;
     }
 };
+
+export const typeDefault = (ref: TTypeRef, ctx: TTypeDefaultContext): TValue => defaultOf(ref, ctx, []);
 
 export const UNKNOWN_TYPE_REF: TTypeRef = { t: 'code', code: 'unknown' };
 
@@ -244,12 +301,22 @@ export const inferTypeRef = (value: TValue): TTypeRef => {
 
 export const STRUCT_NAME_RE = /^T[A-Z][A-Za-z0-9]*$/;
 
-export type TStructNameError = 'required' | 'pattern' | 'id' | 'taken';
+export const CLASS_NAME_RE = /^(?!T[A-Z])[A-Z][A-Za-z0-9]*$/;
 
-/** A new type or literal name; `taken` lists every type and literal name in the story. */
-export const structNameError = (name: string, taken: readonly string[]): TStructNameError | null => {
+/** Their ids would be `TItemId` / `TChapterId`, which belong to the built-in `TItem` / `TChapter`. */
+export const RESERVED_CLASS_NAMES: readonly string[] = ['Item', 'Chapter'];
+
+export type TStructNameError = 'required' | 'pattern' | 'id' | 'reserved' | 'taken';
+
+/** A new class, type or literal (`type`) name; `taken` lists every class, type and literal name in the story. */
+export const structNameError = (name: string, taken: readonly string[], kind: TStructKind): TStructNameError | null => {
     if (name === '') return 'required';
-    if (!STRUCT_NAME_RE.test(name)) return 'pattern';
-    if (refNameOfIdType(name) !== null) return 'id';
+    if (kind === 'class') {
+        if (!CLASS_NAME_RE.test(name)) return 'pattern';
+        if (RESERVED_CLASS_NAMES.includes(name)) return 'reserved';
+    } else {
+        if (!STRUCT_NAME_RE.test(name)) return 'pattern';
+        if (refNameOfIdType(name) !== null) return 'id';
+    }
     return taken.includes(name) ? 'taken' : null;
 };

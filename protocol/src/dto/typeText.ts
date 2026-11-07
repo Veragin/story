@@ -8,6 +8,7 @@ const NEEDS_NO_PARENS: ReadonlySet<TTypeRef['t']> = new Set([
     'boolean',
     'literal',
     'ref',
+    'struct',
     'array',
     'object',
 ]);
@@ -49,6 +50,8 @@ export const refToTypeText = (ref: TTypeRef): string => {
             return ref.name;
         case 'ref':
             return refIdTypeName(ref.name);
+        case 'struct':
+            return ref.name;
         case 'array':
             return `${arrayItemText(ref.of)}[]`;
         case 'object':
@@ -63,6 +66,7 @@ export const refToTypeText = (ref: TTypeRef): string => {
 const refTypeNames = (ref: TTypeRef): string[] => {
     switch (ref.t) {
         case 'literal':
+        case 'struct':
             return [ref.name];
         case 'ref':
             return [refIdTypeName(ref.name)];
@@ -75,7 +79,7 @@ const refTypeNames = (ref: TTypeRef): string[] => {
     }
 };
 
-/** The named types (literals, `T<Name>Id`) the generated text of these fields mentions. */
+/** The named types (literals, `T<Name>Id`, story types) the generated text of these fields mentions. */
 export const fieldTypeNames = (fields: readonly TFieldDesc[]): string[] => [
     ...new Set(fields.flatMap((field) => refTypeNames(field.type))),
 ];

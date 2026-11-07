@@ -29,7 +29,7 @@ import type { SourceProject } from '../SourceProject';
 import { locationRef, registerEntries, type TRegisterEntry } from '../story';
 import { readFields, S, schemaOf, type TField, type TSchema } from '../values';
 import { readDataType } from './chapters';
-import { readType, readTypeNames, type TTypeNames, userFieldsOf } from './structure';
+import { readType, readTypeNames, storyStructFields, type TTypeNames, userFieldsOf } from './structure';
 
 type TSourceKind = Exclude<TEntityKind, 'items'>;
 
@@ -47,18 +47,27 @@ export const DATA_TYPE_SUFFIX: Record<TSourceKind, string> = {
 
 /** The extendable types behind an entity kind: the entity object's, and its `init`'s. */
 export const ENTITY_TYPES: Record<TSourceKind, { entity: string; data?: string }> = {
-    characters: { entity: 'TCharacter', data: 'TCharacterData' },
-    npcs: { entity: 'TNpc', data: 'TNpcData' },
-    locations: { entity: 'TLocation' },
+    characters: { entity: 'Character', data: 'TCharacterData' },
+    npcs: { entity: 'Npc', data: 'TNpcData' },
+    locations: { entity: 'Location' },
 };
 
 const entityUserFields = (sp: SourceProject, kind: TSourceKind, names?: TTypeNames): TFieldDesc[] =>
     userFieldsOf(readType(sp, ENTITY_TYPES[kind].entity, names));
 
-export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => ({
-    ...builtInEntityFields(sp, kind),
-    ...Object.fromEntries(entityUserFields(sp, kind).map((field) => [field.key, { schema: schemaOf(field.type) }])),
-});
+export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => {
+    const names = readTypeNames(sp);
+    const structFields = storyStructFields(sp, names);
+    return {
+        ...builtInEntityFields(sp, kind),
+        ...Object.fromEntries(
+            entityUserFields(sp, kind, names).map((field) => [
+                field.key,
+                { schema: schemaOf(field.type, structFields) },
+            ])
+        ),
+    };
+};
 
 export const entityOptional = (sp: SourceProject, kind: TSourceKind): string[] => [
     ...ENTITY_OPTIONAL[kind],

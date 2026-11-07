@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
     inferTypeRef,
     refIdTypeName,
+    refNameAmong,
     refNameOfIdType,
     refTarget,
+    structNameError,
     typeDefault,
     typeDefaultContext,
     UNKNOWN_TYPE_REF,
@@ -23,16 +25,40 @@ const STRUCTURE: TStructureDto = {
             version: 't1',
             file: 'types/TRace.ts',
             name: 'TRace',
+            kind: 'class',
             origin: 'story',
             fields: [{ key: 'name', type: { t: 'string' }, optional: false }],
             catalog: { name: 'races', file: 'data/catalogs/races.ts', idType: 'TRaceId' },
         },
-        { version: 't2', file: 'types/TBag.ts', name: 'TBag', origin: 'story', fields: [] },
+        { version: 't2', file: 'types/TBag.ts', name: 'TBag', kind: 'type', origin: 'story', fields: [] },
+        {
+            version: 't3',
+            file: 'types/TStats.ts',
+            name: 'TStats',
+            kind: 'type',
+            origin: 'story',
+            fields: [
+                { key: 'hp', type: { t: 'number' }, optional: false },
+                { key: 'mood', type: { t: 'literal', name: 'TMood' }, optional: false },
+                { key: 'luck', type: { t: 'number' }, optional: true },
+            ],
+        },
+        {
+            version: 't4',
+            file: 'types/TNode.ts',
+            name: 'TNode',
+            kind: 'type',
+            origin: 'story',
+            fields: [
+                { key: 'value', type: { t: 'number' }, optional: false },
+                { key: 'next', type: { t: 'struct', name: 'TNode' }, optional: false },
+            ],
+        },
     ],
     diagnostics: [],
 };
 
-const IDS: Record<string, string[]> = { TRace: ['elf', 'dwarf'], TLocation: [] };
+const IDS: Record<string, string[]> = { TRace: ['elf', 'dwarf'], Location: [] };
 
 const CTX: TTypeDefaultContext = typeDefaultContext(STRUCTURE, (name) => IDS[name] ?? []);
 
@@ -45,8 +71,15 @@ describe('typeDefault', () => {
         [{ t: 'literal', name: 'TEmpty' }, ''],
         [{ t: 'literal', name: 'TMissing' }, ''],
         [{ t: 'ref', name: 'TRace' }, 'elf'],
-        [{ t: 'ref', name: 'TLocation' }, ''],
+        [{ t: 'ref', name: 'Location' }, ''],
         [{ t: 'array', of: { t: 'number' } }, []],
+        [
+            { t: 'struct', name: 'TStats' },
+            { hp: 0, mood: 'happy' },
+        ],
+        [{ t: 'struct', name: 'TBag' }, {}],
+        [{ t: 'struct', name: 'TRace' }, {}],
+        [{ t: 'struct', name: 'TMissing' }, {}],
         [{ t: 'function', signature: '() => void' }, { code: '() => {}' }],
         [{ t: 'code', code: 'Time' }, null],
     ])('%j → %j', (ref, expected) => {
@@ -74,6 +107,10 @@ describe('typeDefault', () => {
             ],
         };
         expect(typeDefault(ref, CTX)).toEqual({ name: '', race: 'elf', stats: { mood: 'happy' } });
+    });
+
+    it('stops at a recursive story type instead of looping', () => {
+        expect(typeDefault({ t: 'struct', name: 'TNode' }, CTX)).toEqual({ value: 0, next: null });
     });
 });
 
@@ -109,17 +146,63 @@ describe('inferTypeRef', () => {
 
 describe('refs', () => {
     it('maps built-in and catalog types to their id source', () => {
-        expect(refTarget('TLocation', STRUCTURE)).toEqual({ source: 'entities', kind: 'locations' });
+        expect(refTarget('Location', STRUCTURE)).toEqual({ source: 'entities', kind: 'locations' });
         expect(refTarget('TChapter', STRUCTURE)).toEqual({ source: 'chapters' });
         expect(refTarget('TRace', STRUCTURE)).toEqual({ source: 'catalog', catalog: 'races' });
         expect(refTarget('TBag', STRUCTURE)).toBeNull();
         expect(refTarget('TMissing', STRUCTURE)).toBeNull();
     });
 
-    it('converts between a ref name and its id type', () => {
+    it('writes the id type of a class and of a prefixed built-in', () => {
+        expect(refIdTypeName('Race')).toBe('TRaceId');
+        expect(refIdTypeName('Character')).toBe('TCharacterId');
+        expect(refIdTypeName('TItem')).toBe('TItemId');
+        expect(refIdTypeName('TChapter')).toBe('TChapterId');
         expect(refIdTypeName('TRace')).toBe('TRaceId');
-        expect(refNameOfIdType('TRaceId')).toBe('TRace');
+    });
+
+    it('reads the class of an id type, keeping the prefixed built-ins', () => {
+        expect(refNameOfIdType('TRaceId')).toBe('Race');
+        expect(refNameOfIdType('TLocationId')).toBe('Location');
+        expect(refNameOfIdType('TItemId')).toBe('TItem');
+        expect(refNameOfIdType('TChapterId')).toBe('TChapter');
         expect(refNameOfIdType('TRace')).toBeNull();
+        expect(refNameOfIdType('RaceId')).toBeNull();
         expect(refNameOfIdType('Id')).toBeNull();
+    });
+
+    it('finds the ref name of an id type among known names, whichever naming they use', () => {
+        expect(refNameAmong('TRaceId', ['Location', 'Race'])).toBe('Race');
+        expect(refNameAmong('TLocationId', ['Location', 'Race'])).toBe('Location');
+        expect(refNameAmong('TClanId', ['Location', 'Race'])).toBeUndefined();
+    });
+});
+
+describe('structNameError', () => {
+    const TAKEN = ['TMood', 'Race'];
+
+    it.each<[string, ReturnType<typeof structNameError>]>([
+        ['', 'required'],
+        ['Clan', null],
+        ['Character', null],
+        ['Race', 'taken'],
+        ['TClan', 'pattern'],
+        ['clan', 'pattern'],
+        ['Clan_1', 'pattern'],
+        ['Item', 'reserved'],
+        ['Chapter', 'reserved'],
+    ])('class %j → %j', (name, expected) => {
+        expect(structNameError(name, TAKEN, 'class')).toBe(expected);
+    });
+
+    it.each<[string, ReturnType<typeof structNameError>]>([
+        ['', 'required'],
+        ['TData', null],
+        ['TMood', 'taken'],
+        ['Data', 'pattern'],
+        ['TDataId', 'id'],
+        ['TItem', null],
+    ])('type %j → %j', (name, expected) => {
+        expect(structNameError(name, TAKEN, 'type')).toBe(expected);
     });
 });

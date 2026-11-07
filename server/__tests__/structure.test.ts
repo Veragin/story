@@ -52,20 +52,29 @@ describe('structure reader', () => {
 
         const origins = Object.fromEntries(body.types.map((type: TAny) => [type.name, type.origin]));
         expect(origins).toMatchObject({
-            TCharacter: 'extendable',
+            Character: 'extendable',
             TCharacterData: 'extendable',
-            TNpc: 'extendable',
+            Npc: 'extendable',
             TNpcData: 'extendable',
-            TLocation: 'extendable',
+            Location: 'extendable',
             TItemInfo: 'extendable',
         });
         expect(Object.values(origins)).not.toContain('story');
         expect(Object.values(origins)).not.toContain('engine');
+        const kinds = Object.fromEntries(body.types.map((type: TAny) => [type.name, type.kind]));
+        expect(kinds).toEqual({
+            Character: 'class',
+            TCharacterData: 'type',
+            Npc: 'class',
+            TNpcData: 'type',
+            Location: 'class',
+            TItemInfo: 'type',
+        });
 
         expect(typeNamed(body, 'TCharacterData')).toMatchObject({
-            file: 'types/TCharacter.ts',
+            file: 'types/Character.ts',
             fields: [
-                { key: 'location', type: { t: 'ref', name: 'TLocation' }, optional: true, locked: true },
+                { key: 'location', type: { t: 'ref', name: 'Location' }, optional: true, locked: true },
                 { key: 'health', type: { t: 'number' }, optional: false, locked: true },
                 {
                     key: 'inventory',
@@ -86,17 +95,17 @@ describe('structure reader', () => {
         });
         expect(typeNamed(body, 'TNpcData').fields[0]).toEqual({
             key: 'location',
-            type: { t: 'ref', name: 'TLocation' },
+            type: { t: 'ref', name: 'Location' },
             optional: false,
             locked: true,
         });
-        expect(typeNamed(body, 'TLocation').fields).toContainEqual({
+        expect(typeNamed(body, 'Location').fields).toContainEqual({
             key: 'sublocations',
-            type: { t: 'array', of: { t: 'ref', name: 'TLocation' } },
+            type: { t: 'array', of: { t: 'ref', name: 'Location' } },
             optional: true,
             locked: true,
         });
-        expect(typeNamed(body, 'TNpc').file).toBe('types/TNpc.ts');
+        expect(typeNamed(body, 'Npc').file).toBe('types/Npc.ts');
         expect(typeNamed(body, 'TItemInfo')).toMatchObject({
             file: 'data/items/itemInfo.ts',
             fields: [
@@ -137,7 +146,7 @@ describe('structure reader', () => {
             await write(
                 'types/TRace.ts',
                 `import type { races } from '@story/data/catalogs/races';
-import { TLocationId } from './TLocation';
+import { TLocationId } from './Location';
 import { TMood } from './literals';
 
 export type TRace = {
@@ -170,9 +179,13 @@ export const races = {
                 "export * from './TTimeTrigger';",
                 "export * from './TTimeTrigger';\nexport * from './TRace';"
             );
-            await edit('types/TCharacter.ts', '    image?: string;\n', '    image?: string;\n    race: TRaceId;\n');
-            await edit('types/TCharacter.ts', "from './ids';", "from './ids';\nimport { TRaceId } from './TRace';");
-            await edit('types/TCharacter.ts', '    health: number;\n', '    health: number;\n    energy: number;\n');
+            await edit(
+                'types/Character.ts',
+                '    declare image?: string;\n',
+                '    declare image?: string;\n    declare race: TRaceId;\n'
+            );
+            await edit('types/Character.ts', "from './ids';", "from './ids';\nimport { TRaceId } from './TRace';");
+            await edit('types/Character.ts', '    health: number;\n', '    health: number;\n    energy: number;\n');
             await edit(
                 'data/characters/thomas.ts',
                 'export type TThomasCharacterData',
@@ -208,6 +221,7 @@ export const races = {
                 line: 5,
                 exportName: 'TRace',
                 name: 'TRace',
+                kind: 'class',
                 origin: 'story',
                 catalog: { name: 'races', file: 'data/catalogs/races.ts', idType: 'TRaceId' },
                 fields: [
@@ -215,7 +229,7 @@ export const races = {
                     { key: 'strength', type: { t: 'number' }, optional: false, description: 'How strong.' },
                     { key: 'tags', type: { t: 'array', of: { t: 'string' } }, optional: false },
                     { key: 'mood', type: { t: 'literal', name: 'TMood' }, optional: true },
-                    { key: 'home', type: { t: 'ref', name: 'TLocation' }, optional: false },
+                    { key: 'home', type: { t: 'ref', name: 'Location' }, optional: false },
                     { key: 'onMeet', type: { t: 'function', signature: '() => void' }, optional: false },
                     {
                         key: 'stats',
@@ -225,7 +239,7 @@ export const races = {
                     { key: 'odd', type: { t: 'code', code: 'Partial<TRaceId>' }, optional: false },
                 ],
             });
-            expect(typeNamed(body, 'TCharacter').fields).toContainEqual({
+            expect(typeNamed(body, 'Character').fields).toContainEqual({
                 key: 'race',
                 type: { t: 'ref', name: 'TRace' },
                 optional: false,
@@ -251,5 +265,117 @@ export const races = {
             expect(updated.body.userFields).toEqual({ race: 'dwarf' });
             expect(await readFile(t.project.abs('data/characters/bob.ts'), 'utf8')).toContain("race: 'dwarf'");
         }, 60_000);
+    });
+
+    describe('with classes, story types and private members', () => {
+        beforeAll(async () => {
+            await write(
+                'types/Clan.ts',
+                `import type { clans } from '@story/data/catalogs/clans';
+import { TLocationId } from './Location';
+import { TCharacterId } from './ids';
+import { TData } from './TData';
+
+type TRank = 'low' | 'high';
+
+type TBanner = { color: string; rank: TRank };
+
+export class Clan {
+    /** Shown in lists. */
+    declare name: string;
+    declare home?: TLocationId;
+    declare banner: TBanner;
+    declare data: TData;
+    declare elder: TCharacterId;
+    declare banners: TBanner[];
+}
+
+export type TClanId = keyof typeof clans;
+`
+            );
+            await write('types/TData.ts', 'export type TData = { b: number; kin: TClanId };\n');
+            await write('types/Odd.ts', 'export class Greeter {\n    declare name: string;\n    greet() {}\n}\n');
+            await write('types/Plain.ts', 'export class Plain {\n    count = 1;\n}\n');
+            await write(
+                'data/catalogs/clans.ts',
+                `import type { Clan } from '@story/types';
+
+export const clans = {
+    north: { name: 'North', banner: { color: 'red', rank: 'low' }, data: { b: 1, kin: 'north' }, elder: 'thomas', banners: [] },
+} satisfies Record<string, Clan>;
+`
+            );
+        });
+
+        it('reads a class with declared fields and its catalog, and story types as nested structures', async () => {
+            const body = await structure();
+            expect(typeNamed(body, 'TClanId')).toBeUndefined();
+            expect(typeNamed(body, 'Clan')).toEqual({
+                version: expect.any(String),
+                file: 'types/Clan.ts',
+                line: 10,
+                exportName: 'Clan',
+                name: 'Clan',
+                kind: 'class',
+                origin: 'story',
+                catalog: { name: 'clans', file: 'data/catalogs/clans.ts', idType: 'TClanId' },
+                fields: [
+                    { key: 'name', type: { t: 'string' }, optional: false, description: 'Shown in lists.' },
+                    { key: 'home', type: { t: 'ref', name: 'Location' }, optional: true },
+                    { key: 'banner', type: { t: 'struct', name: 'TBanner' }, optional: false },
+                    { key: 'data', type: { t: 'struct', name: 'TData' }, optional: false },
+                    { key: 'elder', type: { t: 'ref', name: 'Character' }, optional: false },
+                    {
+                        key: 'banners',
+                        type: { t: 'array', of: { t: 'struct', name: 'TBanner' } },
+                        optional: false,
+                    },
+                ],
+            });
+            expect(typeNamed(body, 'TData')).toMatchObject({
+                kind: 'type',
+                origin: 'story',
+                fields: [
+                    { key: 'b', type: { t: 'number' }, optional: false },
+                    { key: 'kin', type: { t: 'ref', name: 'Clan' }, optional: false },
+                ],
+            });
+            expect(typeNamed(body, 'TData')).not.toHaveProperty('catalog');
+            expect(typeNamed(body, 'TData')).not.toHaveProperty('owner');
+        });
+
+        it('reads the non-exported types and literals of a class file as private to the class', async () => {
+            const body = await structure();
+            expect(typeNamed(body, 'TBanner')).toMatchObject({
+                file: 'types/Clan.ts',
+                kind: 'type',
+                origin: 'story',
+                owner: 'Clan',
+                fields: [
+                    { key: 'color', type: { t: 'string' }, optional: false },
+                    { key: 'rank', type: { t: 'literal', name: 'TRank' }, optional: false },
+                ],
+            });
+            expect(body.literals.find((l: TAny) => l.name === 'TRank')).toMatchObject({
+                file: 'types/Clan.ts',
+                scope: 'private',
+                owner: 'Clan',
+                values: ['low', 'high'],
+            });
+        });
+
+        it('keeps a class with methods or initialized fields as read-only code', async () => {
+            const body = await structure();
+            expect(typeNamed(body, 'Greeter')).toMatchObject({
+                kind: 'class',
+                fields: [],
+                code: expect.stringContaining('greet()'),
+            });
+            expect(typeNamed(body, 'Plain')).toMatchObject({
+                kind: 'class',
+                fields: [],
+                code: expect.stringContaining('count = 1'),
+            });
+        });
     });
 });

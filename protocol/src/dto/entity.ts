@@ -13,7 +13,7 @@ type TEntityBase<K extends TEntityKind> = TVersioned &
         id: string;
     };
 
-/** The fields the author added to `TCharacter` / `TNpc` / `TLocation`; set when the type has any. */
+/** The fields the author added to the character / npc / location class; set when the class has any. */
 type TUserFields = { userFields?: TValueRecord };
 
 export type TInventoryEntryDto = { id: string; amount?: number } & { [key: string]: TValue };
