@@ -36,8 +36,8 @@ describe('StructureEditorStore', () => {
     afterEach(() => stop());
 
     it('selects a type once the structure is there, and edits it as rows', async () => {
-        editor.show('types', 'TRace');
-        expect(editor.type.base?.name).toBe('TRace');
+        editor.show('types', 'Race');
+        expect(editor.type.base?.name).toBe('Race');
         expect(editor.type.draft?.rows.map((r) => r.field.key)).toEqual(['name', 'strength']);
         expect(editor.type.dirty).toBe(false);
 
@@ -48,7 +48,7 @@ describe('StructureEditorStore', () => {
         expect(editor.type.dirty).toBe(true);
         expect(await editor.type.save()).toBe(true);
         expect(editor.type.dirty).toBe(false);
-        expect(structure.type('TRace')?.fields.map((f) => f.key)).toEqual(['name', 'power']);
+        expect(structure.type('Race')?.fields.map((f) => f.key)).toEqual(['name', 'power']);
         // the rename moved the values of every entry
         await flush();
         expect(entities.catalogOf('races').map((e) => e.values)).toEqual([
@@ -59,7 +59,7 @@ describe('StructureEditorStore', () => {
     });
 
     it('fills defaults of a new required field and says which files it touched', async () => {
-        editor.show('types', 'TCharacter');
+        editor.show('types', 'Character');
         const rows = editor.type.draft?.rows ?? [];
         editor.setRows([
             ...rows,
@@ -72,7 +72,7 @@ describe('StructureEditorStore', () => {
     });
 
     it('offers to reset values that no longer fit, and resends with resetIncompatible', async () => {
-        editor.show('types', 'TRace');
+        editor.show('types', 'Race');
         const rows = editor.type.draft?.rows ?? [];
         editor.setRows(
             rows.map((r) => (r.field.key === 'strength' ? { ...r, field: { ...r.field, type: { t: 'boolean' } } } : r))
@@ -87,25 +87,36 @@ describe('StructureEditorStore', () => {
         expect(entities.catalogOf('races').map((e) => e.values.strength)).toEqual([false, false]);
     });
 
-    it('creates a new local literal in the type file before the type that uses it', async () => {
-        editor.show('types', 'TRace');
-        editor.addNewLiteral({ name: 'TSize', values: ['small', 'big'] });
+    const addLiteralField = (name: string) => {
+        editor.addNewLiteral({ name, values: ['small', 'big'] });
         const rows = editor.type.draft?.rows ?? [];
         editor.setRows([
             ...rows,
-            { field: { key: 'size', type: { t: 'literal', name: 'TSize' }, optional: true }, originalKey: null },
+            { field: { key: 'size', type: { t: 'literal', name }, optional: true }, originalKey: null },
         ]);
+    };
+
+    it('creates a new literal of a class as private, before the class that uses it', async () => {
+        editor.show('classes', 'Race');
+        addLiteralField('TSize');
         expect(await editor.type.save()).toBe(true);
-        expect(structure.literal('TSize')).toMatchObject({ scope: 'local', file: 'types/TRace.ts' });
-        expect(structure.type('TRace')?.fields.map((f) => f.key)).toContain('size');
+        expect(structure.literal('TSize')).toMatchObject({ scope: 'private', owner: 'Race', file: 'types/Race.ts' });
+        expect(structure.type('Race')?.fields.map((f) => f.key)).toContain('size');
         expect(editor.type.draft?.newLiterals).toEqual([]);
     });
 
+    it('creates a new literal of a public type as local to its file', async () => {
+        editor.show('types', 'TStats');
+        addLiteralField('TBulk');
+        expect(await editor.type.save()).toBe(true);
+        expect(structure.literal('TBulk')).toMatchObject({ scope: 'local', file: 'types/TStats.ts' });
+    });
+
     it('goes stale when the type changes on disk under unsaved rows; keep mine saves on top', async () => {
-        editor.show('types', 'TRace');
+        editor.show('types', 'Race');
         editor.setRows([...(editor.type.draft?.rows ?? []).slice(0, 1)]);
         const base = editor.type.base;
-        await api.updateType('TRace', {
+        await api.updateType('Race', {
             version: base?.version ?? '',
             fields: [...(base?.fields ?? []), { key: 'note', type: { t: 'string' }, optional: true }],
         });
@@ -113,7 +124,7 @@ describe('StructureEditorStore', () => {
         expect(editor.type.stale?.current?.fields.map((f) => f.key)).toEqual(['name', 'strength', 'note']);
 
         expect(await editor.type.keepMine()).toBe(true);
-        expect(structure.type('TRace')?.fields.map((f) => f.key)).toEqual(['name']);
+        expect(structure.type('Race')?.fields.map((f) => f.key)).toEqual(['name']);
     });
 
     it('renames a literal value where it is used, and refuses removing a used one', async () => {
@@ -129,20 +140,43 @@ describe('StructureEditorStore', () => {
     });
 
     it('refuses deleting a used type, deletes an unused one', async () => {
-        await structure.updateType('TCharacter', {
-            version: structure.type('TCharacter')?.version ?? '',
-            fields: [{ key: 'race', type: { t: 'ref', name: 'TRace' }, optional: true }],
+        await structure.updateType('Character', {
+            version: structure.type('Character')?.version ?? '',
+            fields: [{ key: 'race', type: { t: 'ref', name: 'Race' }, optional: true }],
         });
-        editor.show('types', 'TRace');
+        editor.show('types', 'Race');
         expect(await editor.removeType()).toBe(false);
-        expect(editor.type.references?.map((r) => r.text)).toEqual(['TCharacter.race']);
+        expect(editor.type.references?.map((r) => r.text)).toEqual(['Character.race']);
 
-        const created = await structure.createType({ name: 'TClan', fields: [] });
+        const created = await structure.createType({ kind: 'type', name: 'TClan', fields: [] });
         expect(created.status).toBe('ok');
         editor.show('types', 'TClan');
         expect(await editor.removeType()).toBe(true);
         expect(structure.type('TClan')).toBeUndefined();
         expect(editor.notFound).toBe(true);
+    });
+
+    it('migrates the values nested at fields of an updated type', async () => {
+        const race = structure.type('Race');
+        await structure.updateType('Race', {
+            version: race?.version ?? '',
+            fields: [...(race?.fields ?? []), { key: 'stats', type: { t: 'struct', name: 'TStats' }, optional: true }],
+        });
+        const elf = await api.getCatalogEntry('races', 'elf');
+        await api.updateCatalogEntry('races', 'elf', {
+            version: elf.version,
+            values: { ...elf.values, stats: { strength: 2, title: 'Sir' } },
+        });
+
+        editor.show('types', 'TStats');
+        editor.setRows(
+            (editor.type.draft?.rows ?? []).map((r) =>
+                r.field.key === 'strength' ? { ...r, field: { ...r.field, key: 'power' } } : r
+            )
+        );
+        expect(await editor.type.save()).toBe(true);
+        expect((await api.getCatalogEntry('races', 'elf')).values.stats).toEqual({ power: 2, title: 'Sir' });
+        expect(editor.type.info).toBe('Updated 1 catalog');
     });
 
     it('marks an unknown name as not found', () => {

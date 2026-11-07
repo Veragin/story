@@ -13,6 +13,7 @@ import type { EntityStore } from '../../stores/EntityStore';
 import type { StructureStore } from '../../stores/StructureStore';
 import type { TWriteResult } from '../../stores/writeResult';
 import { deepEqual } from '../../deepEqual';
+import { privateOwnerOf } from '../../structure/structureContext';
 import { touchedSummary } from './structureText';
 
 export type TTypeDraft = { rows: TStructureRow[]; newLiterals: TNewLiteral[] };
@@ -37,7 +38,7 @@ const literalRenames = (rows: readonly TLiteralValueRow[]): Record<string, strin
     );
 
 export class StructureEditorStore {
-    section: TStructureSection = 'types';
+    section: TStructureSection = 'classes';
     name: string | null = null;
     // the last failed type save was refused by instances, which a reset can fix
     canResetIncompatible = false;
@@ -76,7 +77,7 @@ export class StructureEditorStore {
     }
 
     get selectedType(): TStructTypeDto | undefined {
-        return this.section === 'types' && this.name ? this.structure.type(this.name) : undefined;
+        return this.section !== 'literals' && this.name ? this.structure.type(this.name) : undefined;
     }
 
     get selectedLiteral(): TLiteralDto | undefined {
@@ -84,8 +85,8 @@ export class StructureEditorStore {
     }
 
     get notFound(): boolean {
-        const resource = this.section === 'types' ? this.type : this.literal;
-        const current = this.section === 'types' ? this.selectedType : this.selectedLiteral;
+        const resource = this.section === 'literals' ? this.literal : this.type;
+        const current = this.section === 'literals' ? this.selectedLiteral : this.selectedType;
         return this.name !== null && this.structure.loaded && !current && !resource.base;
     }
 
@@ -147,8 +148,8 @@ export class StructureEditorStore {
     }
 
     private sync() {
-        if (this.section === 'types') this.syncResource(this.type, this.selectedType);
-        else this.syncResource(this.literal, this.selectedLiteral);
+        if (this.section === 'literals') this.syncResource(this.literal, this.selectedLiteral);
+        else this.syncResource(this.type, this.selectedType);
     }
 
     private syncResource<T extends { version: TVersion }, D>(resource: DraftResource<T, D>, current: T | undefined) {
@@ -160,7 +161,7 @@ export class StructureEditorStore {
         resource.external(current ?? null);
     }
 
-    // new local literals first: they go into the type's file, so its version moves
+    // new literals first (private to the class, else local): they go into the type's file, so its version moves
     private async writeType(
         base: TStructTypeDto,
         draft: TTypeDraft,
@@ -171,8 +172,11 @@ export class StructureEditorStore {
         });
         let current = version;
         const pending = draft.newLiterals.filter((literal) => !this.structure.literal(literal.name));
+        const owner = privateOwnerOf(base);
         for (const literal of pending) {
-            const created = await this.structure.createLiteral({ ...literal, file: base.file });
+            const created = await this.structure.createLiteral(
+                owner ? { ...literal, owner } : { ...literal, file: base.file }
+            );
             if (created.status !== 'ok') return created;
         }
         if (pending.length > 0) {

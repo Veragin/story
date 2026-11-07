@@ -48,7 +48,12 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
     if (!draft || !base) {
         return (
             <FormCenter>
-                <div>{_('Select an entry on the left, or add one.')}</div>
+                <div>
+                    {_(
+                        'Select a %s on the left, or add one.',
+                        type?.name ?? _('entry')
+                    )}
+                </div>
                 {notices}
             </FormCenter>
         );
@@ -92,7 +97,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
                 <Link
                     href={router.href({
                         page: 'structure',
-                        section: 'types',
+                        section: 'classes',
                         name: base.type,
                     })}
                 >

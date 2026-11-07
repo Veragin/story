@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { styled, TextField, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { spacingCss } from '@story/ui';
-import { structNameError, type TTypeRef } from '@story/protocol';
+import {
+    BUILT_IN_REF_TARGETS,
+    structNameError,
+    type TTypeRef,
+} from '@story/protocol';
 import type { TOption } from '../../../structure/option';
 import { AutocompleteInput } from '../../inputs/AutocompleteInput';
 import { useStructureContext } from '../../../structure/structureContext';
@@ -23,6 +27,7 @@ const KINDS: TTypeKind[] = [
     'boolean',
     'literal',
     'ref',
+    'struct',
     'array',
     'object',
     'function',
@@ -33,7 +38,8 @@ const KIND_LABEL: Record<TTypeKind, () => string> = {
     number: () => _('number'),
     boolean: () => _('boolean'),
     literal: () => _('literal'),
-    ref: () => _('type'),
+    ref: () => _('class'),
+    struct: () => _('type'),
     array: () => _('array of'),
     object: () => _('object'),
     function: () => _('function'),
@@ -42,6 +48,19 @@ const KIND_LABEL: Record<TTypeKind, () => string> = {
 
 const isTypeKind = (kind: string): kind is TTypeKind =>
     kind === 'code' || KINDS.some((known) => known === kind);
+
+const isBuiltInClass = (name: string) => name in BUILT_IN_REF_TARGETS;
+
+const TYPE_PREFIX_RE = /^T[A-Z]/;
+
+const classRank = (name: string) =>
+    !isBuiltInClass(name) ? 2 : TYPE_PREFIX_RE.test(name) ? 1 : 0;
+
+const classOptionsOf = (names: readonly string[]): TOption[] =>
+    names
+        .map((id, index) => ({ id, index }))
+        .sort((a, b) => classRank(a.id) - classRank(b.id) || a.index - b.index)
+        .map(({ id }) => ({ id }));
 
 type TProps = {
     value: TTypeRef;
@@ -59,14 +78,27 @@ export const FieldTypePicker = observer(
         const [pending, setPending] = useState<TPending | null>(null);
         const newLiterals = literals.newLiterals ?? [];
         const visible = structure.literalsVisibleFrom(literals.file);
-        const globals = new Set(
-            visible.filter((l) => l.scope === 'global').map((l) => l.name)
-        );
+        const scopeOf = new Map(visible.map((l) => [l.name, l.scope]));
         const literalOptions: TOption[] = [
             ...visible.filter((l) => l.scope === 'global'),
+            ...visible.filter((l) => l.scope === 'private'),
             ...visible.filter((l) => l.scope === 'local'),
             ...newLiterals,
         ].map((literal) => ({ id: literal.name }));
+        const literalGroup = (name: string) => {
+            switch (scopeOf.get(name)) {
+                case 'global':
+                    return _('Global');
+                case 'private':
+                    return _('Private');
+                default:
+                    return _('This file');
+            }
+        };
+        const classOptions = classOptionsOf(structure.refTypeNames);
+        const structOptions: TOption[] = structure
+            .structNamesVisibleFrom(literals.file)
+            .map((id) => ({ id }));
 
         const defaultOf = (kind: TTypeKind): TTypeRef => {
             switch (kind) {
@@ -77,7 +109,9 @@ export const FieldTypePicker = observer(
                 case 'literal':
                     return { t: 'literal', name: literalOptions[0]?.id ?? '' };
                 case 'ref':
-                    return { t: 'ref', name: structure.refTypeNames[0] ?? '' };
+                    return { t: 'ref', name: classOptions[0]?.id ?? '' };
+                case 'struct':
+                    return { t: 'struct', name: structOptions[0]?.id ?? '' };
                 case 'array':
                     return { t: 'array', of: { t: 'string' } };
                 case 'object':
@@ -95,7 +129,7 @@ export const FieldTypePicker = observer(
                 ...structure.typeNames,
                 ...newLiterals.map((literal) => literal.name),
             ];
-            const error = structNameError(name, taken);
+            const error = structNameError(name, taken, 'type');
             setPending({
                 name,
                 error: error ? structNameMessage(error) : null,
@@ -144,16 +178,14 @@ export const FieldTypePicker = observer(
                                 onChange({ t: 'literal', name })
                             }
                             options={literalOptions}
-                            groupOf={(option) =>
-                                globals.has(option.id)
-                                    ? _('Global')
-                                    : _('This file')
-                            }
+                            groupOf={(option) => literalGroup(option.id)}
                             onCreateOption={
                                 onNewLiteral ? startNewLiteral : undefined
                             }
                             createLabel={(name) =>
-                                _('+ New local literal %s', name)
+                                literals.owner
+                                    ? _('+ New private literal %s', name)
+                                    : _('+ New local literal %s', name)
                             }
                             hasError={value.name === ''}
                             disabled={disabled}
@@ -164,12 +196,25 @@ export const FieldTypePicker = observer(
                         <AutocompleteInput
                             value={value.name}
                             onChange={(name) => onChange({ t: 'ref', name })}
-                            options={structure.refTypeNames.map((id) => ({
-                                id,
-                            }))}
+                            options={classOptions}
+                            groupOf={(option) =>
+                                isBuiltInClass(option.id)
+                                    ? _('Built-in')
+                                    : _('Story')
+                            }
                             hasError={value.name === ''}
                             disabled={disabled}
-                            ariaLabel={_('%s referenced type', ariaLabel)}
+                            ariaLabel={_('%s class', ariaLabel)}
+                        />
+                    )}
+                    {value.t === 'struct' && (
+                        <AutocompleteInput
+                            value={value.name}
+                            onChange={(name) => onChange({ t: 'struct', name })}
+                            options={structOptions}
+                            hasError={value.name === ''}
+                            disabled={disabled}
+                            ariaLabel={_('%s type name', ariaLabel)}
                         />
                     )}
                     {value.t === 'function' && (
@@ -202,6 +247,7 @@ export const FieldTypePicker = observer(
                         onNewLiteral && (
                             <NewLiteralEditor
                                 name={pending.name}
+                                owner={literals.owner}
                                 onCancel={() => setPending(null)}
                                 onCreate={(values) => {
                                     onNewLiteral({

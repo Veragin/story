@@ -5,7 +5,7 @@ import { getUiState, setUiState } from '../ui-state';
 export const ENTITY_KINDS = ['characters', 'locations', 'npcs', 'items'] as const;
 export type TEntityKind = (typeof ENTITY_KINDS)[number];
 
-export const STRUCTURE_SECTIONS = ['types', 'literals'] as const;
+export const STRUCTURE_SECTIONS = ['classes', 'types', 'literals'] as const;
 export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
 
 export const SETTINGS_SECTIONS = ['git'] as const;

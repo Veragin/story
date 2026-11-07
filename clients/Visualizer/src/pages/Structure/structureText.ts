@@ -1,4 +1,4 @@
-import { fieldTypeNames, refNameOfIdType, type TStructTypeDto } from '@story/protocol';
+import { fieldTypeNames, refIdTypeName, type TStructTypeDto } from '@story/protocol';
 
 const FOLDER_NOUNS: Record<string, [string, string]> = {
     'data/characters/': ['character', 'characters'],
@@ -28,7 +28,7 @@ export const usagesOf = (types: readonly TStructTypeDto[], name: string): string
     types.flatMap((type) =>
         type.fields
             .filter((field) =>
-                fieldTypeNames([field]).some((typeName) => typeName === name || refNameOfIdType(typeName) === name)
+                fieldTypeNames([field]).some((typeName) => typeName === name || typeName === refIdTypeName(name))
             )
             .map((field) => `${type.name}.${field.key}`)
     );
@@ -37,7 +37,7 @@ const SIBILANT_RE = /(s|x|z|ch|sh)$/;
 const CONSONANT_Y_RE = /[^aeiou]y$/;
 
 export const catalogNameOf = (typeName: string): string => {
-    const base = typeName.replace(/^T/, '');
+    const base = typeName.replace(/^T(?=[A-Z])/, '');
     const word = base.charAt(0).toLowerCase() + base.slice(1);
     if (word === '') return '';
     if (CONSONANT_Y_RE.test(word)) return `${word.slice(0, -1)}ies`;

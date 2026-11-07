@@ -50,7 +50,7 @@ const KNOWS_MAGIC: TFieldDesc[] = [field('knowsMagic', { t: 'boolean' })];
 
 const STRING: TTypeRef = { t: 'string' };
 
-const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
+const LOCATION_REF: TTypeRef = { t: 'ref', name: 'Location' };
 
 const INVENTORY: TTypeRef = {
     t: 'array',
@@ -65,8 +65,14 @@ const extendableType = (name: string, file: string, fields: TFieldDesc[]) => ({
     file,
     exportName: name,
     name,
+    kind: 'type' as const,
     origin: 'extendable' as const,
     fields,
+});
+
+const extendableClass = (name: string, file: string, fields: TFieldDesc[]) => ({
+    ...extendableType(name, file, fields),
+    kind: 'class' as const,
 });
 
 const RACES_FILE = 'data/catalogs/races.ts';
@@ -74,7 +80,7 @@ const RACES_FILE = 'data/catalogs/races.ts';
 const raceEntry = (id: string, name: string, strength: number): TSeed<TCatalogEntryDto> => ({
     kind: 'catalog',
     catalog: 'races',
-    type: 'TRace',
+    type: 'Race',
     id,
     file: RACES_FILE,
     exportName: 'races',
@@ -94,7 +100,7 @@ const createMockStructure = (): TStructureDto => ({
         },
     ],
     types: [
-        extendableType('TCharacter', 'types/TCharacter.ts', [
+        extendableClass('Character', 'types/Character.ts', [
             locked('id', { t: 'code', code: 'Ch' }),
             locked('name', STRING),
             locked('description', STRING, true),
@@ -105,12 +111,12 @@ const createMockStructure = (): TStructureDto => ({
                 code: "Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory",
             }),
         ]),
-        extendableType('TCharacterData', 'types/TCharacter.ts', [
+        extendableType('TCharacterData', 'types/Character.ts', [
             locked('location', LOCATION_REF, true),
             locked('health', { t: 'number' }),
             locked('inventory', INVENTORY),
         ]),
-        extendableType('TLocation', 'types/TLocation.ts', [
+        extendableClass('Location', 'types/Location.ts', [
             locked('id', { t: 'code', code: 'L' }),
             locked('name', STRING),
             locked('description', STRING),
@@ -123,14 +129,14 @@ const createMockStructure = (): TStructureDto => ({
             locked('mapId', STRING, true),
             locked('init', { t: 'code', code: "Partial<TWorldState['locations'][L]>" }),
         ]),
-        extendableType('TNpc', 'types/TNpc.ts', [
+        extendableClass('Npc', 'types/Npc.ts', [
             locked('id', { t: 'code', code: 'Ch' }),
             locked('name', STRING),
             locked('description', STRING),
             locked('image', STRING, true),
             locked('init', { t: 'code', code: "Omit<TWorldState['npcs'][Ch], 'inventory' | 'ref'> & TInitInventory" }),
         ]),
-        extendableType('TNpcData', 'types/TNpc.ts', [
+        extendableType('TNpcData', 'types/Npc.ts', [
             locked('location', LOCATION_REF),
             locked('inventory', INVENTORY),
             locked('isDead', { t: 'boolean' }),
@@ -141,12 +147,22 @@ const createMockStructure = (): TStructureDto => ({
         ]),
         {
             version: 'mock',
-            file: 'types/TRace.ts',
-            exportName: 'TRace',
-            name: 'TRace',
+            file: 'types/Race.ts',
+            exportName: 'Race',
+            name: 'Race',
+            kind: 'class',
             origin: 'story',
             fields: [field('name', STRING), field('strength', { t: 'number' })],
             catalog: { name: 'races', file: RACES_FILE, idType: 'TRaceId' },
+        },
+        {
+            version: 'mock',
+            file: 'types/TStats.ts',
+            exportName: 'TStats',
+            name: 'TStats',
+            kind: 'type',
+            origin: 'story',
+            fields: [field('strength', { t: 'number' }), field('title', STRING, true)],
         },
     ],
     diagnostics: [],

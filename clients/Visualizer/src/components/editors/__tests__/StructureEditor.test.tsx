@@ -1,7 +1,9 @@
 import '@story/shared'; // installs the global `_`
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TFieldDesc } from '@story/protocol';
+import type { TFieldDesc, TStructureDto } from '@story/protocol';
+import { STRUCTURE } from '../../../dev/sampleStructure';
+import { staticStructureContext } from '../../../structure/structureContext';
 import { StructureEditor } from '../StructureEditor/StructureEditor';
 import {
     rowFields,
@@ -12,6 +14,7 @@ import {
 } from '../../../structure/structureRows';
 import {
     $,
+    $$,
     click,
     fire,
     get,
@@ -25,7 +28,7 @@ import { Controlled, InStructure } from '../../inputs/__tests__/harness';
 const FIELDS: TFieldDesc[] = [
     { key: 'id', type: { t: 'string' }, optional: false, locked: true },
     { key: 'energy', type: { t: 'number' }, optional: false },
-    { key: 'race', type: { t: 'ref', name: 'TRace' }, optional: true },
+    { key: 'race', type: { t: 'ref', name: 'Race' }, optional: true },
 ];
 
 describe('StructureEditor', () => {
@@ -47,7 +50,7 @@ describe('StructureEditor', () => {
                                 file: 'data/items/itemInfo.ts',
                                 onNewLiteral,
                             }}
-                            ariaLabel="TCharacter"
+                            ariaLabel="Character"
                         />
                     )}
                 </Controlled>
@@ -133,6 +136,56 @@ describe('StructureEditor', () => {
         expect(last()[1].field.optional).toBe(true);
     });
 
+    const openList = (selector: string) => {
+        const input = get<HTMLInputElement>(selector);
+        act(() => input.focus());
+        fire(
+            input,
+            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+        );
+    };
+    const shownOptions = () =>
+        $$('[data-option]').map((li) => li.getAttribute('data-option'));
+
+    it('offers class and type kinds, with the classes and the visible story types', () => {
+        const last = render(FIELDS);
+        const kinds = get<HTMLSelectElement>(
+            'select[aria-label="energy type"]'
+        );
+        expect(
+            [...kinds.options].map((option) => [option.value, option.text])
+        ).toEqual([
+            ['string', 'string'],
+            ['number', 'number'],
+            ['boolean', 'boolean'],
+            ['literal', 'literal'],
+            ['ref', 'class'],
+            ['struct', 'type'],
+            ['array', 'array of'],
+            ['object', 'object'],
+            ['function', 'function'],
+        ]);
+
+        selectOption(kinds, 'ref');
+        expect(last()[1].field.type).toEqual({ t: 'ref', name: 'Location' });
+        openList('input[aria-label="energy class"]');
+        expect(shownOptions()).toEqual([
+            'Location',
+            'Character',
+            'Npc',
+            'TItem',
+            'TChapter',
+            'Race',
+        ]);
+        click('[data-option="Race"]');
+        expect(last()[1].field.type).toEqual({ t: 'ref', name: 'Race' });
+
+        selectOption(kinds, 'struct');
+        expect(last()[1].field.type).toEqual({ t: 'struct', name: 'TStats' });
+        openList('input[aria-label="energy type name"]');
+        expect(shownOptions()).toEqual(['TStats']);
+    });
+
     it('creates a new local literal from the literal picker', () => {
         const onNewLiteral = vi.fn();
         const last = render(FIELDS, onNewLiteral);
@@ -183,5 +236,101 @@ describe('StructureEditor', () => {
             'A name starts with T and a capital letter'
         );
         expect($('[data-new-literal]')).toBeNull();
+    });
+
+    describe('private members of a class', () => {
+        const PRIVATE: TStructureDto = {
+            ...STRUCTURE,
+            literals: [
+                ...STRUCTURE.literals,
+                {
+                    name: 'TRaceTone',
+                    scope: 'private',
+                    owner: 'Race',
+                    file: 'types/Race.ts',
+                    version: 'v1',
+                    values: ['low', 'high'],
+                },
+            ],
+            types: [
+                ...STRUCTURE.types,
+                {
+                    name: 'TRaceTrait',
+                    kind: 'type',
+                    origin: 'story',
+                    owner: 'Race',
+                    file: 'types/Race.ts',
+                    version: 'v1',
+                    fields: [],
+                },
+            ],
+        };
+
+        const renderIn = (file: string, owner?: string) => {
+            const onChange = vi.fn<(rows: TStructureRow[]) => void>();
+            mount(
+                <InStructure structure={staticStructureContext(PRIVATE)}>
+                    <Controlled
+                        initial={structureRows(FIELDS)}
+                        onChange={onChange}
+                    >
+                        {(value, change) => (
+                            <StructureEditor
+                                value={value}
+                                onChange={change}
+                                literals={{
+                                    file,
+                                    owner,
+                                    onNewLiteral: vi.fn(),
+                                }}
+                                ariaLabel="Character"
+                            />
+                        )}
+                    </Controlled>
+                </InStructure>
+            );
+        };
+
+        const optionsOfKind = (kind: 'literal' | 'struct', input: string) => {
+            selectOption(
+                get<HTMLSelectElement>('select[aria-label="energy type"]'),
+                kind
+            );
+            openList(`input[aria-label="${input}"]`);
+            return shownOptions();
+        };
+
+        it('offers them inside the class file', () => {
+            renderIn('types/Race.ts', 'Race');
+            expect(optionsOfKind('struct', 'energy type name')).toEqual([
+                'TStats',
+                'TRaceTrait',
+            ]);
+            unmount();
+            renderIn('types/Race.ts', 'Race');
+            expect(optionsOfKind('literal', 'energy literal')).toEqual([
+                'TMood',
+                'TRaceTone',
+            ]);
+            typeInto(
+                get<HTMLInputElement>('input[aria-label="energy literal"]'),
+                'TFeeling'
+            );
+            expect(get('[data-create="TFeeling"]').textContent).toContain(
+                'New private literal TFeeling'
+            );
+        });
+
+        it('does not offer them elsewhere, e.g. in an entity data type', () => {
+            renderIn('data/characters/hero.ts');
+            expect(optionsOfKind('struct', 'energy type name')).toEqual([
+                'TStats',
+            ]);
+            unmount();
+            renderIn('data/characters/hero.ts');
+            expect(optionsOfKind('literal', 'energy literal')).toEqual([
+                'TMood',
+            ]);
+        });
     });
 });

@@ -111,6 +111,21 @@ export const ValueEditor = observer(
                         hideViewToggle={hideViewToggle}
                     />
                 );
+            case 'struct': {
+                const record = toMaybeCode(value, isValueRecord);
+                return (
+                    <ObjectEditor
+                        {...input}
+                        value={record}
+                        onChange={onChange}
+                        fields={structure.structFields(type.name)}
+                        allowCustomFields={false}
+                        diagnosticsOf={diagnosticsOf}
+                        // a fixed shape has no code view of its own, only the way back from one
+                        hideViewToggle={!isCode(record)}
+                    />
+                );
+            }
             case 'function':
                 return (
                     <FunctionEditor

@@ -2,14 +2,22 @@ import '@story/shared'; // installs the global `_`
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TFieldDesc, TMaybeCode, TValueRecord } from '@story/protocol';
 import { ObjectEditor } from '../ObjectEditor/ObjectEditor';
-import { $, click, get, mount, selectOption, typeInto, unmount } from '../../inputs/__tests__/dom';
+import {
+    $,
+    click,
+    get,
+    mount,
+    selectOption,
+    typeInto,
+    unmount,
+} from '../../inputs/__tests__/dom';
 import { Controlled, InStructure } from '../../inputs/__tests__/harness';
 
 const FIELDS: TFieldDesc[] = [
     { key: 'health', type: { t: 'number' }, optional: false },
     {
         key: 'location',
-        type: { t: 'ref', name: 'TLocation' },
+        type: { t: 'ref', name: 'Location' },
         optional: false,
         locked: true,
     },
@@ -135,6 +143,60 @@ describe('ObjectEditor', () => {
             location: 'forest',
         });
         expect($('[data-add-field]')).toBeNull();
+    });
+
+    it('edits a struct field as an object of its type, with fixed keys', () => {
+        const fields: TFieldDesc[] = [
+            ...FIELDS,
+            {
+                key: 'stats',
+                type: { t: 'struct', name: 'TStats' },
+                optional: true,
+            },
+        ];
+        const onChange = render({ health: 1, location: 'forest' }, fields);
+        click('[data-action="add-optional-field"][data-key="stats"]');
+        expect(onChange).toHaveBeenLastCalledWith({
+            health: 1,
+            location: 'forest',
+            stats: { strength: 0 },
+        });
+
+        const stats = '[data-form-field="stats"]';
+        expect($(`${stats} [data-add-field]`)).toBeNull();
+        expect($(`${stats} [data-action="show-code"]`)).toBeNull();
+        typeInto(
+            get<HTMLInputElement>(`${stats} input[aria-label="strength"]`),
+            '4'
+        );
+        expect(onChange).toHaveBeenLastCalledWith({
+            health: 1,
+            location: 'forest',
+            stats: { strength: 4 },
+        });
+        click(`${stats} [data-action="add-optional-field"][data-key="title"]`);
+        expect(onChange).toHaveBeenLastCalledWith({
+            health: 1,
+            location: 'forest',
+            stats: { strength: 4, title: '' },
+        });
+    });
+
+    it('validates the code of a struct field against its type', () => {
+        render(
+            { code: "{ health: 1, location: 'forest', stats: { luck: 1 } }" },
+            [
+                ...FIELDS,
+                {
+                    key: 'stats',
+                    type: { t: 'struct', name: 'TStats' },
+                    optional: false,
+                },
+            ]
+        );
+        const text = document.body.textContent ?? '';
+        expect(text).toContain('stats.strength: Missing required field');
+        expect(text).toContain('stats.luck: Unknown field');
     });
 
     it('adds a custom field with a picked type', () => {

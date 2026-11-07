@@ -46,7 +46,7 @@ export const StructurePage = observer(({ section, name }: TProps) => {
             );
             return;
         }
-        e.show(section ?? 'types', name);
+        e.show(section ?? 'classes', name);
     }, [e, section, name]);
 
     const { structure } = e;

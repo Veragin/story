@@ -58,6 +58,9 @@ const typeIssue = (type: TTypeRef, value: TValue, path: string, context: TTypeDe
         case 'object':
             if (!isValueRecord(value)) return issue(_('Expected an object'));
             return fieldIssues(value, path, { fields: type.fields, context });
+        case 'struct':
+            if (!isValueRecord(value)) return issue(_('Expected a %s object', type.name));
+            return fieldIssues(value, path, { fields: context.structFields(type.name), context });
         case 'function':
             return issue(_('Expected a function'));
     }

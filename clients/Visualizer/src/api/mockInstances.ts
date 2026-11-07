@@ -2,7 +2,7 @@ import {
     fieldTypeNames,
     isCode,
     isValueRecord,
-    refNameOfIdType,
+    refIdTypeName,
     sameTypeRef,
     typeDefault,
     type TClearedReferenceDto,
@@ -29,7 +29,7 @@ export type TMockHolder = {
 };
 
 // an engine type without fields in the structure
-const CHAPTER_FIELDS: TFieldDesc[] = [{ key: 'location', type: { t: 'ref', name: 'TLocation' }, optional: false }];
+const CHAPTER_FIELDS: TFieldDesc[] = [{ key: 'location', type: { t: 'ref', name: 'Location' }, optional: false }];
 
 // required, but the engine takes `undefined` there: a cleared value becomes `undefined`
 const NULLABLE_FIELDS: Record<string, readonly string[]> = { TNpcData: ['location'] };
@@ -51,6 +51,8 @@ const fitsType = (value: TValue, type: TTypeRef, ctx: TTypeDefaultContext): bool
             return typeof value === 'string' && ctx.literalValues(type.name).includes(value);
         case 'array':
             return Array.isArray(value) && value.every((item) => fitsType(item, type.of, ctx));
+        case 'struct':
+            return isValueRecord(value) && recordIssues(value, ctx.structFields(type.name), ctx).length === 0;
         case 'object':
             return isValueRecord(value) && recordIssues(value, type.fields, ctx).length === 0;
         case 'function':
@@ -75,12 +77,13 @@ export type TMockTypeChange = {
 
 const userFields = (fields: readonly TFieldDesc[]) => fields.filter((field) => !field.locked);
 
-export const migrateValues = (
-    holder: TMockHolder,
+export const migrateRecord = (
+    values: TValueRecord,
+    openProps: boolean,
     change: TMockTypeChange,
     ctx: TTypeDefaultContext
 ): { values: TValueRecord; incompatible: string[] } => {
-    const next: TValueRecord = { ...holder.values };
+    const next: TValueRecord = { ...values };
     const renamed = new Map(Object.entries(change.renames));
     for (const [from, to] of renamed) {
         if (!(from in next)) continue;
@@ -89,7 +92,7 @@ export const migrateValues = (
     }
     const sourceKey = (key: string) => [...renamed].find(([, to]) => to === key)?.[0] ?? key;
     const kept = userFields(change.fields);
-    if (!holder.openProps) {
+    if (!openProps) {
         for (const old of userFields(change.oldFields)) {
             if (!kept.some((field) => sourceKey(field.key) === old.key)) delete next[old.key];
         }
@@ -109,13 +112,22 @@ export const migrateValues = (
     return { values: next, incompatible };
 };
 
+export const migrateValues = (holder: TMockHolder, change: TMockTypeChange, ctx: TTypeDefaultContext) =>
+    migrateRecord(holder.values, holder.openProps ?? false, change, ctx);
+
+export type TFieldsOf = (typeName: string) => readonly TFieldDesc[];
+
 type TVisit = (value: TValue, type: TTypeRef, path: string) => TValue;
 
-const walkValue = (value: TValue, type: TTypeRef, path: string, visit: TVisit): TValue => {
+// a `struct` node is visited after its fields, so the visit sees the walked record
+const walkValue = (value: TValue, type: TTypeRef, path: string, visit: TVisit, fieldsOf: TFieldsOf): TValue => {
     if (type.t === 'array' && Array.isArray(value)) {
-        return value.map((item, i) => walkValue(item, type.of, `${path}.${i}`, visit));
+        return value.map((item, i) => walkValue(item, type.of, `${path}.${i}`, visit, fieldsOf));
     }
-    if (type.t === 'object' && isValueRecord(value)) return walkRecord(value, type.fields, path, visit);
+    if (type.t === 'object' && isValueRecord(value)) return walkRecord(value, type.fields, path, visit, fieldsOf);
+    if (type.t === 'struct' && isValueRecord(value)) {
+        return visit(walkRecord(value, fieldsOf(type.name), path, visit, fieldsOf), type, path);
+    }
     return visit(value, type, path);
 };
 
@@ -123,18 +135,19 @@ export const walkRecord = (
     values: TValueRecord,
     fields: readonly TFieldDesc[],
     path: string,
-    visit: TVisit
+    visit: TVisit,
+    fieldsOf: TFieldsOf
 ): TValueRecord =>
     Object.fromEntries(
         Object.entries(values).map(([key, value]) => {
             const field = fields.find((f) => f.key === key);
             const at = path ? `${path}.${key}` : key;
-            return [key, field ? walkValue(value, field.type, at, visit) : value];
+            return [key, field ? walkValue(value, field.type, at, visit, fieldsOf) : value];
         })
     );
 
 export const fieldMentions = (field: TFieldDesc, name: string): boolean =>
-    fieldTypeNames([field]).some((typeName) => typeName === name || refNameOfIdType(typeName) === name) ||
+    fieldTypeNames([field]).some((typeName) => typeName === name || typeName === refIdTypeName(name)) ||
     (field.type.t === 'code' && new RegExp(`\\b${name}(Id)?\\b`).test(field.type.code));
 
 export type TRefTargetValue = {
@@ -150,6 +163,7 @@ const REMOVE = Symbol('remove');
 type TClearContext = TRefTargetValue & {
     holder: TMockHolder;
     result: TClearResult;
+    fieldsOf: TFieldsOf;
 };
 
 const isNullable = (ctx: TClearContext, path: string, key: string) =>
@@ -206,6 +220,7 @@ const clearValue = (
         });
     }
     if (type.t === 'object' && isValueRecord(value)) return clearRecord(value, type.fields, path, ctx);
+    if (type.t === 'struct' && isValueRecord(value)) return clearRecord(value, ctx.fieldsOf(type.name), path, ctx);
     return value;
 };
 
@@ -231,7 +246,7 @@ const clearRecord = (
 
 export const clearReferences = (
     holders: readonly TMockHolder[],
-    fieldsOf: (typeName: string) => readonly TFieldDesc[],
+    fieldsOf: TFieldsOf,
     target: TRefTargetValue
 ): TClearResult & { apply: () => void } => {
     const result: TClearResult = { cleared: [], blocking: [] };
@@ -241,6 +256,7 @@ export const clearReferences = (
             ...target,
             holder,
             result,
+            fieldsOf,
         });
         return result.cleared.length > before ? [() => holder.write(next)] : [];
     });

@@ -24,9 +24,12 @@ describe('TypeEditor', () => {
     let editor: StructureEditorStore;
     let stop: () => void;
 
-    const render = async (name: string) => {
+    const render = async (
+        name: string,
+        section: 'classes' | 'types' = 'classes'
+    ) => {
         await act(async () => {
-            editor.show('types', name);
+            editor.show(section, name);
             await settle();
         });
         await mountAsync(
@@ -52,9 +55,11 @@ describe('TypeEditor', () => {
         stores.release();
     });
 
-    it('shows a story type with its catalog link, and saves an added field', async () => {
-        await render('TRace');
-        expect(get('h2').textContent).toBe('TRace');
+    it('shows a story class with its catalog link, and saves an added field', async () => {
+        await render('Race');
+        expect(get('h2').textContent).toBe('Race');
+        expect(get('.MuiChip-label').textContent).toBe('Class');
+        expect(get('[data-meta="origin"]').textContent).toContain('TRaceId');
         expect(get('[data-meta="catalog"]').textContent).toBe(
             '2 races → open in Entities'
         );
@@ -70,16 +75,16 @@ describe('TypeEditor', () => {
             click('[data-action="save"]');
             await settle();
         });
-        expect(
-            stores.structure.type('TRace')?.fields.map((f) => f.key)
-        ).toEqual(['name', 'strength', 'field']);
+        expect(stores.structure.type('Race')?.fields.map((f) => f.key)).toEqual(
+            ['name', 'strength', 'field']
+        );
         expect(get('[data-notice="info"]').textContent).toBe(
             'Updated 1 catalog'
         );
     });
 
     it('offers to reset values that no longer fit', async () => {
-        await render('TRace');
+        await render('Race');
         selectOption(
             get<HTMLSelectElement>(
                 '[data-key="strength"] [data-field="type-kind"]'
@@ -97,14 +102,64 @@ describe('TypeEditor', () => {
         });
         await flush();
         expect($('[data-action="reset-incompatible"]')).toBeNull();
-        expect(stores.structure.type('TRace')?.fields[1]?.type).toEqual({
+        expect(stores.structure.type('Race')?.fields[1]?.type).toEqual({
             t: 'boolean',
         });
     });
 
+    it('shows a story type without a catalog link, and offers its delete', async () => {
+        await render('TStats', 'types');
+        expect(get('h2').textContent).toBe('TStats');
+        expect(get('.MuiChip-label').textContent).toBe('Type');
+        expect($('[data-meta="catalog"]')).toBeNull();
+        expect($('[data-action="delete"]')).not.toBeNull();
+    });
+
     it('keeps engine fields locked and does not delete an extendable type', async () => {
-        await render('TCharacter');
+        await render('Character');
         expect(get('[data-key="name"]').dataset.locked).toBe('true');
         expect($('[data-action="delete"]')).toBeNull();
+    });
+
+    it('shows a private type as such, and creates a new literal of a class as private', async () => {
+        await act(async () => {
+            await stores.structure.createType({
+                kind: 'type',
+                name: 'TRaceTrait',
+                fields: [],
+                owner: 'Race',
+            });
+        });
+        await render('TRaceTrait', 'types');
+        expect(get('.MuiChip-label').textContent).toBe('Private type of Race');
+        expect(get('[data-meta="origin"]').textContent).toContain(
+            'usable only in class Race'
+        );
+        unmount();
+
+        await render('Race');
+        act(() => {
+            editor.addNewLiteral({ name: 'TRaceTone', values: ['low'] });
+            editor.setRows([
+                ...(editor.type.draft?.rows ?? []),
+                {
+                    field: {
+                        key: 'tone',
+                        type: { t: 'literal', name: 'TRaceTone' },
+                        optional: true,
+                    },
+                    originalKey: null,
+                },
+            ]);
+        });
+        await act(async () => {
+            click('[data-action="save"]');
+            await settle();
+        });
+        expect(stores.structure.literal('TRaceTone')).toMatchObject({
+            scope: 'private',
+            owner: 'Race',
+            file: 'types/Race.ts',
+        });
     });
 });

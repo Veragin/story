@@ -93,7 +93,7 @@ export const EntitiesPage = observer(({ kind, catalog, id }: TProps) => {
                 id: s.lastIdOf(k.kind),
             }),
         })),
-        ...structureStore.types.flatMap(({ catalog: ref }) =>
+        ...structureStore.storyClasses.flatMap(({ catalog: ref }) =>
             ref
                 ? [
                       {

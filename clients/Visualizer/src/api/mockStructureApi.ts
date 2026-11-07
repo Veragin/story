@@ -2,7 +2,7 @@ import {
     BUILT_IN_REF_TARGETS,
     fieldTypeNames,
     isValueRecord,
-    refNameOfIdType,
+    refIdTypeName,
     refTarget,
     structNameError,
     typeDefault,
@@ -14,6 +14,8 @@ import {
     type TLiteralDto,
     type TRefTarget,
     type TReferenceDto,
+    type TStructKind,
+    type TStructNameError,
     type TStructTypeDto,
     type TStructureDto,
     type TTypeDefaultContext,
@@ -23,11 +25,13 @@ import {
 import {
     clearReferences,
     holderFields,
+    migrateRecord,
     migrateValues,
     recordIssues,
     fieldMentions,
     walkRecord,
     type TMockHolder,
+    type TMockTypeChange,
 } from './mockInstances';
 import { clone, fail, invalid, notFound } from './mockHelpers';
 import type { TMockSeed } from './mockData';
@@ -80,10 +84,11 @@ const diagnostic = (file: string, message: string, field?: string): TDiagnosticD
     ...(field ? { field } : {}),
 });
 
-const NAME_MESSAGES = {
+const NAME_MESSAGES: Record<TStructNameError, string> = {
     required: 'A name is required',
     pattern: 'A name is T and a capital letter, then letters and digits',
     id: 'Names ending in Id are reserved for ids',
+    reserved: 'Item and Chapter are reserved names',
     taken: 'The name is taken',
 };
 
@@ -157,25 +162,36 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
                 : [...structure.literals, literal],
         });
 
-    const assertNewName = (name: string, file: string) => {
+    const assertNewName = (name: string, file: string, kind: TStructKind) => {
         const taken = [...structure.types.map((t) => t.name), ...structure.literals.map((l) => l.name)];
-        const error = structNameError(name, taken);
+        const error = structNameError(name, taken, kind);
         if (error) invalid([diagnostic(file, NAME_MESSAGES[error], 'name')]);
     };
 
     const assertKnownNames = (fields: readonly TFieldDesc[], file: string) => {
-        const known = new Set([
-            ...Object.keys(BUILT_IN_REF_TARGETS),
-            ...structure.types.map((t) => t.name),
-            ...structure.literals.map((l) => l.name),
-        ]);
+        const refNames = [...Object.keys(BUILT_IN_REF_TARGETS), ...structure.types.map((t) => t.name)];
+        const known = new Set([...refNames, ...refNames.map(refIdTypeName), ...structure.literals.map((l) => l.name)]);
         const unknown = fields.flatMap((field, i) =>
             fieldTypeNames([field])
-                .map((name) => refNameOfIdType(name) ?? name)
                 .filter((name) => !known.has(name))
                 .map((name) => diagnostic(file, `Cannot find name '${name}'`, `fields.${i}.type`))
         );
         if (unknown.length > 0) invalid(unknown);
+        const hidden = fields.flatMap((field, i) =>
+            fieldTypeNames([field])
+                .flatMap((name) => [...structure.types, ...structure.literals].filter((n) => n.name === name))
+                .filter((named) => named.owner !== undefined && named.file !== file)
+                .map((named) =>
+                    diagnostic(file, `"${named.name}" is private to class ${named.owner}`, `fields.${i}.type`)
+                )
+        );
+        if (hidden.length > 0) invalid(hidden);
+    };
+
+    const ownerFile = (owner: string): string => {
+        const type = structure.types.find((t) => t.name === owner);
+        if (type?.kind !== 'class') return notFound(`class "${owner}"`);
+        return type.file;
     };
 
     const usagesOf = (name: string, except?: string): TReferenceDto[] =>
@@ -215,20 +231,46 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
         return values;
     };
 
+    const fieldsOf = (typeName: string) => holderFields(structure, typeName);
+
+    // a `type` has no instances of its own: its values sit nested in other records
+    const migrateStructValues = (name: string, change: TMockTypeChange, typeCtx: TTypeDefaultContext) =>
+        holders().map((holder) => {
+            const incompatible: string[] = [];
+            const values = walkRecord(
+                holder.values,
+                fieldsOf(holder.typeName),
+                holder.path,
+                (value, type) => {
+                    if (type.t !== 'struct' || type.name !== name || !isValueRecord(value)) return value;
+                    const result = migrateRecord(value, false, change, typeCtx);
+                    incompatible.push(...result.incompatible);
+                    return result.values;
+                },
+                fieldsOf
+            );
+            return { holder, values, incompatible };
+        });
+
     const referencesTo: TMockStructureApi['referencesTo'] = (refName, id, remaining, owner) =>
         clearReferences(
             holders().filter((holder) => holder.resource.id !== owner),
-            (typeName) => holderFields(structure, typeName),
+            fieldsOf,
             { refName, id, fallback: remaining[0] ?? null }
         );
 
     const renameLiteralValues = (name: string, renames: Record<string, string>) => {
         for (const holder of holders()) {
             const fields = holderFields(structure, holder.typeName);
-            const next = walkRecord(holder.values, fields, holder.path, (value, type) =>
-                type.t === 'literal' && type.name === name && typeof value === 'string' && value in renames
-                    ? renames[value]
-                    : value
+            const next = walkRecord(
+                holder.values,
+                fields,
+                holder.path,
+                (value, type) =>
+                    type.t === 'literal' && type.name === name && typeof value === 'string' && value in renames
+                        ? renames[value]
+                        : value,
+                fieldsOf
             );
             if (JSON.stringify(next) !== JSON.stringify(holder.values)) holder.write(next);
         }
@@ -237,17 +279,23 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
     const literalValueUsages = (name: string, removed: readonly string[]): TReferenceDto[] =>
         holders().flatMap((holder) => {
             const found: TReferenceDto[] = [];
-            walkRecord(holder.values, holderFields(structure, holder.typeName), holder.path, (value, type, path) => {
-                if (
-                    type.t === 'literal' &&
-                    type.name === name &&
-                    typeof value === 'string' &&
-                    removed.includes(value)
-                ) {
-                    found.push({ file: holder.file, line: 1, text: `${path}: '${value}'` });
-                }
-                return value;
-            });
+            walkRecord(
+                holder.values,
+                fieldsOf(holder.typeName),
+                holder.path,
+                (value, type, path) => {
+                    if (
+                        type.t === 'literal' &&
+                        type.name === name &&
+                        typeof value === 'string' &&
+                        removed.includes(value)
+                    ) {
+                        found.push({ file: holder.file, line: 1, text: `${path}: '${value}'` });
+                    }
+                    return value;
+                },
+                fieldsOf
+            );
             return found;
         });
 
@@ -267,10 +315,10 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
         },
         routes: {
             getStructure: () => ctx.reply(() => structure),
-            createType: ({ name, fields, catalog }) =>
+            createType: ({ kind, name, fields, catalog, owner }) =>
                 ctx.reply(() => {
-                    const file = `types/${name}.ts`;
-                    assertNewName(name, file);
+                    const file = owner ? ownerFile(owner) : `types/${name}.ts`;
+                    assertNewName(name, file, kind);
                     assertKnownNames(fields, file);
                     if (catalog && !CATALOG_NAME_RE.test(catalog.name)) {
                         invalid([diagnostic(file, 'A catalog name is a lower-case identifier', 'catalog.name')]);
@@ -283,14 +331,16 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
                         file,
                         exportName: name,
                         name,
+                        kind,
                         origin: 'story',
                         fields,
+                        ...(owner ? { owner } : {}),
                         ...(catalog
                             ? {
                                   catalog: {
                                       name: catalog.name,
                                       file: `data/catalogs/${catalog.name}.ts`,
-                                      idType: `${name}Id`,
+                                      idType: refIdTypeName(name),
                                   },
                               }
                             : {}),
@@ -307,8 +357,12 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
                     assertKnownNames(next, type.file);
                     const change = { oldFields: type.fields, fields: next, renames, resetIncompatible };
                     const typeCtx = typeContext();
-                    const instances = holders().filter((holder) => holder.typeName === name);
-                    const migrated = instances.map((holder) => ({ holder, ...migrateValues(holder, change, typeCtx) }));
+                    const migrated =
+                        type.kind === 'type' && type.origin === 'story'
+                            ? migrateStructValues(name, change, typeCtx)
+                            : holders()
+                                  .filter((holder) => holder.typeName === name)
+                                  .map((holder) => ({ holder, ...migrateValues(holder, change, typeCtx) }));
                     const incompatible = migrated.flatMap(({ holder, incompatible: keys }) =>
                         keys.map((key) =>
                             diagnostic(
@@ -337,22 +391,26 @@ export const createMockStructureApi = (ctx: TMockStructureContext): TMockStructu
                     const references = usagesOf(name, name);
                     if (references.length > 0) fail(409, { error: 'referenced', references });
                     if (type.catalog) catalogs.delete(type.catalog.name);
-                    bump({ types: structure.types.filter((t) => t.name !== name) });
+                    bump({
+                        types: structure.types.filter((t) => t.name !== name && t.owner !== name),
+                        literals: structure.literals.filter((l) => l.owner !== name),
+                    });
                     return { ok: true as const };
                 }),
 
-            createLiteral: ({ name, values, file }) =>
+            createLiteral: ({ name, values, file, owner }) =>
                 ctx.reply(() => {
-                    const target = file ?? LITERALS_FILE;
-                    assertNewName(name, target);
+                    const target = owner ? ownerFile(owner) : (file ?? LITERALS_FILE);
+                    assertNewName(name, target, 'type');
                     assertValues(values, target);
                     const literal: TLiteralDto = {
                         version: ctx.nextVersion(),
                         file: target,
                         exportName: name,
                         name,
-                        scope: target === LITERALS_FILE ? 'global' : 'local',
+                        scope: owner ? 'private' : target === LITERALS_FILE ? 'global' : 'local',
                         values,
+                        ...(owner ? { owner } : {}),
                     };
                     putLiteral(literal);
                     return literal;

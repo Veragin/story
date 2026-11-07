@@ -21,9 +21,10 @@ export const STRUCTURE: TStructureDto = {
     ],
     types: [
         {
-            name: 'TRace',
+            name: 'Race',
+            kind: 'class',
             origin: 'story',
-            file: 'types/TRace.ts',
+            file: 'types/Race.ts',
             version: 'v1',
             fields: [{ key: 'name', type: { t: 'string' }, optional: false }],
             catalog: {
@@ -32,16 +33,27 @@ export const STRUCTURE: TStructureDto = {
                 idType: 'TRaceId',
             },
         },
+        {
+            name: 'TStats',
+            kind: 'type',
+            origin: 'story',
+            file: 'types/TStats.ts',
+            version: 'v1',
+            fields: [
+                { key: 'strength', type: { t: 'number' }, optional: false },
+                { key: 'title', type: { t: 'string' }, optional: true },
+            ],
+        },
     ],
 };
 
 export const OPTIONS = {
-    TLocation: [
+    Location: [
         { id: 'forest', label: 'Forest' },
         { id: 'village', label: 'Village' },
     ],
     TItem: [{ id: 'axe', label: 'Axe' }, { id: 'bow' }],
-    TRace: [{ id: 'elf', label: 'Elf' }],
+    Race: [{ id: 'elf', label: 'Elf' }],
 };
 
 export const sampleStructure = (addLiteralValue?: IStructureContext['addLiteralValue']) =>

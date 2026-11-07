@@ -32,7 +32,7 @@ import { OPTIONS, sampleStructure, STRUCTURE } from './sampleStructure';
 const INIT_FIELDS: TFieldDesc[] = [
     {
         key: 'location',
-        type: { t: 'ref', name: 'TLocation' },
+        type: { t: 'ref', name: 'Location' },
         optional: false,
         locked: true,
     },
@@ -61,7 +61,8 @@ const INIT_FIELDS: TFieldDesc[] = [
         optional: true,
         description: 'How the character feels',
     },
-    { key: 'race', type: { t: 'ref', name: 'TRace' }, optional: true },
+    { key: 'race', type: { t: 'ref', name: 'Race' }, optional: true },
+    { key: 'stats', type: { t: 'struct', name: 'TStats' }, optional: true },
 ];
 
 type TState = {
@@ -154,13 +155,13 @@ export const InputsPlayground = () => {
                         label="Location"
                         value={state.location}
                         onChange={set('location')}
-                        options={OPTIONS.TLocation}
+                        options={OPTIONS.Location}
                     />
                     <FormArrayEditor
                         label="sublocations"
                         value={state.sublocations}
                         onChange={set('sublocations')}
-                        itemType={{ t: 'ref', name: 'TLocation' }}
+                        itemType={{ t: 'ref', name: 'Location' }}
                     />
                     <FormObjectEditor
                         label="init"
@@ -195,7 +196,7 @@ export const InputsPlayground = () => {
                         emptyCode="() => {}"
                     />
                     <FormStructureEditor
-                        label="TCharacter"
+                        label="Character"
                         value={state.structure}
                         onChange={set('structure')}
                         literals={{

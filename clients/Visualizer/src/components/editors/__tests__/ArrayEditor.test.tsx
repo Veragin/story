@@ -3,7 +3,14 @@ import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TMaybeCode, TTypeRef, TValue } from '@story/protocol';
 import { ArrayEditor } from '../ArrayEditor';
-import { $$, click, get, mount, typeInto, unmount } from '../../inputs/__tests__/dom';
+import {
+    $$,
+    click,
+    get,
+    mount,
+    typeInto,
+    unmount,
+} from '../../inputs/__tests__/dom';
 import { Controlled, InStructure } from '../../inputs/__tests__/harness';
 
 describe('ArrayEditor', () => {
@@ -36,7 +43,7 @@ describe('ArrayEditor', () => {
         act(() => rowButton(row, action).click());
 
     it('adds the default of the item type', () => {
-        const onChange = render([], { t: 'ref', name: 'TLocation' });
+        const onChange = render([], { t: 'ref', name: 'Location' });
         click('[data-action="add-item"]');
         expect(onChange).toHaveBeenLastCalledWith(['forest']);
         click('[data-action="add-item"]');

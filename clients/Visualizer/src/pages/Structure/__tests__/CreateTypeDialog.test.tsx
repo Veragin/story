@@ -3,6 +3,7 @@ import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TStructTypeDto } from '@story/protocol';
 import {
+    $,
     click,
     get,
     mountAsync,
@@ -38,52 +39,39 @@ describe('CreateTypeDialog', () => {
         stores.release();
     });
 
+    const nameInput = () => get<HTMLInputElement>('input[aria-label="Name"]');
+
     const submit = () =>
         act(async () => {
             click('[role=dialog] button[type=submit]');
             await settle();
         });
 
-    it('derives the catalog name with the English plural rule, and keeps an edited one', async () => {
-        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TCity');
-        expect(
-            get<HTMLInputElement>('input[aria-label="Catalog name"]').value
-        ).toBe('cities');
-        typeInto(
-            get<HTMLInputElement>('input[aria-label="Catalog name"]'),
-            'towns'
-        );
-        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TTown');
-        expect(
-            get<HTMLInputElement>('input[aria-label="Catalog name"]').value
-        ).toBe('towns');
-
-        await submit();
-        expect(created).toHaveBeenCalledWith(
-            expect.objectContaining({
-                name: 'TTown',
-                catalog: expect.objectContaining({ name: 'towns' }),
-            })
-        );
-        expect(
-            stores.structure.type('TTown')?.fields.map((f) => f.key)
-        ).toEqual(['name']);
+    it('has no catalog option', () => {
+        expect($('input[aria-label="Has a catalog"]')).toBeNull();
+        expect($('[data-field="catalogName"]')).toBeNull();
     });
 
-    it('refuses a taken name and creates a type without a catalog', async () => {
-        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TRace');
+    it('refuses a class-like or taken name and creates a type', async () => {
+        typeInto(nameInput(), 'Data');
+        expect(get('[role=dialog]').textContent).toContain(
+            'A name starts with T and a capital letter'
+        );
+        typeInto(nameInput(), 'TStats');
         expect(get('[role=dialog]').textContent).toContain(
             'That name is already used'
         );
         await submit();
         expect(created).not.toHaveBeenCalled();
 
-        typeInto(get<HTMLInputElement>('input[aria-label="Name"]'), 'TMood');
-        click('input[aria-label="Has a catalog"]');
+        typeInto(nameInput(), 'TData');
         await submit();
         expect(created).toHaveBeenCalledWith(
-            expect.objectContaining({ name: 'TMood', fields: [] })
+            expect.objectContaining({ name: 'TData', kind: 'type', fields: [] })
         );
-        expect(stores.structure.type('TMood')?.catalog).toBeUndefined();
+        expect(stores.structure.type('TData')?.catalog).toBeUndefined();
+        expect(stores.structure.storyTypes.map((t) => t.name)).toContain(
+            'TData'
+        );
     });
 });

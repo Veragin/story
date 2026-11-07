@@ -1,7 +1,7 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
 import {
-    BUILT_IN_REF_TARGETS,
     refTarget,
+    structFieldsOf,
     type TCreateLiteralBody,
     type TCreateTypeBody,
     type TDataTypeDto,
@@ -18,9 +18,14 @@ import {
 import { ApiError, errorMessage, type ApiEvents, type TVisualizerApi } from '../api';
 import { failureMessage, failureOf, type TWriteResult } from './writeResult';
 import type { TOption } from '../structure/option';
-import type { IStructureContext } from '../structure/structureContext';
+import { refTypeNamesOf, structNamesVisibleIn, type IStructureContext } from '../structure/structureContext';
 import type { EntityStore } from './EntityStore';
 import { RefCountedSubscription } from './RefCountedSubscription';
+
+export type TPrivateMembers = {
+    types: readonly TStructTypeDto[];
+    literals: readonly TLiteralDto[];
+};
 
 type TStructureStoreOptions = {
     api: TVisualizerApi;
@@ -88,16 +93,43 @@ export class StructureStore implements IStructureContext {
         return this.types.map((type) => type.name);
     }
 
+    get classes(): readonly TStructTypeDto[] {
+        return this.types.filter((type) => type.kind === 'class');
+    }
+
+    get storyClasses(): readonly TStructTypeDto[] {
+        return this.classes.filter((type) => type.origin === 'story');
+    }
+
+    get builtInClasses(): readonly TStructTypeDto[] {
+        return this.classes.filter((type) => type.origin !== 'story');
+    }
+
     get storyTypes(): readonly TStructTypeDto[] {
-        return this.types.filter((type) => type.origin === 'story');
+        return this.types.filter((type) => type.kind === 'type' && type.origin === 'story');
+    }
+
+    get publicStoryTypes(): readonly TStructTypeDto[] {
+        return this.storyTypes.filter((type) => type.owner === undefined);
+    }
+
+    get publicLiterals(): readonly TLiteralDto[] {
+        return this.literals.filter((literal) => literal.owner === undefined);
+    }
+
+    privateOf(className: string): TPrivateMembers {
+        return {
+            types: this.types.filter((type) => type.owner === className),
+            literals: this.literals.filter((literal) => literal.owner === className),
+        };
     }
 
     get extendableTypes(): readonly TStructTypeDto[] {
-        return this.types.filter((type) => type.origin === 'extendable');
+        return this.types.filter((type) => type.kind === 'type' && type.origin === 'extendable');
     }
 
     get refTypeNames(): readonly string[] {
-        return [...Object.keys(BUILT_IN_REF_TARGETS), ...this.types.filter((type) => type.catalog).map((t) => t.name)];
+        return refTypeNamesOf(this.types);
     }
 
     literal(name: string): TLiteralDto | undefined {
@@ -106,6 +138,14 @@ export class StructureStore implements IStructureContext {
 
     literalValues(name: string): readonly string[] {
         return this.literal(name)?.values ?? [];
+    }
+
+    structFields(name: string): readonly TFieldDesc[] {
+        return this.structure ? structFieldsOf(this.structure, name) : [];
+    }
+
+    structNamesVisibleFrom(file?: string): readonly string[] {
+        return structNamesVisibleIn(this.types, file);
     }
 
     literalsVisibleFrom(file?: string): readonly TLiteralDto[] {
