@@ -11,6 +11,8 @@ import {
     selectOption,
     unmount,
 } from '../../../components/inputs/__tests__/dom';
+import { ModalHost } from '../../../shell/ModalHost';
+import { modals } from '../../../shell/modals';
 import { StructureEditorStore } from '../StructureEditorStore';
 import { TypeEditor } from '../TypeEditor';
 import {
@@ -35,6 +37,7 @@ describe('TypeEditor', () => {
         await mountAsync(
             <StructureContext.Provider value={stores.structure}>
                 <TypeEditor editor={editor} />
+                <ModalHost />
             </StructureContext.Provider>
         );
     };
@@ -50,6 +53,7 @@ describe('TypeEditor', () => {
     });
 
     afterEach(() => {
+        act(() => modals.closeAll());
         unmount();
         stop();
         stores.release();
@@ -161,5 +165,62 @@ describe('TypeEditor', () => {
             owner: 'Race',
             file: 'types/Race.ts',
         });
+    });
+
+    it('lists the private members of a class and opens their dialogs', async () => {
+        await act(async () => {
+            await stores.structure.createType({
+                kind: 'type',
+                name: 'TRaceTrait',
+                fields: [],
+                owner: 'Race',
+            });
+            await settle();
+        });
+        await render('Race');
+        expect(
+            get('[data-private-member="TRaceTrait"]').getAttribute('href')
+        ).toContain('types/TRaceTrait');
+        expect(get('[data-private-section="literals"]').textContent).toContain(
+            'None yet.'
+        );
+
+        await act(async () => {
+            click('[data-action="new-private-type"]');
+            await settle();
+        });
+        expect(get('[role=dialog]').textContent).toContain(
+            'New private type of Race'
+        );
+        act(() => modals.closeAll());
+
+        await act(async () => {
+            click('[data-action="new-private-literal"]');
+            await settle();
+        });
+        expect(get('[role=dialog]').textContent).toContain(
+            'New private literal of Race'
+        );
+    });
+
+    it('saves the class before adding a private member', async () => {
+        await render('Race');
+        click('[data-action="add-structure-field"]');
+        await act(async () => {
+            click('[data-action="new-private-type"]');
+            await settle();
+        });
+        expect(stores.structure.type('Race')?.fields.map((f) => f.key)).toEqual(
+            ['name', 'strength', 'field']
+        );
+        expect(editor.type.dirty).toBe(false);
+        expect(get('[role=dialog]').textContent).toContain(
+            'New private type of Race'
+        );
+    });
+
+    it('has no private members on a type', async () => {
+        await render('TStats', 'types');
+        expect($('[data-private-section]')).toBeNull();
     });
 });

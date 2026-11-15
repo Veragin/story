@@ -34,8 +34,8 @@ describe('StructureStore', () => {
     it('loads literals and types', () => {
         expect(store.loaded).toBe(true);
         expect(store.literalValues('TItemType')).toContain('weapon');
-        expect(store.literalsVisibleFrom('types/Character.ts')).toEqual([]);
-        expect(store.literalsVisibleFrom('data/items/itemInfo.ts').map((l) => l.name)).toEqual(['TItemType']);
+        expect(store.literalsVisibleFrom({ file: 'types/Character.ts', owner: 'Character' })).toEqual([]);
+        expect(store.literalsVisibleFrom({ file: 'data/items/itemInfo.ts' }).map((l) => l.name)).toEqual(['TItemType']);
         expect(store.extendableTypes.map((t) => t.name)).toContain('TItemInfo');
         expect(store.types.map((t) => t.origin)).not.toContain('engine');
         expect(store.storyTypes.map((t) => t.name)).toEqual(['TStats']);
@@ -43,7 +43,7 @@ describe('StructureStore', () => {
         expect(store.builtInClasses.map((t) => t.name)).toEqual(['Character', 'Location', 'Npc']);
         expect(store.extendableTypes.map((t) => t.name)).toEqual(['TCharacterData', 'TNpcData', 'TItemInfo']);
         expect(store.refTypeNames).toEqual(['Location', 'TItem', 'Character', 'Npc', 'TChapter', 'Race']);
-        expect(store.structNamesVisibleFrom('data/characters/thomas.ts')).toEqual(['TStats']);
+        expect(store.structNamesVisibleFrom({ file: 'data/characters/thomas.ts' })).toEqual(['TStats']);
         expect(store.structFields('TStats').map((f) => f.key)).toEqual(['strength', 'title']);
         expect(store.structFields('Race')).toEqual([]);
         expect(store.userFieldsOf('Character')).toEqual([]);
@@ -88,7 +88,7 @@ describe('StructureStore', () => {
         expect(store.refOptions('TNope')).toEqual([]);
     });
 
-    it('lists the private members of a class, visible only from its file', async () => {
+    it('lists the private members of a class, visible only to that class', async () => {
         await store.createType({ kind: 'type', name: 'TRaceTrait', fields: [], owner: 'Race' });
         await store.createLiteral({ name: 'TRaceTone', values: ['low'], owner: 'Race' });
         await flush();
@@ -98,10 +98,18 @@ describe('StructureStore', () => {
         expect(store.privateOf('Character')).toEqual({ types: [], literals: [] });
         expect(store.publicStoryTypes.map((t) => t.name)).not.toContain('TRaceTrait');
         expect(store.publicLiterals.map((l) => l.name)).not.toContain('TRaceTone');
-        expect(store.structNamesVisibleFrom('types/Race.ts')).toContain('TRaceTrait');
-        expect(store.structNamesVisibleFrom('types/TStats.ts')).not.toContain('TRaceTrait');
-        expect(store.literalsVisibleFrom('types/Race.ts').map((l) => l.name)).toContain('TRaceTone');
-        expect(store.literalsVisibleFrom('data/characters/hero.ts').map((l) => l.name)).not.toContain('TRaceTone');
+        const raceScope = { file: 'types/Race.ts', owner: 'Race' };
+        expect(store.structNamesVisibleFrom(raceScope)).toContain('TRaceTrait');
+        expect(store.structNamesVisibleFrom({ file: 'types/Race.ts' })).not.toContain('TRaceTrait');
+        expect(store.structNamesVisibleFrom({ file: 'types/TStats.ts' })).not.toContain('TRaceTrait');
+        expect(store.structNamesVisibleFrom({ file: 'types/Character.ts', owner: 'Character' })).not.toContain(
+            'TRaceTrait'
+        );
+        expect(store.literalsVisibleFrom(raceScope).map((l) => l.name)).toContain('TRaceTone');
+        expect(store.literalsVisibleFrom({ file: 'types/Race.ts' }).map((l) => l.name)).not.toContain('TRaceTone');
+        expect(store.literalsVisibleFrom({ file: 'data/characters/hero.ts' }).map((l) => l.name)).not.toContain(
+            'TRaceTone'
+        );
 
         const outside = await store.createType({
             kind: 'type',

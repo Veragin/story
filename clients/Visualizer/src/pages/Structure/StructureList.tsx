@@ -1,10 +1,8 @@
 import { styled, Tab, Tabs } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
-import type { TStructTypeDto } from '@story/protocol';
 import {
     SideMenu,
-    type TSideMenuAction,
     type TSideMenuEntry,
     type TSideMenuGroup,
 } from '../../components/layout/SideMenu';
@@ -19,9 +17,6 @@ type TProps = {
 type TListEntry = {
     name: string;
     secondary?: string;
-    section?: TStructureSection;
-    nested?: TListEntry[];
-    actions?: TSideMenuAction[];
 };
 
 type TGroup = {
@@ -33,7 +28,7 @@ type TGroup = {
 
 export const StructureList = observer(({ editor }: TProps) => {
     const { structure } = editor;
-    // a private type or literal is listed under its class
+    // a private type or literal belongs to its class's page
     const selectedOwner =
         editor.selectedType?.owner ?? editor.selectedLiteral?.owner;
     const selectedTab: TStructureSection = selectedOwner
@@ -56,68 +51,27 @@ export const StructureList = observer(({ editor }: TProps) => {
         if (type) select('types', type.name);
     };
 
-    const newLiteral = async (owner?: string) => {
-        const literal = await askNewLiteral(structure, owner);
+    const newLiteral = async () => {
+        const literal = await askNewLiteral(structure);
         if (literal) select('literals', literal.name);
-    };
-
-    const newPrivateType = async (owner: string) => {
-        const type = await askNewType(structure, owner);
-        if (type) select('types', type.name);
-    };
-
-    const classEntry = (
-        type: TStructTypeDto,
-        secondary?: string
-    ): TListEntry => {
-        const members = structure.privateOf(type.name);
-        return {
-            name: type.name,
-            secondary,
-            nested: [
-                ...members.types.map(
-                    (member): TListEntry => ({
-                        name: member.name,
-                        secondary: _('private type'),
-                        section: 'types',
-                    })
-                ),
-                ...members.literals.map(
-                    (member): TListEntry => ({
-                        name: member.name,
-                        secondary: _('private literal'),
-                        section: 'literals',
-                    })
-                ),
-            ],
-            actions: [
-                {
-                    label: _('Private type'),
-                    action: 'new-private-type',
-                    onClick: () => void newPrivateType(type.name),
-                },
-                {
-                    label: _('Private literal'),
-                    action: 'new-private-literal',
-                    onClick: () => void newLiteral(type.name),
-                },
-            ],
-        };
     };
 
     const groups: TGroup[] = [
         {
             title: _('Story classes'),
             section: 'classes',
-            entries: structure.storyClasses.map((type) =>
-                classEntry(type, type.catalog?.name)
-            ),
+            entries: structure.storyClasses.map((type) => ({
+                name: type.name,
+                secondary: type.catalog?.name,
+            })),
             onNew: () => void newClass(),
         },
         {
             title: _('Built-in classes (extendable)'),
             section: 'classes',
-            entries: structure.builtInClasses.map((type) => classEntry(type)),
+            entries: structure.builtInClasses.map((type) => ({
+                name: type.name,
+            })),
         },
         {
             title: _('Story types'),
@@ -145,24 +99,22 @@ export const StructureList = observer(({ editor }: TProps) => {
         },
     ];
 
-    const isDirty = (section: TStructureSection) =>
-        (section === 'literals' ? editor.literal : editor.type).dirty;
+    const unsaved = (
+        editor.section === 'literals' ? editor.literal : editor.type
+    ).dirty;
+    const selectedName = selectedOwner ?? editor.name;
 
     const menuEntry = (
         entry: TListEntry,
-        groupSection: TStructureSection
+        section: TStructureSection
     ): TSideMenuEntry => {
-        const section = entry.section ?? groupSection;
-        const selected =
-            editor.section === section && editor.name === entry.name;
+        const selected = selectedTab === section && selectedName === entry.name;
         return {
             name: entry.name,
             secondary: entry.secondary,
             href: router.href({ page: 'structure', section, name: entry.name }),
             selected,
-            unsaved: selected && isDirty(section),
-            nested: entry.nested?.map((child) => menuEntry(child, section)),
-            actions: entry.actions,
+            unsaved: selected && unsaved,
         };
     };
 

@@ -12,6 +12,7 @@ import { StructureEditor } from '../../components/editors/StructureEditor/Struct
 import { Notices } from '../../components/feedback/Notices';
 import { modals, router } from '../../shell';
 import { CatalogLink } from './CatalogLink';
+import { PrivateMembers } from './PrivateMembers';
 import type { StructureEditorStore } from './StructureEditorStore';
 import { usagesOf } from './structureText';
 import { privateOwnerOf } from '../../structure/structureContext';
@@ -74,6 +75,7 @@ export const TypeEditor = observer(({ editor }: TProps) => {
     }
 
     const isClass = base.kind === 'class';
+    const owner = privateOwnerOf(base);
     const kindLabel = isClass
         ? _('Class')
         : base.owner
@@ -162,13 +164,16 @@ export const TypeEditor = observer(({ editor }: TProps) => {
                     onChange={(rows) => editor.setRows(rows)}
                     literals={{
                         file: base.file,
-                        owner: privateOwnerOf(base),
+                        owner,
                         newLiterals: draft.newLiterals,
                         onNewLiteral: editor.addNewLiteral,
                     }}
                     disabled={resource.saving}
                     dataField="fields"
                 />
+                {isClass && owner && (
+                    <PrivateMembers editor={editor} owner={owner} />
+                )}
             </FormFields>
         </FormPage>
     );

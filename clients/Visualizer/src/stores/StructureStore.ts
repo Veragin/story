@@ -18,7 +18,13 @@ import {
 import { ApiError, errorMessage, type ApiEvents, type TVisualizerApi } from '../api';
 import { failureMessage, failureOf, type TWriteResult } from './writeResult';
 import type { TOption } from '../structure/option';
-import { refTypeNamesOf, structNamesVisibleIn, type IStructureContext } from '../structure/structureContext';
+import {
+    literalsVisibleIn,
+    refTypeNamesOf,
+    structNamesVisibleIn,
+    type IStructureContext,
+    type TVisibilityScope,
+} from '../structure/structureContext';
 import type { EntityStore } from './EntityStore';
 import { RefCountedSubscription } from './RefCountedSubscription';
 
@@ -144,12 +150,12 @@ export class StructureStore implements IStructureContext {
         return this.structure ? structFieldsOf(this.structure, name) : [];
     }
 
-    structNamesVisibleFrom(file?: string): readonly string[] {
-        return structNamesVisibleIn(this.types, file);
+    structNamesVisibleFrom(scope: TVisibilityScope): readonly string[] {
+        return structNamesVisibleIn(this.types, scope);
     }
 
-    literalsVisibleFrom(file?: string): readonly TLiteralDto[] {
-        return this.literals.filter((literal) => literal.scope === 'global' || literal.file === file);
+    literalsVisibleFrom(scope: TVisibilityScope): readonly TLiteralDto[] {
+        return literalsVisibleIn(this.literals, scope);
     }
 
     type(name: string): TStructTypeDto | undefined {

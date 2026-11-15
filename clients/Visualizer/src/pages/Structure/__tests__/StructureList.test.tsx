@@ -9,7 +9,6 @@ import {
     mountAsync,
     unmount,
 } from '../../../components/inputs/__tests__/dom';
-import { ModalHost } from '../../../shell/ModalHost';
 import { modals } from '../../../shell/modals';
 import { StructureEditorStore } from '../StructureEditorStore';
 import { StructureList } from '../StructureList';
@@ -55,36 +54,14 @@ describe('StructureList', () => {
         stores.release();
     });
 
-    const render = () =>
-        mountAsync(
-            <>
-                <StructureList editor={editor} />
-                <ModalHost />
-            </>
-        );
+    const render = () => mountAsync(<StructureList editor={editor} />);
 
     const names = () => $$('[data-name]').map((el) => el.dataset.name);
 
-    it('nests the private types and literals under their class', async () => {
+    it('lists only the classes, never their private types and literals', async () => {
         await render();
-        const shown = names();
-        expect(
-            shown.slice(shown.indexOf('Race'), shown.indexOf('Race') + 3)
-        ).toEqual(['Race', 'TRaceTrait', 'TRaceTone']);
-        expect(get('[data-name="Race"]').dataset.depth).toBe('0');
-        expect(get('[data-name="TRaceTrait"]').dataset.depth).toBe('1');
-        expect(get('[data-name="TRaceTrait"]').getAttribute('href')).toContain(
-            'types/TRaceTrait'
-        );
-        expect(get('[data-name="TRaceTone"]').getAttribute('href')).toContain(
-            'literals/TRaceTone'
-        );
-        expect(
-            $('[data-actions-of="Race"] [data-action="new-private-type"]')
-        ).not.toBeNull();
-        expect(
-            $('[data-actions-of="Race"] [data-action="new-private-literal"]')
-        ).not.toBeNull();
+        expect(names()).toEqual(['Race', 'Character', 'Location', 'Npc']);
+        expect($('[data-action="new-private-type"]')).toBeNull();
 
         act(() => click('[data-tab="types"]'));
         expect(names()).toContain('TStats');
@@ -93,36 +70,15 @@ describe('StructureList', () => {
         expect(names()).not.toContain('TRaceTone');
     });
 
-    it('stays on the classes tab while a private type is selected', async () => {
+    it('highlights the class while its private type is selected', async () => {
         await act(async () => {
             editor.show('types', 'TRaceTrait');
             await settle();
         });
         await render();
-        expect(get('[data-name="TRaceTrait"]').className).toContain(
-            'Mui-selected'
+        expect(get('[data-tab="classes"]').getAttribute('aria-selected')).toBe(
+            'true'
         );
-    });
-
-    it('opens the private type and literal dialogs for the class', async () => {
-        await render();
-        await act(async () => {
-            click('[data-actions-of="Race"] [data-action="new-private-type"]');
-            await settle();
-        });
-        expect(get('[role=dialog]').textContent).toContain(
-            'New private type of Race'
-        );
-        act(() => modals.closeAll());
-
-        await act(async () => {
-            click(
-                '[data-actions-of="Race"] [data-action="new-private-literal"]'
-            );
-            await settle();
-        });
-        expect(get('[role=dialog]').textContent).toContain(
-            'New private literal of Race'
-        );
+        expect(get('[data-name="Race"]').className).toContain('Mui-selected');
     });
 });

@@ -6,7 +6,7 @@ import { LoadErrorState } from '../feedback/LoadErrorState';
 import { LoadingState } from '../feedback/LoadingState';
 import { SideMenuEntry, type TSideMenuEntry } from './SideMenuEntry';
 
-export type { TSideMenuAction, TSideMenuEntry } from './SideMenuEntry';
+export type { TSideMenuEntry } from './SideMenuEntry';
 
 const SIDE_MENU_WIDTH = 260;
 

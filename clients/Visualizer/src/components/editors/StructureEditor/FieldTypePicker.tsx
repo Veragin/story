@@ -77,7 +77,7 @@ export const FieldTypePicker = observer(
         const structure = useStructureContext();
         const [pending, setPending] = useState<TPending | null>(null);
         const newLiterals = literals.newLiterals ?? [];
-        const visible = structure.literalsVisibleFrom(literals.file);
+        const visible = structure.literalsVisibleFrom(literals);
         const scopeOf = new Map(visible.map((l) => [l.name, l.scope]));
         const literalOptions: TOption[] = [
             ...visible.filter((l) => l.scope === 'global'),
@@ -97,7 +97,7 @@ export const FieldTypePicker = observer(
         };
         const classOptions = classOptionsOf(structure.refTypeNames);
         const structOptions: TOption[] = structure
-            .structNamesVisibleFrom(literals.file)
+            .structNamesVisibleFrom(literals)
             .map((id) => ({ id }));
 
         const defaultOf = (kind: TTypeKind): TTypeRef => {
