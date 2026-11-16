@@ -5,7 +5,6 @@ import { modals } from '../../shell';
 import { ReferencedError, type ChapterGraphStore } from './ChapterGraphStore';
 import { AddCharacterDialog } from './AddCharacterDialog';
 import { AddPassageDialog } from './AddPassageDialog';
-import { PickCharacterDialog } from './PickCharacterDialog';
 import { ReferencesDialog } from '../../components/dialog/ReferencesDialog';
 import { ChapterInfoDialog } from './ChapterInfoForm/ChapterInfoDialog';
 
@@ -23,10 +22,13 @@ const showReferences = (
         />
     ));
 
-export const openAddCharacter = (store: ChapterGraphStore) => {
+export const openAddCharacter = (
+    store: ChapterGraphStore,
+    onAdded?: (characterId: string) => void
+) => {
     void store.refetchProject();
     modals.open((close) => (
-        <AddCharacterDialog store={store} onClose={close} />
+        <AddCharacterDialog store={store} onClose={close} onAdded={onAdded} />
     ));
 };
 
@@ -63,21 +65,12 @@ export const confirmRemoveCharacter = async (
     }
 };
 
-export const openRemoveCharacter = (store: ChapterGraphStore) =>
-    modals.open((close) => (
-        <PickCharacterDialog
-            store={store}
-            onClose={close}
-            onPick={(id) => void confirmRemoveCharacter(store, id)}
-        />
-    ));
-
 export const openAddPassage = (store: ChapterGraphStore) =>
     modals.open((close) => (
         <AddPassageDialog
             store={store}
             onClose={close}
-            onAddCharacter={() => openAddCharacter(store)}
+            onAddCharacter={(onAdded) => openAddCharacter(store, onAdded)}
         />
     ));
 

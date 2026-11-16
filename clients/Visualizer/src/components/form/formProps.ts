@@ -5,6 +5,7 @@ export type TFormProps = {
     label: string;
     diagnostics?: readonly TDiagnosticDto[];
     optional?: boolean;
+    addTooltip?: string;
     actions?: ReactNode;
     helperText?: string;
     warning?: string;
@@ -25,6 +26,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
     label,
     diagnostics = [],
     optional,
+    addTooltip,
     actions,
     helperText,
     warning,
@@ -40,6 +42,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
         label,
         diagnostics,
         optional,
+        addTooltip,
         actions,
         helperText,
         warning,

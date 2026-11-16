@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { styled } from '@mui/material';
+import { styled, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { LabeledField } from '@story/ui';
 import { AddButton } from '../buttons/AddButton';
@@ -19,6 +19,7 @@ export const FormField = ({
     label,
     diagnostics = [],
     optional,
+    addTooltip,
     actions,
     helperText,
     warning,
@@ -30,15 +31,24 @@ export const FormField = ({
     children,
 }: TProps) => {
     if (optional && !isSet) {
+        const addButton = (
+            <AddButton
+                label={label}
+                tone="inherit"
+                disabled={disabled || !onAdd}
+                data-action="add-field"
+                onClick={onAdd}
+            />
+        );
         return (
             <SAddRow data-form-field={label}>
-                <AddButton
-                    label={label}
-                    tone="inherit"
-                    disabled={disabled || !onAdd}
-                    data-action="add-field"
-                    onClick={onAdd}
-                />
+                {addTooltip ? (
+                    <Tooltip title={addTooltip} describeChild>
+                        <span>{addButton}</span>
+                    </Tooltip>
+                ) : (
+                    addButton
+                )}
                 <FieldDiagnostics diagnostics={diagnostics} />
             </SAddRow>
         );

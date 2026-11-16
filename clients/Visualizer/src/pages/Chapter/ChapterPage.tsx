@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button, styled, Typography } from '@mui/material';
+import { ButtonBase, styled, Tooltip } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import EditNoteIcon from '@mui/icons-material/EditNote';
 import CodeIcon from '@mui/icons-material/Code';
 import {
     api as defaultApi,
@@ -15,7 +12,6 @@ import {
     type TVisualizerApi,
 } from '../../api';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
-import { DeleteButton } from '../../components/buttons/DeleteButton';
 import { ResizableSplitter } from '../../components/layout/ResizableSplitter';
 import { SaveStatus } from '../../components/feedback/SaveStatus';
 import { ErrorAlert } from '../../components/feedback/ErrorAlert';
@@ -24,10 +20,8 @@ import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { ChapterGraphStore } from './ChapterGraphStore';
 import {
     confirmDeletePassage,
-    openAddCharacter,
     openChapterInfoDialog,
     openAddPassage,
-    openRemoveCharacter,
 } from './dialogs';
 import { PassageEditor } from './editor/PassageEditor/PassageEditor';
 import { ChapterGraphCanvas } from './graph/ChapterGraphCanvas';
@@ -70,9 +64,24 @@ export const ChapterPage = observer(
         return (
             <PageContainer>
                 <ControlBar>
-                    <STitle variant="body2" title={chapterId}>
-                        {store.chapterTitle}
-                    </STitle>
+                    <TooltipIconButton
+                        title={_('Timeline')}
+                        onClick={() => router.navigate({ page: 'timeline' })}
+                        icon={ArrowBackIcon}
+                        tone="inherit"
+                    />
+                    <Tooltip
+                        title={_('Edit chapter info (%s)', chapterId)}
+                        describeChild
+                    >
+                        <STitle
+                            onClick={() =>
+                                openChapterInfoDialog(chapterId, api)
+                            }
+                        >
+                            {store.chapterTitle}
+                        </STitle>
+                    </Tooltip>
                     <SaveStatus
                         status={store.saveStatus}
                         error={store.saveError}
@@ -83,55 +92,17 @@ export const ChapterPage = observer(
                         }}
                     />
                     <TooltipIconButton
-                        title={_('Add character')}
-                        onClick={() => openAddCharacter(store)}
-                        icon={PersonAddIcon}
-                        tone="inherit"
-                    />
-                    <TooltipIconButton
-                        title={_('Remove character')}
-                        disabled={store.chapterCharacters.length === 0}
-                        onClick={() => openRemoveCharacter(store)}
-                        icon={PersonRemoveIcon}
-                        tone="inherit"
-                    />
-                    <TooltipIconButton
                         title={_('Add passage')}
                         onClick={() => openAddPassage(store)}
                         icon={NoteAddIcon}
                         tone="inherit"
                     />
                     <TooltipIconButton
-                        title={_('Edit chapter info')}
-                        onClick={() => openChapterInfoDialog(chapterId, api)}
-                        icon={EditNoteIcon}
-                        tone="inherit"
-                    />
-                    <DeleteButton
-                        iconOnly
-                        label={_('Delete selected passage')}
-                        tone="inherit"
-                        disabled={!store.selectedId}
-                        onClick={() => void confirmDeletePassage(store)}
-                    />
-                    <TooltipIconButton
-                        title={
-                            store.selectedId
-                                ? _('Edit passage source')
-                                : _('Edit chapter source')
-                        }
+                        title={_('Edit chapter source')}
                         onClick={() => editSource()}
                         icon={CodeIcon}
                         tone="inherit"
                     />
-                    <Button
-                        color="inherit"
-                        size="small"
-                        startIcon={<ArrowBackIcon />}
-                        onClick={() => router.navigate({ page: 'timeline' })}
-                    >
-                        {_('Timeline')}
-                    </Button>
                 </ControlBar>
 
                 <SContent>
@@ -192,12 +163,20 @@ export const ChapterPage = observer(
     }
 );
 
-const STitle = styled(Typography)`
+const STitle = styled(ButtonBase)`
+    font-size: ${({ theme }) => theme.typography.body2.fontSize};
+    display: block;
     margin-right: ${spacingCss(1)};
+    padding: ${spacingCss(0.5)};
+    border-radius: ${({ theme }) => theme.shape.borderRadius}px;
     max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    &:hover {
+        background: ${({ theme }) => theme.palette.action.hover};
+    }
 `;
 
 const SContent = styled('div')`

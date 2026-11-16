@@ -76,6 +76,13 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             highlight: { color: '#ffd166', width: 3 },
         });
 
+        const boxes = new Map<string, RectShape<TShapeData>>();
+        const lines = new Map<string, LineShape<TShapeData>>();
+        const boxData = (shape: Shape | null) =>
+            shape ? boxes.get(shape.id)?.data : undefined;
+        let dragging: string | null = null;
+        let fitted = savedCamera !== null;
+
         // Twine-like: pressing an unselected box selects it, so the same gesture drags it.
         const offPress = scene.addInteraction({
             priority: 10,
@@ -90,14 +97,13 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                 }
                 return false;
             },
+            // only fires for a press released without moving, so drags never open the editor
+            onClick: (e) => {
+                const data = boxData(e.hit);
+                if (data?.kind === 'passage') store.openEditor(data.node.id);
+                return false;
+            },
         });
-
-        const boxes = new Map<string, RectShape<TShapeData>>();
-        const lines = new Map<string, LineShape<TShapeData>>();
-        const boxData = (shape: Shape | null) =>
-            shape ? boxes.get(shape.id)?.data : undefined;
-        let dragging: string | null = null;
-        let fitted = savedCamera !== null;
 
         const sync = () => {
             const { nodes, ghosts, edges } = store.graph;
@@ -336,8 +342,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             }),
             scene.events.on('action', ({ shape }) => {
                 const data = boxData(shape);
-                if (data?.kind === 'passage') store.openEditor(data.node.id);
-                else if (data?.kind === 'ghost' && data.ghost.resolved) {
+                if (data?.kind === 'ghost' && data.ghost.resolved) {
                     const chapterId = data.ghost.passageId.split('-')[0];
                     if (chapterId)
                         router.navigate({
@@ -350,7 +355,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                 const data = boxData(shape);
                 const text =
                     data?.kind === 'passage'
-                        ? `${data.node.id} · ${_('double-click to edit')}`
+                        ? `${data.node.id} · ${_('click to edit')}`
                         : data?.kind === 'ghost'
                           ? data.ghost.resolved
                               ? _(

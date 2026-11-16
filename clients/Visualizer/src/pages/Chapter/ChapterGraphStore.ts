@@ -488,7 +488,7 @@ export class ChapterGraphStore {
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
     }
 
-    sourceTarget(passageId = this.selectedId): { owner: TSourceOwner; id: string } {
+    sourceTarget(passageId?: string): { owner: TSourceOwner; id: string } {
         return passageId ? { owner: 'passage', id: passageId } : { owner: 'chapter', id: this.chapterId };
     }
 

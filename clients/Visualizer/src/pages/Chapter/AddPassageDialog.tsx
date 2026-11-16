@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Alert, Button } from '@mui/material';
+import { Alert, Button, styled } from '@mui/material';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { isPassageType, PASSAGE_TYPES, type TPassageType } from '@story/shared';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
 import { FormTextInput } from '../../components/form/FormTextInput';
@@ -21,7 +22,7 @@ const PASSAGE_TYPE_LABELS: Record<TPassageType, () => string> = {
 type TProps = {
     store: ChapterGraphStore;
     onClose: () => void;
-    onAddCharacter: () => void;
+    onAddCharacter: (onAdded: (characterId: string) => void) => void;
 };
 
 export const AddPassageDialog = observer(
@@ -40,6 +41,8 @@ export const AddPassageDialog = observer(
             !!localId &&
             localError === null &&
             !exists;
+
+        const addCharacter = () => onAddCharacter(setCharacterId);
 
         const { busy, error, submit } = useDialogSubmit(
             async () => {
@@ -79,10 +82,7 @@ export const AddPassageDialog = observer(
                             <Button
                                 color="inherit"
                                 size="small"
-                                onClick={() => {
-                                    onClose();
-                                    onAddCharacter();
-                                }}
+                                onClick={addCharacter}
                             >
                                 {_('Add character')}
                             </Button>
@@ -104,6 +104,13 @@ export const AddPassageDialog = observer(
                             }))}
                             dataField="characterId"
                         />
+                        <SAddCharacterButton
+                            size="small"
+                            startIcon={<PersonAddIcon />}
+                            onClick={addCharacter}
+                        >
+                            {_('Add character')}
+                        </SAddCharacterButton>
                         <FormTextInput
                             label={_('Local id')}
                             value={localId}
@@ -136,3 +143,7 @@ export const AddPassageDialog = observer(
         );
     }
 );
+
+const SAddCharacterButton = styled(Button)`
+    align-self: flex-start;
+`;

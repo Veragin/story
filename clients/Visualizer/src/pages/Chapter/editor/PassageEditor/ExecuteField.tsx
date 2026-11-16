@@ -1,5 +1,4 @@
 import { observer } from 'mobx-react-lite';
-import { HintText } from '../../../../components/feedback/HintText';
 import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
 import type { TFieldsProps } from './types';
 
@@ -10,29 +9,27 @@ export const ExecuteField = observer(
         diag,
         preamble,
     }: Pick<TFieldsProps, 'draft' | 'edit' | 'diag' | 'preamble'>) => (
-        <>
-            <FormFunctionEditor
-                label={_('Execute')}
-                value={draft.execute}
-                onChange={(v) =>
-                    edit((d) => {
-                        if (v) d.execute = v;
-                        else delete d.execute;
-                    })
-                }
-                optional
-                emptyCode="() => {}"
-                placeholder={_('What happens when the passage is entered')}
-                diagnostics={diag('execute')}
-                dataField="execute"
-            />
-            {preamble && (
-                <HintText>
-                    {_(
-                        'The passage function has statements before its return; they run on every build of the passage and are kept as they are. Move them into Execute in the source to run them once per entry.'
-                    )}
-                </HintText>
-            )}
-        </>
+        <FormFunctionEditor
+            label={_('Execute')}
+            value={draft.execute}
+            onChange={(v) =>
+                edit((d) => {
+                    if (v) d.execute = v;
+                    else delete d.execute;
+                })
+            }
+            optional
+            emptyCode="() => {}"
+            placeholder={_('What happens when the passage is entered')}
+            diagnostics={diag('execute')}
+            dataField="execute"
+            addTooltip={
+                preamble
+                    ? _(
+                          'The passage function has statements before its return; they run on every build of the passage and are kept as they are. Move them into Execute in the source to run them once per entry.'
+                      )
+                    : undefined
+            }
+        />
     )
 );
