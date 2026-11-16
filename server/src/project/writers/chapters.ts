@@ -10,8 +10,8 @@ import type {
 import { HttpError } from '../../common/HttpError';
 import { removePassagePositions, removeTimelineEntries } from '../../json/storeCleanup';
 import { capitalize } from '@story/shared';
-import { quote, translated } from '../ast';
-import { chapterFields, chapterVersion, readChapter } from '../readers/chapters';
+import { quote, setJsDoc, translated } from '../ast';
+import { chapterDocNode, chapterFields, chapterVersion, readChapter } from '../readers/chapters';
 import { passageIdOfFile } from '../readers/passages';
 import {
     diagnosticsAsReferences,
@@ -48,18 +48,20 @@ import {
 } from './common';
 import { newPassageText } from './passages';
 
-const CHAPTER_DERIVED = [...DERIVED_FIELDS, 'chapterId', 'characters', 'dataType'];
+const CHAPTER_DERIVED = [...DERIVED_FIELDS, 'chapterId', 'characters', 'dataType', 'docComment'];
 
 export const updateChapter = ({ sp, bus }: TWriter, chapterId: string, rawBody: TUpdateChapterBody) =>
     sp.run(async (): Promise<TChapterDto> => {
         const body = asBody(rawBody);
         const current = readChapter(sp, chapterId);
         assertCurrentVersion(body, current);
+        const docComment = optionalText(body, 'docComment');
         const s = sp.session();
         s.apply(() => {
             const sf = s.edit(sp.root.paths.chapterFile(chapterId));
             applyPartial(chapterObject(sf).obj, body, chapterFields(sp), sf, { skip: CHAPTER_DERIVED });
             applyDataType(sp, sf, body.dataType, 'ChapterData', current.file);
+            if (docComment !== undefined) setJsDoc(chapterDocNode(chapterObject(sf).decl), docComment);
         });
         await s.commit(
             bus,

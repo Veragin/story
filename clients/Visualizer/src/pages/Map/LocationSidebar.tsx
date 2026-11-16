@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Alert, Button } from '@mui/material';
+import { Alert, styled } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import MapIcon from '@mui/icons-material/Map';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
-import { Panel } from '../../components/layout/Panel';
-import { PanelSection } from '../../components/layout/PanelSection';
+import { Sidebar } from '../../components/layout/Sidebar';
+import { SidebarHeading } from '../../components/layout/SidebarHeading';
+import { SidebarMeta } from '../../components/layout/SidebarMeta';
+import { SidebarToolbar } from '../../components/layout/SidebarToolbar';
 import { LocationDetails } from './LocationDetails';
 import type { MapPageStore } from './MapPageStore';
 
@@ -27,54 +33,66 @@ export const LocationSidebar = observer(
         }, [store, locationId]);
 
         return (
-            <Panel
-                variant="sidebar"
-                title={store.locationName(locationId)}
-                data-testid="location-sidebar"
-                actions={
-                    <TooltipIconButton
-                        title={_('Close')}
-                        icon={CloseIcon}
-                        tone="inherit"
-                        onClick={() => store.selectLocation(null)}
+            <SContainer>
+                <Sidebar
+                    label={store.locationName(locationId)}
+                    data-testid="location-sidebar"
+                >
+                    <SidebarToolbar
+                        start={
+                            <>
+                                <TooltipIconButton
+                                    title={_('Delete location')}
+                                    icon={DeleteIcon}
+                                    tone="error"
+                                    onClick={() => onDelete(locationId)}
+                                    data-action="delete"
+                                />
+                                <TooltipIconButton
+                                    title={_('Edit location')}
+                                    icon={EditIcon}
+                                    tone="inherit"
+                                    disabled={!location}
+                                    onClick={() => onEdit(locationId)}
+                                    data-action="edit"
+                                />
+                            </>
+                        }
+                        end={
+                            <>
+                                {mapVersion === null ? (
+                                    <TooltipIconButton
+                                        title={_('Add map')}
+                                        icon={AddIcon}
+                                        tone="inherit"
+                                        onClick={() => onAddMap(locationId)}
+                                        data-action="add-map"
+                                    />
+                                ) : (
+                                    <TooltipIconButton
+                                        title={_('Open map')}
+                                        icon={MapIcon}
+                                        tone="inherit"
+                                        disabled={mapVersion === undefined}
+                                        onClick={() => onOpenMap(locationId)}
+                                        data-action="open-map"
+                                    />
+                                )}
+                                <TooltipIconButton
+                                    title={_('Close')}
+                                    icon={CloseIcon}
+                                    tone="inherit"
+                                    onClick={() => store.selectLocation(null)}
+                                    data-action="close"
+                                />
+                            </>
+                        }
                     />
-                }
-                footer={
-                    <>
-                        {mapVersion === null ? (
-                            <Button
-                                variant="contained"
-                                onClick={() => onAddMap(locationId)}
-                            >
-                                {_('Add map')}
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="contained"
-                                disabled={mapVersion === undefined}
-                                onClick={() => onOpenMap(locationId)}
-                            >
-                                {_('Open')}
-                            </Button>
-                        )}
-                        <Button
-                            variant="outlined"
-                            disabled={!location}
-                            onClick={() => onEdit(locationId)}
-                        >
-                            {_('Edit')}
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={() => onDelete(locationId)}
-                        >
-                            {_('Delete')}
-                        </Button>
-                    </>
-                }
-            >
-                <PanelSection>
+                    <SidebarHeading
+                        title={store.locationName(locationId)}
+                        badge={_('location')}
+                    />
+                    <SidebarMeta values={[locationId, location?.file]} />
                     {location ? (
                         <LocationDetails
                             location={location}
@@ -90,8 +108,23 @@ export const LocationSidebar = observer(
                             )}
                         </Alert>
                     )}
-                </PanelSection>
-            </Panel>
+                </Sidebar>
+            </SContainer>
         );
     }
 );
+
+const SContainer = styled('div')(({ theme }) => ({
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 4,
+    width: 'min(340px, 90vw)',
+    overflowY: 'auto',
+    scrollbarWidth: 'thin',
+    color: theme.palette.text.primary,
+    fontSize: theme.typography.small.fontSize,
+    backgroundColor: theme.palette.surface.overlay,
+    borderLeft: `1px solid ${theme.palette.border.strong}`,
+}));

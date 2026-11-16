@@ -109,6 +109,42 @@ describe('passages', () => {
         await expectTsc();
     }, 60_000);
 
+    it('reads, adds, changes and removes the doc comment above the passage function', async () => {
+        const file = 'data/chapters/village/thomas.passages/intro.ts';
+        const url = '/api/stories/example/passages/village-thomas-intro';
+        const original = await read(file);
+        const declaration = 'export const introPassage = ';
+        const before = (await t.get(url)).body;
+        expect(before.docComment).toBe('');
+        const put = async (patch: Record<string, unknown>) => {
+            const current = (await t.get(url)).body;
+            const res = await t.put(url, { version: current.version, ...patch });
+            expect(res.status, JSON.stringify(res.body)).toBe(200);
+            return res.body;
+        };
+
+        let dto = await put({ docComment: 'Thomas wakes up in the forest.' });
+        expect(dto.docComment).toBe('Thomas wakes up in the forest.');
+        expect(dto.version).not.toBe(before.version);
+        expect(await read(file)).toBe(
+            original.replace(declaration, `/** Thomas wakes up in the forest. */\n${declaration}`)
+        );
+
+        dto = await put({ docComment: 'Thomas wakes up.\n\nHe hears a wolf.' });
+        expect(dto.docComment).toBe('Thomas wakes up.\n\nHe hears a wolf.');
+        expect(await read(file)).toBe(
+            original.replace(declaration, `/**\n * Thomas wakes up.\n *\n * He hears a wolf.\n */\n${declaration}`)
+        );
+
+        dto = await put({ title: 'Morning' });
+        expect(dto.docComment).toBe('Thomas wakes up.\n\nHe hears a wolf.');
+
+        dto = await put({ docComment: '' });
+        expect(dto.docComment).toBe('');
+        expect(await read(file)).toBe(original.replace("title: _('Intro')", "title: _('Morning')"));
+        await expectHealthy();
+    }, 60_000);
+
     it('reads and writes descriptions of link onFinish and body conditions', async () => {
         const file = 'data/chapters/village/thomas.passages/forest.ts';
         const url = '/api/stories/example/passages/village-thomas-forest';
@@ -484,6 +520,43 @@ describe('chapters', () => {
         expect((await t.get('/api/stories/example/chapters/harbor')).status).toBe(404);
         await expectHealthy();
         await expectTsc();
+    }, 60_000);
+
+    it('reads, adds, changes and removes the doc comment above the chapter object', async () => {
+        const file = 'data/chapters/kingdom/kingdom.chapter.ts';
+        const url = '/api/stories/example/chapters/kingdom';
+        const original = await read(file);
+        const declaration = "export const kingdomChapter: TChapter<'kingdom'> = {";
+        const before = (await t.get(url)).body;
+        expect(before.docComment).toBe('');
+        const put = async (patch: Record<string, unknown>) => {
+            const current = (await t.get(url)).body;
+            const res = await t.put(url, { version: current.version, ...patch });
+            expect(res.status, JSON.stringify(res.body)).toBe(200);
+            return res.body;
+        };
+
+        let dto = await put({ docComment: 'The royal court prepares for war.' });
+        expect(dto.docComment).toBe('The royal court prepares for war.');
+        expect(dto.description).toBe(before.description);
+        expect(dto.version).not.toBe(before.version);
+        expect(await read(file)).toBe(
+            original.replace(declaration, `/** The royal court prepares for war. */\n${declaration}`)
+        );
+
+        dto = await put({ docComment: 'The court prepares.\nThe king falls ill.' });
+        expect(dto.docComment).toBe('The court prepares.\nThe king falls ill.');
+        expect(await read(file)).toBe(
+            original.replace(declaration, `/**\n * The court prepares.\n * The king falls ill.\n */\n${declaration}`)
+        );
+
+        dto = await put({ location: before.location });
+        expect(dto.docComment).toBe('The court prepares.\nThe king falls ill.');
+
+        dto = await put({ docComment: '' });
+        expect(dto.docComment).toBe('');
+        expect(await read(file)).toBe(original);
+        await expectHealthy();
     }, 60_000);
 
     it('edits a chapter in place, keeping the rest of the file', async () => {

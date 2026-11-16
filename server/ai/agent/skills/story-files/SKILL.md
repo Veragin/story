@@ -125,6 +125,10 @@ locations: {
 | trigger    | `<ch>/triggers.ts` and the chapter's `triggers: [...]`                                                        |
 | class/type | `types/<Name>.ts` and its `export *` line in `types/index.ts` (see the structure skill)                       |
 
+A `/** … */` comment directly above `export const <ch>Chapter` is the author's description of what the chapter
+should do, written in the Visualizer (unlike its player-facing `description` field). Treat it as the spec: implement
+the behaviour it describes, keep it in place and don't rewrite it unless asked.
+
 Before deleting anything, `Grep` for its id: links, `nextPassageId`, `redirect`, `startPassageId`, `location`,
 inventories and catalog fields may still point at it.
 

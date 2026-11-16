@@ -6,7 +6,8 @@ import { DialogButtons } from '../../components/dialog/DialogButtons';
 import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
 import { FormRadioInput } from '../../components/form/FormRadioInput';
-import { FormTextInput } from '../../components/form/FormTextInput';
+import { TitleIdInput } from '../../components/form/TitleIdInput';
+import { useTitleId } from '../../components/form/useTitleId';
 import type { TimelineStore } from './store/TimelineStore';
 
 // ids end up in identifiers and passage ids (`<chapter>-<character>-<local>`)
@@ -35,22 +36,24 @@ export const AddTimelineItemDialog = observer(
         const selectedChapter =
             store.selected?.kind === 'chapter' ? store.selected.id : undefined;
         const [kind, setKind] = useState<TKind>('chapter');
-        const [id, setId] = useState('');
         const [chapterId, setChapterId] = useState(
             selectedChapter ?? chapters[0] ?? ''
         );
         const [location, setLocation] = useState(locations[0]?.id ?? '');
 
-        const idTaken =
+        const isTaken = (candidate: string) =>
             kind === 'chapter'
-                ? store.chapters.has(id)
-                : store.triggers.has(id);
+                ? store.chapters.has(candidate)
+                : store.triggers.has(candidate);
+        const titleId = useTitleId(kind, isTaken);
+        const { id } = titleId;
+        const title = titleId.title.trim();
         const idError =
             id === ''
                 ? null
                 : !ID_PATTERN.test(id)
                   ? _('Letters and digits only, starting with a letter')
-                  : idTaken
+                  : isTaken(id)
                     ? _('This id is taken')
                     : null;
         const valid =
@@ -63,6 +66,7 @@ export const AddTimelineItemDialog = observer(
                 if (kind === 'chapter')
                     await store.createChapter({
                         chapterId: id,
+                        title,
                         location,
                         start: time,
                     });
@@ -70,6 +74,7 @@ export const AddTimelineItemDialog = observer(
                     await store.createTrigger({
                         chapterId,
                         triggerId: id,
+                        name: title,
                         time,
                     });
                 onClose();
@@ -108,15 +113,11 @@ export const AddTimelineItemDialog = observer(
                     ]}
                     dataField="kind"
                 />
-                <FormTextInput
+                <TitleIdInput
+                    state={titleId}
                     autoFocus
-                    label={
-                        kind === 'chapter' ? _('Chapter id') : _('Trigger id')
-                    }
-                    value={id}
-                    onChange={(next = '') => setId(next.trim())}
-                    error={idError}
-                    dataField="id"
+                    label={kind === 'chapter' ? _('Title') : _('Name')}
+                    idError={idError}
                 />
                 {kind === 'chapter' ? (
                     <FormAutocompleteInput

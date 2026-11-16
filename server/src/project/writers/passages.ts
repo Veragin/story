@@ -7,13 +7,21 @@ import type {
     TPassageType,
     TUpdatePassageBody,
 } from '@story/protocol';
+import type { SourceFile } from 'ts-morph';
 import { version as hash } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
 import { removePassagePositions } from '../../json/storeCleanup';
 import { deleteFiles, siblingImages } from '../images';
 import { capitalize, isPassageType, PASSAGE_TYPES } from '@story/shared';
-import { quote, translated } from '../ast';
-import { PASSAGE_FIELDS, PASSAGE_OPTIONAL, passageType, readPassage, readPassageFile } from '../readers/passages';
+import { quote, setJsDoc, translated } from '../ast';
+import {
+    PASSAGE_FIELDS,
+    PASSAGE_OPTIONAL,
+    passageDocNode,
+    passageType,
+    readPassage,
+    readPassageFile,
+} from '../readers/passages';
 import { diagnosticsAsReferences, findStringReferences, passagesAddPassage, passagesRemovePassage } from '../registry';
 import {
     assertId,
@@ -22,7 +30,9 @@ import {
     characterPassageUnionName,
     findPassageFile,
     passageSource,
+    type TPassageSource,
 } from '../story';
+import type { SourceProject } from '../SourceProject';
 import { applyPartial } from '../values';
 import { asBody, assertCurrentVersion, DERIVED_FIELDS, optionalText, type TWriter } from './common';
 
@@ -35,6 +45,7 @@ const PASSAGE_DERIVED = [
     'params',
     'preamble',
     'type',
+    'docComment',
 ];
 
 const newPassageFields: Record<TPassageType, (title: string, selfId: string) => string> = {
@@ -104,6 +115,12 @@ export const createPassage = ({ sp, bus }: TWriter, chapterId: string, rawBody: 
         return readPassage(sp, passageId);
     });
 
+const editedPassageSource = (sp: SourceProject, file: SourceFile): TPassageSource => {
+    const src = passageSource(file);
+    if (!src) throw new Error(`${sp.root.rel(file.getFilePath())}: no passage function returning an object`);
+    return src;
+};
+
 const versionOf = (text: string | null | undefined) => (text ? hash(text) : null);
 
 export const updatePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: TUpdatePassageBody) =>
@@ -115,17 +132,19 @@ export const updatePassage = ({ sp, bus }: TWriter, passageId: string, rawBody: 
         if (body.type !== undefined && body.type !== current.type) {
             throw HttpError.badRequest(`Field "type" is read-only (the passage is a ${current.type} passage)`);
         }
+        const docComment = optionalText(body, 'docComment');
         const abs = sf.getFilePath();
         const s = sp.session();
         s.apply(() => {
             const file = s.edit(abs);
-            const src = passageSource(file);
-            if (!src) throw new Error(`${sp.root.rel(abs)}: no passage function returning an object`);
+            const src = editedPassageSource(sp, file);
             const type = passageType(src) ?? 'screen';
             applyPartial(src.obj, body, PASSAGE_FIELDS[type], file, {
                 skip: PASSAGE_DERIVED,
                 optional: PASSAGE_OPTIONAL[type],
             });
+            // re-read: applyPartial's edits forget the navigated nodes
+            if (docComment !== undefined) setJsDoc(passageDocNode(editedPassageSource(sp, file)), docComment);
         });
         await s.commit(
             bus,

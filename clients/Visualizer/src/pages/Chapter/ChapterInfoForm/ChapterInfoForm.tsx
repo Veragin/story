@@ -8,6 +8,7 @@ import { FormObjectEditor } from '../../../components/editors/FormObjectEditor';
 import { FormMaybeCodeTextInput } from '../../../components/code/FormMaybeCodeTextInput';
 import { FormMaybeCodeAutocompleteInput } from '../../../components/code/FormMaybeCodeAutocompleteInput';
 import { FormMaybeCodeTimeRangeInput } from '../../../components/code/FormMaybeCodeTimeRangeInput';
+import { DescriptionInput } from '../../../components/inputs/DescriptionInput';
 import {
     noDiagnosticsOf,
     nestedDiagnostics,
@@ -88,6 +89,11 @@ export const ChapterInfoForm = observer(
 
         return (
             <FormFields>
+                <DescriptionInput
+                    value={value.docComment ?? ''}
+                    onChange={(next) => set('docComment', next)}
+                    disabled={disabled}
+                />
                 <FormMaybeCodeTextInput
                     label={_('Title')}
                     value={value.title}
@@ -97,7 +103,7 @@ export const ChapterInfoForm = observer(
                     dataField="title"
                 />
                 <FormMaybeCodeTextInput
-                    label={_('Description')}
+                    label={_('In-game description')}
                     multiline
                     value={value.description}
                     onChange={(next) => set('description', next)}

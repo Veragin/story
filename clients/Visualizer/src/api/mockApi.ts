@@ -459,6 +459,7 @@ export const createMockApi = ({
                     version: nextVersion(),
                     file: `data/chapters/${body.chapterId}/${body.chapterId}.chapter.ts`,
                     exportName: `${body.chapterId}Chapter`,
+                    docComment: '',
                     title: body.title,
                     description: body.description ?? '',
                     timeRange: body.timeRange,
@@ -515,6 +516,7 @@ export const createMockApi = ({
                     file: `data/chapters/${chapterId}/${characterId}.passages/${startPassageLocalId}.ts`,
                     exportName: `${startPassageLocalId}Passage`,
                     params: [],
+                    docComment: '',
                     version: nextVersion(),
                     type: 'screen',
                     title: startPassageLocalId,
@@ -570,6 +572,7 @@ export const createMockApi = ({
                     file: `data/chapters/${chapterId}/${characterId}.passages/${localId}.ts`,
                     exportName: `${localId}Passage`,
                     params: [],
+                    docComment: '',
                     version: nextVersion(),
                 };
                 const passage: TPassageDto =

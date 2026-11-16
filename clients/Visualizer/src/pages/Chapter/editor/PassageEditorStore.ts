@@ -5,11 +5,11 @@ import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics, passageFieldPaths, type TDiagnosticIndex } from './diagnostics';
 
 const EDITABLE_FIELDS: Record<TPassageType, readonly string[]> = {
-    start: ['execute', 'description', 'nextPassageId'],
-    screen: ['execute', 'title', 'image', 'body'],
-    linear: ['execute', 'description', 'nextPassageId'],
-    redirect: ['execute', 'body'],
-    finish: ['execute', 'nextPassageId'],
+    start: ['docComment', 'execute', 'description', 'nextPassageId'],
+    screen: ['docComment', 'execute', 'title', 'image', 'body'],
+    linear: ['docComment', 'execute', 'title', 'image', 'body', 'nextPassageId'],
+    redirect: ['docComment', 'execute', 'body'],
+    finish: ['docComment', 'execute', 'nextPassageId'],
 };
 
 // current: null when the passage was deleted

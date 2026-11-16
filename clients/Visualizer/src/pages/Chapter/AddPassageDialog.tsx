@@ -4,7 +4,8 @@ import { Alert, Button, styled } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { isPassageType, PASSAGE_TYPES, type TPassageType } from '@story/shared';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
-import { FormTextInput } from '../../components/form/FormTextInput';
+import { TitleIdInput } from '../../components/form/TitleIdInput';
+import { useTitleId } from '../../components/form/useTitleId';
 import { AppDialog } from '../../components/dialog/AppDialog';
 import { DialogButtons } from '../../components/dialog/DialogButtons';
 import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
@@ -29,13 +30,14 @@ export const AddPassageDialog = observer(
     ({ store, onClose, onAddCharacter }: TProps) => {
         const characters = store.chapterCharacters;
         const [characterId, setCharacterId] = useState(characters[0]?.id ?? '');
-        const [localId, setLocalId] = useState('');
         const [type, setType] = useState<TPassageType>('screen');
+        const idPrefix = `${store.chapterId}-${characterId}-`;
+        const isTaken = (id: string) =>
+            store.passages.some((p) => p.passageId === idPrefix + id);
+        const titleId = useTitleId('passage', isTaken);
+        const localId = titleId.id;
         const localError = localId === '' ? null : idError(localId);
-        const exists = store.passages.some(
-            (p) =>
-                p.passageId === `${store.chapterId}-${characterId}-${localId}`
-        );
+        const exists = isTaken(localId);
         const canSubmit =
             characters.length > 0 &&
             !!localId &&
@@ -50,6 +52,7 @@ export const AddPassageDialog = observer(
                     characterId,
                     localId,
                     type,
+                    title: titleId.title.trim(),
                 });
                 onClose();
                 store.openEditor(passage.passageId);
@@ -111,19 +114,17 @@ export const AddPassageDialog = observer(
                         >
                             {_('Add character')}
                         </SAddCharacterButton>
-                        <FormTextInput
-                            label={_('Local id')}
-                            value={localId}
+                        <TitleIdInput
+                            state={titleId}
+                            label={_('Title')}
                             autoFocus
-                            error={
+                            idPrefix={idPrefix}
+                            idError={
                                 localError ??
                                 (exists
                                     ? _('This passage already exists')
                                     : null)
                             }
-                            helperText={`${store.chapterId}-${characterId}-${localId || '…'}`}
-                            onChange={(next) => setLocalId((next ?? '').trim())}
-                            dataField="localId"
                         />
                         <FormAutocompleteInput
                             label={_('Type')}

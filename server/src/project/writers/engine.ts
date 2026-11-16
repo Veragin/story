@@ -5,7 +5,7 @@ import type { ObjectLiteralExpression, SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { TEMPLATE_ROOT } from '../../stories/templateRoot';
 import { HttpError } from '../../common/HttpError';
-import { applyTextEdits, ensureNamedImport, findExportedObject, jsDocEdit } from '../ast';
+import { ensureNamedImport, findExportedObject, setJsDoc } from '../ast';
 import {
     ENGINE_EXPORT,
     ENGINE_INDEX_FILE,
@@ -122,8 +122,7 @@ const writeSection = (
         if (current.exists) sf.replaceWithText(text);
         const primary = findPrimaryExport(sf, exportName);
         if (!primary) throw missingExport(current.file, exportName);
-        const jsDoc = jsDocEdit(primary, description ?? current.description);
-        if (jsDoc) applyTextEdits(sf, [jsDoc]);
+        setJsDoc(primary, description ?? current.description);
         addIndexEntry(s, section);
         // stories created before engine settings existed lack these files and barrel lines
         ensureBarrelLine(s, DATA_INDEX_FILE, ENGINE_MODULE);

@@ -148,7 +148,17 @@ export const ChapterPage = observer(
                                             }
                                         />
                                     ) : (
-                                        <ChapterOverview store={store} />
+                                        <ChapterOverview
+                                            store={store}
+                                            events={events}
+                                            onEditInfo={() =>
+                                                openChapterInfoDialog(
+                                                    chapterId,
+                                                    api
+                                                )
+                                            }
+                                            onEditSource={() => editSource()}
+                                        />
                                     )}
                                 </SSide>
                             }

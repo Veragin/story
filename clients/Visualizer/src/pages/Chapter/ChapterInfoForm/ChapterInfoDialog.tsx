@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { AppDialog } from '../../../components/dialog/AppDialog';
 import { DialogButtons } from '../../../components/dialog/DialogButtons';
-import { ConflictAlert } from '../../../components/feedback/ConflictAlert';
-import { DiagnosticsList } from '../../../components/feedback/DiagnosticsList';
 import { LoadingState } from '../../../components/feedback/LoadingState';
 import {
     apiEvents,
@@ -14,8 +12,9 @@ import {
 import { StructureContext } from '../../../structure/structureContext';
 import type { EntityStore } from '../../../stores/EntityStore';
 import type { StructureStore } from '../../../stores/StructureStore';
-import { ChapterInfoEditorStore } from './ChapterInfoEditorStore';
+import { ChapterInfoAlerts } from './ChapterInfoAlerts';
 import { ChapterInfoForm } from './ChapterInfoForm';
+import { useChapterInfoEditor } from './useChapterInfoEditor';
 
 type TProps = {
     chapterId: string;
@@ -35,16 +34,7 @@ export const ChapterInfoDialog = observer(
         events = apiEvents,
         onClose,
     }: TProps) => {
-        const [store] = useState(
-            () => new ChapterInfoEditorStore(chapterId, api)
-        );
-        useEffect(() => {
-            void store.load();
-            return events.subscribe(
-                { kind: 'chapter', id: chapterId },
-                () => void store.onExternal()
-            );
-        }, [store, events, chapterId]);
+        const store = useChapterInfoEditor(chapterId, api, events);
         useEffect(() => {
             const releaseEntities = entities.start();
             const releaseStructure = structure.start();
@@ -83,23 +73,7 @@ export const ChapterInfoDialog = observer(
                     />
                 }
             >
-                {store.conflict && (
-                    <ConflictAlert
-                        deleted={!store.conflict.current}
-                        what={_('chapter')}
-                        onReload={
-                            store.conflict.current
-                                ? () => store.reloadFromDisk()
-                                : undefined
-                        }
-                        onKeepMine={
-                            store.conflict.current
-                                ? () => store.keepMine()
-                                : undefined
-                        }
-                    />
-                )}
-                <DiagnosticsList diagnostics={store.unmappedDiagnostics} />
+                <ChapterInfoAlerts store={store} />
                 {store.draft && store.chapter ? (
                     <StructureContext.Provider value={structure}>
                         <ChapterInfoForm

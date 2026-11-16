@@ -2,7 +2,7 @@ import type { TChapterPassagesDto, TFunctionDto, TPassageDto, TPassageEdgeDto, T
 import { isPassageType } from '@story/shared';
 import { Node, type NoSubstitutionTemplateLiteral, type SourceFile, type StringLiteral, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
-import { propertyKey, stringProp, unwrap } from '../ast';
+import { propertyKey, readJsDoc, stringProp, unwrap } from '../ast';
 import type { SourceProject } from '../SourceProject';
 import {
     chapterCharacterFiles,
@@ -80,6 +80,11 @@ export const passageType = (src: TPassageSource): TPassageType | undefined => {
     return isPassageType(t) ? t : undefined;
 };
 
+export const passageDocNode = (src: TPassageSource): Node =>
+    Node.isFunctionDeclaration(src.fn)
+        ? src.fn
+        : (src.fn.getFirstAncestorByKind(SyntaxKind.VariableStatement) ?? src.fn);
+
 const passageOwner = (sp: SourceProject, sf: SourceFile) => {
     const m = /^data\/chapters\/([^/]+)\/([^/]+)\.passages\/[^/]+\.ts$/.exec(sp.root.rel(sf.getFilePath()));
     return m ? { chapterId: m[1], characterId: m[2] } : undefined;
@@ -111,6 +116,7 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
         line: src.line,
         exportName: src.exportName,
         params: src.params,
+        docComment: readJsDoc(passageDocNode(src)) ?? '',
         ...(src.preamble.length > 0 ? { preamble: src.preamble.map((s) => s.getText()).join('\n') } : {}),
         ...(fields.execute !== undefined ? { execute: fields.execute as TFunctionDto } : {}),
     };

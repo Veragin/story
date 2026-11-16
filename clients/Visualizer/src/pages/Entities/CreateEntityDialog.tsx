@@ -8,6 +8,8 @@ import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import { ErrorAlert } from '../../components/feedback/ErrorAlert';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
 import { FormTextInput } from '../../components/form/FormTextInput';
+import { TitleIdInput } from '../../components/form/TitleIdInput';
+import { useTitleId } from '../../components/form/useTitleId';
 import { optionsOf } from '../../structure/option';
 import type { EntityStore } from '../../stores/EntityStore';
 import type { StructureStore } from '../../stores/StructureStore';
@@ -36,6 +38,8 @@ type TProps = {
     onClose: () => void;
 };
 
+type TFormFields = Omit<TCreateForm, 'id' | 'name'>;
+
 const ITEM_TYPE_LITERAL = 'TItemType';
 
 const itemTypeLiteral = (structure: StructureStore): string => {
@@ -57,20 +61,20 @@ export const CreateEntityDialog = observer(
     ({ kind, entities, structure, onCreated, onClose }: TProps) => {
         const typeLiteral = itemTypeLiteral(structure);
         const typeOptions = structure.literalValues(typeLiteral);
-        const [form, setForm] = useState<TCreateForm>(() => ({
-            id: '',
-            name: '',
+        const [form, setForm] = useState<TFormFields>(() => ({
             description: '',
             type: typeOptions.includes('value')
                 ? 'value'
                 : (typeOptions[0] ?? 'value'),
         }));
         const fields = createFields(kind);
-
-        const idProblem = validateEntityId(
-            form.id.trim(),
-            entities.idsOf(kind)
+        const existingIds = entities.idsOf(kind);
+        const titleId = useTitleId(
+            ENTITY_TYPE_NAMES[kind].entity.toLowerCase(),
+            (id) => validateEntityId(id, existingIds) === 'exists'
         );
+
+        const idProblem = validateEntityId(titleId.id, existingIds);
         const descriptionMissing =
             fields.description === 'required' && form.description.trim() === '';
         const canSubmit = !idProblem && !descriptionMissing;
@@ -78,14 +82,21 @@ export const CreateEntityDialog = observer(
         const { busy, error, touched, submit } = useDialogSubmit(
             async () =>
                 onCreated(
-                    await entities.create(kind, buildCreateBody(kind, form))
+                    await entities.create(
+                        kind,
+                        buildCreateBody(kind, {
+                            ...form,
+                            id: titleId.id,
+                            name: titleId.title,
+                        })
+                    )
                 ),
             { canSubmit, toError: createError }
         );
 
-        const set = (patch: Partial<TCreateForm>) =>
+        const set = (patch: Partial<TFormFields>) =>
             setForm((f) => ({ ...f, ...patch }));
-        const showIdError = (touched || form.id !== '') && idProblem;
+        const showIdError = (touched || titleId.id !== '') && idProblem;
 
         return (
             <AppDialog
@@ -104,25 +115,15 @@ export const CreateEntityDialog = observer(
                     />
                 }
             >
-                <FormTextInput
+                <TitleIdInput
+                    state={titleId}
+                    label={_('Name')}
                     autoFocus
-                    spellCheck={false}
-                    label={_('Id')}
-                    value={form.id}
-                    onChange={(id = '') => set({ id })}
-                    error={showIdError ? idErrorMessage(idProblem) : null}
-                    helperText={_(
+                    idError={showIdError ? idErrorMessage(idProblem) : null}
+                    idHelperText={_(
                         'Used in code and file names; cannot be changed later.'
                     )}
-                    dataField="id"
-                />
-                <FormTextInput
-                    label={_('Name')}
-                    value={form.name}
-                    placeholder={form.id}
-                    onChange={(name = '') => set({ name })}
-                    helperText={_('Defaults to the id.')}
-                    dataField="name"
+                    titleDataField="name"
                 />
                 {fields.description !== 'none' && (
                     <FormTextInput

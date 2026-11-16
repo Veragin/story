@@ -31,6 +31,7 @@ export class ChapterInfoEditorStore {
             patch: computed,
             dirty: computed,
             setDraft: action,
+            reset: action,
             reloadFromDisk: action,
             onExternal: action,
         });
@@ -113,13 +114,18 @@ export class ChapterInfoEditorStore {
         }
     }
 
-    reloadFromDisk() {
-        const current = this.conflict?.current;
-        if (current) this.chapter = current;
+    reset() {
         if (this.chapter) this.draft = chapterInfoOf(this.chapter);
         this.conflict = null;
         this.diagnostics = [];
+        this.error = null;
         removeUiState(draftKey(this.chapterId));
+    }
+
+    reloadFromDisk() {
+        const current = this.conflict?.current;
+        if (current) this.chapter = current;
+        this.reset();
     }
 
     // untouched fields take the disk's value, so only the author's edits overwrite

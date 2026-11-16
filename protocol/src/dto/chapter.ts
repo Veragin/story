@@ -14,6 +14,8 @@ export type TChapterDto = TVersioned &
         triggerIds: TMaybeCode<string>[];
         init: TMaybeCode<TValueRecord>;
         dataType?: TDataTypeDto;
+        /** The JSDoc on the exported chapter object: an author's note of what it should do (`''` for none). */
+        docComment: string;
         /** Derived from the `<characterId>.passages/` folders; ignored on PUT. */
         characters: TChapterCharacterDto[];
     };
@@ -45,7 +47,7 @@ export type TDataTypeDto = {
 
 export type TChapterEditable = Pick<
     TChapterDto,
-    'title' | 'description' | 'timeRange' | 'location' | 'children' | 'triggerIds' | 'init' | 'dataType'
+    'title' | 'description' | 'timeRange' | 'location' | 'children' | 'triggerIds' | 'init' | 'dataType' | 'docComment'
 >;
 
 export type TCreateChapterBody = {

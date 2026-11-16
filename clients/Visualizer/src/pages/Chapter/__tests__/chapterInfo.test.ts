@@ -63,6 +63,7 @@ describe('chapterFieldPaths', () => {
             timeRange: { start: '1.1. 8:00', end: '2.1. 8:00' },
             children: [{ chapterId: 'kingdom', condition: 'x' }],
             init: { mojePromena: { time: 0 } },
+            docComment: '',
         };
         const paths = chapterFieldPaths(value);
         for (const path of ['children.0.chapterId', 'children.0.condition', 'init.mojePromena.time', 'timeRange.end']) {

@@ -2,16 +2,6 @@ import { Paper, styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import { AddButton } from '../../../../components/buttons/AddButton';
 
-export const SPanel = styled(Paper)`
-    display: flex;
-    flex-direction: column;
-    gap: ${spacingCss(1.25)};
-    min-height: 100%;
-    padding: ${spacingCss(1.5)};
-    box-sizing: border-box;
-    background: transparent;
-`;
-
 export const STitleRow = styled('div')`
     display: flex;
     align-items: center;

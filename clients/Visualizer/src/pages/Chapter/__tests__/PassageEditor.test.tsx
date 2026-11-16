@@ -2,7 +2,7 @@
 import '@story/shared'; // installs the global `_`
 import { act } from 'react';
 import { runInAction } from 'mobx';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
     TLinearPassageDto,
     TPassageDto,
@@ -107,17 +107,53 @@ describe('PassageEditor', () => {
         expect(store.dirty).toBe(true);
     });
 
-    it('shows a code title read-only and converts it', async () => {
+    it('shows the local id as a read-only heading for a code title', async () => {
         await open({
             ...screen('village-thomas-intro'),
             title: { code: "'Hi'" },
         });
         expect($('[data-field="title"]')).toBeNull();
-        expect(inField('Title', '[data-code-value]').textContent).toBe(
-            "'Hi'"
+        expect(get('h2').textContent).toBe('intro');
+    });
+
+    it('shows the local id as the heading of a passage without a title', async () => {
+        await open(passage('village-thomas-cool'));
+        expect($('[data-field="title"]')).toBeNull();
+        expect(get('h2').textContent).toBe('cool');
+        expect(document.body.textContent).toContain('finish');
+    });
+
+    it('edits the description, saves it in the patch and discards it', async () => {
+        await open({ ...screen('village-thomas-intro'), docComment: '' });
+        const description = get<HTMLTextAreaElement>(
+            'textarea[data-field="docComment"]'
         );
-        click('[data-form-field="Title"] [data-action="convert-to-value"]');
-        expect(store.draft.type === 'screen' && store.draft.title).toBe('Hi');
+        expect(description.placeholder).toBe('Write down description here');
+        typeInto(description, 'Wakes up in the village');
+        expect(store.draft.docComment).toBe('Wakes up in the village');
+        expect(store.patch).toEqual({ docComment: 'Wakes up in the village' });
+        click('[data-action="discard"]');
+        expect(store.draft.docComment).toBe('');
+        expect(store.dirty).toBe(false);
+    });
+
+    it('copies the passage id and the file on click', async () => {
+        const writeText = vi.fn(() => Promise.resolve());
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        });
+        const intro = screen('village-thomas-intro');
+        await open(intro);
+        click(`[data-copy="${intro.passageId}"]`);
+        await flush();
+        expect(writeText).toHaveBeenCalledWith(intro.passageId);
+        expect(get(`[data-copy="${intro.passageId}"]`).dataset.copyState).toBe(
+            'copied'
+        );
+        click(`[data-copy="${intro.file}"]`);
+        await flush();
+        expect(writeText).toHaveBeenLastCalledWith(intro.file);
     });
 
     it('edits a link: text, priority and the cost items', async () => {
@@ -230,6 +266,8 @@ describe('PassageEditor', () => {
         await open(linear);
         expect(input('title').value).toBe(linear.title);
         expect(input('body').value).toBe('Walking');
+        typeInto(input('title'), 'Walk');
+        expect(store.patch).toEqual({ title: 'Walk' });
         click('[data-form-field="Next passage"] [data-action="add-field"]');
         expect(store.draft.type === 'linear' && store.draft.nextPassageId).toBe(
             'village-thomas-intro'

@@ -495,6 +495,27 @@ describe('mockApi', () => {
         expect(seen[0]).toMatchObject({ kind: 'chapter', id: 'village' });
     });
 
+    it('returns and updates the doc comment of passages and chapters', async () => {
+        const api = createMockApi();
+        const chapter = await api.getChapter('wedding');
+        expect(chapter.docComment).toBe('');
+        const savedChapter = await api.updateChapter('wedding', {
+            version: chapter.version,
+            docComment: 'They marry.',
+        });
+        expect(savedChapter).toMatchObject({ docComment: 'They marry.', description: chapter.description });
+
+        const passage = await api.getPassage('village-thomas-forest');
+        expect(passage.docComment).toBe('');
+        let saved = await api.updatePassage(passage.passageId, { version: passage.version, docComment: 'Hunting.' });
+        expect(saved.docComment).toBe('Hunting.');
+        saved = await api.updatePassage(passage.passageId, { version: saved.version, title: 'Woods' });
+        expect(saved.docComment).toBe('Hunting.');
+
+        const created = await api.createPassage('village', { characterId: 'thomas', localId: 'lake', type: 'linear' });
+        expect(created.docComment).toBe('');
+    });
+
     it('adds and removes a chapter character, refusing while referenced', async () => {
         const api = createMockApi();
         let chapter = await api.addChapterCharacter('wedding', { characterId: 'thomas' });
@@ -571,6 +592,7 @@ describe('extractEdges', () => {
                 version: 'v',
                 file: 'f',
                 params: ['s'],
+                docComment: '',
                 type: 'screen',
                 title: 'X',
                 image: '',
@@ -590,6 +612,7 @@ describe('extractEdges', () => {
                 version: 'v',
                 file: 'f',
                 params: ['s'],
+                docComment: '',
                 type: 'redirect',
                 body: [{ condition: { code: 's.ok' }, redirect: 'c-a-y' }, { redirect: 'c-a-z' }],
             },

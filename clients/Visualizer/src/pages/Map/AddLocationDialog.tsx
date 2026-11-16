@@ -1,14 +1,13 @@
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
 import { Button, styled } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import { AppDialog } from '../../components/dialog/AppDialog';
 import { DialogButtons } from '../../components/dialog/DialogButtons';
 import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import { HintText } from '../../components/feedback/HintText';
-import { FormTextInput } from '../../components/form/FormTextInput';
+import { TitleIdInput } from '../../components/form/TitleIdInput';
+import { useTitleId } from '../../components/form/useTitleId';
 import type { MapPageStore } from './MapPageStore';
-import { locationIdFromName } from './locationTree';
 
 type TProps = {
     store: MapPageStore;
@@ -16,11 +15,12 @@ type TProps = {
 };
 
 export const AddLocationDialog = observer(({ store, onClose }: TProps) => {
-    const [name, setName] = useState('');
-    const [customId, setCustomId] = useState<string | null>(null);
-    const localId = customId ?? locationIdFromName(name);
     const prefix = store.locationIdPrefix;
-    const id = localId && prefix + localId;
+    const titleId = useTitleId('location', (localId) =>
+        store.locations.has(prefix + localId)
+    );
+    const id = titleId.id && prefix + titleId.id;
+    const name = titleId.title.trim();
     const idError = id ? store.validateLocationId(id) : null;
     const unplaced = store.unplacedLocations;
 
@@ -49,23 +49,16 @@ export const AddLocationDialog = observer(({ store, onClose }: TProps) => {
                 />
             }
         >
-            <FormTextInput
+            <TitleIdInput
+                state={titleId}
                 label={_('Name')}
-                value={name}
-                onChange={(next = '') => setName(next)}
                 autoFocus
-                dataField="name"
-            />
-            <FormTextInput
-                label={_('Id')}
-                value={localId}
-                onChange={(next = '') => setCustomId(next.trim() || null)}
-                error={idError}
-                helperText={_(
+                idError={idError}
+                idPrefix={prefix}
+                idHelperText={_(
                     'Becomes data/locations/<id>.location.ts; cannot be renamed later.'
                 )}
-                startAdornment={prefix || undefined}
-                dataField="id"
+                titleDataField="name"
             />
             {unplaced.length > 0 && (
                 <SPlace>

@@ -62,6 +62,9 @@ Rules the Visualizer relies on:
 - Read state only through `s` and `e`. Never import a running app, a store or a world-state singleton.
 - Statements before `return` are allowed (then use a block body: `=> { …; return { … }; }`), but plain object
   fields are easier for the author to edit in the Visualizer.
+- A `/** … */` comment directly above `export const <local>Passage` is the author's description of what the
+  passage should do, written in the Visualizer. Treat it as the spec: implement the behaviour it describes, keep it
+  in place and don't rewrite it unless asked.
 - A `/** … */` comment directly above `execute`, `onFinish`, a body `condition` or a trigger `condition`/`action`
   is that function's description in the Visualizer. Write one short sentence there when you add such a function.
 - Player-facing text (`title`, `text`, link `text`, `description`) uses `_('…')`.

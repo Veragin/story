@@ -200,6 +200,11 @@ export const applyTextEdits = (sf: SourceFile, edits: TTextEdit[]) => {
     }
 };
 
+export const setJsDoc = (node: Node, description: string | undefined) => {
+    const edit = jsDocEdit(node, description);
+    if (edit) applyTextEdits(node.getSourceFile(), [edit]);
+};
+
 export const topLevelVariables = (sf: SourceFile): VariableDeclaration[] =>
     sf.getVariableStatements().flatMap((s) => s.getDeclarations());
 

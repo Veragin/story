@@ -21,7 +21,7 @@ export const StartFields = observer(
                 preamble={preamble}
             />
             <FormMaybeCodeTextInput
-                label={_('Description')}
+                label={_('In-game description')}
                 multiline
                 value={draft.description}
                 onChange={(v) =>

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
     descendantLocationIds,
-    locationIdFromName,
     locationIdPrefix,
     mapAncestors,
     mapIdOfLocation,
@@ -29,12 +28,5 @@ describe('locationTree', () => {
         expect(mapAncestors('global', ids)).toEqual(['global']);
         expect(locationIdPrefix('village')).toBe('village_');
         expect(locationIdPrefix('global')).toBe('');
-    });
-
-    it('derives a camelCase id from a location name', () => {
-        expect(locationIdFromName('Old Mill')).toBe('oldMill');
-        expect(locationIdFromName('  the HQ-tower 2 ')).toBe('theHqTower2');
-        expect(locationIdFromName('Žluťoučký kůň')).toBe('zlutouckyKun');
-        expect(locationIdFromName('')).toBe('');
     });
 });

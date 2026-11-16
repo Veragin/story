@@ -33,7 +33,6 @@ const locationRows = (
     sublocationNames: string[]
 ): TRow[] => {
     const rows: TRow[] = [
-        { label: _('Id'), text: location.id },
         { label: _('Description'), text: valueText(location.description) },
         {
             label: _('Local characters'),
@@ -45,7 +44,6 @@ const locationRows = (
             text: valueText(value),
         })),
         { label: _('Initial state'), text: valueText(location.init) },
-        { label: _('File'), text: location.file },
     ];
     return rows.filter((row) => row.text !== '' && row.text !== '{}');
 };

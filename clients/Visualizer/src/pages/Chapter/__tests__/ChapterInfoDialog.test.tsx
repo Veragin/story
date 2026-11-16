@@ -64,7 +64,7 @@ describe('ChapterInfoDialog', () => {
         expect(labels).toEqual(
             expect.arrayContaining([
                 'Title',
-                'Description',
+                'In-game description',
                 'Location',
                 'Time range',
                 'Child chapters',
@@ -102,6 +102,24 @@ describe('ChapterInfoDialog', () => {
         });
         expect(saved.description).toBe('A village chapter is happening');
         expect(onClose).toHaveBeenCalled();
+    });
+
+    it('saves the author description apart from the in-game one', async () => {
+        await open('village');
+        const updateChapter = vi.spyOn(stores.api, 'updateChapter');
+        typeInto(
+            get<HTMLTextAreaElement>('textarea[data-field="docComment"]'),
+            'Thomas wakes up'
+        );
+        act(() => saveButton().click());
+        await act(settle);
+        expect(updateChapter).toHaveBeenCalledWith(
+            'village',
+            expect.objectContaining({ docComment: 'Thomas wakes up' })
+        );
+        expect(updateChapter.mock.calls[0]?.[1]).not.toHaveProperty(
+            'description'
+        );
     });
 
     it('fills a new required data-type field into init and saves both', async () => {

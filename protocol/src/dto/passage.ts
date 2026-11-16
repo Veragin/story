@@ -14,6 +14,8 @@ type TPassageBaseDto = TVersioned &
         params: string[];
         /** Statements before the `return` of a block-bodied passage function, verbatim; read-only. */
         preamble?: string;
+        /** The JSDoc on the passage function: an author's note of what it should do (`''` for none). */
+        docComment: string;
         execute?: TFunctionDto;
     };
 
@@ -135,6 +137,6 @@ export type TCreatePassageBody = {
 };
 
 /** Omitted fields are left untouched. */
-export type TUpdatePassageBody = TVersionedBody & TPassageEditable;
+export type TUpdatePassageBody = TVersionedBody & TPassageEditable & { docComment?: string };
 
 export type TDeletePassageBody = TVersionedBody;
