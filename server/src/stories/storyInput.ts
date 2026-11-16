@@ -90,7 +90,7 @@ export const storyMapSize = (bytes: Uint8Array | undefined, source: string): TMa
 export const zipMapSize = (files: ReadonlyMap<string, Uint8Array>): TMapSizeDto =>
     storyMapSize(files.get(MAP_FILE), 'zip');
 
-// `access` and `hasLandingImage` are derived: accepted so the whole info can be sent back, but never applied
+// `access`, `hasLandingImage` and `aiFeature` are not editable: accepted so the whole info can be sent back, but never applied
 const UPDATE_FIELDS = [
     'version',
     'id',
@@ -102,6 +102,7 @@ const UPDATE_FIELDS = [
     'password',
     'mapSize',
     'hasLandingImage',
+    'aiFeature',
     'access',
 ];
 

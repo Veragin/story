@@ -30,7 +30,7 @@ export class StoryInfoController {
         const current = await this.stories.readVersioned(storyId);
         if (!current) throw HttpError.noStory(storyId);
         return storyGrantOf(req)
-            ? buildStoryInfo(storyId, current, this.folders.dir(storyId))
+            ? buildStoryInfo(storyId, current, this.folders.dir(storyId), await this.stories.aiFeature(storyId))
             : publicStoryInfo(storyId, current.file);
     }
 
@@ -53,7 +53,7 @@ export class StoryInfoController {
             }
             return { file, version };
         });
-        return buildStoryInfo(storyId, saved, this.folders.dir(storyId));
+        return buildStoryInfo(storyId, saved, this.folders.dir(storyId), await this.stories.aiFeature(storyId));
     }
 
     @ProtocolRoute('exportStory')

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { styled } from '@mui/material';
-import { Column } from '@story/ui';
+import { Column, Row } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
@@ -14,7 +14,8 @@ import { EntitiesPage } from '../pages/Entities';
 import { StructurePage } from '../pages/Structure/StructurePage';
 import { StorySettingsPage } from '../pages/Settings/StorySettingsPage';
 import { StructureContext } from '../structure/structureContext';
-import { structureStore } from '../context';
+import { aiStore, structureStore } from '../context';
+import { AiSidebar } from '../ai/AiSidebar';
 
 // CodeMirror stays out of the main bundle until the tab opens
 const EnginePage = lazy(async () => ({
@@ -70,11 +71,14 @@ export const Shell = observer(() => {
         <SRoot>
             <TopBar />
             <StructureContext.Provider value={structureStore}>
-                <SPage>
-                    <Suspense fallback={<LoadingState />}>
-                        {renderPage(router.route)}
-                    </Suspense>
-                </SPage>
+                <SMain>
+                    {aiStore.visible && <AiSidebar store={aiStore} />}
+                    <SPage>
+                        <Suspense fallback={<LoadingState />}>
+                            {renderPage(router.route)}
+                        </Suspense>
+                    </SPage>
+                </SMain>
                 <ModalHost />
             </StructureContext.Provider>
             <LoginPrompt />
@@ -89,8 +93,14 @@ const SRoot = styled(Column)`
     background-color: #000;
 `;
 
+const SMain = styled(Row)`
+    flex: 1;
+    min-height: 0;
+`;
+
 const SPage = styled(Column)`
     flex: 1;
+    min-width: 0;
     min-height: 0;
     position: relative;
     overflow: hidden;

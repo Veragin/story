@@ -7,6 +7,7 @@ import { StoriesController } from './StoriesController';
 import { STORIES_ROOT, storiesRootFromConfig } from './storiesRoot';
 import { StoryFolders } from './StoryFolders';
 import { StoryInfoController } from './StoryInfoController';
+import { StoryLifecycle } from './StoryLifecycle';
 import { StoryVersionConflictInterceptor } from './StoryVersionConflictInterceptor';
 
 @Module({
@@ -15,8 +16,9 @@ import { StoryVersionConflictInterceptor } from './StoryVersionConflictIntercept
     providers: [
         { provide: STORIES_ROOT, inject: [ConfigService], useFactory: storiesRootFromConfig },
         StoryFolders,
+        StoryLifecycle,
         { provide: APP_INTERCEPTOR, useClass: StoryVersionConflictInterceptor },
     ],
-    exports: [STORIES_ROOT, StoryFolders],
+    exports: [STORIES_ROOT, StoryFolders, StoryLifecycle],
 })
 export class StoriesModule {}

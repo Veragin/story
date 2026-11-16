@@ -38,7 +38,10 @@ server/
     project/           framework-free ts-morph library: ProjectRoot, SourceProject, readers/, writers/, registry, validate, values, migrations/
                        (reading and writing classes, types and literals: Visualizer.md, "Story file conventions")
     json/              map.json and *.layout.json stores, atomic write (tmp + rename)
-  scripts/             dev.ts (watch runner), importStoryFiles.ts (CLI)
+    ai/                AiModule: the story's Claude Code agent (see AI agent); stories/StoryLifecycle is its folder-swap hook
+  aiLauncher/          the AI launcher sidecar: plain Node http, the only holder of the docker socket (see AI agent)
+  ai/agent/            the agent's CLAUDE.md, settings.json, skills/ and tsconfig.json, baked into docker/Dockerfile.ai
+  scripts/             dev.ts (watch runner), importStoryFiles.ts (CLI), aiEnable.ts (ai:enable)
   seed/                <id>.story.json per seeded story (example, demo): its row on a fresh database
   template/            the story "create story" copies (not server code; type-checked like a story)
   __tests__/           integration suites + helpers/
@@ -65,7 +68,7 @@ So a foreign origin or a locked story never gets its body parsed, and a 404/401 
 
 Per-story passwords; there are no user accounts.
 
-- **Access levels** live in the protocol (`access` on every entry of `STORY_ROUTES` / `GLOBAL_ROUTES`, `protocol/src/routes.ts`): `public` (health, list, create, import, login, logout, session, `getStoryAccess`, `requestPasswordReset`, `resetPassword`), `read` (every other story `GET`, incl. events, images, source and export), `write` (every story `POST`/`PUT`/`DELETE`, plus the editor-only `GET`s `getGit` and `getGitBranches`). The types enforce story mutation = write; a story `GET` is read unless marked write.
+- **Access levels** live in the protocol (`access` on every entry of `STORY_ROUTES` / `GLOBAL_ROUTES`, `protocol/src/routes.ts`): `public` (health, list, create, import, login, logout, session, `getStoryAccess`, `requestPasswordReset`, `resetPassword`), `read` (every other story `GET`, incl. events, images, source and export), `write` (every story `POST`/`PUT`/`DELETE`, plus the editor-only `GET`s `getGit`, `getGitBranches`, `getAi`, `aiEvents` and `listAiSessions`). The types enforce story mutation = write; a story `GET` is read unless marked write.
 - `StoryAccessGuard`: unknown story → 404; a grant for the story → pass; `read` on a `public` story → pass without a grant; else 401 `Story "x" is locked`. A public story's export carries no metadata or hash, so it is safe to read logged out.
 - **Login** `POST /api/stories/:storyId/login {"password"}` checks the scrypt hash and sets the `story_session` cookie (HttpOnly, SameSite=Lax; with `COOKIE_SECURE=1` it is `Secure` and named `__Host-story_session`, so the play subdomain cannot plant one). One cookie holds grants for several stories, 24 h each. Create and import log the creator in the same way.
 - **The play site** (`PlaySiteGuard`): a request with the `X-Story-Play-Site` header, which the play site's proxy always sets (`docker/Caddyfile`), reaches only `listStories`, `login`, `getPlayManifest` and `getPlayFile` (else 403): story code runs there. Every response carries `Cross-Origin-Resource-Policy: same-origin` and `X-Content-Type-Options: nosniff`, so the play site cannot embed the main site's API either. In dev the SinglePlayer's Vite proxy sets the header; the dev ports share one host's cookies, so dev is not isolated.
@@ -226,29 +229,226 @@ Besides the usual `bad_request`, `not_found`, `exists` and `stale`:
 | 502    | `git_remote`            | network failure, timeout, unknown branch or any other remote error (scrubbed message)                           |
 | 503    | `git_unavailable`       | no `GIT_TOKEN_KEY`, no `git`, or the story is in `GIT_DISABLED_STORIES`                                         |
 
+## AI agent
+
+A story with the `aiFeature` flag gets a Claude Code agent that edits its files from the Visualizer's sidebar ([`Visualizer.md`](Visualizer.md#ai-agent)). The agent runs as `claude -p` with stream-json I/O in a hardened `story-ai` container, one per story, that sees only the story's `data/` and `types/`. Code: `server/src/ai/` (the Nest module), `server/aiLauncher/` (the sidecar that starts containers), `server/ai/agent/` (the agent's config), `docker/Dockerfile.ai`. DTOs and limits are in `protocol/src/dto/ai.ts`. The plan, its deviations and what is still open are in `plans/ai-implementation.md` (section 9).
+
+```
+browser ──SSE /ai/events, POST /ai/*──▶ server (AiModule) ──HTTP Upgrade, NDJSON, Bearer──▶ ai-launcher ──docker run -i──▶ story-ai-<id>-<hex>
+                                         no socket, no docker CLI         network ai-control (internal)    /var/run/docker.sock        network story-ai
+```
+
+### Server module (`server/src/ai/`)
+
+```
+AiModule.ts           imports DatabaseModule + StoriesModule; registered in AppModule
+aiOptions.ts          AI_OPTIONS from the env (table in Environment)
+aiMessageLimiter.ts   AI_MESSAGE_LIMITER: a LoginLimiter of AI_MESSAGES_PER_MINUTE per story and minute
+AiAvailability.ts     launcher /health at boot, then every 30 s while unavailable; logs each new reason
+AiController.ts       the seven protocol routes, all `write` access
+AiService.ts          feature / availability / credit checks, rate limit, commands, session list, transcript replay
+AiAgents.ts           registry storyId → AiAgent: viewer count, idle stop, StoryLifecycle hooks, charging, boot cleanup, shutdown
+AiAgent.ts            one story's agent: the stream, status, in-memory transcript, touched files, turn guard and timer, interrupt
+streamJson.ts         stream-json line → TAiMessageDto / init / result; transcript `.jsonl` → messages (replay)
+usage.ts              result → tokens, micro-USD, credits
+aiCommands.ts         /clear, /resume [n], /cost, /help
+aiEventStream.ts      the SSE writer (events/sse.ts; ends at grant expiry like /events)
+agentConnection/      TAgentConnection: LauncherConnection (AI_SANDBOX=launcher), LocalConnection (AI_SANDBOX=none)
+```
+
+Routes (`/api/stories/:storyId` + path; the bodies are in [`Visualizer.md`](Visualizer.md#api)):
+
+| Name             | Method / path        | Answer                                                                                    |
+| ---------------- | -------------------- | ----------------------------------------------------------------------------------------- |
+| `getAi`          | `GET /ai`            | `TAiDto { available, enabled, credits, status, sessionId }`; never an AI error            |
+| `aiEvents`       | `GET /ai/events`     | SSE, event name `ai`: a `snapshot`, then `status`, `message`, `activity` and `usage`      |
+| `sendAiMessage`  | `POST /ai/messages`  | `{ text }` (1–20 000 characters, trimmed) → `{ ok: true }`; the reply comes on the stream |
+| `interruptAi`    | `POST /ai/interrupt` | stops the running turn, the process stays                                                 |
+| `listAiSessions` | `GET /ai/sessions`   | `TAiSessionDto[]`, ≤ 10, most recently used first                                         |
+| `resumeAi`       | `POST /ai/resume`    | `{ sessionId }` (a UUID of this story, else 400 / 404): restart on that session           |
+| `clearAi`        | `POST /ai/clear`     | restart on a fresh session                                                                |
+
+Every route but `getAi` and `aiEvents` checks, in this order: the body; `aiFeature` (403 `ai_disabled`); availability (503 `ai_unavailable`); a balance > 0 (402 `ai_no_credits`; `interruptAi` and `listAiSessions` check only the feature). `sendAiMessage` then counts the message against **`AI_MESSAGES_PER_MINUTE`** (default 20) per story: one more within the minute is 429 `too_many_requests`. Commands count too, rejected bodies do not. It is the in-memory `LoginLimiter` (the password reset's pattern, token `AI_MESSAGE_LIMITER`), so a restart resets it. A message or a restart while a turn runs is 409 `ai_busy`; a process that cannot start is 503 `ai_unavailable` ("The agent could not start").
+
+| Status | `error`             | When                                                                       |
+| ------ | ------------------- | -------------------------------------------------------------------------- |
+| 402    | `ai_no_credits`     | the story's balance is ≤ 0                                                 |
+| 403    | `ai_disabled`       | the story's `aiFeature` is off                                             |
+| 409    | `ai_busy`           | a message, `/clear` or `/resume <n>` while a turn runs                     |
+| 429    | `too_many_requests` | more than `AI_MESSAGES_PER_MINUTE` messages of the story within one minute |
+| 503    | `ai_unavailable`    | no launcher, image or token (see `getAi`), or the agent failed to start    |
+
+**Availability** (`AiAvailability`, logged as `[Ai]`): the launcher's `/health` must report a docker version, the image and a token; with `COOKIE_SECURE=1` the token must be an API key (`sk-ant-api…`), since a subscription token (`sk-ant-oat…`) may not serve other users. Once available it is not re-checked: a launcher that dies later shows up as a start failure (`status: error`). `/api/health` does not report AI.
+
+**`aiFeature`** is a column of `story` (migration `AddAi`) that the owners cannot change: `getStoryInfo` returns it to editors, `updateStoryInfo` accepts it in the body and ignores it. Set it with the script below.
+
+### Lifecycle
+
+- **Start**: opening `GET /ai/events` attaches a viewer. The first viewer of a story starts its agent when the feature, availability and credits all hold. A disabled or unavailable story gets a `snapshot` and a `status` with the reason, and nothing is started. A story without credits attaches (it sees the transcript), but no process starts. Before the spawn the server computes the budget (below) and creates `<AI_SESSIONS_DIR>/<storyId>`, so the volume subpath exists. A new process starts on a fresh session: the server never resumes on its own, `/resume` does.
+- **One agent per story.** Later viewers, other tabs included, attach to it and get a `snapshot` (status, credits, session, the in-memory transcript, the files touched in the running turn).
+- **A turn**: `send` adds the `user` message, sets `busy`, writes `{"type":"user",…}` to stdin and arms the `AI_MAX_TURN_MS` timer (5 min), which interrupts the turn with a `system` message. `assistant` text and `tool_use` blocks become messages (`Read`/`Glob`/`Grep` are summarised, `Edit`/`Write` paths are made story-relative and reported in `activity` events); `result` charges the turn, sends `usage` and sets `ready`. `system/init` gives the session id: the session row is upserted (title = the first prompt, ≤ 120 characters) with the launcher's `pid` and `containerName`.
+- **Interrupt** (`interruptAi`, the turn timer): a stream-json `control_request` `interrupt` first; if the turn has not ended 3 s later, a `{"type":"launcher_control","action":"interrupt"}` line, and the launcher sends SIGINT to the `docker run` client. Which one the CLI honours is for the spike to confirm.
+- **Stop**: when the last viewer leaves, `AI_IDLE_STOP_MS` (30 s, which covers a page reload) later the server closes the stream, and the launcher stops the container. The SSE stream ends at grant expiry, so logging out stops the agent too. On exit the `pid` / `containerName` columns are cleared, the turn ends, and viewers get `status: stopped` with the reason (or the exit code and the last 600 characters of stderr). The next message starts a new process that resumes the same session (`--resume`), so the conversation goes on.
+- **Folder swap**: `StoryFolders.replace()` (git setup with `initial: "pull"`) awaits `StoryLifecycle.beforeFolderSwap(storyId)` before it renames the folder, because a running container keeps its mounts on the old folder, which is then removed. `AiAgents` stops the agent (a running turn is cut off) with `status: stopped` "The story folder was replaced"; the next message starts it on the new folder and resumes the session. In-place bulk rewrites (pull, branch switch, discard, `addStoryFiles`) keep the mounts valid and leave the agent alone. `StoryLifecycle` lives in `StoriesModule`, so the AI module hooks it without a module cycle.
+- **Story delete**: `AiAgents` registers on `StoryLifecycle.beforeDelete` (stop the agent with "The story was deleted", forget it, delete `<AI_SESSIONS_DIR>/<storyId>`; the DB rows cascade), but **nothing calls `beforeDelete` yet**: the server has no story delete route. Whoever adds one must await it before removing the folder.
+- **Server shutdown** (`OnApplicationShutdown`) stops every agent. **Boot** (`OnApplicationBootstrap`): `DELETE /agents` on the launcher removes every container of this launcher instance, and every session row's `pid` / `containerName` is cleared. A failure there is logged, not fatal.
+- The agent's edits reach the editor through the story's chokidar watcher (`data/` and `types/`, exactly what the agent can write), so there is no reload after a turn. Nothing is locked: the user may keep editing, Claude Code's `Edit` refuses a file changed since it read it, and the remaining risk (a form with unsaved input overwriting a file the agent just wrote) is shown in the sidebar's activity bar.
+
+### Commands
+
+`sendAiMessage` handles these itself (`aiCommands.ts`), because `claude -p` has no interactive commands. Any other `/x` goes to the CLI as a prompt (the skills' own commands).
+
+| Input         | Effect                                                                                                               |
+| ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/clear`      | stop the process, forget the transcript, broadcast an empty `snapshot`, start fresh (409 while busy)                 |
+| `/resume`     | a `system` message listing the ≤ 10 recent sessions, `n. title · YYYY-MM-DD HH:MM UTC`                               |
+| `/resume <n>` | replay session n's transcript as a `snapshot` and restart with `--resume <sessionId>` (400 for an n not in the list) |
+| `/cost`       | a `system` message: credits left and the session's input, output, cache-read and cache-write tokens                  |
+| `/help`       | a `system` message listing the commands                                                                              |
+
+A command that takes no argument answers 400 when given one.
+
+### Credits and the budget cap
+
+- Tables (migration `AddAi`, `ON DELETE CASCADE` from `story`): `story_ai_credit` (one row per story, a signed `balance`: the last turn may overdraw), `story_ai_usage` (one row per `result`: session, model, the four token counts, `costMicroUsd`, `credits`), `story_ai_session` (below). `AiCreditRepository.charge()` inserts the usage row and lowers the balance in one transaction; `topUp()` is for the script and future billing.
+- **1 credit = $0.01** of the CLI's `total_cost_usd`, rounded up per turn (`usage.ts`: `ceil(round(cost × 10⁶) × 100 / 10⁶)`).
+- **Budget cap**: each spawn passes `maxBudgetUsd = min(balance / 100, AI_MAX_BUDGET_USD)` and the launcher adds `--max-budget-usd`, so one process cannot spend more than the story had when it started. It is computed only at spawn: a top-up takes effect at the next start, and a balance that drops mid-process does not lower the cap of the running one. A turn cut off by the cap is charged like any other.
+- A balance ≤ 0 refuses the next message (402) and the running turn finishes. The launcher refuses `maxBudgetUsd` above its own `AI_MAX_BUDGET_USD`, so keep the server's and the launcher's equal (prod compose passes the same variable to both).
+
+### Sessions
+
+- `story_ai_session` keeps the **10** most recently used sessions per story (`sessionId` = Claude Code's, `title`, `createdAt`, `lastUsedAt`, and `pid` / `containerName` while running). After each upsert, `prune(storyId, 10)` deletes the older rows, and the server deletes their `<sessionId>.jsonl` (and `<sessionId>/`) transcripts.
+- Transcripts live in the sessions volume (`AI_SESSIONS_VOLUME` for the launcher, mounted into the server at `AI_SESSIONS_DIR`), one subpath per story mounted at the container's `~/.claude/projects`. Claude Code names a project folder after its working directory, so a session is `<AI_SESSIONS_DIR>/<storyId>/-repo-stories-story/<sessionId>.jsonl`. `/resume <n>` and `resumeAi` replay it through `streamJson.ts` (a missing file replays as empty).
+- The in-memory transcript is what viewers see. It survives process restarts but not a server restart: after one, the sidebar starts empty until `/resume`.
+
+### The launcher (`server/aiLauncher/`)
+
+A plain Node `http` server (no Nest), `yarn workspace @story/server launcher`. It is the only process with the docker socket and the only one that reads the Anthropic token. In prod it is the `launcher` target of `Dockerfile.prod` (the `app` image plus `docker-ce-cli`, `docker/install-docker-cli.sh`); in dev, the `launcher` stage of `Dockerfile.dev` running the repo mount. It listens on `AI_LAUNCHER_PORT` (8124) on the internal `ai-control` network, which agents are not on.
+
+- Startup: read the key file (missing or empty: exit), read and classify the token (missing or unknown: agents are refused, `/health` says `token: null`), create `AI_NETWORK` if it is missing, remove orphaned containers of its instance. SIGTERM / SIGINT stop every agent.
+- **Auth**: every request needs `Authorization: Bearer <key>`, compared as SHA-256 digests with `timingSafeEqual`; else 401 `{ error: "unauthorized" }`.
+- **It builds the docker argv itself** (`sandbox/dockerArgs.ts`, pure and unit-tested) from its own config; the server sends only `{ storyId, resumeSessionId?, model?, maxBudgetUsd }`, never paths, flags or images. `launchRequest.ts` validates it (strict object): `storyId` against `STORY_ID_PATTERN` (again in `dockerArgs`), `resumeSessionId` a UUID, `model` one of `AI_MODELS`, `0 < maxBudgetUsd ≤ AI_MAX_BUDGET_USD` (and not 0 at 6 decimals). The body is at most 16 KB and must arrive within 10 s.
+
+| Route                           | Answer                                                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`                   | `{ docker: <server version> \| null, image: boolean, token: "api_key" \| "oauth" \| null, driver }`                                                              |
+| `POST /agents`                  | needs `Upgrade: story-ai-agent` (426 without one) and a JSON body with `Content-Length`; 400 invalid, 413 too large, 503 `token_unavailable`, 500 `spawn_failed` |
+| `GET /agents`                   | `{ containerName, storyId, pid }[]`, the agents of this launcher process                                                                                         |
+| `DELETE /agents/:containerName` | stop one: `{ ok: true }`, or 404                                                                                                                                 |
+| `DELETE /agents`                | stop every agent and remove every container of this instance: `{ removed }`                                                                                      |
+
+**The agent stream.** After `101 Switching Protocols` the socket carries NDJSON both ways. The launcher writes `{"type":"launcher","event":"started","containerName","pid"}` first (`pid` is the `docker run` client's, `containerName` is `story-ai-<storyId>-<8 hex>`, the real handle), then the CLI's stdout lines unchanged, then `{"type":"launcher","event":"exited","code","stderrTail"}` (the last 4 KB of stderr). Lines from the server go to the CLI's stdin, except `{"type":"launcher_control","action":"interrupt"}`, which sends SIGINT to the client process. When the socket closes, the launcher stops the agent: close stdin, SIGTERM, `docker stop -t 5`, and `docker rm -f` plus SIGKILL if it has not exited after 10 s.
+
+**Instances**: every container carries the labels `story-ai=1`, `story-ai.story-id=<id>` and `story-ai.instance=<AI_INSTANCE>`. Orphan cleanup removes only its own instance's containers, so a dev and a prod launcher on one host leave each other's agents alone.
+
+| Variable               | Default                             | Meaning                                                                                                                                                            |
+| ---------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AI_TOKEN_FILE`        | `/secret/ai_token`                  | The Anthropic token, read once at start and trimmed. `sk-ant-api…` → `ANTHROPIC_API_KEY`, `sk-ant-oat…` → `CLAUDE_CODE_OAUTH_TOKEN`; anything else counts as none. |
+| `AI_LAUNCHER_KEY_FILE` | `/secret/ai_launcher_key`           | The shared bearer key (the server reads the same file). Required.                                                                                                  |
+| `AI_LAUNCHER_PORT`     | `8124`                              |                                                                                                                                                                    |
+| `AI_SANDBOX_DRIVER`    | `docker-run`                        | `docker-run` \| `docker-sandbox` (below).                                                                                                                          |
+| `AI_IMAGE`             | `story-ai:latest`                   | The agent image (`make ai-image`).                                                                                                                                 |
+| `AI_STORIES_VOLUME`    | –                                   | Prod: the name of the stories volume (`story-prod_stories`). The story folders are mounted as its subpaths.                                                        |
+| `AI_STORIES_HOST_DIR`  | –                                   | Dev: the host path of `stories/` (bind mounts resolve on the host). Exactly one of the two must be set, else the launcher exits. Absolute, no commas.              |
+| `AI_REPO_HOST_DIR`     | –                                   | Dev: the host path of the repo; with `AI_STORIES_HOST_DIR`, the engine is bind-mounted read-only from it so edits show live.                                       |
+| `AI_SESSIONS_VOLUME`   | `story-ai-sessions`                 | The volume of the transcripts, one subpath per story.                                                                                                              |
+| `AI_NETWORK`           | `story-ai`                          | The agents' docker network, created at startup when missing (a plain bridge, with internet).                                                                       |
+| `AI_INSTANCE`          | `prod`                              | The `story-ai.instance` label value (dev compose: `dev`).                                                                                                          |
+| `AI_MODELS`            | `claude-sonnet-5-5,claude-opus-5-5` | The allowed `model` values. Must include the server's `AI_MODEL`.                                                                                                  |
+| `AI_MAX_BUDGET_USD`    | `5`                                 | The largest `maxBudgetUsd` one agent process may get.                                                                                                              |
+
+### Sandbox drivers
+
+`TAiSandboxDriver` (`sandbox/`): `spawn`, `stop`, `remove`, `cleanupOrphans`, `ensureNetwork`, `health`.
+
+- **`docker-run`** (prod default, Linux dev): `docker run --rm -i` of the `story-ai` image with the layout and flags below. Volume subpaths need Docker Engine ≥ 26.
+- **`docker-sandbox`** (Docker Desktop only): `docker sandbox run --name … -e <token var> -v <host>/<id>/data:… -v <host>/<id>/types:… claude <args>`. It needs `AI_STORIES_HOST_DIR`, mounts no engine or sessions, does not use the hardening flags (the microVM is the boundary) and has no network setup. **Its flags are a guess**, not yet run: Docker Sandboxes is a Docker Desktop feature that the spike has to try.
+- `AI_SANDBOX=none` on the server skips the launcher altogether (`LocalConnection`): `claude` runs unsandboxed on the server in the story folder, with the developer's own login and `~/.claude/projects`. Dev only; the boot refuses it with `COOKIE_SECURE=1`. Untried.
+
+### Container layout
+
+The agent sees a fake repo with one story whose folder is always `story`, so the story's relative engine paths resolve as on the server and the story id never appears inside:
+
+```
+/repo/tsconfig.base.json                          image (dev: bind :ro from AI_REPO_HOST_DIR)
+/repo/clients/shared/{core,utils,ui}/src          image, read-only (dev: bind :ro of the package folders)
+/repo/node_modules/@types/react                   image, the versions in yarn.lock
+/repo/node_modules/@mui/icons-material/*.d.ts     image, declarations only
+/repo/stories/story/tsconfig.json                 image: server/ai/agent/tsconfig.json (= storyTsconfig() two levels down)
+/repo/stories/story/data                          ← stories volume subpath <storyId>/data   (rw)
+/repo/stories/story/types                         ← stories volume subpath <storyId>/types  (rw)
+/home/agent                                       tmpfs, uid 1000, 0700, 64 MB
+/home/agent/.claude/projects                      ← sessions volume subpath <storyId>       (rw)
+/opt/agent/claude/                                image: server/ai/agent/{CLAUDE.md,settings.json,skills/}
+/tmp                                              tmpfs
+```
+
+`WORKDIR /repo/stories/story`, user `agent` (uid 1000, the owner of the story files). `docker/ai-entrypoint.sh` copies `/opt/agent/claude/*` into the empty tmpfs `~/.claude/` (leaving `projects` alone), then `exec claude "$@"`. The image pins `@anthropic-ai/claude-code` (`CLAUDE_CODE_VERSION`: bump it on purpose, the stream-json shapes the server parses come from it) and turns off auto-updates, telemetry and error reporting. `server/__tests__/ai/agentImage.test.ts` fails when the Dockerfile misses an `enginePaths()` entry, when the type-declaration versions drift from `node_modules`, or when the baked tsconfig differs from `storyTsconfig()`. The agent's role and the story conventions are in `server/ai/agent/CLAUDE.md` and the skills `story-files`, `passages`, `entities`, `structure`.
+
+The CLI runs as `claude -p --input-format stream-json --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools Read,Edit,Write,Glob,Grep,Skill --disallowedTools Bash,WebFetch,WebSearch --max-budget-usd <usd> [--resume <id>] [--model <model>]` (`claudeArgs`).
+
+### Security model
+
+- **The server never touches docker.** Only the launcher has the socket (a socket proxy would still allow `--privileged -v /:/host`); the server image has no docker CLI. The launcher builds every docker argument itself and accepts only validated parameters, so a compromised server can start agents for a valid story id with a capped budget, nothing more. The `ai-control` network is `internal` and joined only by the server and the launcher; the bearer key is a file secret (`openssl rand -hex 32`) shared by the two.
+- **The token stays in the launcher.** It reaches the container as `-e ANTHROPIC_API_KEY` without a value, so docker copies it from the client's environment and it is never in argv or `ps`. The agent can read its own env; that is accepted because the token leaves the sandbox only towards Anthropic (an egress proxy that injects the key would remove even that). Production requires an API key.
+- **Only `data/` and `types/` are mounted.** The story's `.git/`, `.gitignore`, `tsconfig.json` and other top-level files are not in the container: the server runs `git` in the story folder, and a writable `.git/config` (filter drivers, the remote URL) would mean code execution or token theft on the server. Permission rules alone are not enough, since the model can be prompt-injected. Other stories, the server and the database are not reachable as files.
+- **Hardening** (`docker-run`): `--read-only` root, tmpfs `/tmp` and `/home/agent`, `--cap-drop ALL`, `--security-opt no-new-privileges`, `--pids-limit 256`, `--memory 1g`, `--cpus 1`, `--user 1000:1000`; the engine sources are read-only. Claude Code tools: only `Read, Edit, Write, Glob, Grep, Skill`, with `Bash, WebFetch, WebSearch` disallowed on the command line and denied in `settings.json`.
+- **Not yet**: the `story-ai` network has full internet egress (an allow-list proxy for `api.anthropic.com` is open), and the hardening has not been tried against a live agent (the acceptance checks in the plan).
+
+### `ai:enable`
+
+```bash
+yarn workspace @story/server ai:enable <storyId> [--credits N]
+docker compose -f docker/docker-compose.prod.yml exec server yarn ai:enable <storyId> --credits 500   # prod
+```
+
+Uses `DB_*`, runs pending migrations, turns `aiFeature` on and adds N credits (`topUp`), then prints the balance. An unknown story exits 1. There is no way to turn the feature off or to set a balance other than SQL (`UPDATE story SET aiFeature = 0 …`, `story_ai_credit`).
+
+### Unverified until the spike
+
+Phase 1 of the plan (a hand run of `claude -p` in the `story-ai` container) could not run where this was built, as there was no Docker. Until it does, these are assumptions:
+
+- the **stream-json shapes**: `server/__tests__/fixtures/ai/` (`editTurn`, `budgetStop`, `session.transcript`) are hand-written from the documented format, not captured, and the transcript folder name `-repo-stories-story` is derived;
+- the **interrupt**: whether the CLI honours a stream-json `control_request` `interrupt`, or only the SIGINT fallback (and whether `docker run -i` forwards it to the container);
+- **`--max-budget-usd`**: that the pinned CLI has it, whether it caps the process or a turn (if a turn, the cap must be recomputed per turn by restarting with `--resume`), and how a turn stopped by it ends;
+- a **tmpfs HOME**: that Claude Code runs with an empty `/home/agent` filled by the entrypoint on a read-only root, and `--resume` finds its sessions in the mounted `projects`;
+- **`volume-subpath`** for `<storyId>/data` on the production engine, and that the files keep uid 1000;
+- the **`docker-sandbox` driver**: its flags, mounts and stop / list commands;
+- **`LocalConnection`** (`AI_SANDBOX=none`): never run against a real `claude`;
+- also: the stdin/stdout path through the HTTP Upgrade under load, that `Edit` refuses stale files, and that the watcher alone keeps `SourceProject` current after agent writes (if not, call `StoryReloader.afterBulkRewrite` after each `result`).
+
 ## Environment
 
 From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot with a readable message):
 
-| Variable                       | Default                 | Meaning                                                                                                                                                                                                    |
-| ------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                         | `8123`                  | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
-| `STORIES_ROOT`                 | `stories`               | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
-| `DB_HOST`                      | `mysql`                 | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
-| `DB_PORT`                      | `3306`                  |                                                                                                                                                                                                            |
-| `DB_USER`                      | `story`                 |                                                                                                                                                                                                            |
-| `DB_PASSWORD`                  | `story`                 | Prod: from `docker/.env`.                                                                                                                                                                                  |
-| `DB_NAME`                      | `story`                 | The tests always use `story_test` (see Tests).                                                                                                                                                             |
-| `COOKIE_SECURE`                | off                     | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
-| `TRUST_PROXY`                  | off                     | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
-| `ALLOWED_ORIGINS`              | the dev ports           | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
-| `GIT_TOKEN_KEY`                | unset                   | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
-| `GIT_ALLOWED_HOSTS`            | any                     | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
-| `GIT_DISABLED_STORIES`         | `example`               | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
-| `PUBLIC_URL`                   | `http://localhost:8103` | The landing page's origin: the base of the password reset links. Never taken from the request's headers. Prod: `https://<SITE_ADDRESS>`.                                                                   |
-| `SMTP_URL`                     | unset                   | SMTP connection URL for the password reset mails (`smtps://user:password@host:465`). Unset: the mails are only logged.                                                                                     |
-| `MAIL_FROM`                    | required                | The mails' sender. Set by `docker/Dockerfile.dev` and `docker/Dockerfile.prod` (hardcoded for now, see `plans/rosti-release.md`); the server tests get it from `vitest.workspace.ts`.                      |
-| `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build    | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
+| Variable                       | Default                   | Meaning                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | `8123`                    | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
+| `STORIES_ROOT`                 | `stories`                 | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
+| `DB_HOST`                      | `mysql`                   | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
+| `DB_PORT`                      | `3306`                    |                                                                                                                                                                                                            |
+| `DB_USER`                      | `story`                   |                                                                                                                                                                                                            |
+| `DB_PASSWORD`                  | `story`                   | Prod: from `docker/.env`.                                                                                                                                                                                  |
+| `DB_NAME`                      | `story`                   | The tests always use `story_test` (see Tests).                                                                                                                                                             |
+| `COOKIE_SECURE`                | off                       | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
+| `TRUST_PROXY`                  | off                       | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
+| `ALLOWED_ORIGINS`              | the dev ports             | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
+| `GIT_TOKEN_KEY`                | unset                     | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
+| `GIT_ALLOWED_HOSTS`            | any                       | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
+| `GIT_DISABLED_STORIES`         | `example`                 | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
+| `PUBLIC_URL`                   | `http://localhost:8103`   | The landing page's origin: the base of the password reset links. Never taken from the request's headers. Prod: `https://<SITE_ADDRESS>`.                                                                   |
+| `SMTP_URL`                     | unset                     | SMTP connection URL for the password reset mails (`smtps://user:password@host:465`). Unset: the mails are only logged.                                                                                     |
+| `MAIL_FROM`                    | required                  | The mails' sender. Set by `docker/Dockerfile.dev` and `docker/Dockerfile.prod` (hardcoded for now, see `plans/rosti-release.md`); the server tests get it from `vitest.workspace.ts`.                      |
+| `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build      | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
+| `AI_SANDBOX`                   | `launcher`                | `launcher`: agents run through the AI launcher. `none`: `claude` runs unsandboxed on the server (dev only; refused with `COOKIE_SECURE=1`).                                                                |
+| `AI_LAUNCHER_URL`              | `http://ai-launcher:8124` | The launcher (see AI agent).                                                                                                                                                                               |
+| `AI_LAUNCHER_KEY_FILE`         | `/secret/ai_launcher_key` | The bearer key shared with the launcher. Missing: AI is unavailable.                                                                                                                                       |
+| `AI_SESSIONS_DIR`              | `/app/ai-sessions`        | The sessions volume as the server sees it (replay and pruning of transcripts); relative paths resolve against the repo root.                                                                               |
+| `AI_MODEL`                     | `claude-sonnet-5-5`       | The model every agent runs; must be in the launcher's `AI_MODELS`.                                                                                                                                         |
+| `AI_IDLE_STOP_MS`              | `30000`                   | How long an agent outlives its last viewer.                                                                                                                                                                |
+| `AI_MAX_TURN_MS`               | `300000`                  | A turn is interrupted after this long.                                                                                                                                                                     |
+| `AI_MAX_BUDGET_USD`            | `5`                       | The most one agent process may spend (`--max-budget-usd` is the smaller of this and the balance). Keep it equal to the launcher's.                                                                         |
+| `AI_MESSAGES_PER_MINUTE`       | `20`                      | `sendAiMessage` calls per story and minute; more answer 429.                                                                                                                                               |
 
 Outside the schema: `STORY_DB_SETUP=1` makes `docker/prod-entrypoint.sh` run the migrations and the import before starting (prod server service only); `DB_TEST_NAME` overrides the test database name.
 
@@ -285,6 +485,7 @@ DB_HOST=127.0.0.1 yarn vitest run --project server       # against a local MySQL
 - `__tests__/helpers/testApp.ts#createTestApp({ stories, watch, … })` boots the real `AppModule` on a temp `STORIES_ROOT` (copies of the example, rows seeded with password `example`), truncated tables, listening on a random port; it returns `{ base, project(id), story(id), stories, sessions, contexts, mailer, wrongEmailDelays, close }`. Mails go to a `FakeMailer` (`mailer.sent`), and the password reset's 1 s wrong-email delay is only counted. Never boot a test app on the real `stories/`. `overrideModules` swaps a feature module for a probe. `helpers/http.ts` has `requestJson`, `login`, `waitFor`.
 - Migration suites (`structureLayout`, `classLayout`, `passageStructure`) start from the example rewritten to an older layout: `__tests__/fixtures/pre*/` holds those story files as `.txt` (so tsc and the linters skip them), written by `helpers/fixtures.ts` (`writeFixture`, `toPreClassLayout`).
 - Don't run a dev server against `story_test` while the tests run.
+- AI is unavailable in a test app unless `createTestApp({ agentConnection })` brings a healthy connection: `helpers/FakeAgentConnection.ts` records launches and lets a test emit stream-json lines (`initLine`, `resultLine`); `createTestApp({ ai })` overrides `TAiOptions`. The launcher's tests (`__tests__/aiLauncher/`) run its http server against a fake driver and never call docker.
 - Git is unavailable in a test app unless `createTestApp({ git })` overrides the git options; `helpers/git.ts` has `TEST_GIT_OPTIONS` (a test key, `allowFileRemotes`) and temp bare repos as `file://` remotes. `allowFileRemotes` (env `GIT_ALLOW_FILE_REMOTES=1`) is test-only: `gitRemote` then accepts `file://` and `GitRunner` adds `-c protocol.file.allow=always`. Never set it in prod.
 
 ## Adding a route
@@ -296,4 +497,4 @@ DB_HOST=127.0.0.1 yarn vitest run --project server       # against a local MySQL
 
 ## Production
 
-`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, `PUBLIC_URL=https://<SITE_ADDRESS>`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS` and `SMTP_URL`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example and the demo. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. How to deploy: [`README.md`](README.md#production).
+`docker/docker-compose.prod.yml` runs the server from `/app/server` with the same loader, `COOKIE_SECURE=1`, `ALLOWED_ORIGINS=https://<SITE_ADDRESS>`, `TRUST_PROXY=1`, `PUBLIC_URL=https://<SITE_ADDRESS>`, the `DB_*` secrets and `GIT_TOKEN_KEY` (plus the optional `GIT_ALLOWED_HOSTS` and `SMTP_URL`) from `docker/.env` and `STORY_DB_SETUP=1`: the entrypoint applies the migrations, imports legacy `story.json` files of the `stories` volume and seeds the example and the demo. MySQL (`mysql:8.4`, volume `mysql`) is reachable only by the server; back up both volumes, and keep `GIT_TOKEN_KEY` with the database backup (without it the stored git tokens must be re-entered). Without `GIT_TOKEN_KEY` the server runs with git unavailable. The server also joins the internal `ai-control` network and mounts the `story-ai-sessions` volume for the AI agent; the `ai-launcher` service and its secrets are described in the compose file's header and in AI agent above. How to deploy: [`README.md`](README.md#production).

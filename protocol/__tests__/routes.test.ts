@@ -26,7 +26,7 @@ const PUBLIC_ROUTES = [
     'resetPassword',
 ];
 
-const WRITE_GETS: readonly TStoryRouteName[] = ['getGit', 'getGitBranches'];
+const WRITE_GETS: readonly TStoryRouteName[] = ['getGit', 'getGitBranches', 'getAi', 'aiEvents', 'listAiSessions'];
 
 const ACCESS_LEVELS: readonly TRouteAccess[] = ['public', 'read', 'write'];
 

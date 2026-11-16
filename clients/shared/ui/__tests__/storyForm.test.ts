@@ -106,6 +106,7 @@ describe('the bodies', () => {
             version: 'v3',
             hasLandingImage: false,
             email: 'me@example.com',
+            aiFeature: false,
         };
         expect(storyFormOf(info)).toEqual({
             name: 'My Story',

@@ -12,7 +12,7 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy build dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
+.PHONY: start up stop bash destroy build dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs ai-image
 
 # The Phase 11 gate: brings up every service (8100 SinglePlayer, 8101 Visualizer client,
 # 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
@@ -80,6 +80,7 @@ dev-multi-engine:
 PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
 prod-up:
+	$(PROD_COMPOSE) --profile build build ai-image
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans
 	@echo ""
 	@echo "  https://$(or $(SITE_ADDRESS),localhost)/   (/visualizer/, /api/)"
@@ -90,6 +91,15 @@ prod-down:
 
 prod-logs:
 	$(PROD_COMPOSE) logs -f
+
+# The AI agent image (docker/Dockerfile.ai), `story-ai:latest`, which the launcher runs per story. Rebuild it
+# after engine changes (clients/shared) or agent config changes (server/ai/agent). Production builds it in
+# `prod-up` (the `ai-image` service of docker/docker-compose.prod.yml).
+AI_IMAGE = story-ai:latest
+
+ai-image:
+	docker build -f docker/Dockerfile.ai -t $(AI_IMAGE) .
+
 
 ## ai-setup START
 # Shared Claude Code sandbox: https://github.com/Veragin/ai-setup (managed by its init.md)

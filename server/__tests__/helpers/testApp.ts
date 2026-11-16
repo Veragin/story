@@ -1,11 +1,14 @@
 import { stat } from 'node:fs/promises';
 import type { Server } from 'node:http';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { INestApplication, Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/AppModule';
+import { AGENT_CONNECTION } from '../../src/ai/agentConnection/TAgentConnection';
+import { AI_OPTIONS, type TAiOptions } from '../../src/ai/aiOptions';
 import { AUTH_OPTIONS, GRANT_TTL_MS, type TAuthOptions } from '../../src/auth/authOptions';
 import { DEFAULT_ALLOWED_ORIGINS } from '../../src/auth/csrf';
 import { PASSWORD_RESET_OPTIONS, type TPasswordResetOptions } from '../../src/auth/passwordReset';
@@ -27,6 +30,7 @@ import {
     type TStoryContextsOptions,
 } from '../../src/storyContext/storyContextsOptions';
 import { truncateTables } from './database';
+import { FakeAgentConnection } from './FakeAgentConnection';
 import { FakeMailer } from './FakeMailer';
 import { copyExampleStory, makeTempStoriesRoot } from './storiesRoot';
 
@@ -39,6 +43,8 @@ export type TTestAppOptions = {
     overrideModules?: readonly TModuleOverride[];
     auth?: Partial<TAuthOptions>;
     git?: Partial<TGitOptions>;
+    ai?: Partial<TAiOptions>;
+    agentConnection?: FakeAgentConnection;
     truncate?: boolean;
     storiesRoot?: string;
     stories?: readonly TTestStory[];
@@ -58,6 +64,7 @@ export type TTestApp = {
     stories: StoryRepository;
     sessions: SessionService;
     mailer: FakeMailer;
+    agentConnection: FakeAgentConnection;
     wrongEmailDelays: () => number;
     project: (storyId: string) => ProjectRoot;
     story: (storyId: string) => Promise<TServerContext>;
@@ -70,6 +77,26 @@ const TEST_GIT_OPTIONS: TGitOptions = {
     allowedHosts: [],
     disabledStories: ['example'],
     allowFileRemotes: false,
+};
+
+const TEST_AI_OPTIONS: TAiOptions = {
+    sandbox: 'launcher',
+    launcherUrl: 'http://launcher.invalid',
+    launcherKeyFile: '/nonexistent/ai_launcher_key',
+    sessionsDir: path.join(tmpdir(), 'story-test-ai-sessions'),
+    model: 'claude-sonnet-5-5',
+    idleStopMs: 30_000,
+    maxTurnMs: 300_000,
+    maxBudgetUsd: 5,
+    messagesPerMinute: 20,
+    requireApiKey: false,
+};
+
+// without a launcher in tests, AI stays unavailable unless a test brings its own connection
+const unavailableConnection = (sessionsDir: string) => {
+    const connection = new FakeAgentConnection(sessionsDir);
+    connection.healthResult = { available: false, reason: 'No AI launcher in tests' };
+    return connection;
 };
 
 const TEST_AUTH_OPTIONS: TAuthOptions = {
@@ -96,12 +123,15 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // copy of the example (unless its folder exists) and a row with the example's metadata (password `example`).
 // The web export zips a stub player unless `standalonePlayerDir` names another folder.
 // The story contexts do not watch the files unless `watch: true`. Git is unavailable unless `git.tokenKey` is set.
+// AI is unavailable unless `agentConnection` reports healthy.
 // Mails go to `mailer`; the wrong-email delay of a password reset request is only counted.
 export const createTestApp = async ({
     controllers = [],
     overrideModules = [],
     auth = {},
     git = {},
+    ai = {},
+    agentConnection,
     truncate = true,
     storiesRoot,
     stories = [],
@@ -125,6 +155,8 @@ export const createTestApp = async ({
             return Promise.resolve();
         },
     };
+    const aiOptions = { ...TEST_AI_OPTIONS, ...ai };
+    const connection = agentConnection ?? unavailableConnection(aiOptions.sessionsDir);
     const builder = Test.createTestingModule({ imports: [AppModule], controllers });
     for (const override of overrideModules) builder.overrideModule(override.replace).useModule(override.with);
     const moduleRef = await builder
@@ -132,6 +164,10 @@ export const createTestApp = async ({
         .useValue({ ...TEST_AUTH_OPTIONS, ...auth })
         .overrideProvider(GIT_OPTIONS)
         .useValue({ ...TEST_GIT_OPTIONS, ...git })
+        .overrideProvider(AI_OPTIONS)
+        .useValue(aiOptions)
+        .overrideProvider(AGENT_CONNECTION)
+        .useValue(connection)
         .overrideProvider(STORIES_ROOT)
         .useValue(root)
         .overrideProvider(STORY_CONTEXTS_OPTIONS)
@@ -169,6 +205,7 @@ export const createTestApp = async ({
         stories: app.get(StoryRepository),
         sessions: app.get(SessionService),
         mailer,
+        agentConnection: connection,
         wrongEmailDelays: () => wrongEmailDelays,
         project: (storyId) => new ProjectRoot(path.join(root, storyId), storyId),
         story: (storyId) => contexts.get(storyId),

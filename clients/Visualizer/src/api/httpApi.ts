@@ -15,8 +15,10 @@ import {
     type TStoryRouteName,
 } from '@story/protocol';
 import { isStoryImageFile } from '@story/shared';
+import { openAiEvents } from './aiEvents';
 import { ApiError } from './ApiError';
 import { errorMessage } from './errorMessage';
+import type { TCreateEventSource } from './ReconnectingEventSource';
 import { STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
@@ -28,6 +30,7 @@ export type THttpApiOptions = {
     onMutation?: () => () => void;
     onStoryWrite?: () => void;
     onUnauthorized?: (error: ApiError) => Promise<void>;
+    createEventSource?: TCreateEventSource | null;
 };
 
 // a source save rewrites whole files behind the forms' back, so its echo must reach the pages
@@ -48,6 +51,10 @@ const NOT_STORY_WRITES: readonly TRouteName[] = [
     'gitCheckout',
     'gitDiscard',
     'deleteGitBranch',
+    'sendAiMessage',
+    'interruptAi',
+    'resumeAi',
+    'clearAi',
 ];
 
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
@@ -131,6 +138,14 @@ export const createRequest = ({
 
 export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => {
     const request = createRequest(options);
+    // an `EventSource` can't see a 401, so probe with a plain request to trigger the login prompt
+    const probeAi = async () => {
+        try {
+            await request('getAi', {});
+        } catch {
+            // the probe only exists for its 401 side effect
+        }
+    };
     return {
         health: () => request('health', {}),
         login: (password) => request('login', { storyId: options.storyId ?? STORY_ID }, { password }),
@@ -224,5 +239,19 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         gitDiscard: () => request('gitDiscard', {}),
         getGitBranches: () => request('getGitBranches', {}),
         deleteGitBranch: (body) => request('deleteGitBranch', {}, body),
+
+        getAi: () => request('getAi', {}),
+        aiEvents: (onEvent) =>
+            openAiEvents({
+                url: (options.baseUrl ?? '') + buildPath(options.storyId ?? STORY_ID, 'aiEvents', {}),
+                onEvent,
+                createEventSource: options.createEventSource,
+                onGiveUp: () => void probeAi(),
+            }),
+        sendAiMessage: (body) => request('sendAiMessage', {}, body),
+        interruptAi: () => request('interruptAi', {}),
+        listAiSessions: () => request('listAiSessions', {}),
+        resumeAi: (body) => request('resumeAi', {}, body),
+        clearAi: () => request('clearAi', {}),
     };
 };

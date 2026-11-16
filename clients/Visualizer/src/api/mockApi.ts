@@ -33,6 +33,7 @@ import { clone, fail, notFound } from './mockHelpers';
 import type { ApiEvents } from './events';
 import { createMockSeed, type TMockSeed } from './mockData';
 import { type TMockHolder } from './mockInstances';
+import { createMockAiApi } from './mockAiApi';
 import { createMockGitApi, type TMockRemoteCommit } from './mockGitApi';
 import { createMockEngineApi } from './mockEngineApi';
 import { createMockStructureApi } from './mockStructureApi';
@@ -46,6 +47,9 @@ export type TMockApiOptions = {
     events?: ApiEvents;
     latencyMs?: number;
     gitAvailable?: boolean;
+    aiAvailable?: boolean;
+    aiCredits?: number;
+    aiStepMs?: number;
 };
 
 export type TMockApi = TVisualizerApi & {
@@ -74,6 +78,7 @@ const MOCK_STORY: TEditStoryInfoDto = {
     version: 'mock-story',
     hasLandingImage: false,
     email: '',
+    aiFeature: true,
 };
 
 export const displayText = (value: unknown, fallback: string): string =>
@@ -126,7 +131,15 @@ export const extractEdges = (
     return edges;
 };
 
-export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true }: TMockApiOptions = {}): TMockApi => {
+export const createMockApi = ({
+    seed,
+    events,
+    latencyMs = 0,
+    gitAvailable = true,
+    aiAvailable = true,
+    aiCredits = 100,
+    aiStepMs = 600,
+}: TMockApiOptions = {}): TMockApi => {
     let counter = 0;
     const nextVersion = (): TVersion => `mock-${++counter}`;
 
@@ -210,6 +223,14 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         emitStory: () => {
             if (events) setTimeout(() => events.storyChanged(), 0);
         },
+    });
+
+    const ai = createMockAiApi({
+        available: aiAvailable,
+        enabled: () => story.aiFeature,
+        credits: aiCredits,
+        stepMs: aiStepMs,
+        reply,
     });
 
     const removeLocationFromMaps = (locationId: string) => {
@@ -607,6 +628,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         ...structureApi.routes,
         ...engineApi.routes,
         ...git.routes,
+        ...ai.routes,
 
         getSource: (owner, id) => reply(() => sourceOf(owner, id)),
         updateSource: (owner, id, { version, text }) =>
@@ -835,6 +857,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         simulateRemoteGitCommit: git.simulateRemoteCommit,
         reset: () => {
             git.reset();
+            ai.reset();
             load(seed ?? createMockSeed());
         },
     };

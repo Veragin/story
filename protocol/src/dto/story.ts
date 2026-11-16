@@ -49,6 +49,8 @@ export type TEditStoryInfoDto = { access: 'edit' } & TStoryDto &
         hasLandingImage: boolean;
         /** `''` when none. */
         email: string;
+        /** Whether the story may use the AI agent; set on the server only, never by `updateStoryInfo`. */
+        aiFeature: boolean;
     };
 
 export type TStoryInfoDto = TPublicStoryInfoDto | TEditStoryInfoDto;

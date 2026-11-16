@@ -17,12 +17,16 @@
  * | 409    | `git_auth`              | `message`     | the remote refused the token (not 401: the story is not locked) |
  * | 409    | `git_nothing_to_commit` | `message`     | commit refused, the tree is clean                    |
  * | 422    | `invalid`               | `diagnostics` | the edit does not type-check; nothing was written    |
- * | 429    | `too_many_requests`     | `message`     | too many failed logins, try again later              |
+ * | 429    | `too_many_requests`     | `message`     | rate limited (logins, reset mails, AI messages)      |
  * | 501    | `not_implemented`       |               | route is in the protocol, handler not written yet    |
  * | 500    | `internal`              | `message`     | bug                                                  |
  * | 502    | `git_remote`            | `message`     | network or unknown remote error, token scrubbed      |
  * | 503    | `git_unavailable`       | `message`     | no `GIT_TOKEN_KEY` or no `git` on the server         |
  * | 503    | `unavailable`           | `message`     | the server lacks a build it needs (the standalone player) |
+ * | 402    | `ai_no_credits`         | `message`     | the story has no AI credits left                     |
+ * | 403    | `ai_disabled`           | `message`     | the AI feature is not enabled for this story         |
+ * | 409    | `ai_busy`               | `message`     | the agent is still working on the previous message   |
+ * | 503    | `ai_unavailable`        | `message`     | the server cannot run AI agents (launcher, image or token missing) |
  */
 export type TApiErrorCode =
     | 'bad_request'
@@ -44,7 +48,11 @@ export type TApiErrorCode =
     | 'git_rejected'
     | 'git_auth'
     | 'git_remote'
-    | 'git_nothing_to_commit';
+    | 'git_nothing_to_commit'
+    | 'ai_no_credits'
+    | 'ai_busy'
+    | 'ai_disabled'
+    | 'ai_unavailable';
 
 export type TApiErrorBody = {
     error: TApiErrorCode;
@@ -100,4 +108,8 @@ export const ERROR_STATUS: Record<TApiErrorCode, number> = {
     git_auth: 409,
     git_remote: 502,
     git_nothing_to_commit: 409,
+    ai_no_credits: 402,
+    ai_busy: 409,
+    ai_disabled: 403,
+    ai_unavailable: 503,
 };

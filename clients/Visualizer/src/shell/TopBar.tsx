@@ -5,6 +5,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, playerUrl, STORY_ID } from '../api';
+import { AiButton } from './AiButton';
 import { GitButton } from './GitButton';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
@@ -95,6 +96,7 @@ export const TopBar = observer(() => {
                 {_('Play')}
             </SPlayButton>
             <GitButton />
+            <AiButton />
             <SControlBar ref={shell.setControlBarEl} />
         </SBar>
     );

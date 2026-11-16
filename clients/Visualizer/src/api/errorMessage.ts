@@ -23,8 +23,20 @@ const GIT_MESSAGES: Record<TGitErrorCode, (body: TApiErrorBody) => string> = {
 
 const isGitErrorCode = (code: TApiErrorCode): code is TGitErrorCode => code in GIT_MESSAGES;
 
+type TAiErrorCode = Extract<TApiErrorCode, `ai_${string}`>;
+
+const AI_MESSAGES: Record<TAiErrorCode, () => string> = {
+    ai_no_credits: () => _('The story has no AI credits left.'),
+    ai_busy: () => _('The agent is still working on the previous message. Wait, or stop it.'),
+    ai_disabled: () => _('The AI agent is not enabled for this story.'),
+    ai_unavailable: () => _('The AI agent is not available on this server.'),
+};
+
+const isAiErrorCode = (code: TApiErrorCode): code is TAiErrorCode => code in AI_MESSAGES;
+
 export const errorBodyMessage = (body: TApiErrorBody, status?: number): string => {
     if (isGitErrorCode(body.error)) return GIT_MESSAGES[body.error](body);
+    if (isAiErrorCode(body.error)) return AI_MESSAGES[body.error]();
     if (body.message) return `${body.error}: ${body.message}`;
     return status === undefined ? body.error : `${body.error} (${status})`;
 };

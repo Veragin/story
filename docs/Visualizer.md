@@ -126,6 +126,7 @@ shell/      TopBar with tabs, hash router, <ControlBar> slot, modal host, keyboa
 pages/      Map, Timeline, Chapter, Entities, Structure, Engine (each has a MobX store + components + __tests__/)
 stores/     the shared stores: StructureStore, EntityStore, DraftResource, writeResult (singletons in context.ts)
 git/        GitStore (singleton `gitStore` in context.ts), GitMenu, the commit / branch / history / settings dialogs (gitDialogs.tsx)
+ai/         AiStore (singleton `aiStore` in context.ts), AiSidebar and its parts, aiCommands (see AI agent)
 MapEditor/  hex tile renderer ported from mapMaker, used by the Map page
 components/ the shared UI, one-way: pages → editors → code → form → inputs (no store imports)
             inputs/ (pure controls), form/ (labeled fields), code/ (code-aware wrappers, CodeEditor, SourceEditorDialog),
@@ -148,7 +149,7 @@ theme.ts    the single dark MUI theme
 - **Control bar**: a page renders `<ControlBar>…</ControlBar>` anywhere in its tree, and the children are portalled into the top bar. Use at most one per page.
 - **Modals**: `modals` from `shell/modals.ts` (`modals.confirm`, `modals.alert`, `modals.ask`, `modals.open`); every dialog is an `AppDialog` with `DialogButtons`, and each feature opens its dialogs from one `<feature>Dialogs.tsx`. **Keyboard**: `keyboard` / `useKey` from `shell/keyboard.ts`. Keys are ignored while an input is focused or a modal is open, unless the handler passes `allowInModal`.
 - **API usage**: `import { api, apiEvents, ApiError } from '../api'`. Mutations return the new DTO; keep its `version` for the next `PUT`. For live refresh, use `apiEvents.subscribe({ kind, id?, chapterId? }, cb)`, plus `apiEvents.onResync(cb)` to refetch after a reconnect. The client's own saves are filtered out automatically. Stores that hold lists subscribe to `kind: '*'` and refetch on `op: 'created' | 'deleted'`.
-- **Mock mode**: `VITE_VISUALIZER_API=mock` runs on `api/mockApi.ts` (seed data in `mockData.ts`) with no server, no login and the story id `example` when there is no `?story=`. Tests use `createMockApi({ seed?, events? })` and `simulateExternalChange(kind, id)`. The mock structure (`mockStructureApi.ts`, `mockInstances.ts`) knows classes, types and private members: name rules by kind, the private-visibility `422`, and `updateType` of a type migrating its nested `struct` values. When you add or change an API method, update `api/types.ts`, `httpApi.ts` **and** `mockApi.ts`.
+- **Mock mode**: `VITE_VISUALIZER_API=mock` runs on `api/mockApi.ts` (seed data in `mockData.ts`) with no server, no login and the story id `example` when there is no `?story=`. Tests use `createMockApi({ seed?, events? })` and `simulateExternalChange(kind, id)`. The mock structure (`mockStructureApi.ts`, `mockInstances.ts`) knows classes, types and private members: name rules by kind, the private-visibility `422`, and `updateType` of a type migrating its nested `struct` values. The mock AI agent is in [AI agent](#ai-agent). When you add or change an API method, update `api/types.ts`, `httpApi.ts` **and** `mockApi.ts`.
 - **Conflict UX**: a form with unsaved input whose resource changed on disk shows "Changed on disk: Reload / Keep mine". "Keep mine" re-sends with the new version. The source editor does the same. A source save is deliberately **not** marked as an own save (`NOT_MARKED_SAVED` in `httpApi.ts`), so the forms and the graph get its event like a hand edit's. The map merges three-way instead (`pages/Map/mergeMap.ts`). Timeline drags that answer `409 stale` are discarded, not re-applied.
 - **Fields** (`components/`): every form edits its values through these.
     - `inputs/`: pure controls with no label and no code. They take `TInputProps` (`value`, `onChange`, `ariaLabel`, `hasError?`, `disabled?`, `dataField?`): `TextInput`, `NumberInput`, `Checkbox`, `SelectInput`, `AutocompleteInput` (with `onCreateOption`, "+ Add x" writes the new value at once, e.g. through `addLiteralValue`), `RadioInput`, `ColorInput`, `SliderInput`, `TimeInput`, `TimeRangeInput`, `DeltaTimeInput`, `StringListInput`.
@@ -229,6 +230,35 @@ Behaviour that is settled (keep it unless the user asks otherwise):
 - **Engine** (`pages/Engine/`, `#/engine/:section`): the story's engine settings, **On link click** (`onLinkClick`) and **Topbar** (`topbar`). The left menu (`SideMenu`) shows each with the first line of its description, "default" while its file is missing, and a "not implemented" chip for a stub. `EngineEditorStore` is a module-level singleton (drafts survive tab switches) with one `DraftResource` over `{ description, code }`; it loads both sections, saves with `updateEngineSection` (both fields), and refetches a section on its `engine` event (stale or silent reload, as in Structure). Delete removes the file and returns to the default.
     - `EngineSectionEditor`: `EditorHeader` (Discard, Delete, Save, Ctrl+S), the file path and state, `Notices`, then the **Description** first (a large text field; it alone can be saved) and the **Implementation** below. The code is collapsed until the setting is implemented; **Implement manually** opens it with a starter (`engineSections.ts`: an empty `onLinkClick`, a `Topbar` with one `TopbarStat`), in a `CodeEditor` (`jsx` for the Topbar), with the arguments and allowed imports beneath. A `422` lists every diagnostic in the notices; only syntax errors (TS 1xxx, positions in the sent code) are also marked in the editor, since type errors point into the formatted file on disk, which also holds the JSDoc.
 
+## AI agent
+
+A story with `aiFeature` (set on the server with `ai:enable`) gets a chat with a Claude Code agent that edits its files. How the server runs it, the credits and the security model: [`Server.md`](Server.md#ai-agent).
+
+- **Button** (`shell/AiButton.tsx`, after the Git button): a robot icon, shown only when the story info says `access: 'edit'` and `aiFeature`, and `getAi` says `available`. It toggles the sidebar and looks pressed while it is open. Mounting it starts `aiStore` (`AiStore.start()`, ref-counted), which loads `getAi` and reloads it after a login.
+- **Sidebar** (`ai/AiSidebar.tsx`): a column left of the page, below the top bar (`shell/Shell.tsx` wraps the page in a row), shown while `aiStore.visible` (open, available and enabled). It is resizable by its right edge (`SplitterHandle` + `useDragResize`, 280 px to 60 % of the window, default 380 px). The open state (`aiSidebarOpen`) and the width (`aiSidebarWidth`) are kept in `ui-state`. From the top:
+    - `AiSidebarHeader`: a status dot (green ready, amber starting / working, red error / no credits, grey otherwise, the status in its tooltip), the title, a `N credits` chip (red at 0) and a close button;
+    - `AiNoCredits`: an error alert while there are no credits ("The agent cannot take new messages until credits are added");
+    - `AiMessageList`: the conversation, one `AiMessage` per `TAiMessageDto` kind (user and assistant bubbles, assistant text pre-wrapped, compact tool rows like "Edited data/…", system messages for command output). It sticks to the bottom unless the user scrolled up;
+    - the last error (`lastError`, closable), e.g. `ai_busy` or the 429 of too many messages;
+    - **`AiActivity`, the activity bar**, always directly above the input. Ready: "Agent is idle". Starting or busy: a spinner, "Agent is working" and the warning "Don't edit the files it is changing until it finishes", with the files the running turn edited (`AiTouchedFiles`: the first 3, then "N more"). Otherwise the server's reason (the folder was replaced, the exit code and stderr, the turn timeout) or a default per status ("Agent is stopped. Send a message to start it.", out of credits, not enabled, not available, failed);
+    - `AiInput`: a multiline field (2–8 rows, at most 20 000 characters). Enter sends, Shift+Enter adds a line. It is disabled while sending, starting or busy, without credits, and when the agent is unavailable or disabled; focus comes back after a send. Send button, or a red stop button (`interruptAi`) while the agent works.
+- **Commands** (`ai/aiCommands.ts`): typing `/` opens `AiCommandHints`, a popup above the input with the matching commands; a click puts `<command> ` in the draft. The server runs them (`sendAiMessage`), so they go through the same path as a prompt:
+
+    | Command       | Effect                                                                             |
+    | ------------- | ---------------------------------------------------------------------------------- |
+    | `/clear`      | start a new conversation (the list empties)                                        |
+    | `/resume`     | list the 10 most recent conversations as a system message                          |
+    | `/resume <n>` | continue conversation n: its transcript replaces the list and the agent resumes it |
+    | `/cost`       | credits left and the conversation's tokens                                         |
+    | `/help`       | list the commands                                                                  |
+
+    Any other `/x` goes to the agent as a prompt (its skills' commands).
+
+- **Store** (`ai/AiStore.ts`, `aiStore` in `context.ts`): `open`, `available`, `enabled`, `status`, `statusMessage`, `credits`, `messages`, `sessionId`, `draft`, `lastError`, `sessions`, `touchedFiles`, `sending`; computed `visible`, `noCredits` (`credits <= 0` or status `no_credits`), `working` (busy or starting), `locked`, `canSend`. While the sidebar is visible it holds the event stream (`api.aiEvents`, `api/aiEvents.ts` over the shared `api/ReconnectingEventSource.ts`, the same reconnect and backoff as the story's `/events`), and the server keeps the agent running for as long as a stream is open. Closing the sidebar or leaving the Visualizer closes it; the server stops the agent about 30 s later. A `snapshot` replaces everything, `status`, `message`, `activity` and `usage` update their part.
+- **Sending** (`send`): the trimmed draft is added at once as a local `user` message (replaced by the server's echo) and the draft is cleared. When the server refuses it, the message is removed, the draft is restored, and `lastError` gets the error text (`api/errorMessage.ts` has messages for the `ai_*` codes); `ai_no_credits` also sets the status to `no_credits`.
+- **Editing while the agent works** stays enabled everywhere. The agent's edits arrive as normal change events, so the forms and pages refresh; the activity bar is the only warning, because a form with unsaved input can still overwrite a file the agent just wrote.
+- **Mock mode**: `createMockApi` takes `aiAvailable` (default `true`), `aiCredits` (`100`) and `aiStepMs` (`600`, the delay between the steps of a fake turn); the mock story has `aiFeature: true`. `api/mockAiApi.ts` is a scripted agent: opening the stream starts it (`starting` → `ready` after one step), a prompt is echoed back as "You said: …" and costs 1 credit, a prompt with the word edit, change, write or add first reports an `Edit` of `data/chapters/start/start.passages.ts` (so the activity bar shows a touched file), interrupt cancels the turn, and `/clear`, `/resume [n]`, `/cost`, `/help` work on up to 10 in-memory sessions. `VITE_VISUALIZER_API=mock` uses the defaults; tests pass their own (`createMockApi({ aiCredits: 0 })`) or replace single routes.
+
 ## Files the Visualizer owns
 
 Besides the `.ts` source it edits, the Visualizer owns these JSON files. They are validated whole-document replaces: an unknown field is a 400. A missing file reads as the default with `version: ''`, and a `PUT` with `version: ''` creates it.
@@ -243,7 +273,7 @@ Besides the `.ts` source it edits, the Visualizer owns these JSON files. They ar
 The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `STORY_ROUTES` and `GLOBAL_ROUTES` hold the paths and `TApiSpec` the body and response of each route. The server registers exactly these routes, and the client builds its URLs from them with `buildPath` (story routes) and `buildGlobalPath`.
 
 - The server holds every story under `STORIES_ROOT` (`stories/<id>/`). A story route acts on one story and lives under `/api/stories/:storyId` (`storyApiPrefix`); the table below gives its path relative to that prefix. Each story has its own project, change feed and watcher, loaded on its first request and unloaded when idle (`server/src/storyContext/StoryContexts.ts`). An unknown story answers `404`.
-- **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations, and the editor-only `GET`s `getGit` and `getGitBranches`, always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
+- **Auth**: every route has an access level in the protocol (`public`, `read`, `write`). A story's `GET`s need a grant (from `login`, 24 h, sessions in MySQL) or a `public` story; its mutations, and the editor-only `GET`s `getGit`, `getGitBranches`, `getAi`, `aiEvents` and `listAiSessions`, always need a grant; else `401`. An `/events` stream is ended when its grant expires. Mutations are CSRF-checked (content type, `Origin`), and 10 wrong passwords per client and story within 10 minutes answer `429`. Details: [`Server.md`](Server.md#auth).
 - **Stories** (`server/src/stories/`): anyone may list, create or import a story. Create copies the template, writes a `tsconfig.json` and an empty `map.json` of `mapSize`, inserts the story's row (scrypt hash) and logs the creator in. The id is a slug of the name (`My Story` → `my-story`, then `my-story-2`, …), the folder name, and never changes. Export and import (multipart: the zip + the metadata fields) are in [`Server.md`](Server.md#stories). The limits (name, password, map size) are `STORY_LIMITS` in `protocol/src/dto/story.ts`.
 - **Zips** (`server/src/stories/zip.ts`): a story zip holds `tsconfig.json`, `data/`, `types/` at its root, no metadata. Export skips `node_modules`, temp files and symlinks and gives every entry the same timestamp, so the same content always zips to the same bytes.
 - Every route is under `/api` and speaks JSON, except `events` (SSE), `getImageFile` (the PNG or WebP bytes), `getPlayFile` (a story file), `exportStory` / `exportPlayable` (the zips) and the bodies of `importStory` / `addStoryFiles` (`multipart/form-data`).
@@ -314,29 +344,40 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 | `gitDiscard`                                | `POST`           | `/git/discard`                                    |
 | `getGitBranches`                            | `GET`            | `/git/branches` (write access)                    |
 | `deleteGitBranch`                           | `POST`           | `/git/branches/delete` (`{ branch, remote }`)     |
+| `getAi`                                     | `GET`            | `/ai` (`TAiDto`)                                  |
+| `aiEvents`                                  | `GET`            | `/ai/events` (SSE of `TAiEvent`, event `ai`)      |
+| `sendAiMessage`                             | `POST`           | `/ai/messages` (`{ text }`, prompt or command)    |
+| `interruptAi`                               | `POST`           | `/ai/interrupt`                                   |
+| `listAiSessions`                            | `GET`            | `/ai/sessions` (`TAiSessionDto[]`, ≤ 10)          |
+| `resumeAi`                                  | `POST`           | `/ai/resume` (`{ sessionId }`)                    |
+| `clearAi`                                   | `POST`           | `/ai/clear`                                       |
 
 **Errors** (`dto/errors.ts`): every non-2xx answer is `{ error, message?, diagnostics?, references?, current?, files? }`.
 
-| Status | `error`                 | Meaning                                                                                     |
-| ------ | ----------------------- | ------------------------------------------------------------------------------------------- |
-| 400    | `bad_request`           | malformed JSON, missing or invalid fields, bad id                                           |
-| 401    | `unauthorized`          | no grant for the story (log in), or a wrong password                                        |
-| 403    | `forbidden`             | a mutation from a foreign `Origin`; deleting an extendable or engine class or type          |
-| 404    | `not_found`             | no such route or resource                                                                   |
-| 409    | `stale`                 | `version` is not the one on disk; `current` is the fresh DTO (or `null`)                    |
-| 409    | `referenced`            | delete refused; `references` lists file, line and text of each reference                    |
-| 409    | `exists`                | create refused, the id is taken (chapter, passage, entity, type, …)                         |
-| 422    | `invalid`               | the edit does not type-check (`diagnostics`, with a `field` path); nothing written          |
-| 409    | `git_not_configured`    | the story is not connected to git (or its `.git` is gone)                                   |
-| 409    | `git_dirty`             | pull or branch switch with uncommitted changes                                              |
-| 409    | `git_conflict`          | the pull's merge conflicted and was aborted; `files` lists the paths                        |
-| 409    | `git_rejected`          | push rejected, the remote is ahead: pull first                                              |
-| 409    | `git_auth`              | the remote refused the token, or it must be re-entered (not `401`: the story is not locked) |
-| 409    | `git_nothing_to_commit` | commit on a clean tree                                                                      |
-| 429    | `too_many_requests`     | too many wrong passwords                                                                    |
-| 500    | `internal`              | bug                                                                                         |
-| 502    | `git_remote`            | network or other remote error (token scrubbed)                                              |
-| 503    | `git_unavailable`       | git is off on this server or for this story                                                 |
+| Status | `error`                 | Meaning                                                                                                  |
+| ------ | ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| 400    | `bad_request`           | malformed JSON, missing or invalid fields, bad id                                                        |
+| 401    | `unauthorized`          | no grant for the story (log in), or a wrong password                                                     |
+| 403    | `forbidden`             | a mutation from a foreign `Origin`; deleting an extendable or engine class or type                       |
+| 404    | `not_found`             | no such route or resource                                                                                |
+| 409    | `stale`                 | `version` is not the one on disk; `current` is the fresh DTO (or `null`)                                 |
+| 409    | `referenced`            | delete refused; `references` lists file, line and text of each reference                                 |
+| 409    | `exists`                | create refused, the id is taken (chapter, passage, entity, type, …)                                      |
+| 422    | `invalid`               | the edit does not type-check (`diagnostics`, with a `field` path); nothing written                       |
+| 409    | `git_not_configured`    | the story is not connected to git (or its `.git` is gone)                                                |
+| 409    | `git_dirty`             | pull or branch switch with uncommitted changes                                                           |
+| 409    | `git_conflict`          | the pull's merge conflicted and was aborted; `files` lists the paths                                     |
+| 409    | `git_rejected`          | push rejected, the remote is ahead: pull first                                                           |
+| 409    | `git_auth`              | the remote refused the token, or it must be re-entered (not `401`: the story is not locked)              |
+| 409    | `git_nothing_to_commit` | commit on a clean tree                                                                                   |
+| 429    | `too_many_requests`     | too many wrong passwords or reset mails, or more than 20 AI messages a minute (`AI_MESSAGES_PER_MINUTE`) |
+| 500    | `internal`              | bug                                                                                                      |
+| 502    | `git_remote`            | network or other remote error (token scrubbed)                                                           |
+| 503    | `git_unavailable`       | git is off on this server or for this story                                                              |
+| 402    | `ai_no_credits`         | the story has no AI credits left                                                                         |
+| 403    | `ai_disabled`           | the story's `aiFeature` is off                                                                           |
+| 409    | `ai_busy`               | the agent is still working on the previous message                                                       |
+| 503    | `ai_unavailable`        | the server cannot run AI agents (launcher, image or token missing), or the agent did not start           |
 
 **Events** (`dto/events.ts`): a story's `GET /api/stories/:storyId/events` sends `hello` on connect, then an `event: change` with `{ kind, id, version, op?, chapterId? }` for each change. `kind` is one of `chapter | passage | trigger | entity | map | layout | project | structure | catalog | engine`, and `version` is `null` for a deletion. One server operation is one event, however many files it writes. Hand edits are batched over about 150 ms. An id ending in `*` is a wildcard: `trigger` `*` for a hand edit of `triggers.ts`, `entity` `items/*` for an items file, `catalog` `races/*` for a hand edit of a catalog file. `structure` (id `structure`) follows every change under `types/`, of a catalog file or of an items file; a catalog entry's id is `<catalog>/<id>`; an `engine` id is the section (`onLinkClick`, `topbar`), or `*` for another file under `data/engine/`. After a git pull, branch switch or setup pull, an `event: story` with `{ type: "story", reason: "git" }` says the whole story changed: the client refetches every store, as after a reconnect.
 

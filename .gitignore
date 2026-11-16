@@ -41,8 +41,9 @@ tsconfig.*.tsbuildinfo
 stories/*
 !stories/example
 
-# Secrets (docker/.env.example is the template)
+# Secrets (docker/.env.example is the template; docker/secrets/ holds the AI token and launcher key files)
 .env
+docker/secrets/
 tmp
 # ai-setup (clone + Claude session history)
 .ai/setup/

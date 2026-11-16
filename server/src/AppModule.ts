@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AiModule } from './ai/AiModule';
 import { AuthModule } from './auth/AuthModule';
 import { ApiExceptionFilter } from './common/ApiExceptionFilter';
 import { JsonBodyInterceptor } from './common/JsonBodyInterceptor';
@@ -54,6 +55,7 @@ import { StoryFilesModule } from './storyFiles/StoryFilesModule';
         GitModule,
         PlayModule,
         StoryFilesModule,
+        AiModule,
     ],
     providers: [
         { provide: APP_FILTER, useClass: ApiExceptionFilter },

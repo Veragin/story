@@ -40,28 +40,46 @@ const gitTokenKey = optionalText
     )
     .transform((value) => (value ? Buffer.from(value, 'base64') : null));
 
-export const ENV_SCHEMA = z.object({
-    PORT: port.default(DEFAULT_PORT),
-    STORIES_ROOT: optionalText.transform((value) => path.resolve(REPO_ROOT, value || 'stories')),
-    SINGLE_PLAYER_STANDALONE_DIR: optionalText.transform((value) =>
-        path.resolve(REPO_ROOT, value || 'clients/SinglePlayer/dist-standalone')
-    ),
-    DB_HOST: z.string().trim().min(1).default('mysql'),
-    DB_PORT: port.default(3306),
-    DB_USER: z.string().trim().min(1).default('story'),
-    DB_PASSWORD: z.string().default('story'),
-    DB_NAME: z.string().trim().min(1).default('story'),
-    COOKIE_SECURE: flag,
-    TRUST_PROXY: flag,
-    ALLOWED_ORIGINS: originList,
-    GIT_TOKEN_KEY: gitTokenKey,
-    GIT_ALLOWED_HOSTS: list([]),
-    GIT_DISABLED_STORIES: list(['example']),
-    GIT_ALLOW_FILE_REMOTES: flag,
-    PUBLIC_URL: optionalText.transform((value) => normalizeOrigin(value || DEFAULT_PUBLIC_URL)),
-    SMTP_URL: optionalText.transform((value) => value || null),
-    MAIL_FROM: optionalText.transform((value) => value || DEFAULT_MAIL_FROM),
-});
+const positiveMs = (fallback: number) => z.coerce.number().int().positive().default(fallback);
+
+export const AI_SANDBOXES = ['launcher', 'none'] as const;
+
+export const ENV_SCHEMA = z
+    .object({
+        PORT: port.default(DEFAULT_PORT),
+        STORIES_ROOT: optionalText.transform((value) => path.resolve(REPO_ROOT, value || 'stories')),
+        SINGLE_PLAYER_STANDALONE_DIR: optionalText.transform((value) =>
+            path.resolve(REPO_ROOT, value || 'clients/SinglePlayer/dist-standalone')
+        ),
+        DB_HOST: z.string().trim().min(1).default('mysql'),
+        DB_PORT: port.default(3306),
+        DB_USER: z.string().trim().min(1).default('story'),
+        DB_PASSWORD: z.string().default('story'),
+        DB_NAME: z.string().trim().min(1).default('story'),
+        COOKIE_SECURE: flag,
+        TRUST_PROXY: flag,
+        ALLOWED_ORIGINS: originList,
+        GIT_TOKEN_KEY: gitTokenKey,
+        GIT_ALLOWED_HOSTS: list([]),
+        GIT_DISABLED_STORIES: list(['example']),
+        GIT_ALLOW_FILE_REMOTES: flag,
+        PUBLIC_URL: optionalText.transform((value) => normalizeOrigin(value || DEFAULT_PUBLIC_URL)),
+        SMTP_URL: optionalText.transform((value) => value || null),
+        MAIL_FROM: optionalText.transform((value) => value || DEFAULT_MAIL_FROM),
+        AI_SANDBOX: z.enum(AI_SANDBOXES).default('launcher'),
+        AI_LAUNCHER_URL: optionalText.transform((value) => (value || 'http://ai-launcher:8124').replace(/\/+$/, '')),
+        AI_LAUNCHER_KEY_FILE: optionalText.transform((value) => value || '/secret/ai_launcher_key'),
+        AI_SESSIONS_DIR: optionalText.transform((value) => path.resolve(REPO_ROOT, value || '/app/ai-sessions')),
+        AI_MODEL: optionalText.transform((value) => value || 'claude-sonnet-5-5'),
+        AI_IDLE_STOP_MS: positiveMs(30_000),
+        AI_MAX_TURN_MS: positiveMs(300_000),
+        AI_MAX_BUDGET_USD: z.coerce.number().positive().finite().default(5),
+        AI_MESSAGES_PER_MINUTE: z.coerce.number().int().positive().default(20),
+    })
+    .refine((env) => !(env.COOKIE_SECURE && env.AI_SANDBOX === 'none'), {
+        message: 'AI_SANDBOX=none runs agents unsandboxed and is refused when COOKIE_SECURE=1',
+        path: ['AI_SANDBOX'],
+    });
 
 export type TEnv = z.infer<typeof ENV_SCHEMA>;
 

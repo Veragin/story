@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TEnv } from '../config/env';
 import { DatabaseService } from './DatabaseService';
 import { dataSourceOptions } from './dataSourceOptions';
+import { AiCreditRepository } from './repositories/AiCreditRepository';
+import { AiSessionRepository } from './repositories/AiSessionRepository';
 import { SessionGrantRepository } from './repositories/SessionGrantRepository';
 import { SessionRepository } from './repositories/SessionRepository';
 import { StoryGitRepository } from './repositories/StoryGitRepository';
@@ -16,6 +18,8 @@ const REPOSITORIES = [
     SessionGrantRepository,
     StoryGitRepository,
     StoryPasswordResetRepository,
+    AiCreditRepository,
+    AiSessionRepository,
 ];
 
 @Module({

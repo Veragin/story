@@ -1,8 +1,20 @@
 import { Session } from './entities/Session';
 import { SessionGrant } from './entities/SessionGrant';
 import { Story } from './entities/Story';
+import { StoryAiCredit } from './entities/StoryAiCredit';
+import { StoryAiSession } from './entities/StoryAiSession';
+import { StoryAiUsage } from './entities/StoryAiUsage';
 import { StoryGit } from './entities/StoryGit';
 import { StoryPasswordReset } from './entities/StoryPasswordReset';
 
 // explicit classes, not a glob: TypeORM loads globs with native import(), which bypasses Vitest's transform
-export const ENTITIES: (new () => object)[] = [Story, Session, SessionGrant, StoryGit, StoryPasswordReset];
+export const ENTITIES: (new () => object)[] = [
+    Story,
+    Session,
+    SessionGrant,
+    StoryGit,
+    StoryPasswordReset,
+    StoryAiCredit,
+    StoryAiUsage,
+    StoryAiSession,
+];

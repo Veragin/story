@@ -22,3 +22,26 @@ describe('mail env', () => {
         expect(parseEnv({ MAIL_FROM: ' ' }).MAIL_FROM).toBe('info@story.cz');
     });
 });
+
+describe('AI env', () => {
+    it('defaults to the launcher sidecar', () => {
+        expect(parseEnv({})).toMatchObject({
+            AI_SANDBOX: 'launcher',
+            AI_LAUNCHER_URL: 'http://ai-launcher:8124',
+            AI_LAUNCHER_KEY_FILE: '/secret/ai_launcher_key',
+            AI_SESSIONS_DIR: '/app/ai-sessions',
+            AI_MODEL: 'claude-sonnet-5-5',
+            AI_IDLE_STOP_MS: 30_000,
+            AI_MAX_TURN_MS: 300_000,
+            AI_MAX_BUDGET_USD: 5,
+            AI_MESSAGES_PER_MINUTE: 20,
+        });
+    });
+
+    it('allows AI_SANDBOX=none only without COOKIE_SECURE', () => {
+        expect(parseEnv({ AI_SANDBOX: 'none' }).AI_SANDBOX).toBe('none');
+        expect(() => parseEnv({ AI_SANDBOX: 'none', COOKIE_SECURE: '1' })).toThrow(/AI_SANDBOX=none/);
+        expect(() => parseEnv({ AI_SANDBOX: 'docker' })).toThrow();
+        expect(() => parseEnv({ AI_MAX_BUDGET_USD: '0' })).toThrow();
+    });
+});

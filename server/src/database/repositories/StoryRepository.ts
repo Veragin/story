@@ -121,6 +121,18 @@ export class StoryRepository {
             .execute();
     }
 
+    async aiFeature(storyId: string, manager: EntityManager = this.dataSource.manager): Promise<boolean> {
+        if (!isStoryId(storyId)) return false;
+        const row = await manager.findOne(Story, { select: { id: true, aiFeature: true }, where: { id: storyId } });
+        return row?.aiFeature ?? false;
+    }
+
+    // raw SQL: TypeORM would bump the version, but aiFeature is not part of the story file owners edit
+    async setAiFeature(storyId: string, on: boolean, manager: EntityManager = this.dataSource.manager): Promise<void> {
+        assertStoryId(storyId);
+        await manager.query('UPDATE `story` SET `aiFeature` = ? WHERE `id` = ?', [on, storyId]);
+    }
+
     upsert(storyId: string, file: TStoryFile): Promise<TUpsertResult> {
         return this.exclusive(async (manager) => {
             const row = await manager.findOne(Story, { where: { id: storyId }, lock: { mode: 'pessimistic_write' } });

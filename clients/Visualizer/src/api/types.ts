@@ -1,5 +1,9 @@
 import type {
     TAddChapterCharacterBody,
+    TAiDto,
+    TAiResumeDto,
+    TAiSendMessageDto,
+    TAiSessionDto,
     TCatalogEntryDto,
     TCatalogListDto,
     TClearedReferencesDto,
@@ -66,6 +70,7 @@ import type {
     TUploadImageBody,
     TVersionedBody,
 } from '@story/protocol';
+import type { TAiEventListener, TAiEventsConnection } from './aiEvents';
 
 export type TStoryImageFile = {
     /** Relative to the story folder, `/`-separated. */
@@ -156,4 +161,12 @@ export type TVisualizerApi = {
     gitDiscard(): Promise<TGitStatusDto>;
     getGitBranches(): Promise<TGitBranchDto[]>;
     deleteGitBranch(body: TDeleteGitBranchBody): Promise<TGitStatusDto>;
+
+    getAi(): Promise<TAiDto>;
+    aiEvents(onEvent: TAiEventListener): TAiEventsConnection;
+    sendAiMessage(body: TAiSendMessageDto): Promise<TOkDto>;
+    interruptAi(): Promise<TOkDto>;
+    listAiSessions(): Promise<TAiSessionDto[]>;
+    resumeAi(body: TAiResumeDto): Promise<TOkDto>;
+    clearAi(): Promise<TOkDto>;
 };

@@ -7,6 +7,7 @@ import type {
     TRemoveChapterCharacterBody,
     TUpdateChapterBody,
 } from './dto/chapter';
+import type { TAiDto, TAiResumeDto, TAiSendMessageDto, TAiSessionDto } from './dto/ai';
 import type { TOkDto } from './dto/common';
 import type { TEngineSection, TEngineSectionDto, TUpdateEngineSectionBody } from './dto/engine';
 import type {
@@ -197,6 +198,14 @@ export const STORY_ROUTES = {
     gitDiscard: { method: 'POST', path: '/git/discard', access: 'write' },
     getGitBranches: { method: 'GET', path: '/git/branches', access: 'write' },
     deleteGitBranch: { method: 'POST', path: '/git/branches/delete', access: 'write' },
+
+    getAi: { method: 'GET', path: '/ai', access: 'write' },
+    aiEvents: { method: 'GET', path: '/ai/events', access: 'write' },
+    sendAiMessage: { method: 'POST', path: '/ai/messages', access: 'write' },
+    interruptAi: { method: 'POST', path: '/ai/interrupt', access: 'write' },
+    listAiSessions: { method: 'GET', path: '/ai/sessions', access: 'write' },
+    resumeAi: { method: 'POST', path: '/ai/resume', access: 'write' },
+    clearAi: { method: 'POST', path: '/ai/clear', access: 'write' },
 } as const satisfies Record<string, TStoryRouteDef>;
 
 export const GLOBAL_ROUTES = {
@@ -435,6 +444,28 @@ export type TApiSpec = {
     /** Local and `origin` branches as of the last fetch, newest commit first. */
     getGitBranches: { body: undefined; response: TGitBranchDto[] };
     deleteGitBranch: { body: TDeleteGitBranchBody; response: TGitStatusDto };
+
+    /** `available: false` when the server cannot run agents. */
+    getAi: { body: undefined; response: TAiDto };
+    /**
+     * An SSE stream of `AI_SSE_EVENT` messages, not JSON: a `snapshot` first, then `TAiEvent`s. While a viewer
+     * holds it open, the story's agent runs; it starts only with `aiFeature`, credits and availability.
+     */
+    aiEvents: { body: undefined; response: never };
+    /**
+     * A prompt or a command (`/clear`, `/resume [n]`, `/cost`, `/help`); the answer arrives on `aiEvents`.
+     * `403 ai_disabled`, `402 ai_no_credits`, `409 ai_busy` while a turn runs, `503 ai_unavailable`,
+     * `429 too_many_requests` past `AI_MESSAGES_PER_MINUTE` messages of the story (commands count too).
+     */
+    sendAiMessage: { body: TAiSendMessageDto; response: TOkDto };
+    /** Stops the running turn; the agent keeps running. */
+    interruptAi: { body: undefined; response: TOkDto };
+    /** At most 10, most recently used first. */
+    listAiSessions: { body: undefined; response: TAiSessionDto[] };
+    /** Restarts the agent on that session and sends its transcript as a `snapshot`. */
+    resumeAi: { body: TAiResumeDto; response: TOkDto };
+    /** Restarts the agent on a fresh session. */
+    clearAi: { body: undefined; response: TOkDto };
 };
 
 export type TRouteBody<R extends TRouteName> = TApiSpec[R]['body'];
@@ -513,6 +544,8 @@ export const BODYLESS_ROUTES: readonly TRouteName[] = [
     'gitForcePush',
     'gitPull',
     'gitDiscard',
+    'interruptAi',
+    'clearAi',
 ];
 
 /** `204 No Content`. */

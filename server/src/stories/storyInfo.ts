@@ -6,13 +6,15 @@ import { toStoryDto, type TStoryFile } from './storyFile';
 export const buildStoryInfo = async (
     storyId: string,
     { file, version }: TVersionedStoryFile,
-    storyDir: string
+    storyDir: string,
+    aiFeature: boolean
 ): Promise<TEditStoryInfoDto> => ({
     access: 'edit',
     ...toStoryDto(storyId, file),
     version,
     hasLandingImage: await hasLandingImage(storyDir),
     email: file.email,
+    aiFeature,
 });
 
 export const publicStoryInfo = (storyId: string, file: TStoryFile): TPublicStoryInfoDto => ({
