@@ -5,7 +5,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { TooltipIconButton } from '../../../../components/buttons/TooltipIconButton';
 import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { FormFields } from '../../../../components/form/FormFields';
-import { DescriptionInput } from '../../../../components/inputs/DescriptionInput';
+import { FormDescriptionInput } from '../../../../components/form/FormDescriptionInput';
 import type { IEditorSource } from '../../../../components/layout/editorSource';
 import { SaveControls } from '../../../../components/layout/SaveControls';
 import { Sidebar } from '../../../../components/layout/Sidebar';
@@ -93,7 +93,7 @@ export const PassageEditor = observer(
                 <PassageHeading draft={draft} edit={edit} />
                 <DiagnosticsList diagnostics={diag('title')} />
                 <SidebarMeta values={[base.passageId, base.file]} />
-                <DescriptionInput
+                <FormDescriptionInput
                     value={draft.docComment ?? ''}
                     onChange={(docComment) =>
                         edit((d) => (d.docComment = docComment))

@@ -12,10 +12,7 @@ import type { MapPageStore } from './MapPageStore';
 import { MapControlBar } from './MapControlBar';
 import { MapCanvas } from './MapCanvas';
 import { LocationTools } from './LocationTools';
-import {
-    openAddLocation,
-    openLocation as openLocationDialog,
-} from './mapDialogs';
+import { openAddLocation } from './mapDialogs';
 import { LocationSidebar } from './LocationSidebar';
 import { MapBreadcrumbs } from './MapBreadcrumbs';
 import { addLocationMap, openLocationMap } from './openLocationMap';
@@ -31,9 +28,10 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
         return () => set.forEach((close) => close());
     }, []);
 
-    const openLocation = (id: string) => track(openLocationDialog(store, id));
-    const editLocation = (id: string) =>
-        track(openLocationDialog(store, id, { readOnly: false }));
+    const openLocation = (id: string) => {
+        store.setMode('view');
+        store.selectLocation(id);
+    };
     const deleteLocation = (id: string) => void store.deleteLocation(id);
     const openMap = (id: string) => void openLocationMap(store, id);
     const addMap = (id: string) => void addLocationMap(store, id);
@@ -122,7 +120,6 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                             store={store}
                             onAdd={() => track(openAddLocation(store))}
                             onOpen={openLocation}
-                            onEdit={editLocation}
                             onDelete={deleteLocation}
                         />
                     )}
@@ -133,9 +130,7 @@ export const MapPageContent = observer(({ store }: { store: MapPageStore }) => {
                         <LocationSidebar
                             store={store}
                             locationId={store.selectedLocationId}
-                            onOpenMap={openMap}
                             onAddMap={addMap}
-                            onEdit={editLocation}
                             onDelete={deleteLocation}
                         />
                     )}

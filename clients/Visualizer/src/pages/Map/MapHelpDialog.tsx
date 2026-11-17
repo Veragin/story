@@ -32,7 +32,7 @@ export const MapHelpDialog = ({ onClose }: { onClose: () => void }) => (
         <ul>
             <li>
                 {_(
-                    'View: look only. Click a location to show its details in the side panel, with Open / Add map, Edit and Delete.'
+                    'View: click a location to edit it in the side panel (save or discard the changes there), add a map to it or delete it. Double-click a location to open its map.'
                 )}
             </li>
             <li>

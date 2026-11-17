@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { TLocationDto } from '@story/protocol';
 import { createDefaultMapData } from '../../../MapEditor/createDefaultMapData';
 import { mergeMaps } from '../mergeMap';
-import { locationPatch, rebaseDraft, toLocalCharacters, toLocationDraft } from '../LocationForm/draft';
+import { locationPatch, rebaseDraft, toLocalCharacters, toLocationDraft } from '../LocationEditor/draft';
 
 const clone = <T>(v: T): T => structuredClone(v);
 

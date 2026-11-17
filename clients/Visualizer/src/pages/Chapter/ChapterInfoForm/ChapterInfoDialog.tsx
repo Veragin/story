@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { AppDialog } from '../../../components/dialog/AppDialog';
 import { DialogButtons } from '../../../components/dialog/DialogButtons';
@@ -15,6 +14,7 @@ import type { StructureStore } from '../../../stores/StructureStore';
 import { ChapterInfoAlerts } from './ChapterInfoAlerts';
 import { ChapterInfoForm } from './ChapterInfoForm';
 import { useChapterInfoEditor } from './useChapterInfoEditor';
+import { useStructureStores } from './useStructureStores';
 
 type TProps = {
     chapterId: string;
@@ -35,14 +35,7 @@ export const ChapterInfoDialog = observer(
         onClose,
     }: TProps) => {
         const store = useChapterInfoEditor(chapterId, api, events);
-        useEffect(() => {
-            const releaseEntities = entities.start();
-            const releaseStructure = structure.start();
-            return () => {
-                releaseStructure();
-                releaseEntities();
-            };
-        }, [entities, structure]);
+        useStructureStores(entities, structure);
 
         const close = () => {
             store.discard();

@@ -22,6 +22,7 @@ export const FormField = ({
     addTooltip,
     actions,
     helperText,
+    helperActions,
     warning,
     error,
     isSet = true,
@@ -58,6 +59,7 @@ export const FormField = ({
         <LabeledField
             label={label}
             helperText={helperText}
+            helperActions={helperActions}
             warning={warning}
             error={error}
             invalid={isInvalid({ diagnostics, error })}

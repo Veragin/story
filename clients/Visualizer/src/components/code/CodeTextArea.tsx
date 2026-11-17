@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
 import { styled } from '@mui/material';
 import type { TInputProps } from '../inputs/inputTypes';
 
@@ -16,6 +16,19 @@ export const CodeTextArea = ({
     dataField,
 }: TProps) => {
     const ref = useRef<HTMLTextAreaElement>(null);
+    useLayoutEffect(() => fitHeight(ref.current), [value]);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        let width = el.clientWidth;
+        const observer = new ResizeObserver(() => {
+            if (el.clientWidth === width) return;
+            width = el.clientWidth;
+            fitHeight(el);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)
             return;
@@ -44,10 +57,16 @@ export const CodeTextArea = ({
     );
 };
 
+const fitHeight = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+};
+
 const STextArea = styled('textarea')`
     width: 100%;
     box-sizing: border-box;
-    resize: vertical;
+    resize: none;
     padding: 6px 8px;
     border-radius: 4px;
     border: 1px solid ${({ theme }) => theme.palette.border.strong};
@@ -57,8 +76,9 @@ const STextArea = styled('textarea')`
     font-size: ${({ theme }) => theme.typography.meta.fontSize};
     line-height: 1.45;
     tab-size: 4;
-    white-space: pre;
-    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow: hidden;
 
     &:focus {
         outline: none;

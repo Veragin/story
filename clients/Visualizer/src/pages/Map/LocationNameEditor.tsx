@@ -11,11 +11,11 @@ import type { MapPageStore } from './MapPageStore';
 type TProps = {
     store: MapPageStore;
     locationId: string;
-    onEditInForm: (locationId: string) => void;
+    onEditInSidebar: (locationId: string) => void;
 };
 
 export const LocationNameEditor = observer(
-    ({ store, locationId, onEditInForm }: TProps) => {
+    ({ store, locationId, onEditInSidebar }: TProps) => {
         const [draft, setDraft] = useState<string | null>(null);
         const draftRef = useRef<string | null>(null);
         const location = store.locations.get(locationId);
@@ -26,7 +26,7 @@ export const LocationNameEditor = observer(
             setDraft(value);
         };
         const startEditing = () => {
-            if (!location || isCode(location.name)) onEditInForm(locationId);
+            if (!location || isCode(location.name)) onEditInSidebar(locationId);
             else updateDraft(location.name);
         };
         const commit = () => {

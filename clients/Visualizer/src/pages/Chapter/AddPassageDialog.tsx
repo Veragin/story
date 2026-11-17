@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Alert, Button, styled } from '@mui/material';
+import { Alert, Button } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { isPassageType, PASSAGE_TYPES, type TPassageType } from '@story/shared';
+import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
 import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
 import { TitleIdInput } from '../../components/form/TitleIdInput';
 import { useTitleId } from '../../components/form/useTitleId';
@@ -105,15 +106,16 @@ export const AddPassageDialog = observer(
                                 id: c.id,
                                 label: c.name,
                             }))}
+                            actions={
+                                <TooltipIconButton
+                                    title={_('Add character')}
+                                    icon={PersonAddIcon}
+                                    data-action="add-character"
+                                    onClick={addCharacter}
+                                />
+                            }
                             dataField="characterId"
                         />
-                        <SAddCharacterButton
-                            size="small"
-                            startIcon={<PersonAddIcon />}
-                            onClick={addCharacter}
-                        >
-                            {_('Add character')}
-                        </SAddCharacterButton>
                         <TitleIdInput
                             state={titleId}
                             label={_('Title')}
@@ -144,7 +146,3 @@ export const AddPassageDialog = observer(
         );
     }
 );
-
-const SAddCharacterButton = styled(Button)`
-    align-self: flex-start;
-`;

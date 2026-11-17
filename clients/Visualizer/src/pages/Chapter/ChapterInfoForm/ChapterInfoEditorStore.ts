@@ -1,6 +1,7 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import type { TChapterDto, TDiagnosticDto, TUpdateChapterBody } from '@story/protocol';
 import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
+import type { IEditorSource } from '../../../components/layout/editorSource';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics } from '../editor/diagnostics';
 import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
@@ -8,7 +9,7 @@ import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInf
 const draftKey = (chapterId: string) => `chapter-info-draft:${chapterId}`;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-export class ChapterInfoEditorStore {
+export class ChapterInfoEditorStore implements IEditorSource {
     chapter: TChapterDto | null = null;
     draft: TChapterInfoValue | null = null;
     saving = false;
@@ -30,10 +31,12 @@ export class ChapterInfoEditorStore {
             conflict: observable.ref,
             patch: computed,
             dirty: computed,
+            stale: computed,
             setDraft: action,
             reset: action,
             reloadFromDisk: action,
             onExternal: action,
+            discard: action,
         });
     }
 
@@ -49,6 +52,10 @@ export class ChapterInfoEditorStore {
 
     get dirty() {
         return Object.keys(this.patch).length > 0;
+    }
+
+    get stale() {
+        return this.conflict;
     }
 
     private get diagnosticIndex() {
@@ -162,6 +169,6 @@ export class ChapterInfoEditorStore {
     }
 
     discard() {
-        removeUiState(draftKey(this.chapterId));
+        this.reset();
     }
 }

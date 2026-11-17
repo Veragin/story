@@ -6,6 +6,7 @@ type TProps = {
     label: string;
     actions?: ReactNode;
     helperText?: string;
+    helperActions?: ReactNode;
     warning?: string;
     error?: string | null;
     invalid?: boolean;
@@ -16,6 +17,7 @@ export const LabeledField = ({
     label,
     actions,
     helperText,
+    helperActions,
     warning,
     error,
     invalid,
@@ -46,15 +48,26 @@ export const LabeledField = ({
                         {warning}
                     </Typography>
                 )}
-                {error && (
-                    <Typography variant="caption" color="error">
-                        {error}
-                    </Typography>
-                )}
-                {helperText && !error && (
-                    <Typography variant="caption" color="text.secondary">
-                        {helperText}
-                    </Typography>
+                {(error || helperText || helperActions) && (
+                    <SHelperRow>
+                        {error ? (
+                            <Typography variant="caption" color="error">
+                                {error}
+                            </Typography>
+                        ) : (
+                            helperText && (
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                >
+                                    {helperText}
+                                </Typography>
+                            )
+                        )}
+                        {helperActions && (
+                            <SHelperActions>{helperActions}</SHelperActions>
+                        )}
+                    </SHelperRow>
                 )}
             </SBody>
         </SGrid>
@@ -97,6 +110,20 @@ const SBody = styled('div')`
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+`;
+
+const SHelperRow = styled('div')`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+`;
+
+// keeps the icon button from growing the caption line
+const SHelperActions = styled('span')`
+    display: flex;
+    margin-block: -6px;
+    margin-left: auto;
 `;
 
 const SSpacer = styled('span')`

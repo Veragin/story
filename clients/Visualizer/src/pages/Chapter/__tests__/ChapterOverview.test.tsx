@@ -24,7 +24,6 @@ describe('ChapterOverview', () => {
     let events: ApiEvents;
     let store: ChapterGraphStore;
     let onEditInfo: () => void;
-    let onEditSource: () => void;
 
     beforeEach(async () => {
         sessionStorage.clear();
@@ -33,13 +32,11 @@ describe('ChapterOverview', () => {
         store = new ChapterGraphStore({ chapterId: 'village', api, events });
         await store.load();
         onEditInfo = vi.fn();
-        onEditSource = vi.fn();
         await mountAsync(
             <ChapterOverview
                 store={store}
                 events={events}
                 onEditInfo={onEditInfo}
-                onEditSource={onEditSource}
             />
         );
         await act(settle);
@@ -57,9 +54,7 @@ describe('ChapterOverview', () => {
         expect(document.body.textContent).toContain('chapter');
         expect(get('[data-copy="village"]')).toBeTruthy();
         click('[data-action="edit-info"]');
-        click('[data-action="edit-source"]');
         expect(onEditInfo).toHaveBeenCalled();
-        expect(onEditSource).toHaveBeenCalled();
     });
 
     it('saves the title and the author description in place', async () => {

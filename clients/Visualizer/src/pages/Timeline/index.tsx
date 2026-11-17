@@ -5,7 +5,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AlarmIcon from '@mui/icons-material/Alarm';
 import { spacingCss } from '@story/ui';
 import { api, apiEvents } from '../../api';
-import { useVisualizerStore } from '../../context';
+import { entityStore, structureStore, useVisualizerStore } from '../../context';
 import { AddButton } from '../../components/buttons/AddButton';
 import { HelpButton } from '../../components/buttons/HelpButton';
 import { HintText } from '../../components/feedback/HintText';
@@ -15,6 +15,7 @@ import { SelectInput } from '../../components/inputs/SelectInput';
 import { ControlBar, modals, PageContainer, router, useKey } from '../../shell';
 import { TimelineStore, toastNotify } from './store/TimelineStore';
 import { TimelineView, type TTimelineTooltip } from './canvas/TimelineView';
+import { ChapterSidebar } from './ChapterSidebar';
 import {
     openAddTimelineItem,
     openTimelineHelp,
@@ -76,6 +77,12 @@ export const TimelinePage = observer(() => {
     const openAdd = () => {
         openAddTimelineItem(store, viewRef.current?.viewCenterTime() ?? 0);
     };
+
+    const selectedChapterId =
+        store.selected?.kind === 'chapter' &&
+        store.chapters.has(store.selected.id)
+            ? store.selected.id
+            : null;
 
     const unplaced =
         store.unplaced.chapters.length + store.unplaced.triggers.length;
@@ -174,6 +181,15 @@ export const TimelinePage = observer(() => {
                             unplaced
                         )}
                     </SHint>
+                )}
+                {selectedChapterId && (
+                    <ChapterSidebar
+                        key={selectedChapterId}
+                        store={store}
+                        chapterId={selectedChapterId}
+                        entities={entityStore}
+                        structure={structureStore}
+                    />
                 )}
             </SStage>
         </PageContainer>

@@ -1,5 +1,4 @@
 import { observer } from 'mobx-react-lite';
-import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
 import type { ApiEvents } from '../../api';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
@@ -8,7 +7,6 @@ import { ErrorAlert } from '../../components/feedback/ErrorAlert';
 import { HintText } from '../../components/feedback/HintText';
 import { BulletList } from '../../components/feedback/BulletList';
 import { DescriptionInput } from '../../components/inputs/DescriptionInput';
-import type { IEditorSource } from '../../components/layout/editorSource';
 import { SaveControls } from '../../components/layout/SaveControls';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { SidebarMeta } from '../../components/layout/SidebarMeta';
@@ -23,44 +21,26 @@ type TProps = {
     store: ChapterGraphStore;
     events: ApiEvents;
     onEditInfo: () => void;
-    onEditSource: () => void;
 };
 
 export const ChapterOverview = observer(
-    ({ store, events, onEditInfo, onEditSource }: TProps) => {
+    ({ store, events, onEditInfo }: TProps) => {
         const editor = useChapterInfoEditor(store.chapterId, store.api, events);
         const { draft } = editor;
-
-        const source: IEditorSource = {
-            dirty: editor.dirty,
-            saving: editor.saving,
-            stale: editor.conflict,
-            discard: () => editor.reset(),
-            save: () => editor.save(),
-        };
 
         return (
             <Sidebar label={_('Chapter %s', store.chapterId)}>
                 <SidebarToolbar
                     start={
-                        <>
-                            <TooltipIconButton
-                                title={_('Edit chapter info')}
-                                icon={EditIcon}
-                                tone="inherit"
-                                onClick={onEditInfo}
-                                data-action="edit-info"
-                            />
-                            <TooltipIconButton
-                                title={_('Edit chapter source')}
-                                icon={CodeIcon}
-                                tone="inherit"
-                                onClick={onEditSource}
-                                data-action="edit-source"
-                            />
-                        </>
+                        <TooltipIconButton
+                            title={_('Edit chapter info')}
+                            icon={EditIcon}
+                            tone="inherit"
+                            onClick={onEditInfo}
+                            data-action="edit-info"
+                        />
                     }
-                    end={<SaveControls store={source} />}
+                    end={<SaveControls store={editor} />}
                 />
                 <ChapterHeading
                     editor={editor}

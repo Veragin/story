@@ -4,7 +4,6 @@ import { ButtonBase, styled, Tooltip } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import CodeIcon from '@mui/icons-material/Code';
 import {
     api as defaultApi,
     apiEvents,
@@ -97,12 +96,6 @@ export const ChapterPage = observer(
                         icon={NoteAddIcon}
                         tone="inherit"
                     />
-                    <TooltipIconButton
-                        title={_('Edit chapter source')}
-                        onClick={() => editSource()}
-                        icon={CodeIcon}
-                        tone="inherit"
-                    />
                 </ControlBar>
 
                 <SContent>
@@ -157,7 +150,6 @@ export const ChapterPage = observer(
                                                     api
                                                 )
                                             }
-                                            onEditSource={() => editSource()}
                                         />
                                     )}
                                 </SSide>

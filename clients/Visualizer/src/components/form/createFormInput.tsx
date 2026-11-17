@@ -15,6 +15,7 @@ const FORM_ONLY_KEYS = [
     'optional',
     'actions',
     'helperText',
+    'helperActions',
     'warning',
     'error',
 ] satisfies (keyof TFormInputProps<unknown>)[];

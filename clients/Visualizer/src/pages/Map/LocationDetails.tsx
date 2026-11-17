@@ -33,11 +33,6 @@ const locationRows = (
     sublocationNames: string[]
 ): TRow[] => {
     const rows: TRow[] = [
-        { label: _('Description'), text: valueText(location.description) },
-        {
-            label: _('Local characters'),
-            text: valueText(location.localCharacters),
-        },
         { label: _('Sublocations'), text: sublocationNames.join(', ') },
         ...Object.entries(location.userFields ?? {}).map(([key, value]) => ({
             label: key,

@@ -8,6 +8,7 @@ export type TFormProps = {
     addTooltip?: string;
     actions?: ReactNode;
     helperText?: string;
+    helperActions?: ReactNode;
     warning?: string;
     error?: string | null;
 };
@@ -29,6 +30,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
     addTooltip,
     actions,
     helperText,
+    helperActions,
     warning,
     error,
     value,
@@ -45,6 +47,7 @@ export const splitFormProps = <V, C extends V, R extends object>({
         addTooltip,
         actions,
         helperText,
+        helperActions,
         warning,
         error,
         disabled,

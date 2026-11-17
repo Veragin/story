@@ -38,7 +38,7 @@ export const TitleIdInput = ({
                         ? undefined
                         : _('Id: %s', `${idPrefix}${id || '…'}`)
                 }
-                actions={
+                helperActions={
                     !editingId && (
                         <TooltipIconButton
                             title={_('Edit id')}

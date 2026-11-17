@@ -14,7 +14,7 @@ export const TimelineHelpDialog = ({ onClose }: { onClose: () => void }) => (
             </li>
             <li>
                 {_(
-                    'Double-click a chapter to open it, or a time trigger to edit it.'
+                    'Click a chapter to edit its info in the side panel. Double-click a chapter to open its passages, or a time trigger to edit it.'
                 )}
             </li>
         </ul>

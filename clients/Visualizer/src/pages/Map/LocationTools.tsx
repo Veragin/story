@@ -16,12 +16,11 @@ type TProps = {
     store: MapPageStore;
     onAdd: () => void;
     onOpen: (locationId: string) => void;
-    onEdit: (locationId: string) => void;
     onDelete: (locationId: string) => void;
 };
 
 export const LocationTools = observer(
-    ({ store, onAdd, onOpen, onEdit, onDelete }: TProps) => {
+    ({ store, onAdd, onOpen, onDelete }: TProps) => {
         const id = store.selectedLocationId;
         void store.revision;
         const shape = id ? store.map?.locations[id] : undefined;
@@ -51,7 +50,7 @@ export const LocationTools = observer(
                             <LocationNameEditor
                                 store={store}
                                 locationId={id}
-                                onEditInForm={onEdit}
+                                onEditInSidebar={onOpen}
                             />
                             <TooltipIconButton
                                 title={_('Open')}
