@@ -91,6 +91,21 @@ services:
       retries: 20
       start_period: 30s
 
+  # Dev only, never in docker-compose.prod.yml: auto-logs in as `story`, so anyone on the port gets the DB
+  pma:
+    platform: linux/amd64
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - '127.0.0.1:${PMA_PORT:-4001}:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: story
+      PMA_PASSWORD: story
+    depends_on:
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql:
   # fixed name: the launcher mounts it into the agent containers by name

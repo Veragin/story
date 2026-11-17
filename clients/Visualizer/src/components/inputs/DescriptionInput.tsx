@@ -5,6 +5,7 @@ type TProps = {
     onChange: (value: string) => void;
     disabled?: boolean;
     dataField?: string;
+    minRows?: number;
 };
 
 export const DescriptionInput = ({
@@ -12,6 +13,7 @@ export const DescriptionInput = ({
     onChange,
     disabled,
     dataField = 'docComment',
+    minRows,
 }: TProps) => (
     <SInput
         value={value}
@@ -19,6 +21,7 @@ export const DescriptionInput = ({
         placeholder={_('Write down description here')}
         disabled={disabled}
         multiline
+        minRows={minRows}
         fullWidth
         inputProps={{
             'aria-label': _('Author description'),

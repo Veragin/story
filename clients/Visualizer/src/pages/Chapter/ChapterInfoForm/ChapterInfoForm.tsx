@@ -5,7 +5,6 @@ import { FormFields } from '../../../components/form/FormFields';
 import { FormArrayEditor } from '../../../components/editors/FormArrayEditor';
 import { DataTypeSection } from '../../Structure/DataTypeSection';
 import { FormObjectEditor } from '../../../components/editors/FormObjectEditor';
-import { FormMaybeCodeTextInput } from '../../../components/code/FormMaybeCodeTextInput';
 import { FormMaybeCodeAutocompleteInput } from '../../../components/code/FormMaybeCodeAutocompleteInput';
 import { FormMaybeCodeTimeRangeInput } from '../../../components/code/FormMaybeCodeTimeRangeInput';
 import { DescriptionInput } from '../../../components/inputs/DescriptionInput';
@@ -93,23 +92,7 @@ export const ChapterInfoForm = observer(
                     value={value.docComment ?? ''}
                     onChange={(next) => set('docComment', next)}
                     disabled={disabled}
-                />
-                <FormMaybeCodeTextInput
-                    label={_('Title')}
-                    value={value.title}
-                    onChange={(next) => set('title', next)}
-                    diagnostics={diagnostics('title')}
-                    disabled={disabled}
-                    dataField="title"
-                />
-                <FormMaybeCodeTextInput
-                    label={_('In-game description')}
-                    multiline
-                    value={value.description}
-                    onChange={(next) => set('description', next)}
-                    diagnostics={diagnostics('description')}
-                    disabled={disabled}
-                    dataField="description"
+                    minRows={6}
                 />
                 <FormMaybeCodeAutocompleteInput
                     label={_('Location')}

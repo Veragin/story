@@ -63,8 +63,6 @@ describe('ChapterInfoDialog', () => {
         );
         expect(labels).toEqual(
             expect.arrayContaining([
-                'Title',
-                'In-game description',
                 'Location',
                 'Time range',
                 'Child chapters',
@@ -74,9 +72,8 @@ describe('ChapterInfoDialog', () => {
         expect(get('[data-form-section="dataType"]').textContent).toContain(
             'TKingdomChapterData'
         );
-        expect(get<HTMLInputElement>('[data-field="title"]').value).toBe(
-            'Kingdom Chapter'
-        );
+        expect($('[data-field="title"]')).toBeNull();
+        expect($('[data-field="description"]')).toBeNull();
         expect(
             get('[data-form-field="Init"] [data-form-field="mojePromena"]')
         ).toBeTruthy();
@@ -87,7 +84,6 @@ describe('ChapterInfoDialog', () => {
 
     it('saves the edited fields only', async () => {
         await open('village');
-        typeInto(get<HTMLInputElement>('[data-field="title"]'), 'Village');
         typeInto(
             get<HTMLInputElement>('[data-field="timeRange.end"]'),
             '6.1. 8:00'
@@ -95,7 +91,6 @@ describe('ChapterInfoDialog', () => {
         act(() => saveButton().click());
         await act(settle);
         const saved = await stores.api.getChapter('village');
-        expect(saved.title).toBe('Village');
         expect(saved.timeRange).toEqual({
             start: '2.1. 8:00',
             end: '6.1. 8:00',
@@ -173,13 +168,16 @@ describe('ChapterInfoDialog', () => {
                 ],
             })
         );
-        typeInto(get<HTMLInputElement>('[data-field="title"]'), 'Village');
+        typeInto(
+            get<HTMLInputElement>('[data-field="timeRange.end"]'),
+            '6.1. 8:00'
+        );
         act(() => saveButton().click());
         await act(settle);
         expect(get('[data-form-field="time"]').textContent).toContain(
             'Not a number'
         );
-        expect(get('[data-form-field="Title"]').textContent).not.toContain(
+        expect(get('[data-form-field="Location"]').textContent).not.toContain(
             'Not a number'
         );
         expect(document.body.textContent).toContain('Somewhere else');
