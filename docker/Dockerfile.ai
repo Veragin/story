@@ -1,7 +1,8 @@
 # The AI agent image (`story-ai`, plans/ai-implementation.md §3): Claude Code in a fake repo that holds one
 # story, `/repo/stories/story`. The launcher (`server/aiLauncher/`) runs it with `docker run --rm -i
 # --read-only` and mounts only that story's `data/` and `types/`, a tmpfs `/home/agent` and the
-# session transcripts at `/home/agent/.claude/projects`. Built with `make ai-image`, or in production by the
+# session transcripts at `/sessions` (outside HOME: docker would create a nested mountpoint root-owned, leaving
+# `~/.claude` unwritable; the entrypoint links `~/.claude/projects` to it). Built with `make ai-image`, or in production by the
 # `ai-image` service of `docker/docker-compose.prod.yml`. Build context: the repo root.
 #
 #   /repo/tsconfig.base.json, /repo/clients/shared/{core,utils,ui}/src   the engine, read-only
@@ -55,8 +56,8 @@ COPY server/ai/agent/skills /opt/agent/claude/skills
 COPY --chmod=0755 docker/ai-entrypoint.sh /usr/local/bin/ai-entrypoint.sh
 
 # mount points; the launcher mounts the story's folders over them
-RUN mkdir -p /repo/stories/story/data /repo/stories/story/types /home/agent \
-    && chown agent:agent /repo/stories/story/data /repo/stories/story/types /home/agent \
+RUN mkdir -p /repo/stories/story/data /repo/stories/story/types /home/agent /sessions \
+    && chown agent:agent /repo/stories/story/data /repo/stories/story/types /home/agent /sessions \
     && chmod -R a+rX,go-w /repo /opt/agent
 
 USER agent

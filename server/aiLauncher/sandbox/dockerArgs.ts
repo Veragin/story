@@ -23,7 +23,7 @@ export const AGENT_UID = 1000;
 export const CONTAINER_REPO = '/repo';
 export const CONTAINER_STORY_DIR = `${CONTAINER_REPO}/stories/story`;
 export const CONTAINER_HOME = '/home/agent';
-export const CONTAINER_SESSIONS_DIR = `${CONTAINER_HOME}/.claude/projects`;
+export const CONTAINER_SESSIONS_DIR = '/sessions';
 
 export const STORY_MOUNT_FOLDERS = ['data', 'types'] as const;
 

@@ -378,12 +378,13 @@ The agent sees a fake repo with one story whose folder is always `story`, so the
 /repo/stories/story/data                          ← stories volume subpath <storyId>/data   (rw)
 /repo/stories/story/types                         ← stories volume subpath <storyId>/types  (rw)
 /home/agent                                       tmpfs, uid 1000, 0700, 64 MB
-/home/agent/.claude/projects                      ← sessions volume subpath <storyId>       (rw)
+/home/agent/.claude/projects                      symlink → /sessions (by the entrypoint)
+/sessions                                         ← sessions volume subpath <storyId>       (rw)
 /opt/agent/claude/                                image: server/ai/agent/{CLAUDE.md,settings.json,skills/}
 /tmp                                              tmpfs
 ```
 
-`WORKDIR /repo/stories/story`, user `agent` (uid 1000, the owner of the story files). `docker/ai-entrypoint.sh` copies `/opt/agent/claude/*` into the empty tmpfs `~/.claude/` (leaving `projects` alone), then `exec claude "$@"`. The image pins `@anthropic-ai/claude-code` (`CLAUDE_CODE_VERSION`: bump it on purpose, the stream-json shapes the server parses come from it) and turns off auto-updates, telemetry and error reporting. `server/__tests__/ai/agentImage.test.ts` fails when the Dockerfile misses an `enginePaths()` entry, when the type-declaration versions drift from `node_modules`, or when the baked tsconfig differs from `storyTsconfig()`. The agent's role and the story conventions are in `server/ai/agent/CLAUDE.md` and the skills `story-files`, `passages`, `entities`, `structure`.
+`WORKDIR /repo/stories/story`, user `agent` (uid 1000, the owner of the story files). `docker/ai-entrypoint.sh` copies `/opt/agent/claude/*` into the empty tmpfs `~/.claude/` and links `~/.claude/projects` to `/sessions` (mounting it inside HOME would make docker create `~/.claude` root-owned), then `exec claude "$@"`. The image pins `@anthropic-ai/claude-code` (`CLAUDE_CODE_VERSION`: bump it on purpose, the stream-json shapes the server parses come from it) and turns off auto-updates, telemetry and error reporting. `server/__tests__/ai/agentImage.test.ts` fails when the Dockerfile misses an `enginePaths()` entry, when the type-declaration versions drift from `node_modules`, or when the baked tsconfig differs from `storyTsconfig()`. The agent's role and the story conventions are in `server/ai/agent/CLAUDE.md` and the skills `story-files`, `passages`, `entities`, `structure`.
 
 The CLI runs as `claude -p --input-format stream-json --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools Read,Edit,Write,Glob,Grep,Skill --disallowedTools Bash,WebFetch,WebSearch --max-budget-usd <usd> [--resume <id>] [--model <model>]` (`claudeArgs`).
 

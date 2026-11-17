@@ -40,7 +40,7 @@ describe('dockerRunArgs', () => {
         expect(valuesOf(docker, '--mount')).toEqual([
             'type=volume,src=story-prod_stories,dst=/repo/stories/story/data,volume-subpath=my-story/data',
             'type=volume,src=story-prod_stories,dst=/repo/stories/story/types,volume-subpath=my-story/types',
-            'type=volume,src=story-ai-sessions,dst=/home/agent/.claude/projects,volume-subpath=my-story',
+            'type=volume,src=story-ai-sessions,dst=/sessions,volume-subpath=my-story',
         ]);
         expect(docker).not.toContain('-v');
         expect(docker).not.toContain('--volume');
@@ -58,13 +58,13 @@ describe('dockerRunArgs', () => {
             'type=bind,src=/srv/repo/node_modules/@mui/icons-material,dst=/repo/node_modules/@mui/icons-material,readonly',
             'type=bind,src=/home/dev/story/stories/my-story/data,dst=/repo/stories/story/data',
             'type=bind,src=/home/dev/story/stories/my-story/types,dst=/repo/stories/story/types',
-            'type=volume,src=story-ai-sessions,dst=/home/agent/.claude/projects,volume-subpath=my-story',
+            'type=volume,src=story-ai-sessions,dst=/sessions,volume-subpath=my-story',
         ]);
         const writable = mounts.filter((m) => !m.endsWith(',readonly')).map((m) => /dst=([^,]+)/.exec(m)?.[1]);
         expect(writable).toEqual([
             '/repo/stories/story/data',
             '/repo/stories/story/types',
-            '/home/agent/.claude/projects',
+            '/sessions',
         ]);
     });
 
