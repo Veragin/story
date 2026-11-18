@@ -96,7 +96,7 @@ services:
     platform: linux/amd64
     image: phpmyadmin/phpmyadmin
     ports:
-      - '127.0.0.1:${PMA_PORT:-4001}:80'
+      - '127.0.0.1:${PMA_PORT:-8124}:80'
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
