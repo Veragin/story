@@ -10,12 +10,19 @@ import {
 import { ApiError, errorMessage, type TVisualizerApi } from '../api';
 import type { TAiEventsConnection } from '../api/aiEvents';
 import type { AuthStore } from '../api/auth';
+import type { EntityStore } from '../stores/EntityStore';
 import { RefCountedSubscription } from '../stores/RefCountedSubscription';
 import { getUiState, setUiState } from '../ui-state';
+import { formatMention, type TMentionClass } from './aiMentions';
+import { AiSuggestStore } from './AiSuggestStore';
+import { findActiveToken, replaceToken } from './aiToken';
+import { PassageIndex, type TPassageIndex } from './PassageIndex';
 
 type TAiStoreOptions = {
     api: TVisualizerApi;
     auth?: Pick<AuthStore, 'onLogin'>;
+    entities?: Pick<EntityStore, 'project' | 'start'>;
+    passages?: TPassageIndex;
 };
 
 export const AI_OPEN_KEY = 'aiSidebarOpen';
@@ -40,17 +47,24 @@ export class AiStore {
     sessions: TAiSessionDto[] = [];
     touchedFiles: string[] = [];
     sending = false;
+    focusRequest = 0;
+
+    readonly suggest: AiSuggestStore;
+    readonly passages: TPassageIndex;
 
     private readonly api: TVisualizerApi;
     private readonly auth?: Pick<AuthStore, 'onLogin'>;
+    private readonly entities?: Pick<EntityStore, 'project' | 'start'>;
     private readonly subscription: RefCountedSubscription;
     private connection: TAiEventsConnection | null = null;
     private localCounter = 0;
     private loadToken = 0;
 
-    constructor({ api, auth }: TAiStoreOptions) {
+    constructor({ api, auth, entities, passages }: TAiStoreOptions) {
         this.api = api;
         this.auth = auth;
+        this.entities = entities;
+        this.passages = passages ?? new PassageIndex({ api, entities });
         this.open = getUiState<unknown>(AI_OPEN_KEY, false) === true;
         this.subscription = new RefCountedSubscription(() => this.subscribe());
         makeObservable<AiStore, 'applyDto' | 'syncConnection'>(this, {
@@ -67,6 +81,7 @@ export class AiStore {
             sessions: observable.ref,
             touchedFiles: observable.ref,
             sending: observable,
+            focusRequest: observable,
             visible: computed,
             noCredits: computed,
             working: computed,
@@ -75,11 +90,14 @@ export class AiStore {
             setOpen: action,
             toggle: action,
             setDraft: action,
+            requestFocus: action,
+            insertMention: action,
             clearError: action,
             applyEvent: action,
             applyDto: action,
             syncConnection: action,
         });
+        this.suggest = new AiSuggestStore({ host: this, entities, passages: this.passages });
     }
 
     get visible(): boolean {
@@ -115,6 +133,18 @@ export class AiStore {
 
     setDraft = (draft: string) => {
         this.draft = draft;
+    };
+
+    requestFocus = () => {
+        this.focusRequest++;
+    };
+
+    insertMention = (mentionClass: TMentionClass, id: string) => {
+        const mention = `${formatMention(mentionClass, id)} `;
+        const token = findActiveToken(this.draft);
+        if (token?.trigger === '@') this.draft = replaceToken(this.draft, token, mention);
+        else this.draft = this.draft === '' || /\s$/.test(this.draft) ? this.draft + mention : `${this.draft} ${mention}`;
+        this.requestFocus();
     };
 
     clearError = () => {
@@ -264,6 +294,7 @@ export class AiStore {
     private subscribe() {
         void this.load();
         const offs = [() => runInAction(() => this.disconnect())];
+        if (this.entities) offs.push(this.entities.start());
         if (this.auth) {
             offs.push(
                 this.auth.onLogin(() => {

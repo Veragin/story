@@ -220,4 +220,76 @@ describe('AiStore', () => {
         expect(await store.send('Hello')).toBe(false);
         expect(send).not.toHaveBeenCalled();
     });
+
+    it('inserts a mention in place of a trailing @ token, or appends it', () => {
+        const focus = store.focusRequest;
+        store.setDraft('see @pas');
+        store.insertMention('passage', 'village-thomas-intro');
+        expect(store.draft).toBe('see @passage:village-thomas-intro ');
+        expect(store.focusRequest).toBe(focus + 1);
+
+        store.setDraft('see @passage:xy');
+        store.insertMention('passage', 'a-b-c');
+        expect(store.draft).toBe('see @passage:a-b-c ');
+
+        store.setDraft('see');
+        store.insertMention('npc', 'herbalist');
+        expect(store.draft).toBe('see @npc:herbalist ');
+
+        store.setDraft('');
+        store.insertMention('chapter', 'village');
+        expect(store.draft).toBe('@chapter:village ');
+    });
+
+    it('clears a dismissed token after sending, so the next @ opens the dropdown', async () => {
+        await openReady();
+        store.setDraft('@');
+        expect(store.suggest.open).toBe(true);
+        store.suggest.dismiss();
+        expect(store.suggest.open).toBe(false);
+        await store.send();
+        expect(store.suggest.dismissedToken).toBeNull();
+        await vi.waitFor(() => expect(store.status).toBe('ready'));
+        store.setDraft('@');
+        expect(store.suggest.open).toBe(true);
+    });
+
+    it('awaits a passage click for a pending @ in a chapter, until inserted, dismissed or locked', async () => {
+        await openReady();
+        const awaiting = (draft: string) => {
+            store.setDraft(draft);
+            return store.suggest.awaitingPassage;
+        };
+        expect(awaiting('@')).toBe(false);
+        const release = store.passages.attachChapter({ passages: [] });
+
+        expect(awaiting('see @')).toBe(true);
+        expect(awaiting('see @pa')).toBe(true);
+        expect(awaiting('see @passage:vil')).toBe(true);
+        expect(awaiting('see @ch')).toBe(false);
+        expect(awaiting('see @npc:')).toBe(false);
+        expect(awaiting('see')).toBe(false);
+
+        store.setDraft('see @pass');
+        store.insertMention('passage', 'village-thomas-intro');
+        expect(store.suggest.awaitingPassage).toBe(false);
+
+        store.setDraft('see @');
+        expect(store.suggest.open).toBe(true);
+        store.suggest.dismiss();
+        expect(store.suggest.awaitingPassage).toBe(false);
+
+        expect(awaiting('see @passage:')).toBe(true);
+        store.applyEvent({ type: 'status', status: 'busy' });
+        expect(store.suggest.awaitingPassage).toBe(false);
+        release();
+    });
+
+    it('loads the project while active', () => {
+        release();
+        const start = vi.fn(() => () => {});
+        store = new AiStore({ api, entities: { project: null, start } });
+        release = store.start();
+        expect(start).toHaveBeenCalledTimes(1);
+    });
 });

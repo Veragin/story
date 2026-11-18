@@ -10,6 +10,8 @@ import {
     type ApiEvents,
     type TVisualizerApi,
 } from '../../api';
+import type { AiStore } from '../../ai/AiStore';
+import { aiStore } from '../../context';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
 import { ResizableSplitter } from '../../components/layout/ResizableSplitter';
 import { SaveStatus } from '../../components/feedback/SaveStatus';
@@ -30,10 +32,11 @@ type TProps = {
     chapterId: string;
     api?: TVisualizerApi;
     events?: ApiEvents;
+    ai?: Pick<AiStore, 'passages' | 'suggest' | 'insertMention'>;
 };
 
 export const ChapterPage = observer(
-    ({ chapterId, api = defaultApi, events = apiEvents }: TProps) => {
+    ({ chapterId, api = defaultApi, events = apiEvents, ai = aiStore }: TProps) => {
         const [store] = useState(
             () => new ChapterGraphStore({ chapterId, api, events })
         );
@@ -43,6 +46,8 @@ export const ChapterPage = observer(
             void store.load();
             return () => void store.destroy();
         }, [store]);
+
+        useEffect(() => ai.passages.attachChapter(store), [ai, store]);
 
         useKey('Delete', () => {
             if (!store.selectedId) return false;
@@ -109,7 +114,7 @@ export const ChapterPage = observer(
                         />
                     ) : (
                         <ResizableSplitter
-                            leftContent={<ChapterGraphCanvas store={store} />}
+                            leftContent={<ChapterGraphCanvas store={store} ai={ai} />}
                             rightContent={
                                 <SSide>
                                     {store.editor ? (

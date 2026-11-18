@@ -13,6 +13,8 @@ visual editor, while you work. Every file you save shows up there right away.
 - The engine sources under `/repo/clients/shared/` (`core/src` is `@story/core`, `utils/src` is `@story/shared`,
   `ui/src` is `@story/ui`) are for reference only: read them to learn the API, never edit them.
 - `tsconfig.json` maps the `@story/*` imports. You cannot change it.
+- `@<class>:<id>` in a message (`@npc:herbalist`) refers to that story object; the `story-files` skill says where
+  each class lives.
 
 Before you write or change a kind of file for the first time, load the matching skill:
 

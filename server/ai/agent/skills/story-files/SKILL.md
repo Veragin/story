@@ -53,6 +53,23 @@ types/
 typeof itemInfo`, `TLocationId = keyof typeof register.locations`), so an id exists once its object is
   registered.
 
+## References in messages
+
+The author can point at a story object with `@<class>:<id>` in a message (`@npc:herbalist`,
+`@passage:village-thomas-forest`). It means that object; find it here:
+
+| Reference                                | Where                                                                                                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `@character:<id>`                        | `data/characters/<id>.ts`                                                                                                  |
+| `@npc:<id>`                              | the file in `data/npcs/` whose `id` matches; the file name is `<Id>.ts`, not the id (`Herbalist.ts` has `id: 'herbalist'`) |
+| `@location:<id>`                         | `data/locations/<id>.location.ts`                                                                                          |
+| `@item:<id>`                             | an entry (not a file) in `data/items/`: `itemInfo.ts` or one of the files it spreads in (`foodInfo.ts`, `toolInfo.ts`, …)  |
+| `@chapter:<id>`                          | `data/chapters/<id>/<id>.chapter.ts`                                                                                       |
+| `@passage:<chapter>-<character>-<local>` | `data/chapters/<chapter>/<character>.passages/<local>.ts`                                                                  |
+
+Ids don't contain `-`, so a passage reference splits on its first two `-`. If a reference doesn't match anything,
+`Grep` for the id before saying it doesn't exist.
+
 ## Imports
 
 | Import                         | Resolves to                               | Use for                                         |

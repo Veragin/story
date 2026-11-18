@@ -11,6 +11,8 @@ import {
     type Shape,
     type TCameraState,
 } from '../../../canvas';
+import type { AiStore } from '../../../ai/AiStore';
+import { aiStore } from '../../../context';
 import { router } from '../../../shell';
 import { getUiState, setUiState } from '../../../ui-state';
 import { uiKeys, type ChapterGraphStore } from '../ChapterGraphStore';
@@ -55,7 +57,12 @@ const nodeLabel = (n: TGraphNode) => `${n.title}${n.selfLoop ? '  ↻' : ''}`;
 
 type TTooltip = { text: string; x: number; y: number } | null;
 
-export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
+type TProps = {
+    store: ChapterGraphStore;
+    ai?: Pick<AiStore, 'suggest' | 'insertMention'>;
+};
+
+export const ChapterGraphCanvas = ({ store, ai = aiStore }: TProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [tooltip, setTooltip] = useState<TTooltip>(null);
 
@@ -100,7 +107,9 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             // only fires for a press released without moving, so drags never open the editor
             onClick: (e) => {
                 const data = boxData(e.hit);
-                if (data?.kind === 'passage') store.openEditor(data.node.id);
+                if (data?.kind !== 'passage') return false;
+                if (ai.suggest.awaitingPassage) ai.insertMention('passage', data.node.id);
+                else store.openEditor(data.node.id);
                 return false;
             },
         });
@@ -383,7 +392,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             selection.destroy();
             scene.destroy();
         };
-    }, [store]);
+    }, [store, ai]);
 
     return (
         <SStage>

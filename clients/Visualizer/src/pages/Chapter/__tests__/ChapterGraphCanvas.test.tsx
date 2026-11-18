@@ -1,6 +1,7 @@
 import '@story/shared'; // installs the global `_`
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { AiStore } from '../../../ai/AiStore';
 import { ApiEvents, createMockApi } from '../../../api';
 import { click, doubleClick, drag } from '../../../canvas/__tests__/helpers';
 import { get, mount, unmount } from '../../../components/inputs/__tests__/dom';
@@ -14,6 +15,7 @@ const PASSAGE_ID = 'kingdom-annie-intro';
 describe('ChapterGraphCanvas', () => {
     let store: ChapterGraphStore;
     let canvas: HTMLCanvasElement;
+    let ai: AiStore;
 
     const boxCenter = (passageId: string): [number, number] => {
         const p = store.positions[passageId];
@@ -30,7 +32,8 @@ describe('ChapterGraphCanvas', () => {
         const api = createMockApi({ events });
         store = new ChapterGraphStore({ chapterId: 'kingdom', api, events });
         await store.load();
-        mount(<ChapterGraphCanvas store={store} />);
+        ai = new AiStore({ api });
+        mount(<ChapterGraphCanvas store={store} ai={ai} />);
         canvas = get<HTMLCanvasElement>('canvas');
     });
 
@@ -72,5 +75,22 @@ describe('ChapterGraphCanvas', () => {
     it('a double click still opens the editor', () => {
         act(() => doubleClick(canvas, ...boxCenter(PASSAGE_ID)));
         expect(store.editor?.passageId).toBe(PASSAGE_ID);
+    });
+
+    it('inserts a clicked passage for a pending @, then opens the editor on the next click', async () => {
+        await ai.load();
+        ai.setOpen(true);
+        ai.applyEvent({ type: 'status', status: 'ready' });
+        expect(ai.visible).toBe(true);
+        const release = ai.passages.attachChapter(store);
+        ai.setDraft('see @pa');
+
+        act(() => click(canvas, ...boxCenter(PASSAGE_ID)));
+        expect(ai.draft).toBe(`see @passage:${PASSAGE_ID} `);
+        expect(store.editor).toBeNull();
+
+        act(() => click(canvas, ...boxCenter(PASSAGE_ID)));
+        expect(store.editor?.passageId).toBe(PASSAGE_ID);
+        release();
     });
 });

@@ -1,6 +1,7 @@
 import { createSafeContext } from '@story/ui';
 import type { TimeManager } from '@story/shared';
 import { AiStore } from './ai/AiStore';
+import { PassageIndex } from './ai/PassageIndex';
 import { api, apiEvents, auth } from './api';
 import { GitStore } from './git/GitStore';
 import { EntityStore } from './stores/EntityStore';
@@ -19,4 +20,9 @@ export const structureStore = new StructureStore({ api, events: apiEvents, entit
 
 export const gitStore = new GitStore({ api, events: apiEvents, auth });
 
-export const aiStore = new AiStore({ api, auth });
+export const aiStore = new AiStore({
+    api,
+    auth,
+    entities: entityStore,
+    passages: new PassageIndex({ api, events: apiEvents, entities: entityStore }),
+});
