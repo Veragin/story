@@ -6,7 +6,7 @@ describe('launcherOptionsFromEnv', () => {
         expect(launcherOptionsFromEnv({ AI_STORIES_VOLUME: 'story-prod_stories' })).toEqual({
             tokenFile: '/secret/ai_token',
             keyFile: '/secret/ai_launcher_key',
-            port: 8124,
+            port: 8155,
             driver: 'docker-run',
             image: 'story-ai:latest',
             stories: { kind: 'volume', volume: 'story-prod_stories' },

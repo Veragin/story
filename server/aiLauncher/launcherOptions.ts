@@ -20,7 +20,7 @@ export type TLauncherOptions = {
     maxBudgetUsd: number;
 };
 
-export const DEFAULT_LAUNCHER_PORT = 8124;
+export const DEFAULT_LAUNCHER_PORT = 8155;
 
 const DOCKER_NAME = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
 const IMAGE_REFERENCE = /^[a-z0-9][a-z0-9_.\-/:@]*$/;

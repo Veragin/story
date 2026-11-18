@@ -4,9 +4,9 @@ import { z } from 'zod';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-const DEFAULT_PORT = 8123;
+const DEFAULT_PORT = 8154;
 
-const DEFAULT_PUBLIC_URL = 'http://localhost:8103';
+const DEFAULT_PUBLIC_URL = 'http://localhost:8153';
 const DEFAULT_MAIL_FROM = 'info@story.cz';
 
 const optionalText = z.string().trim().optional();
@@ -67,7 +67,7 @@ export const ENV_SCHEMA = z
         SMTP_URL: optionalText.transform((value) => value || null),
         MAIL_FROM: optionalText.transform((value) => value || DEFAULT_MAIL_FROM),
         AI_SANDBOX: z.enum(AI_SANDBOXES).default('launcher'),
-        AI_LAUNCHER_URL: optionalText.transform((value) => (value || 'http://ai-launcher:8124').replace(/\/+$/, '')),
+        AI_LAUNCHER_URL: optionalText.transform((value) => (value || 'http://ai-launcher:8155').replace(/\/+$/, '')),
         AI_LAUNCHER_KEY_FILE: optionalText.transform((value) => value || '/secret/ai_launcher_key'),
         AI_SESSIONS_DIR: optionalText.transform((value) => path.resolve(REPO_ROOT, value || '/app/ai-sessions')),
         AI_MODEL: optionalText.transform((value) => value || 'claude-sonnet-5-5'),

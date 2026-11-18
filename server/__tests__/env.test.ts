@@ -4,7 +4,7 @@ import { parseEnv } from '../src/config/env';
 describe('mail env', () => {
     it('defaults: the dev landing page as PUBLIC_URL, no SMTP_URL, info@story.cz as MAIL_FROM', () => {
         expect(parseEnv({})).toMatchObject({
-            PUBLIC_URL: 'http://localhost:8103',
+            PUBLIC_URL: 'http://localhost:8153',
             SMTP_URL: null,
             MAIL_FROM: 'info@story.cz',
         });
@@ -27,7 +27,7 @@ describe('AI env', () => {
     it('defaults to the launcher sidecar', () => {
         expect(parseEnv({})).toMatchObject({
             AI_SANDBOX: 'launcher',
-            AI_LAUNCHER_URL: 'http://ai-launcher:8124',
+            AI_LAUNCHER_URL: 'http://ai-launcher:8155',
             AI_LAUNCHER_KEY_FILE: '/secret/ai_launcher_key',
             AI_SESSIONS_DIR: '/app/ai-sessions',
             AI_MODEL: 'claude-sonnet-5-5',

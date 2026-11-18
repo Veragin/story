@@ -5,11 +5,11 @@ services:
     platform: linux/amd64
     image: story/template
     ports:
-      - 8100:8100 # SinglePlayer          (vite)
-      - 8101:8101 # Visualizer client     (vite)
-      - 8102:8102 # MultiEngine client    (vite)
-      - 8103:8103 # Landing page          (vite) — the story list, proxies /api to 8123
-      - 8123:8123 # Server                (NestJS, server/) — the clients reach it via their /api proxies
+      - 8150:8150 # SinglePlayer          (vite)
+      - 8151:8151 # Visualizer client     (vite)
+      - 8152:8152 # MultiEngine client    (vite)
+      - 8153:8153 # Landing page          (vite) — the story list, proxies /api to 8154
+      - 8154:8154 # Server                (NestJS, server/) — the clients reach it via their /api proxies
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
@@ -27,7 +27,7 @@ services:
       GIT_TOKEN_KEY: L+dnTukTcCDqLBNIOfteI4CzvsvD7tucPgyOafLIREw=
       # "Export for web" zips this folder: `yarn workspace @story/single-player build:standalone` first
       SINGLE_PLAYER_STANDALONE_DIR: /app/clients/SinglePlayer/dist-standalone
-      AI_LAUNCHER_URL: http://ai-launcher:8124
+      AI_LAUNCHER_URL: http://ai-launcher:8155
       AI_LAUNCHER_KEY_FILE: /app/docker/ai-launcher-dev.key
       AI_SESSIONS_DIR: /ai-sessions
     depends_on:
@@ -57,7 +57,7 @@ services:
     group_add:
       - ${DOCKER_GID:-0}
     environment:
-      AI_LAUNCHER_PORT: '8124'
+      AI_LAUNCHER_PORT: '8155'
       AI_TOKEN_FILE: /app/docker/secrets/ai_token
       # dev only: the server and the launcher share it; production uses the `ai_launcher_key` secret
       AI_LAUNCHER_KEY_FILE: /app/docker/ai-launcher-dev.key
@@ -96,7 +96,7 @@ services:
     platform: linux/amd64
     image: phpmyadmin/phpmyadmin
     ports:
-      - '127.0.0.1:${PMA_PORT:-8124}:80'
+      - '127.0.0.1:${PMA_PORT:-8155}:80'
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306

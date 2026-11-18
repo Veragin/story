@@ -94,7 +94,7 @@ describe('StoriesStore', () => {
         await store.load();
         await store.open('open');
         expect(store.prompt).toBeNull();
-        expect(navigate).toHaveBeenCalledWith(`http://${window.location.hostname}:8101/?story=open#/map`);
+        expect(navigate).toHaveBeenCalledWith(`http://${window.location.hostname}:8151/?story=open#/map`);
     });
 
     it('asks for the password of a locked story, keeps asking on a wrong one, then opens it', async () => {
@@ -115,7 +115,7 @@ describe('StoriesStore', () => {
         await opening;
         expect(store.prompt).toBeNull();
         expect(store.isUnlocked('locked')).toBe(true);
-        expect(navigate).toHaveBeenCalledWith(`http://${window.location.hostname}:8101/?story=locked#/map`);
+        expect(navigate).toHaveBeenCalledWith(`http://${window.location.hostname}:8151/?story=locked#/map`);
 
         const login = calls.filter((c) => c.url === '/api/stories/locked/login').pop()!;
         expect(login.method).toBe('POST');
@@ -159,10 +159,10 @@ describe('StoriesStore', () => {
         const { store, navigate } = setup();
         await store.load();
         store.play('pub');
-        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=pub`);
+        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8150/?story=pub`);
         store.play('locked');
         expect(store.prompt).toBeNull();
-        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8100/?story=locked`);
+        expect(navigate).toHaveBeenLastCalledWith(`http://${window.location.hostname}:8150/?story=locked`);
     });
 
     it('rejects with the 429 of too many attempts, worded by passwordErrorMessage', async () => {

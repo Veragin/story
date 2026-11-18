@@ -32,7 +32,7 @@ export default defineConfig({
     },
     server: {
         host: '0.0.0.0',
-        port: 8103,
+        port: 8153,
         strictPort: true,
         fs: {
             // every internal package is outside `root`
@@ -44,7 +44,7 @@ export default defineConfig({
         // no `changeOrigin`: the server's CSRF check needs the original `Host` to match `Origin`
         proxy: {
             '/api': {
-                target: process.env.STORY_SERVER ?? 'http://localhost:8123',
+                target: process.env.STORY_SERVER ?? 'http://localhost:8154',
             },
         },
     },

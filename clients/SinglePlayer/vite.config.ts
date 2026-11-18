@@ -44,7 +44,7 @@ export default defineConfig({
     },
     server: {
         host: '0.0.0.0',
-        port: 8100,
+        port: 8150,
         strictPort: true,
         fs: {
             // every internal package lives outside `root`
@@ -57,7 +57,7 @@ export default defineConfig({
         // The header limits the API to the player's routes, as the production play site does (docker/Caddyfile).
         proxy: {
             '/api': {
-                target: process.env.STORY_SERVER ?? 'http://localhost:8123',
+                target: process.env.STORY_SERVER ?? 'http://localhost:8154',
                 headers: { 'x-story-play-site': '1' },
             },
         },

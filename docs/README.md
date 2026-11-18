@@ -19,7 +19,7 @@ stories/
 
 That makes exactly two folders the author's working surface: **`stories/<id>/types/`** and **`stories/<id>/data/`**. Paths below like `data/chapters/…` are relative to the story's folder. `types/` is per story, not shared: its id types (`TCharacterId`, `TChapterId`, …) are derived from the story's own `data/TWorldState.ts`, so every story is type-checked on its own (`yarn typecheck` runs `scripts/typecheck-stories.mjs`). A story's metadata (name, author, password hash, map size, description, public) is not in its folder: it is a row in the server's MySQL database, edited from the landing page (the rows of the example and the demo are seeded from `server/seed/<id>.story.json`).
 
-Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8103): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
+Only `stories/example/` is committed; every other folder under `stories/` is git-ignored and, on a server, lives on a volume (the server's `STORIES_ROOT`). A new story is made from the landing page (http://localhost:8153): it copies `server/template/`, the smallest story that type-checks. A story moves between installations as a zip (**Export** / **Import**). **Export for web** makes a zip that plays on any static web host, without this server: [`SinglePlayerStandalone.md`](SinglePlayerStandalone.md). The example's two folders are also the `@story/data` / `@story/types` workspaces, so `core`'s tests and MultiEngine build against it; stories created at runtime are not workspaces.
 
 Every story is behind its password: the Visualizer asks for it, and so does SinglePlayer unless the story is `public`. A login lasts 24 h per story (see [`Server.md`](Server.md#auth)).
 
@@ -32,13 +32,13 @@ The split is also what keeps an engine upgrade safe for every story at once: aut
 ```
 stories/        the stories (only example/ and demo/ are committed); see above
 clients/
-  SinglePlayer/   @story/single-player            plays one story, Vite :8100
-  Visualizer/     @story/visualizer-client        the author's editor, Vite :8101
-  MultiEngine/    @story/multi-engine-client      scaffold, Vite :8102
-  LandingPage/    @story/visualizer-landing-page  the story list, Vite :8103
+  SinglePlayer/   @story/single-player            plays one story, Vite :8150
+  Visualizer/     @story/visualizer-client        the author's editor, Vite :8151
+  MultiEngine/    @story/multi-engine-client      scaffold, Vite :8152
+  LandingPage/    @story/visualizer-landing-page  the story list, Vite :8153
   shared/         core/ (@story/core)  utils/ (@story/shared)  ui/ (@story/ui)
 protocol/       @story/protocol   the wire contract: routes (with access levels), DTOs, errors
-server/         @story/server     NestJS + MySQL on :8123, the only server; see Server.md
+server/         @story/server     NestJS + MySQL on :8154, the only server; see Server.md
 docker/         docker-compose.yml (dev, + mysql), docker-compose.prod.yml, Dockerfiles, Caddyfile, prod-entrypoint.sh, mysql/init/
 docs/           this file, Server.md, Visualizer.md, SinglePlayerStandalone.md
 scripts/        typecheck-stories.mjs
@@ -67,13 +67,13 @@ Other root scripts: `yarn typecheck`, `yarn build`, `yarn lint`, `yarn pretty`, 
 
 | Service                   | Port | Status                              |
 | ------------------------- | ---- | ----------------------------------- |
-| SinglePlayer (vite)       | 8100 | implemented; proxies `/api` to 8123 |
-| Visualizer client (vite)  | 8101 | implemented; proxies `/api` to 8123 |
-| MultiEngine client (vite) | 8102 | scaffold                            |
-| Landing page (vite)       | 8103 | implemented; proxies `/api` to 8123 |
-| Server (NestJS)           | 8123 | implemented; needs MySQL            |
+| SinglePlayer (vite)       | 8150 | implemented; proxies `/api` to 8154 |
+| Visualizer client (vite)  | 8151 | implemented; proxies `/api` to 8154 |
+| MultiEngine client (vite) | 8152 | scaffold                            |
+| Landing page (vite)       | 8153 | implemented; proxies `/api` to 8154 |
+| Server (NestJS)           | 8154 | implemented; needs MySQL            |
 
-`docker/docker-compose.yml` publishes all five. The apps call the server same-origin through their Vite proxies (`/api` → `http://localhost:8123`, override with `STORY_SERVER`), so the browser only needs 8100, 8101 and 8103. The landing page (the story list: create, edit, open, play, export, import) is the place to start.
+`docker/docker-compose.yml` publishes all five. The apps call the server same-origin through their Vite proxies (`/api` → `http://localhost:8154`, override with `STORY_SERVER`), so the browser only needs 8150, 8151 and 8153. The landing page (the story list: create, edit, open, play, export, import) is the place to start.
 
 ### Production
 
@@ -230,7 +230,7 @@ Each folder is its own workspace (Yarn 4; of the stories, only the example's `da
     - a service that can play the story for single player
     - only client implementation
     - fully implemented
-    - plays the story named by `?story=<id>` (the landing page's **Play as single**, the Visualizer's **Play**); without it, a `play.json` next to the page (a standalone export, `src/source/StaticStorySource.ts`), else it goes to the landing page (`VITE_LANDING_URL`, default this host on 8103)
+    - plays the story named by `?story=<id>` (the landing page's **Play as single**, the Visualizer's **Play**); without it, a `play.json` next to the page (a standalone export, `src/source/StaticStorySource.ts`), else it goes to the landing page (`VITE_LANDING_URL`, default this host on 8153)
     - `src/main.tsx` loads the play manifest (`GET /api/stories/<id>/play`, `src/source/ServerStorySource.ts`); a private story answers `401` until the session holds its grant, so it shows the password dialog, logs in and retries (in dev an editor coming from the Visualizer already has the grant; the production play site has its own session). Then it sets the title and favicon, loads the story with `@story/story-loader` and starts the engine on it. A missing story shows an error with a link back to the landing page
     - one static build plays every story (plan D7 done): the story's TypeScript is fetched file by file from `GET /api/stories/<id>/play/<file>` and run in the browser; a chapter's passages are fetched when the chapter is first played. Images are the manifest's `.png` files, served by the same route
 

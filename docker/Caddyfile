@@ -4,7 +4,7 @@
 #   /             landing page     static build (/srv/landing)
 #   /visualizer/  Visualizer       static build (/srv/visualizer), Vite base /visualizer/
 #   /play/        redirects to the play site
-#   /api/         the API          the server (server:8123, `server/`)
+#   /api/         the API          the server (server:8154, `server/`)
 #
 # PLAY_SITE_ADDRESS (default `play.<SITE_ADDRESS>`)
 #   /play/        SinglePlayer     static build (/srv/play), Vite base /play/; stories come from /api/
@@ -25,7 +25,7 @@
 {$SITE_ADDRESS} {
 	# The API, SSE event streams included (Caddy flushes text/event-stream as it arrives).
 	handle /api/* {
-		reverse_proxy server:8123
+		reverse_proxy server:8154
 	}
 
 	# SinglePlayer lives on the play site.
@@ -55,7 +55,7 @@
 {$PLAY_SITE_ADDRESS} {
 	# Set (not appended) on every request, so story code cannot drop it.
 	handle /api/* {
-		reverse_proxy server:8123 {
+		reverse_proxy server:8154 {
 			header_up X-Story-Play-Site 1
 		}
 	}

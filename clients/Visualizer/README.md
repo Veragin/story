@@ -6,29 +6,29 @@ The author's editor for the story: a map, a timeline of chapters and time trigge
 
 ```bash
 yarn dev                        # every service, including the server the client needs
-yarn dev:visualizer             # just the client, http://localhost:8101 (Vite)
-yarn dev:landing-page           # just the landing page (story list), http://localhost:8103 (Vite)
+yarn dev:visualizer             # just the client, http://localhost:8151 (Vite)
+yarn dev:landing-page           # just the landing page (story list), http://localhost:8153 (Vite)
 ```
 
 In docker: `make start` runs everything. Or run `make up` and then `make dev-server` plus `make dev-visualizer` (and `make dev-landing-page`). Running the server: [`docs/Server.md`](../../docs/Server.md#running-it).
 
-**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SinglePlayer, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
+**Landing page** (`clients/LandingPage/`, http://localhost:8153): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SinglePlayer, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
 
-Open a story from the landing page (http://localhost:8103): the client runs on http://localhost:8101/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8123/api/health` (or `localhost:8101/api/health` through the proxy) answers `{"ok":true,...}`.
+Open a story from the landing page (http://localhost:8153): the client runs on http://localhost:8151/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8154/api/health` (or `localhost:8151/api/health` through the proxy) answers `{"ok":true,...}`.
 
 **Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`clients/Visualizer/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
 
 | Env var               | Where        | Default                 | Meaning                                                                                                               |
 | --------------------- | ------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                      |
+| `STORY_SERVER`        | client       | `http://localhost:8154` | Target of the Vite `/api` proxy.                                                                                      |
 | `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                      |
-| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
-| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                       |
-| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
-| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
-| `VITE_PLAYER_URL`     | client       | this host, port 8100    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
-| `STORY_SERVER`        | SinglePlayer | `http://localhost:8123` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
-| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8103    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
+| `VITE_LANDING_URL`    | client       | this host, port 8153    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
+| `STORY_SERVER`        | landing page | `http://localhost:8154` | Target of the landing page's Vite `/api` proxy.                                                                       |
+| `VITE_VISUALIZER_URL` | landing page | this host, port 8151    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
+| `VITE_ENGINE_URL`     | landing page | this host, port 8150    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
+| `VITE_PLAYER_URL`     | client       | this host, port 8150    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
+| `STORY_SERVER`        | SinglePlayer | `http://localhost:8154` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
+| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8153    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
 
 The server's variables are in [`docs/Server.md`](../../docs/Server.md#environment); the production build variables in [`docs/README.md`](../../docs/README.md#production).
 
@@ -36,7 +36,7 @@ The server's variables are in [`docs/Server.md`](../../docs/Server.md#environmen
 
 ```
 clients/
-  Visualizer/  @story/visualizer-client    React + MobX, Vite on :8101
+  Visualizer/  @story/visualizer-client    React + MobX, Vite on :8151
     src/api/          typed client (httpApi), mockApi, ApiError, live events (events.ts), the story id (story.ts), login (auth.ts)
     src/canvas/       the Canvas library: Scene, Camera, shapes, selection / vertex / line controllers (#/_canvas playground)
     src/shell/        top bar, hash router, control-bar slot, modals, keyboard helper
@@ -45,7 +45,7 @@ clients/
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
     src/components/   shared UI: inputs/ (pure controls), form/ (labeled fields), code/ (code-aware wrappers, SourceEditorDialog), editors/, buttons/, dialog/, feedback/, layout/
     src/values/, src/structure/, src/hooks/  non-UI value logic, StructureContext, useRowList
-  LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
+  LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8153
     src/api.ts        typed client over GLOBAL_ROUTES (+ a story's /info)
     src/StoriesStore.ts  the list, the unlocked flags, requireUnlocked → the password prompt
     src/*Dialog.tsx, StoryList / StoryCard / ImportStoryButton  the UI

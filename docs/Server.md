@@ -1,15 +1,15 @@
 # Server
 
-`server/` (`@story/server`) is the one backend: NestJS on Express, port **8123**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` / `.tsx` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
+`server/` (`@story/server`) is the one backend: NestJS on Express, port **8154**, story metadata and logins in MySQL through TypeORM. It holds every story under `STORIES_ROOT`, guards each with its password, and reads and writes the `.ts` / `.tsx` source in each story's `data/` and `types/` (ts-morph). The landing page, the Visualizer client and SinglePlayer all reach it through their Vite `/api` proxies. The wire contract is `protocol/` (`@story/protocol`); what the editor routes do is in [`Visualizer.md`](Visualizer.md#api).
 
 It runs from source, no build step: `node --import @swc-node/register/esm-register` (swc emits the decorator metadata Nest's DI needs; tsx/esbuild cannot). Vitest uses `unplugin-swc` for the same reason.
 
 ## Running it
 
 ```bash
-yarn dev:server                                   # http://localhost:8123, restarts on changes; needs MySQL
+yarn dev:server                                   # http://localhost:8154, restarts on changes; needs MySQL
 DB_HOST=127.0.0.1 yarn dev:server                 # outside the dev container, against a local MySQL
-curl localhost:8123/api/health                    # {"ok":true,"service":"@story/server",…,"database":"up"}
+curl localhost:8154/api/health                    # {"ok":true,"service":"@story/server",…,"database":"up"}
 ```
 
 `yarn dev` (and `make start`) runs it with the other services; in docker, `make up` + `make dev-server` runs it alone. The dev runner (`server/scripts/dev.ts`) first runs `stories:import-files --seed stories/example` (the example's database row), then starts `src/main.ts` and restarts it when `server/src`, `protocol/src` or `clients/shared/utils/src` change (chokidar: `node --watch` misses rename-saves under the swc hooks). Add a directory to `WATCHED` there when the server starts importing another workspace. `yarn workspace @story/server start` runs it once, without the seed or the watcher. Without a database, TypeORM retries for about 30 s and the server exits; the dev runner waits for the next change.
@@ -86,16 +86,16 @@ A story may have an `email` (optional, trimmed, `STORY_EMAIL_PATTERN`, ≤ 255 c
 Mail goes through `nodemailer` with `SMTP_URL` and the sender `MAIL_FROM`; without `SMTP_URL` (dev) the server logs the whole mail, link included, instead.
 
 ```bash
-curl -H 'content-type: application/json' -d '{"email":"me@example.com"}' localhost:8123/api/stories/my-story/password-reset
+curl -H 'content-type: application/json' -d '{"email":"me@example.com"}' localhost:8154/api/stories/my-story/password-reset
 curl -c jar -X PUT -H 'content-type: application/json' -d '{"token":"<from the log>","password":"new-secret"}' \
-  localhost:8123/api/stories/my-story/password-reset
+  localhost:8154/api/stories/my-story/password-reset
 ```
 
 By hand (the example's password is `example`):
 
 ```bash
-curl -c jar -H 'content-type: application/json' -d '{"password":"example"}' localhost:8123/api/stories/example/login
-curl -b jar localhost:8123/api/session
+curl -c jar -H 'content-type: application/json' -d '{"password":"example"}' localhost:8154/api/stories/example/login
+curl -b jar localhost:8154/api/session
 ```
 
 ## Stories
@@ -104,15 +104,15 @@ A story is a folder `STORIES_ROOT/<id>/` (`tsconfig.json`, `data/`, `types/`) pl
 
 ```bash
 # create from server/template/ (201, logs you in; the id is a slug of the name)
-curl -c jar -H 'content-type: application/json' localhost:8123/api/stories \
+curl -c jar -H 'content-type: application/json' localhost:8154/api/stories \
   -d '{"name":"My Story","author":"Me","password":"secret-1","description":"","mapSize":{"width":40,"height":30},"public":false}'
-curl -b jar localhost:8123/api/stories/my-story/info             # info without the password, + version
-curl -b jar -X PUT -H 'content-type: application/json' localhost:8123/api/stories/my-story/info \
+curl -b jar localhost:8154/api/stories/my-story/info             # info without the password, + version
+curl -b jar -X PUT -H 'content-type: application/json' localhost:8154/api/stories/my-story/info \
   -d '{"version":"<version>","name":"Renamed","password":"new-secret"}'   # mapSize is read-only
-curl -b jar -o my-story.zip localhost:8123/api/stories/my-story/export
-curl -b jar -F zip=@more-files.zip localhost:8123/api/stories/my-story/files   # adds / replaces files
+curl -b jar -o my-story.zip localhost:8154/api/stories/my-story/export
+curl -b jar -F zip=@more-files.zip localhost:8154/api/stories/my-story/files   # adds / replaces files
 curl -c jar -F zip=@my-story.zip -F name='My Copy' -F author=Me -F password=secret-2 -F description= -F public=false \
-  localhost:8123/api/stories/import                                # 201, logs you in; the id is a slug of the name
+  localhost:8154/api/stories/import                                # 201, logs you in; the id is a slug of the name
 ```
 
 - Limits (`STORY_LIMITS`, `protocol/src/dto/story.ts`): non-empty name, password ≥ 6 characters, each map side 1–500 tiles.
@@ -323,7 +323,7 @@ A command that takes no argument answers 400 when given one.
 
 ### The launcher (`server/aiLauncher/`)
 
-A plain Node `http` server (no Nest), `yarn workspace @story/server launcher`. It is the only process with the docker socket and the only one that reads the Anthropic token. In prod it is the `launcher` target of `Dockerfile.prod` (the `app` image plus `docker-ce-cli`, `docker/install-docker-cli.sh`); in dev, the `launcher` stage of `Dockerfile.dev` running the repo mount. It listens on `AI_LAUNCHER_PORT` (8124) on the internal `ai-control` network, which agents are not on.
+A plain Node `http` server (no Nest), `yarn workspace @story/server launcher`. It is the only process with the docker socket and the only one that reads the Anthropic token. In prod it is the `launcher` target of `Dockerfile.prod` (the `app` image plus `docker-ce-cli`, `docker/install-docker-cli.sh`); in dev, the `launcher` stage of `Dockerfile.dev` running the repo mount. It listens on `AI_LAUNCHER_PORT` (8155) on the internal `ai-control` network, which agents are not on.
 
 - Startup: read the key file (missing or empty: exit), read and classify the token (missing or unknown: agents are refused, `/health` says `token: null`), create `AI_NETWORK` if it is missing, remove orphaned containers of its instance. SIGTERM / SIGINT stop every agent.
 - **Auth**: every request needs `Authorization: Bearer <key>`, compared as SHA-256 digests with `timingSafeEqual`; else 401 `{ error: "unauthorized" }`.
@@ -345,7 +345,7 @@ A plain Node `http` server (no Nest), `yarn workspace @story/server launcher`. I
 | ---------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AI_TOKEN_FILE`        | `/secret/ai_token`                  | The Anthropic token, read once at start and trimmed. `sk-ant-api…` → `ANTHROPIC_API_KEY`, `sk-ant-oat…` → `CLAUDE_CODE_OAUTH_TOKEN`; anything else counts as none. |
 | `AI_LAUNCHER_KEY_FILE` | `/secret/ai_launcher_key`           | The shared bearer key (the server reads the same file). Required.                                                                                                  |
-| `AI_LAUNCHER_PORT`     | `8124`                              |                                                                                                                                                                    |
+| `AI_LAUNCHER_PORT`     | `8155`                              |                                                                                                                                                                    |
 | `AI_SANDBOX_DRIVER`    | `docker-run`                        | `docker-run` \| `docker-sandbox` (below).                                                                                                                          |
 | `AI_IMAGE`             | `story-ai:latest`                   | The agent image (`make ai-image`).                                                                                                                                 |
 | `AI_STORIES_VOLUME`    | –                                   | Prod: the name of the stories volume (`story-prod_stories`). The story folders are mounted as its subpaths.                                                        |
@@ -424,7 +424,7 @@ From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot w
 
 | Variable                       | Default                   | Meaning                                                                                                                                                                                                    |
 | ------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                         | `8123`                    | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
+| `PORT`                         | `8154`                    | Listen port (on `0.0.0.0`).                                                                                                                                                                                |
 | `STORIES_ROOT`                 | `stories`                 | One folder per story; relative paths resolve against the repo root. SinglePlayer's dev server reads the same variable: keep them equal.                                                                    |
 | `DB_HOST`                      | `mysql`                   | MySQL host (the compose service). Use `127.0.0.1` outside docker.                                                                                                                                          |
 | `DB_PORT`                      | `3306`                    |                                                                                                                                                                                                            |
@@ -433,16 +433,16 @@ From `server/src/config/env.ts` (`ENV_SCHEMA`; an invalid value fails the boot w
 | `DB_NAME`                      | `story`                   | The tests always use `story_test` (see Tests).                                                                                                                                                             |
 | `COOKIE_SECURE`                | off                       | `1` marks the cookie `Secure` (behind HTTPS).                                                                                                                                                              |
 | `TRUST_PROXY`                  | off                       | `1` keys the login limiter on the last `X-Forwarded-For` hop (the one the proxy wrote). Only when the server is reachable through the proxy alone.                                                         |
-| `ALLOWED_ORIGINS`              | the dev ports             | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8100, 8101, 8103, 8123.                                                                   |
+| `ALLOWED_ORIGINS`              | the dev ports             | Comma-separated origins a mutation may come from. Default: `http://localhost:<p>` and `http://127.0.0.1:<p>` for 8150, 8151, 8153, 8154.                                                                   |
 | `GIT_TOKEN_KEY`                | unset                     | 32 bytes in base64 (`openssl rand -base64 32`) that encrypt the stored git tokens. Unset: git is unavailable (see Git).                                                                                    |
 | `GIT_ALLOWED_HOSTS`            | any                       | Comma-separated host names a git remote may point at (`github.com,gitlab.com`). Set it in prod to limit SSRF.                                                                                              |
 | `GIT_DISABLED_STORIES`         | `example`                 | Comma-separated story ids that cannot be connected to git (the example is committed in this repo). An empty value enables every story.                                                                     |
-| `PUBLIC_URL`                   | `http://localhost:8103`   | The landing page's origin: the base of the password reset links. Never taken from the request's headers. Prod: `https://<SITE_ADDRESS>`.                                                                   |
+| `PUBLIC_URL`                   | `http://localhost:8153`   | The landing page's origin: the base of the password reset links. Never taken from the request's headers. Prod: `https://<SITE_ADDRESS>`.                                                                   |
 | `SMTP_URL`                     | unset                     | SMTP connection URL for the password reset mails (`smtps://user:password@host:465`). Unset: the mails are only logged.                                                                                     |
 | `MAIL_FROM`                    | required                  | The mails' sender. Set by `docker/Dockerfile.dev` and `docker/Dockerfile.prod` (hardcoded for now, see `plans/rosti-release.md`); the server tests get it from `vitest.workspace.ts`.                      |
 | `SINGLE_PLAYER_STANDALONE_DIR` | the standalone build      | The player folder that **Export for web** zips: `clients/SinglePlayer/dist-standalone` (`build:standalone`); relative paths resolve against the repo root. No `index.html` in it: that export answers 503. |
 | `AI_SANDBOX`                   | `launcher`                | `launcher`: agents run through the AI launcher. `none`: `claude` runs unsandboxed on the server (dev only; refused with `COOKIE_SECURE=1`).                                                                |
-| `AI_LAUNCHER_URL`              | `http://ai-launcher:8124` | The launcher (see AI agent).                                                                                                                                                                               |
+| `AI_LAUNCHER_URL`              | `http://ai-launcher:8155` | The launcher (see AI agent).                                                                                                                                                                               |
 | `AI_LAUNCHER_KEY_FILE`         | `/secret/ai_launcher_key` | The bearer key shared with the launcher. Missing: AI is unavailable.                                                                                                                                       |
 | `AI_SESSIONS_DIR`              | `/app/ai-sessions`        | The sessions volume as the server sees it (replay and pruning of transcripts); relative paths resolve against the repo root.                                                                               |
 | `AI_MODEL`                     | `claude-sonnet-5-5`       | The model every agent runs; must be in the launcher's `AI_MODELS`.                                                                                                                                         |

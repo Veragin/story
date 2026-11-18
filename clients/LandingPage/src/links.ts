@@ -2,8 +2,8 @@ import { buildPath } from '@story/protocol';
 
 const onThisHost = (port: number) => `${window.location.protocol}//${window.location.hostname}:${port}`;
 
-const visualizerBase = () => import.meta.env.VITE_VISUALIZER_URL || onThisHost(8101);
-const engineBase = () => import.meta.env.VITE_ENGINE_URL || onThisHost(8100);
+const visualizerBase = () => import.meta.env.VITE_VISUALIZER_URL || onThisHost(8151);
+const engineBase = () => import.meta.env.VITE_ENGINE_URL || onThisHost(8150);
 
 export const visualizerUrl = (storyId: string) => `${visualizerBase()}/?story=${encodeURIComponent(storyId)}#/map`;
 

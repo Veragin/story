@@ -14,8 +14,8 @@ DEV_LOG = .dev.log
 
 .PHONY: start up stop bash destroy build dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs ai-image
 
-# The Phase 11 gate: brings up every service (8100 SinglePlayer, 8101 Visualizer client,
-# 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
+# The Phase 11 gate: brings up every service (8150 SinglePlayer, 8151 Visualizer client,
+# 8152 MultiEngine client, 8153 landing page, 8154 server). The server needs the mysql service; on
 # start it seeds the example and demo stories' database rows when missing (server/scripts/dev.ts).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
 # server that dies cannot take `make ai` / `make bash` down with it.
@@ -23,11 +23,11 @@ start: ai-setup-update stop
 	$(COMPOSE) up -d --build --remove-orphans
 	$(DEV_EXEC_DETACHED) bash -c 'yarn dev > $(DEV_LOG) 2>&1'
 	@echo ""
-	@echo "  Stories (landing)   http://localhost:8103  (start here: create, open, play, export)"
-	@echo "  SinglePlayer        http://localhost:8100"
-	@echo "  Visualizer client   http://localhost:8101"
-	@echo "  Server (NestJS)     http://localhost:8123  (/api/health, /api/stories …; needs MySQL)"
-	@echo "  MultiEngine client  http://localhost:8102"
+	@echo "  Stories (landing)   http://localhost:8153  (start here: create, open, play, export)"
+	@echo "  SinglePlayer        http://localhost:8150"
+	@echo "  Visualizer client   http://localhost:8151"
+	@echo "  Server (NestJS)     http://localhost:8154  (/api/health, /api/stories …; needs MySQL)"
+	@echo "  MultiEngine client  http://localhost:8152"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-player"
 
@@ -60,11 +60,11 @@ dev-player:
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
 
-# The NestJS server on :8123 (needs the mysql service). Every client proxies /api to it.
+# The NestJS server on :8154 (needs the mysql service). Every client proxies /api to it.
 dev-server:
 	$(DEV_EXEC) yarn dev:server
 
-# The landing page (story list) on :8103. Like the client, it proxies /api to the server.
+# The landing page (story list) on :8153. Like the client, it proxies /api to the server.
 dev-landing-page:
 	$(DEV_EXEC) yarn dev:landing-page
 
