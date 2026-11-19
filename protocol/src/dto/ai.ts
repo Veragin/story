@@ -16,8 +16,6 @@ export type TAiStatus = 'unavailable' | 'disabled' | 'no_credits' | 'stopped' | 
 export type TAiMessageDto =
     | { kind: 'user'; id: string; text: string; at: string }
     | { kind: 'assistant'; id: string; text: string; at: string }
-    /** `summary`: e.g. "Edited data/chapters/start/…". */
-    | { kind: 'tool'; id: string; tool: string; summary: string; at: string }
     /** Command output and errors. */
     | { kind: 'system'; id: string; text: string; at: string };
 

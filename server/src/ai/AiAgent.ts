@@ -5,6 +5,7 @@ import type { TAgentConnection, TAgentExit, TAgentHandle, TAgentStream } from '.
 import {
     interruptLine,
     parseStreamLine,
+    pendingReply,
     userLine,
     type TStreamContext,
     type TStreamItem,
@@ -54,6 +55,7 @@ export class AiAgent {
     private statusValue: TAiStatus = 'stopped';
     private session: string | null = null;
     private transcript: TAiMessageDto[] = [];
+    private reply: TAiMessageDto | null = null;
     private touched: string[] = [];
     private sessionTokens: TAiTokensDto = NO_TOKENS;
     private readonly listeners = new Set<TListener>();
@@ -181,6 +183,7 @@ export class AiAgent {
     reset(): void {
         this.session = null;
         this.transcript = [];
+        this.reply = null;
         this.touched = [];
         this.sessionTokens = NO_TOKENS;
         this.title = null;
@@ -229,6 +232,7 @@ export class AiAgent {
             this.log(`the agent stream of ${this.deps.storyId} broke: ${errorMessage(e)}`);
         }
         const exit = await stream.exited;
+        this.publishReply();
         this.stream = null;
         this.pump = null;
         this.endTurn();
@@ -245,12 +249,18 @@ export class AiAgent {
         switch (item.type) {
             case 'init':
                 return await this.started(item.sessionId, stream.handle);
-            case 'messages':
-                for (const message of item.messages) this.addMessage(message);
+            case 'reply':
+                this.reply = pendingReply(this.reply, item);
+                return;
+            case 'tools':
+                this.reply = pendingReply(this.reply, item);
                 return this.touch(item.editedFiles);
             case 'result':
+                this.publishReply();
                 for (const message of item.messages) this.addMessage(message);
                 return await this.finished(item.result);
+            // `send` already recorded it
+            case 'prompt':
             case 'control_response':
                 return;
         }
@@ -279,6 +289,11 @@ export class AiAgent {
         }
         this.endTurn();
         if (this.stream) this.setStatus('ready');
+    }
+
+    private publishReply(): void {
+        if (this.reply) this.addMessage(this.reply);
+        this.reply = null;
     }
 
     private touch(files: readonly string[]): void {

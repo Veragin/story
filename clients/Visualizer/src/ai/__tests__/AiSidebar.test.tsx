@@ -17,13 +17,6 @@ const AT = '2026-01-01T00:00:00Z';
 
 const MESSAGES: TAiMessageDto[] = [
     { kind: 'user', id: '1', text: 'Add a passage', at: AT },
-    {
-        kind: 'tool',
-        id: '2',
-        tool: 'Edit',
-        summary: 'Edited data/chapters/start/start.passages.ts',
-        at: AT,
-    },
     { kind: 'assistant', id: '3', text: 'Done.\nIt links back.', at: AT },
     { kind: 'system', id: '4', text: 'Credits left: 4', at: AT },
 ];
@@ -54,7 +47,7 @@ describe('AiSidebar', () => {
         snapshot(5, MESSAGES);
         expect(
             $$('[role=log] [data-kind]').map((el) => el.dataset.kind)
-        ).toEqual(['user', 'tool', 'assistant', 'system']);
+        ).toEqual(['user', 'assistant', 'system']);
         expect(get('[data-kind=assistant]').textContent).toBe(
             'Done.\nIt links back.'
         );

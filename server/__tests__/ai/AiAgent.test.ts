@@ -86,7 +86,7 @@ describe('AiAgent', () => {
             turnCredits: 8,
             tokens: { input: 10, output: 20, cacheRead: 30, cacheCreation: 40 },
         });
-        expect(agent.messages.map((m) => m.kind)).toEqual(['user', 'tool', 'tool', 'tool', 'assistant']);
+        expect(agent.messages.map((m) => m.kind)).toEqual(['user', 'assistant']);
         expect(agent.tokens).toEqual({ input: 10, output: 20, cacheRead: 30, cacheCreation: 40 });
         expect(agent.snapshot(492)).toMatchObject({ status: 'ready', sessionId: SESSION_ID, touchedFiles: [] });
     });

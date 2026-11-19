@@ -1,7 +1,6 @@
 import { styled } from '@mui/material';
-import BuildIcon from '@mui/icons-material/Build';
 import type { TAiMessageDto } from '@story/protocol';
-import { Row, spacingCss } from '@story/ui';
+import { spacingCss } from '@story/ui';
 
 type TProps = {
     message: TAiMessageDto;
@@ -14,13 +13,6 @@ export const AiMessage = ({ message }: TProps) => {
         case 'assistant':
             return (
                 <SAssistant data-kind="assistant">{message.text}</SAssistant>
-            );
-        case 'tool':
-            return (
-                <STool data-kind="tool" title={message.tool}>
-                    <BuildIcon fontSize="inherit" />
-                    <SToolSummary>{message.summary}</SToolSummary>
-                </STool>
             );
         case 'system':
             return <SSystem data-kind="system">{message.text}</SSystem>;
@@ -45,22 +37,6 @@ const SUser = styled(SBubble)`
 const SAssistant = styled(SBubble)`
     align-self: flex-start;
     background-color: ${({ theme }) => theme.palette.action.hover};
-`;
-
-const STool = styled(Row)`
-    align-self: flex-start;
-    align-items: center;
-    gap: ${spacingCss(0.5)};
-    max-width: 100%;
-    font-size: ${({ theme }) => theme.typography.meta.fontSize};
-    color: ${({ theme }) => theme.palette.text.secondary};
-`;
-
-const SToolSummary = styled('span')`
-    font-family: monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 `;
 
 const SSystem = styled('div')`

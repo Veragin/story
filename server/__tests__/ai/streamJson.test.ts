@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { TAiMessageDto } from '@story/protocol';
 import {
     interruptLine,
     parseStreamLine,
+    pendingReply,
     storyRelative,
     transcriptMessages,
     userLine,
@@ -32,7 +34,7 @@ const parseFixture = async (name: string): Promise<(TStreamItem | null)[]> => {
 };
 
 describe('stream-json mapping', () => {
-    it('maps a turn that reads, edits and writes files', async () => {
+    it('maps a turn to edited files and replies, hiding tool calls and their results', async () => {
         const items = await parseFixture('editTurn.stdout.jsonl');
         expect(items[0]).toEqual({
             type: 'init',
@@ -40,56 +42,27 @@ describe('stream-json mapping', () => {
             model: 'claude-sonnet-5-5',
         });
         expect(items[1]).toEqual({
-            type: 'messages',
-            messages: [
-                {
-                    kind: 'assistant',
-                    id: '5a1c9a8e-2d3f-4b77-8a0e-6c3d2e1f0a11:0',
-                    text: "I'll look at the village chapter first.",
-                    at: AT,
-                },
-            ],
-            editedFiles: [],
+            type: 'reply',
+            message: {
+                kind: 'assistant',
+                id: '5a1c9a8e-2d3f-4b77-8a0e-6c3d2e1f0a11',
+                text: "I'll look at the village chapter first.",
+                at: AT,
+            },
         });
-        expect(items[2]).toEqual({
-            type: 'messages',
-            messages: [
-                {
-                    kind: 'tool',
-                    id: 'toolu_01Read',
-                    tool: 'Read',
-                    summary: 'Read data/chapters/village/village.chapter.ts',
-                    at: AT,
-                },
-            ],
-            editedFiles: [],
-        });
+        expect(items[2]).toEqual({ type: 'tools', editedFiles: [] });
         expect(items[3]).toBeNull();
-        expect(items[4]).toMatchObject({
-            messages: [{ kind: 'tool', tool: 'Edit', summary: 'Edited data/chapters/village/village.chapter.ts' }],
-            editedFiles: ['data/chapters/village/village.chapter.ts'],
-        });
+        expect(items[4]).toEqual({ type: 'tools', editedFiles: ['data/chapters/village/village.chapter.ts'] });
         expect(items[5]).toBeNull();
-        expect(items[6]).toMatchObject({
-            messages: [
-                { kind: 'tool', tool: 'Write', summary: 'Wrote data/chapters/village/village.passages/well.ts' },
-                { kind: 'tool', tool: 'Edit', id: 'toolu_01Edit2' },
-            ],
+        expect(items[6]).toEqual({
+            type: 'tools',
             editedFiles: ['data/chapters/village/village.passages/well.ts', 'data/chapters/village/village.chapter.ts'],
         });
-        expect(items[7]).toEqual({
-            type: 'messages',
-            messages: [
-                {
-                    kind: 'system',
-                    id: 'toolu_01Edit2:error:0',
-                    text: expect.stringMatching(/^A tool call failed: <tool_use_error>File has been modified/),
-                    at: AT,
-                },
-            ],
-            editedFiles: [],
+        expect(items[7]).toBeNull();
+        expect(items[8]).toMatchObject({
+            type: 'reply',
+            message: { kind: 'assistant', text: expect.stringContaining('well') },
         });
-        expect(items[8]).toMatchObject({ messages: [{ kind: 'assistant', text: expect.stringContaining('well') }] });
         expect(items[9]).toEqual({
             type: 'result',
             result: {
@@ -101,6 +74,30 @@ describe('stream-json mapping', () => {
                 model: 'claude-sonnet-5-5',
             },
             messages: [],
+        });
+    });
+
+    it('keeps only the reply a turn ends with', async () => {
+        const items = (await parseFixture('editTurn.stdout.jsonl')).filter((item) => item !== null);
+        const reply = items.reduce<TAiMessageDto | null>((current, item) => pendingReply(current, item), null);
+        expect(reply?.text).toBe('Renamed the village to "Old village" and added a well passage.');
+    });
+
+    it('hides loaded skills, command echoes and meta prompts', () => {
+        const ctx = context();
+        const user = (line: Record<string, unknown>) =>
+            parseStreamLine(JSON.stringify({ type: 'user', uuid: 'u', ...line }), ctx);
+        expect(
+            user({ message: { content: 'Base directory for this skill: /skills/passages\n# Passages' } })
+        ).toBeNull();
+        expect(
+            user({ message: { content: [{ type: 'text', text: '# Passages skill' }] }, sourceToolUseID: 'toolu_1' })
+        ).toBeNull();
+        expect(user({ message: { content: '<command-name>/passages</command-name>' } })).toBeNull();
+        expect(user({ message: { content: 'Caveat' }, isMeta: true })).toBeNull();
+        expect(user({ message: { content: 'Add a well' } })).toEqual({
+            type: 'prompt',
+            message: { kind: 'user', id: 'u', text: 'Add a well', at: AT },
         });
     });
 
@@ -116,7 +113,7 @@ describe('stream-json mapping', () => {
         expect(items.slice(3)).toEqual([null, null]);
     });
 
-    it('summarises the other tools and keeps paths outside the story absolute', () => {
+    it('collects edited files and keeps paths outside the story absolute', () => {
         const ctx = context();
         const tool = (name: string, input: Record<string, unknown>) =>
             parseStreamLine(
@@ -126,18 +123,13 @@ describe('stream-json mapping', () => {
                 }),
                 ctx
             );
-        const summary = (item: TStreamItem | null) =>
-            item?.type === 'messages' && item.messages[0].kind === 'tool' ? item.messages[0].summary : null;
-        expect(summary(tool('Glob', { pattern: 'data/**/*.ts' }))).toBe('Listed files data/**/*.ts');
-        expect(summary(tool('Grep', { pattern: 'well', path: '/repo/stories/story/data' }))).toBe(
-            'Searched for "well" in data'
-        );
-        expect(summary(tool('Read', { file_path: '/repo/clients/shared/core/src/index.ts' }))).toBe(
-            'Read /repo/clients/shared/core/src/index.ts'
-        );
-        expect(summary(tool('Skill', { skill: 'passages' }))).toBe('Used the passages skill');
-        expect(summary(tool('Mystery', {}))).toBe('Used Mystery');
-        expect(tool('Edit', { file_path: '../other/data/x.ts' })).toMatchObject({
+        expect(tool('Skill', { skill: 'passages' })).toEqual({ type: 'tools', editedFiles: [] });
+        expect(tool('Read', { file_path: '/repo/stories/story/data/a.ts' })).toEqual({
+            type: 'tools',
+            editedFiles: [],
+        });
+        expect(tool('Edit', { file_path: '../other/data/x.ts' })).toEqual({
+            type: 'tools',
             editedFiles: ['/repo/stories/other/data/x.ts'],
         });
     });
@@ -148,7 +140,7 @@ describe('stream-json mapping', () => {
         expect(storyRelative('/repo/stories/story', '/tmp/x')).toBe('/tmp/x');
     });
 
-    it('replays a transcript: prompts, tool calls and replies; no meta, sidechain or summary lines', async () => {
+    it('replays a transcript: prompts and final replies; no tools, meta, sidechain or summary lines', async () => {
         const jsonl = await readFile(path.join(FIXTURES, 'session.transcript.jsonl'), 'utf8');
         let n = 0;
         const messages = transcriptMessages(jsonl, '/repo/stories/story', () => `id-${++n}`);
@@ -160,15 +152,8 @@ describe('stream-json mapping', () => {
                 at: '2026-11-16T10:00:00.000Z',
             },
             {
-                kind: 'tool',
-                id: 'toolu_01Edit',
-                tool: 'Edit',
-                summary: 'Edited data/chapters/village/village.chapter.ts',
-                at: '2026-11-16T10:00:05.000Z',
-            },
-            {
                 kind: 'assistant',
-                id: '66666666-2222-4333-8444-555555555555:1',
+                id: '66666666-2222-4333-8444-555555555555',
                 text: 'Done: the village is now "Old village".',
                 at: '2026-11-16T10:00:09.000Z',
             },

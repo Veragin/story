@@ -22,7 +22,7 @@ describe('AiStore', () => {
         await vi.waitFor(() => expect(store.status).toBe('ready'));
     };
 
-    const texts = () => store.messages.map((m) => (m.kind === 'tool' ? m.summary : m.text));
+    const texts = () => store.messages.map((m) => m.text);
 
     const lastText = () => texts()[texts().length - 1];
 
@@ -62,11 +62,7 @@ describe('AiStore', () => {
 
         await vi.waitFor(() => expect(store.status).toBe('ready'));
         await settle();
-        expect(texts()).toEqual([
-            'Please edit the start passage',
-            'Edited data/chapters/start/start.passages.ts',
-            'You said:\nPlease edit the start passage',
-        ]);
+        expect(texts()).toEqual(['Please edit the start passage', 'You said:\nPlease edit the start passage']);
         expect(store.messages.every((m) => !m.id.startsWith('local-'))).toBe(true);
         expect(store.credits).toBe(9);
         expect(store.touchedFiles).toEqual([]);

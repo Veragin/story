@@ -20,7 +20,9 @@ export type TStreamResult = {
 
 export type TStreamItem =
     | { type: 'init'; sessionId: string; model: string | null }
-    | { type: 'messages'; messages: TAiMessageDto[]; editedFiles: string[] }
+    | { type: 'prompt'; message: TAiMessageDto }
+    | { type: 'reply'; message: TAiMessageDto }
+    | { type: 'tools'; editedFiles: string[] }
     | { type: 'result'; result: TStreamResult; messages: TAiMessageDto[] }
     | { type: 'control_response'; requestId: string; ok: boolean };
 
@@ -68,97 +70,41 @@ const filePathOf = (input: TRecord, storyRoot: string): string | null => {
     return file === null ? null : storyRelative(storyRoot, file);
 };
 
-const toolSummary = (tool: string, input: TRecord, storyRoot: string): string => {
-    const file = filePathOf(input, storyRoot);
-    const pattern = text(input.pattern);
-    switch (tool) {
-        case 'Edit':
-        case 'MultiEdit':
-        case 'NotebookEdit':
-            return file ? `Edited ${file}` : 'Edited a file';
-        case 'Write':
-            return file ? `Wrote ${file}` : 'Wrote a file';
-        case 'Read':
-            return file ? `Read ${file}` : 'Read a file';
-        case 'Glob':
-            return pattern ? `Listed files ${pattern}` : 'Listed files';
-        case 'Grep':
-            return pattern ? `Searched for "${pattern}"${file ? ` in ${file}` : ''}` : 'Searched the files';
-        case 'Skill': {
-            const skill = text(input.skill) ?? text(input.command);
-            return skill ? `Used the ${skill} skill` : 'Used a skill';
-        }
-        case 'TodoWrite':
-            return 'Updated its to-do list';
-        default:
-            return `Used ${tool}`;
-    }
-};
-
 const idOf = (line: TRecord, message: TRecord, ctx: TStreamContext): string =>
     text(line.uuid) ?? text(message.id) ?? ctx.nextId();
 
+// only the text after the last tool call is shown: earlier text narrates the agent's steps
 const assistantItem = (line: TRecord, ctx: TStreamContext): TStreamItem | null => {
     const message = isPlainObject(line.message) ? line.message : null;
     if (!message) return null;
-    const base = idOf(line, message, ctx);
-    const messages: TAiMessageDto[] = [];
-    const editedFiles: string[] = [];
-    records(message.content).forEach((block, index) => {
-        const blockText = text(block.text);
-        if (block.type === 'text' && blockText?.trim()) {
-            messages.push({ kind: 'assistant', id: `${base}:${index}`, text: blockText, at: ctx.at });
-        }
-        const tool = text(block.name);
-        if (block.type !== 'tool_use' || tool === null) return;
-        const input = isPlainObject(block.input) ? block.input : {};
-        const id = text(block.id) ?? `${base}:${index}`;
-        messages.push({ kind: 'tool', id, tool, summary: toolSummary(tool, input, ctx.storyRoot), at: ctx.at });
-        const file = filePathOf(input, ctx.storyRoot);
-        if (EDIT_TOOLS.includes(tool) && file !== null) editedFiles.push(file);
-    });
-    return messages.length > 0 ? { type: 'messages', messages, editedFiles } : null;
-};
-
-const toolResultText = (content: unknown): string => {
-    const value =
-        typeof content === 'string'
-            ? content
-            : records(content)
-                  .map((block) => text(block.text) ?? '')
-                  .join('\n');
-    return truncate(value.trim().split('\n')[0] ?? '', MAX_ERROR_TEXT);
-};
-
-const isCommandEcho = (value: string) => /^<(local-)?command-/.test(value.trimStart());
-
-// prompts appear only in transcripts (stdout does not echo them); tool results only matter when they failed
-const userItem = (line: TRecord, ctx: TStreamContext): TStreamItem | null => {
-    const message = isPlainObject(line.message) ? line.message : null;
-    if (!message || line.isMeta === true) return null;
-    const base = idOf(line, message, ctx);
-    const content = message.content;
-    if (typeof content === 'string') {
-        if (!content.trim() || isCommandEcho(content)) return null;
-        return { type: 'messages', messages: [{ kind: 'user', id: base, text: content, at: ctx.at }], editedFiles: [] };
+    const blocks = records(message.content);
+    const tools = blocks.filter((block) => block.type === 'tool_use' && text(block.name) !== null);
+    if (tools.length > 0) {
+        const editedFiles = tools.flatMap((block) => {
+            const file = filePathOf(isPlainObject(block.input) ? block.input : {}, ctx.storyRoot);
+            return EDIT_TOOLS.includes(text(block.name) ?? '') && file !== null ? [file] : [];
+        });
+        return { type: 'tools', editedFiles };
     }
-    const blocks = records(content);
-    const prompt = blocks
+    const reply = blocks
         .filter((block) => block.type === 'text')
         .map((block) => text(block.text) ?? '')
-        .join('\n');
-    const failures: TAiMessageDto[] = blocks
-        .filter((block) => block.type === 'tool_result' && block.is_error === true)
-        .map((block, index) => ({
-            kind: 'system',
-            id: `${text(block.tool_use_id) ?? base}:error:${index}`,
-            text: `A tool call failed: ${toolResultText(block.content)}`,
-            at: ctx.at,
-        }));
-    const messages: TAiMessageDto[] =
-        prompt.trim() && !isCommandEcho(prompt) ? [{ kind: 'user', id: base, text: prompt, at: ctx.at }] : [];
-    messages.push(...failures);
-    return messages.length > 0 ? { type: 'messages', messages, editedFiles: [] } : null;
+        .filter((value) => value.trim())
+        .join('\n\n');
+    return reply
+        ? { type: 'reply', message: { kind: 'assistant', id: idOf(line, message, ctx), text: reply, at: ctx.at } }
+        : null;
+};
+
+const isInjected = (value: string) => /^(<(local-)?command-|Base directory for this skill:)/.test(value.trimStart());
+
+// typed prompts are plain strings; block content carries tool results and loaded skills
+const userItem = (line: TRecord, ctx: TStreamContext): TStreamItem | null => {
+    const message = isPlainObject(line.message) ? line.message : null;
+    if (!message || line.isMeta === true || text(line.sourceToolUseID) !== null) return null;
+    const prompt = text(message.content);
+    if (!prompt?.trim() || isInjected(prompt)) return null;
+    return { type: 'prompt', message: { kind: 'user', id: idOf(line, message, ctx), text: prompt, at: ctx.at } };
 };
 
 const usageOf = (usage: unknown): TStreamUsage => {
@@ -224,15 +170,35 @@ export const parseStreamLine = (line: string, ctx: TStreamContext): TStreamItem 
     return parsed ? lineItem(parsed, ctx) : null;
 };
 
-// a Claude Code session transcript (`<sessionId>.jsonl`), mapped like the live stream
-export const transcriptMessages = (jsonl: string, storyRoot: string, nextId: () => string): TAiMessageDto[] =>
-    jsonl.split('\n').flatMap((raw) => {
+// the reply a turn ends with so far: `null` once the agent calls a tool after it
+export const pendingReply = (current: TAiMessageDto | null, item: TStreamItem): TAiMessageDto | null => {
+    if (item.type === 'reply') return item.message;
+    return item.type === 'tools' ? null : current;
+};
+
+// a Claude Code session transcript (`<sessionId>.jsonl`): prompts and the reply each turn ended with
+export const transcriptMessages = (jsonl: string, storyRoot: string, nextId: () => string): TAiMessageDto[] => {
+    const messages: TAiMessageDto[] = [];
+    let reply: TAiMessageDto | null = null;
+    const flush = () => {
+        if (reply) messages.push(reply);
+        reply = null;
+    };
+    for (const raw of jsonl.split('\n')) {
         const line = raw.trim() ? parseJson(raw) : null;
-        if (!line) return [];
+        if (!line) continue;
         const at = text(line.timestamp) ?? new Date(0).toISOString();
         const item = lineItem(line, { storyRoot, at, nextId });
-        return item?.type === 'messages' ? item.messages : [];
-    });
+        if (item?.type === 'prompt') {
+            flush();
+            messages.push(item.message);
+        } else if (item) {
+            reply = pendingReply(reply, item);
+        }
+    }
+    flush();
+    return messages;
+};
 
 export const userLine = (prompt: string): string =>
     JSON.stringify({ type: 'user', message: { role: 'user', content: prompt } });

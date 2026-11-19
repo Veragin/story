@@ -129,13 +129,6 @@ export const createMockAiApi = (ctx: TMockAiContext) => {
             later(++step, () => {
                 touchedFiles = [FAKE_EDIT_FILE];
                 emit({ type: 'activity', touchedFiles });
-                addMessage({
-                    kind: 'tool',
-                    id: nextId(),
-                    tool: 'Edit',
-                    summary: `Edited ${FAKE_EDIT_FILE}`,
-                    at: now(),
-                });
             });
         }
         later(++step, () => addMessage({ kind: 'assistant', id: nextId(), text: `You said:\n${text}`, at: now() }));
