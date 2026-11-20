@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -59,6 +59,18 @@ describe('GitRunner', () => {
         const git = new GitRunner({ cwd: dir });
         const e = await failure(git.run(['ls-remote', 'ext::sh -c echo'], { network: true }));
         expect(e.stderr).toMatch(/transport 'ext' not allowed|not allowed/);
+    });
+
+    it('checks a committed symlink out as a plain file', async () => {
+        const git = new GitRunner({ cwd: dir });
+        const blob = (await git.text(['hash-object', '-w', '--stdin'], { input: '../other-story/data' })).trim();
+        await git.run(['update-index', '--add', '--cacheinfo', `120000,${blob},escape`]);
+        await git.run(['checkout', '--', 'escape']);
+        const stat = await lstat(path.join(dir, 'escape'));
+        expect(stat.isSymbolicLink()).toBe(false);
+        expect(await readFile(path.join(dir, 'escape'), 'utf8')).toBe('../other-story/data');
+        await git.run(['rm', '-q', '--cached', 'escape']);
+        await rm(path.join(dir, 'escape'));
     });
 
     it('feeds stdin', async () => {

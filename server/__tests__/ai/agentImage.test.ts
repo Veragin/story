@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { DISALLOWED_TOOLS } from '../../aiLauncher/sandbox/dockerArgs';
 import { REPO_ROOT } from '../../src/config/env';
 import { enginePaths } from '../../src/project/ProjectRoot';
 import { storyTsconfig } from '../../src/stories/storyTsconfig';
@@ -93,10 +94,10 @@ describe('agent config (server/ai/agent)', () => {
         expect(JSON.parse(checkedIn)).toEqual(JSON.parse(generated));
     });
 
-    it('settings.json denies shell and web access', async () => {
+    it('settings.json denies shell, web and /proc access like the launcher flags', async () => {
         const settings: unknown = JSON.parse(await readFile(path.join(AGENT_DIR, 'settings.json'), 'utf8'));
         expect(settings).toMatchObject({
-            permissions: { deny: expect.arrayContaining(['Bash', 'WebFetch', 'WebSearch']) },
+            permissions: { deny: expect.arrayContaining([...DISALLOWED_TOOLS]) },
         });
         expect(settings).not.toMatchObject({
             permissions: { allow: expect.arrayContaining(['Bash']) },

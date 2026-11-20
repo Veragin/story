@@ -37,7 +37,8 @@ export const ENGINE_MOUNT_PATHS = [
 ] as const;
 
 export const ALLOWED_TOOLS = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Skill'] as const;
-export const DISALLOWED_TOOLS = ['Bash', 'WebFetch', 'WebSearch'] as const;
+// `/proc/self/environ` holds the Anthropic token every story's agent shares
+export const DISALLOWED_TOOLS = ['Bash', 'WebFetch', 'WebSearch', 'Read(//proc/**)'] as const;
 
 const HARDENING_ARGS = [
     '--read-only',

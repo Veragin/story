@@ -117,7 +117,7 @@ describe('dockerRunArgs', () => {
             '--allowedTools',
             'Read,Edit,Write,Glob,Grep,Skill',
             '--disallowedTools',
-            'Bash,WebFetch,WebSearch',
+            'Bash,WebFetch,WebSearch,Read(//proc/**)',
             '--max-budget-usd',
             '2.5',
         ]);
