@@ -50,6 +50,7 @@ export type TMockApiOptions = {
     aiAvailable?: boolean;
     aiCredits?: number;
     aiStepMs?: number;
+    aiImageGeneration?: boolean;
 };
 
 export type TMockApi = TVisualizerApi & {
@@ -139,6 +140,7 @@ export const createMockApi = ({
     aiAvailable = true,
     aiCredits = 100,
     aiStepMs = 600,
+    aiImageGeneration = true,
 }: TMockApiOptions = {}): TMockApi => {
     let counter = 0;
     const nextVersion = (): TVersion => `mock-${++counter}`;
@@ -225,14 +227,6 @@ export const createMockApi = ({
         },
     });
 
-    const ai = createMockAiApi({
-        available: aiAvailable,
-        enabled: () => story.aiFeature,
-        credits: aiCredits,
-        stepMs: aiStepMs,
-        reply,
-    });
-
     const removeLocationFromMaps = (locationId: string) => {
         maps.delete(locationId);
         for (const [mapId, m] of maps) {
@@ -271,6 +265,31 @@ export const createMockApi = ({
 
     const imageOf = (owner: TImageOwner, id: string): TImageDto =>
         images.get(`${owner}/${id}`) ?? { owner, id, file: imageFileOf(owner, id), version: '', url: null };
+
+    // no change event, like the server: an image is not a resource of `dto/events.ts`
+    const storeImage = (owner: TImageOwner, id: string, version: TVersion, data: string): TImageDto => {
+        const current = imageOf(owner, id);
+        checkVersion(current, version);
+        const type = data.startsWith(WEBP_BASE64_PREFIX) ? 'webp' : 'png';
+        const next: TImageDto = {
+            ...current,
+            file: current.file.replace(/\.[^./]+$/, `.${type}`),
+            version: nextVersion(),
+            url: `data:image/${type};base64,${data}`,
+        };
+        images.set(`${owner}/${id}`, next);
+        return next;
+    };
+
+    const ai = createMockAiApi({
+        available: aiAvailable,
+        imageGeneration: aiImageGeneration,
+        enabled: () => story.aiFeature,
+        credits: aiCredits,
+        stepMs: aiStepMs,
+        reply,
+        storeImage,
+    });
 
     const sourceOf = (owner: TSourceOwner, id: string): TSourceDto => {
         const saved = sources.get(`${owner}/${id}`);
@@ -772,21 +791,7 @@ export const createMockApi = ({
             }),
 
         getImage: (owner, id) => reply(() => imageOf(owner, id)),
-        uploadImage: (owner, id, { version, data }) =>
-            reply(() => {
-                const current = imageOf(owner, id);
-                checkVersion(current, version);
-                // no change event, like the server: an image is not a resource of `dto/events.ts`
-                const type = data.startsWith(WEBP_BASE64_PREFIX) ? 'webp' : 'png';
-                const next: TImageDto = {
-                    ...current,
-                    file: current.file.replace(/\.[^./]+$/, `.${type}`),
-                    version: nextVersion(),
-                    url: `data:image/${type};base64,${data}`,
-                };
-                images.set(`${owner}/${id}`, next);
-                return next;
-            }),
+        uploadImage: (owner, id, { version, data }) => reply(() => storeImage(owner, id, version, data)),
         deleteImage: (owner, id, { version }) =>
             reply(() => {
                 const current = imageOf(owner, id);

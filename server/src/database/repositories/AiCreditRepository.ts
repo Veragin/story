@@ -14,6 +14,16 @@ export type TAiUsageRecord = {
     credits: number;
 };
 
+export type TAiImageUsageRecord = {
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    costMicroUsd: number;
+    credits: number;
+};
+
+type TUsageRow = Omit<StoryAiUsage, 'id' | 'storyId' | 'createdAt' | 'story'>;
+
 const assertCredits = (credits: number, positive: boolean) => {
     if (!Number.isSafeInteger(credits) || credits < 0 || (positive && credits === 0)) {
         throw new Error(`Not a credit amount: ${credits}`);
@@ -30,16 +40,31 @@ export class AiCreditRepository {
     }
 
     async charge(storyId: string, usage: TAiUsageRecord): Promise<number> {
-        assertCredits(usage.credits, false);
-        return await this.dataSource.transaction(async (manager) => {
-            await manager.insert(StoryAiUsage, { storyId, ...usage });
-            return this.addToBalance(storyId, -usage.credits, manager);
+        return await this.insertUsage(storyId, { kind: 'turn', ...usage });
+    }
+
+    async chargeImage(storyId: string, usage: TAiImageUsageRecord): Promise<number> {
+        return await this.insertUsage(storyId, {
+            kind: 'image',
+            sessionId: null,
+            cacheReadTokens: 0,
+            cacheCreationTokens: 0,
+            ...usage,
         });
     }
 
     async topUp(storyId: string, credits: number): Promise<number> {
         assertCredits(credits, true);
         return await this.dataSource.transaction((manager) => this.addToBalance(storyId, credits, manager));
+    }
+
+    // returns the new balance
+    private async insertUsage(storyId: string, usage: TUsageRow): Promise<number> {
+        assertCredits(usage.credits, false);
+        return await this.dataSource.transaction(async (manager) => {
+            await manager.insert(StoryAiUsage, { storyId, ...usage });
+            return this.addToBalance(storyId, -usage.credits, manager);
+        });
     }
 
     // returns the new balance; the row is created on first use

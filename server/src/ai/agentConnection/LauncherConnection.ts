@@ -2,13 +2,18 @@ import { request, type IncomingMessage } from 'node:http';
 import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import { AGENT_UPGRADE_PROTOCOL, type TLauncherControlLine } from '../../../aiLauncher/agentStream';
+import { DEFAULT_AGENTS_CONFIG } from '../../../aiLauncher/agentsConfig';
+import type { TGeneratedImage, TImageGeneration } from '../../../aiLauncher/gemini/generateImage';
+import type { TImageRequest } from '../../../aiLauncher/imageRequest';
 import { ndjsonLines, writeLine } from '../../../aiLauncher/ndjson';
 import { CONTAINER_STORY_DIR } from '../../../aiLauncher/sandbox/dockerArgs';
 import { readSecretFile } from '../../../aiLauncher/secretFile';
-import { errorMessage } from '../../common/HttpError';
+import { errorMessage, HttpError } from '../../common/HttpError';
 import { isPlainObject } from '../../common/isPlainObject';
+import { imageTooSlow, launcherImageError } from './imageErrors';
 import type {
     TAgentConnection,
+    TAgentHealth,
     TAgentExit,
     TAgentHandle,
     TAgentLaunch,
@@ -23,9 +28,19 @@ export type TLauncherConnectionOptions = {
     sessionsDir: string;
     requireApiKey: boolean;
     requestTimeoutMs?: number;
+    imageTimeoutMs?: number;
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+
+// the launcher's own Gemini timeout answers 504 first
+export const IMAGE_TIMEOUT_MARGIN_MS = 15_000;
+
+export const imageTimeoutOf = (geminiTimeoutMs: number) => geminiTimeoutMs + IMAGE_TIMEOUT_MARGIN_MS;
+
+type TLauncherReply = { status: number; body: unknown };
+
+type TCallOptions = { body?: unknown; timeoutMs?: number };
 
 // Claude Code names a project folder after its working directory, every non-alphanumeric character a dash
 export const TRANSCRIPTS_FOLDER = CONTAINER_STORY_DIR.replace(/[^a-zA-Z0-9]/g, '-');
@@ -87,7 +102,7 @@ const exitedLine = (line: string): TAgentExit | 'other-launcher-line' | null => 
     return { code, stderrTail: typeof message.stderrTail === 'string' ? message.stderrTail : '' };
 };
 
-const healthOf = (body: unknown, requireApiKey: boolean): TAiHealth => {
+const agentsHealthOf = (body: unknown, requireApiKey: boolean): TAiHealth => {
     if (!isPlainObject(body)) return { available: false, reason: 'The AI launcher sent an unreadable health report' };
     if (typeof body.docker !== 'string') return { available: false, reason: 'The AI launcher cannot reach Docker' };
     if (body.image !== true) return { available: false, reason: 'The agent image is missing' };
@@ -100,22 +115,72 @@ const healthOf = (body: unknown, requireApiKey: boolean): TAiHealth => {
     return { available: true };
 };
 
+const imageGenerationOf = (body: unknown): boolean =>
+    isPlainObject(body) && body.gemini === true && Array.isArray(body.imageModels) && body.imageModels.length > 0;
+
+export const healthOf = (body: unknown, requireApiKey: boolean): TAgentHealth => ({
+    agents: agentsHealthOf(body, requireApiKey),
+    imageGeneration: imageGenerationOf(body),
+});
+
+const unhealthy = (reason: string): TAgentHealth => ({
+    agents: { available: false, reason },
+    imageGeneration: false,
+});
+
+const isTimeoutError = (e: unknown): boolean => e instanceof Error && e.name === 'TimeoutError';
+
+const isTimeout = (e: unknown): boolean => isTimeoutError(e) || (e instanceof Error && isTimeoutError(e.cause));
+
+const isUsage = (value: unknown): value is TGeneratedImage['usage'] =>
+    isPlainObject(value) &&
+    typeof value.promptTokens === 'number' &&
+    typeof value.candidatesTokens === 'number' &&
+    typeof value.totalTokens === 'number';
+
+const generatedImageOf = (body: unknown): TGeneratedImage => {
+    if (
+        !isPlainObject(body) ||
+        typeof body.mimeType !== 'string' ||
+        typeof body.data !== 'string' ||
+        !isUsage(body.usage)
+    ) {
+        throw HttpError.of('ai_image_failed', 'The AI launcher sent an unreadable image');
+    }
+    return { mimeType: body.mimeType, data: body.data, usage: body.usage };
+};
+
 export class LauncherConnection implements TAgentConnection {
     private readonly timeoutMs: number;
+    private readonly imageTimeoutMs: number;
 
     constructor(private readonly options: TLauncherConnectionOptions) {
         this.timeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+        this.imageTimeoutMs = options.imageTimeoutMs ?? imageTimeoutOf(DEFAULT_AGENTS_CONFIG.gemini.timeoutMs);
     }
 
-    async health(): Promise<TAiHealth> {
-        let reply: { status: number; body: unknown };
+    async health(): Promise<TAgentHealth> {
+        let reply: TLauncherReply;
         try {
             reply = await this.call('GET', '/health');
         } catch (e) {
-            return { available: false, reason: errorMessage(e) };
+            return unhealthy(errorMessage(e));
         }
-        if (reply.status !== 200) return { available: false, reason: launcherError(reply.status, reply.body).message };
+        if (reply.status !== 200) return unhealthy(launcherError(reply.status, reply.body).message);
         return healthOf(reply.body, this.options.requireApiKey);
+    }
+
+    async generateImage(storyId: string, generation: TImageGeneration): Promise<TGeneratedImage> {
+        const body: TImageRequest = { storyId, ...generation };
+        let reply: TLauncherReply;
+        try {
+            reply = await this.call('POST', '/images', { body, timeoutMs: this.imageTimeoutMs });
+        } catch (e) {
+            if (isTimeout(e)) throw imageTooSlow();
+            throw HttpError.of('ai_unavailable', 'The AI launcher is unreachable');
+        }
+        if (reply.status !== 200) throw launcherImageError(reply.status, reply.body);
+        return generatedImageOf(reply.body);
     }
 
     async cleanupAll(): Promise<number> {
@@ -153,17 +218,24 @@ export class LauncherConnection implements TAgentConnection {
         return new URL(pathname, `${this.options.url}/`);
     }
 
-    private async call(method: string, pathname: string): Promise<{ status: number; body: unknown }> {
+    private async call(
+        method: string,
+        pathname: string,
+        { body, timeoutMs = this.timeoutMs }: TCallOptions = {}
+    ): Promise<TLauncherReply> {
         const authorization = `Bearer ${await this.key()}`;
+        const headers: Record<string, string> = { authorization };
+        if (body !== undefined) headers['content-type'] = 'application/json';
         let res: Response;
         try {
             res = await fetch(this.url(pathname), {
                 method,
-                headers: { authorization },
-                signal: AbortSignal.timeout(this.timeoutMs),
+                headers,
+                body: body === undefined ? undefined : JSON.stringify(body),
+                signal: AbortSignal.timeout(timeoutMs),
             });
         } catch (e) {
-            throw new Error(`The AI launcher at ${this.options.url} is unreachable: ${errorMessage(e)}`);
+            throw new Error(`The AI launcher at ${this.options.url} is unreachable: ${errorMessage(e)}`, { cause: e });
         }
         return { status: res.status, body: parseJson(await res.text()) };
     }

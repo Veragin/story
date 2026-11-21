@@ -3,11 +3,16 @@ import { once } from 'node:events';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import type { TGeminiClient } from '../../../aiLauncher/gemini/geminiClient';
+import { generateImage, type TGeneratedImage, type TImageGeneration } from '../../../aiLauncher/gemini/generateImage';
+import { ImageGenerationError } from '../../../aiLauncher/gemini/ImageGenerationError';
 import { ndjsonLines, writeLine } from '../../../aiLauncher/ndjson';
 import { claudeArgs } from '../../../aiLauncher/sandbox/dockerArgs';
-import { errorMessage } from '../../common/HttpError';
+import { errorMessage, HttpError } from '../../common/HttpError';
+import { imageGenerationError } from './imageErrors';
 import type {
     TAgentConnection,
+    TAgentHealth,
     TAgentExit,
     TAgentLaunch,
     TAgentLayout,
@@ -31,16 +36,36 @@ const collectTail = (child: ChildProcessWithoutNullStreams): (() => string) => {
     return () => tail.toString('utf8');
 };
 
-// AI_SANDBOX=none (dev only): the CLI runs unsandboxed on the server, in the story folder, with the dev's own login
+// `gemini`: a client of the dev's GEMINI_API_KEY, or null without one
+export type TLocalGemini = { client: TGeminiClient | null; timeoutMs: number };
+
+// AI_SANDBOX=none (dev only): the CLI runs unsandboxed on the server, in the story folder, with the dev's own login;
+// images are generated in-process
 export class LocalConnection implements TAgentConnection {
     private readonly children = new Set<ChildProcessWithoutNullStreams>();
 
     constructor(
         private readonly storyDir: (storyId: string) => string,
+        private readonly gemini: TLocalGemini,
         private readonly claudeHome = path.join(homedir(), '.claude')
     ) {}
 
-    async health(): Promise<TAiHealth> {
+    async health(): Promise<TAgentHealth> {
+        return { agents: await this.claudeHealth(), imageGeneration: this.gemini.client !== null };
+    }
+
+    async generateImage(_storyId: string, request: TImageGeneration): Promise<TGeneratedImage> {
+        const { client, timeoutMs } = this.gemini;
+        if (!client) throw HttpError.of('ai_unavailable', 'Image generation needs GEMINI_API_KEY on the server');
+        try {
+            return await generateImage(client, request, AbortSignal.timeout(timeoutMs));
+        } catch (e) {
+            if (e instanceof ImageGenerationError) throw imageGenerationError(e.kind, e.message);
+            throw e;
+        }
+    }
+
+    private async claudeHealth(): Promise<TAiHealth> {
         try {
             await run(CLAUDE, ['--version'], { timeout: 10_000 });
             return { available: true };

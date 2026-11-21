@@ -27,6 +27,8 @@
  * | 403    | `ai_disabled`           | `message`     | the AI feature is not enabled for this story         |
  * | 409    | `ai_busy`               | `message`     | the agent is still working on the previous message   |
  * | 503    | `ai_unavailable`        | `message`     | the server cannot run AI agents (launcher, image or token missing) |
+ * | 502    | `ai_image_failed`       | `message`     | image generation refused (safety block, no image), failed or took too long |
+ * | 409    | `ai_image_busy`         | `message`     | an image of this owner, or too many in this story, is already generating |
  */
 export type TApiErrorCode =
     | 'bad_request'
@@ -52,7 +54,9 @@ export type TApiErrorCode =
     | 'ai_no_credits'
     | 'ai_busy'
     | 'ai_disabled'
-    | 'ai_unavailable';
+    | 'ai_unavailable'
+    | 'ai_image_failed'
+    | 'ai_image_busy';
 
 export type TApiErrorBody = {
     error: TApiErrorCode;
@@ -112,4 +116,6 @@ export const ERROR_STATUS: Record<TApiErrorCode, number> = {
     ai_busy: 409,
     ai_disabled: 403,
     ai_unavailable: 503,
+    ai_image_failed: 502,
+    ai_image_busy: 409,
 };

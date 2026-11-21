@@ -1,7 +1,7 @@
 import '@story/shared';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PNG_SIGNATURE } from '@story/protocol';
+import { RIFF_SIGNATURE, WEBP_SIGNATURE } from '@story/protocol';
 import { ApiEvents, createMockApi, type TMockApi } from '../../../api';
 import {
     $,
@@ -68,12 +68,21 @@ describe('StorySettingsPage', () => {
         return button;
     };
 
-    const choosePng = async () => {
+    const chooseWebp = async () => {
         const input = get<HTMLInputElement>('input[type=file]');
         const file = new File(
-            [new Uint8Array([...PNG_SIGNATURE, 0])],
-            'landing.png',
-            { type: 'image/png' }
+            [
+                new Uint8Array([
+                    ...RIFF_SIGNATURE,
+                    4,
+                    0,
+                    0,
+                    0,
+                    ...WEBP_SIGNATURE,
+                ]),
+            ],
+            'landing.webp',
+            { type: 'image/webp' }
         );
         Object.defineProperty(input, 'files', { value: [file] });
         fire(input, new Event('change', { bubbles: true }));
@@ -126,8 +135,8 @@ describe('StorySettingsPage', () => {
         await info.load();
         expect($('img')).toBeNull();
 
-        await choosePng();
-        expect(get('img').getAttribute('src')).toMatch(/^data:image\/png/);
+        await chooseWebp();
+        expect(get('img').getAttribute('src')).toMatch(/^data:image\/webp/);
         expect(info.info).toMatchObject({ hasLandingImage: true });
 
         click('[data-action="remove-image"]');

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { DEFAULT_AGENTS_CONFIG_FILE } from '../../aiLauncher/agentsConfig';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -70,11 +71,15 @@ export const ENV_SCHEMA = z
         AI_LAUNCHER_URL: optionalText.transform((value) => (value || 'http://ai-launcher:8155').replace(/\/+$/, '')),
         AI_LAUNCHER_KEY_FILE: optionalText.transform((value) => value || '/secret/ai_launcher_key'),
         AI_SESSIONS_DIR: optionalText.transform((value) => path.resolve(REPO_ROOT, value || '/app/ai-sessions')),
-        AI_MODEL: optionalText.transform((value) => value || 'claude-sonnet-5-5'),
+        AI_AGENTS_CONFIG_FILE: optionalText.transform((value) => value || DEFAULT_AGENTS_CONFIG_FILE),
+        AI_MODEL: optionalText.transform((value) => value || undefined),
         AI_IDLE_STOP_MS: positiveMs(30_000),
         AI_MAX_TURN_MS: positiveMs(300_000),
-        AI_MAX_BUDGET_USD: z.coerce.number().positive().finite().default(5),
+        AI_MAX_BUDGET_USD: optionalText
+            .transform((value) => (value ? Number(value) : undefined))
+            .pipe(z.number().positive().finite().optional()),
         AI_MESSAGES_PER_MINUTE: z.coerce.number().int().positive().default(20),
+        GEMINI_API_KEY: optionalText.transform((value) => value || null),
     })
     .refine((env) => !(env.COOKIE_SECURE && env.AI_SANDBOX === 'none'), {
         message: 'AI_SANDBOX=none runs agents unsandboxed and is refused when COOKIE_SECURE=1',

@@ -17,6 +17,14 @@ export default defineWorkspace([
     },
     {
         test: {
+            name: 'shared',
+            root: './clients/shared/utils',
+            environment: 'node',
+            include: ['__tests__/**/*.test.ts'],
+        },
+    },
+    {
+        test: {
             name: 'ui',
             root: './clients/shared/ui',
             environment: 'jsdom',

@@ -79,7 +79,11 @@ dev-multi-engine:
 # `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).
 PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
+# docker compose refuses a missing secret file; an empty ai_agents.json means the built-in defaults, an empty
+# gemini_token no image generation
 prod-up:
+	test -e docker/secrets/ai_agents.json || touch docker/secrets/ai_agents.json
+	test -e docker/secrets/gemini_token || touch docker/secrets/gemini_token
 	$(PROD_COMPOSE) --profile build build ai-image
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans
 	@echo ""

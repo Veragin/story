@@ -23,7 +23,7 @@ const usage = (overrides: Partial<TAiUsageRecord> = {}): TAiUsageRecord => ({
 
 const usageRows = () =>
     dataSource.query(
-        'SELECT storyId, sessionId, model, inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens, ' +
+        'SELECT storyId, kind, sessionId, model, inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens, ' +
             'CAST(costMicroUsd AS CHAR) AS costMicroUsd, credits FROM story_ai_usage ORDER BY id'
     );
 
@@ -60,8 +60,50 @@ describe('AiCreditRepository', () => {
         expect(await credits().charge('alpha', usage({ credits: 7, costMicroUsd: 61_000 }))).toBe(-4);
         expect(await credits().balance('alpha')).toBe(-4);
         expect(await usageRows()).toEqual([
-            { storyId: 'alpha', ...usage(), costMicroUsd: '41250' },
-            { storyId: 'alpha', ...usage({ credits: 7 }), costMicroUsd: '61000' },
+            { storyId: 'alpha', kind: 'turn', ...usage(), costMicroUsd: '41250' },
+            { storyId: 'alpha', kind: 'turn', ...usage({ credits: 7 }), costMicroUsd: '61000' },
+        ]);
+    });
+
+    it('charges an image: a usage row of kind image without a session, the balance lowered', async () => {
+        await withStory();
+        await credits().topUp('alpha', 10);
+        await credits().charge('alpha', usage({ credits: 2 }));
+        const image = {
+            model: 'gemini-test-image',
+            inputTokens: 300,
+            outputTokens: 1290,
+            costMicroUsd: 40_000,
+            credits: 4,
+        };
+        expect(await credits().chargeImage('alpha', image)).toBe(4);
+        expect(await credits().chargeImage('alpha', image)).toBe(0);
+        const rows = await usageRows();
+        expect(rows.map((row: { kind: string }) => row.kind)).toEqual(['turn', 'image', 'image']);
+        expect(rows[1]).toEqual({
+            storyId: 'alpha',
+            kind: 'image',
+            sessionId: null,
+            model: 'gemini-test-image',
+            inputTokens: 300,
+            outputTokens: 1290,
+            cacheReadTokens: 0,
+            cacheCreationTokens: 0,
+            costMicroUsd: '40000',
+            credits: 4,
+        });
+        await expect(credits().chargeImage('alpha', { ...image, credits: 1.5 })).rejects.toThrow('Not a credit amount');
+    });
+
+    it('the AddAiImageUsage migration: kind defaults to turn, sessionId is nullable', async () => {
+        const columns = await dataSource.query(
+            'SELECT COLUMN_NAME AS name, IS_NULLABLE AS nullable, COLUMN_DEFAULT AS dflt, COLUMN_TYPE AS type ' +
+                "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'story_ai_usage' " +
+                "AND COLUMN_NAME IN ('kind', 'sessionId') ORDER BY COLUMN_NAME"
+        );
+        expect(columns).toEqual([
+            { name: 'kind', nullable: 'NO', dflt: 'turn', type: "enum('turn','image')" },
+            { name: 'sessionId', nullable: 'YES', dflt: null, type: 'varchar(64)' },
         ]);
     });
 

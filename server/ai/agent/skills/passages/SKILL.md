@@ -35,7 +35,7 @@ export const forestPassage = (
 
     type: 'screen',
     title: _('Forest'),
-    image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
+    image: '@character:thomas, a young hunter in a brown tunic, standing on a misty forest path.',
 
     body: [
         {
@@ -99,7 +99,7 @@ body: [
 ```ts
 type: 'linear',
 title: _('Morning'),
-image: 'Sunrise over the village roofs.',
+image: 'Sunrise over the roofs of @location:village.',
 body: _('The bells ring and the village wakes up.'),
 nextPassageId: 'village-thomas-tavern',
 ```

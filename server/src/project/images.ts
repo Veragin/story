@@ -11,6 +11,7 @@ import {
     type TUploadImageBody,
     WEBP_SIGNATURE,
 } from '@story/protocol';
+import { isStoryImageFile } from '@story/shared';
 import type { TTransaction } from '../events/EventBus';
 import { version } from '../events/version';
 import { hasNoLinkedDirWithin, isRegularFileWithin } from '../common/fileStat';
@@ -118,6 +119,14 @@ export const readImageFile = (sp: SourceProject, owner: TImageOwner, id: string)
         if (bytes === null) throw HttpError.notFound(`No image ${sp.root.rel(abs)}`);
         return { bytes, version: version(bytes), contentType };
     });
+
+const isStoryImagePath = (rel: string) => isStoryImageFile(rel) && !rel.split('/').includes('..');
+
+// a story-relative path such as a resolved image link; null unless it is a story image and a regular file inside
+export const readStoryImageFile = (sp: SourceProject, rel: string) =>
+    sp.run(
+        async (): Promise<Buffer | null> => (isStoryImagePath(rel) ? await readImageBytes(sp, sp.root.abs(rel)) : null)
+    );
 
 export const uploadImage = ({ sp, bus }: TWriter, owner: TImageOwner, id: string, rawBody: TUploadImageBody) =>
     sp.run(async (): Promise<TImageDto> => {

@@ -1,5 +1,6 @@
 import { AgentProcesses } from './AgentProcesses';
 import { readAiToken } from './aiToken';
+import { createGeminiClient } from './gemini/geminiClient';
 import { launcherOptionsFromEnv } from './launcherOptions';
 import { createLauncherServer } from './launcherServer';
 import { createSandboxDriver } from './sandbox/createSandboxDriver';
@@ -16,7 +17,7 @@ const logFailure = async (what: string, task: () => Promise<void>) => {
 };
 
 const main = async () => {
-    const options = launcherOptionsFromEnv(process.env);
+    const options = launcherOptionsFromEnv(process.env, log);
     const key = await readSecretFile(options.keyFile);
     if (!key) throw new Error(`The launcher key file ${options.keyFile} is missing or empty`);
     const token = await readAiToken(options.tokenFile);
@@ -24,6 +25,14 @@ const main = async () => {
         token
             ? `Anthropic token: ${token.kind}`
             : `no usable Anthropic token in ${options.tokenFile}; agents are refused`
+    );
+
+    const geminiKey = await readSecretFile(options.geminiTokenFile);
+    const imageModels = Object.keys(options.agents.gemini.imageModels).join(', ');
+    log(
+        geminiKey
+            ? `Gemini key: set (image models ${imageModels})`
+            : `no Gemini key in ${options.geminiTokenFile}; images are refused`
     );
 
     const driver = createSandboxDriver(options, token);
@@ -38,7 +47,8 @@ const main = async () => {
         tokenKind: token?.kind ?? null,
         driver,
         processes,
-        limits: { models: options.models, maxBudgetUsd: options.maxBudgetUsd },
+        limits: options.agents.claude,
+        gemini: { client: geminiKey ? createGeminiClient(geminiKey) : null, config: options.agents.gemini },
         log,
     });
     server.listen(options.port, () => log(`listening on ${options.port} (driver ${driver.name})`));

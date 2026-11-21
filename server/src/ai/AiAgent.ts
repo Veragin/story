@@ -121,6 +121,10 @@ export class AiAgent {
         this.emit(this.snapshot(credits));
     }
 
+    publish(event: TAiEvent): void {
+        this.emit(event);
+    }
+
     say(text: string): void {
         this.addMessage({ kind: 'system', id: randomUUID(), text, at: new Date().toISOString() });
     }

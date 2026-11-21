@@ -1,10 +1,14 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { AgentProcesses, TRunningAgent } from './AgentProcesses';
+import { DEFAULT_AGENTS_CONFIG, type TGeminiConfig } from './agentsConfig';
 import { AGENT_UPGRADE_PROTOCOL, runAgentStream } from './agentStream';
 import type { TAiTokenKind } from './aiToken';
 import { isBearerAuthorized } from './bearerAuth';
+import type { TGeminiClient } from './gemini/geminiClient';
 import { acceptUpgrade, rejectUpgrade, sendJson } from './httpReplies';
+import { createImagesRoute } from './imagesRoute';
+import { parseJson } from './jsonBody';
 import { parseLaunchRequest, type TLaunchLimits, type TLaunchRequestResult } from './launchRequest';
 import type { TAiSandboxDriver } from './sandbox/TAiSandboxDriver';
 import { readUpgradeBody } from './upgradeBody';
@@ -14,7 +18,11 @@ export type TLauncherHealth = {
     image: boolean;
     token: TAiTokenKind | null;
     driver: TAiSandboxDriver['name'];
+    gemini: boolean;
+    imageModels: string[];
 };
+
+export type TLauncherGemini = { client: TGeminiClient | null; config: TGeminiConfig };
 
 export type TLauncherServerDeps = {
     key: string;
@@ -22,11 +30,14 @@ export type TLauncherServerDeps = {
     driver: TAiSandboxDriver;
     processes: AgentProcesses;
     limits: TLaunchLimits;
+    gemini?: TLauncherGemini;
     log?: (message: string) => void;
 };
 
 const AGENTS_PATH = '/agents';
 const AGENT_PATH = /^\/agents\/([^/]+)$/;
+const IMAGES_PATH = '/images';
+const NO_GEMINI: TLauncherGemini = { client: null, config: DEFAULT_AGENTS_CONFIG.gemini };
 const MAX_BODY_BYTES = 16 * 1024;
 const BODY_TIMEOUT_MS = 10_000;
 
@@ -34,22 +45,18 @@ const pathOf = (req: IncomingMessage): string => new URL(req.url ?? '/', 'http:/
 
 const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-const parseJson = (body: Buffer): { ok: true; value: unknown } | { ok: false } => {
-    try {
-        return { ok: true, value: JSON.parse(body.toString('utf8')) };
-    } catch {
-        return { ok: false };
-    }
-};
-
 export const createLauncherServer = (deps: TLauncherServerDeps): Server => {
     const { driver, processes } = deps;
     const log = deps.log ?? console.error;
+    const gemini = deps.gemini ?? NO_GEMINI;
+    const images = createImagesRoute({ ...gemini, log });
 
     const health = async (): Promise<TLauncherHealth> => ({
         ...(await driver.health()),
         token: deps.tokenKind,
         driver: driver.name,
+        gemini: gemini.client !== null,
+        imageModels: Object.keys(gemini.config.imageModels),
     });
 
     const stopAgent = async (res: ServerResponse, encodedName: string) => {
@@ -72,7 +79,9 @@ export const createLauncherServer = (deps: TLauncherServerDeps): Server => {
         if (pathname === AGENTS_PATH && req.method === 'POST') return sendJson(res, 426, { error: 'upgrade_required' });
         if (pathname === AGENTS_PATH && req.method === 'DELETE') return await stopAll(res);
         if (agentName !== undefined && req.method === 'DELETE') return await stopAgent(res, agentName);
-        const known = pathname === '/health' || pathname === AGENTS_PATH || agentName !== undefined;
+        if (pathname === IMAGES_PATH && req.method === 'POST') return await images(req, res);
+        const known =
+            pathname === '/health' || pathname === AGENTS_PATH || pathname === IMAGES_PATH || agentName !== undefined;
         sendJson(res, known ? 405 : 404, { error: known ? 'method_not_allowed' : 'not_found' });
     };
 

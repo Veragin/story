@@ -1,8 +1,10 @@
 import { Avatar, ButtonBase, styled } from '@mui/material';
+import { describeMentions } from '@story/shared';
 import type { TCharacterId } from '@story/types';
 import { Column, spacingCss } from '@story/ui';
 import { useEngine } from '../context';
 import { characterImage } from '../images';
+import { mentionNameOf } from '../mentionNames';
 
 type Props = {
     characterId: TCharacterId;
@@ -16,7 +18,10 @@ export const CharacterButton = ({ characterId }: Props) => {
         <SButton focusRipple onClick={() => void e.startAs(characterId)}>
             <SPortrait
                 src={characterImage(characterId)}
-                alt={character.image ?? character.name}
+                alt={describeMentions(
+                    character.image ?? character.name,
+                    mentionNameOf(e.storyModule)
+                )}
             >
                 {character.name.charAt(0)}
             </SPortrait>

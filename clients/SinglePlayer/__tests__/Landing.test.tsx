@@ -1,5 +1,7 @@
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { register } from '@story/data';
+import { setStoryImages } from '../src/images';
 import { Landing } from '../src/landing/Landing';
 import { buttonByText, newSession, renderWithSession, unmount } from './support/render';
 
@@ -12,6 +14,8 @@ const MANIFEST = {
 
 afterEach(() => {
     unmount();
+    setStoryImages({});
+    register.characters.annie.image = undefined;
     vi.restoreAllMocks();
 });
 
@@ -25,6 +29,15 @@ describe('Landing', () => {
         expect(buttonByText(container, 'Annie')).toBeDefined();
         expect(buttonByText(container, 'Thomas')).toBeDefined();
         expect(buttonByText(container, 'Continue')).toBeUndefined();
+    });
+
+    it('describes a portrait with names instead of mentions', () => {
+        setStoryImages({ 'characters/annie.png': 'annie-url' });
+        register.characters.annie.image = '@character:annie in @location:kingdom';
+
+        const container = renderWithSession(newSession(), <Landing manifest={MANIFEST} />);
+
+        expect(container.querySelector('img[src="annie-url"]')?.getAttribute('alt')).toBe('Annie in kingdom');
     });
 
     it('starts the game as the clicked character', () => {

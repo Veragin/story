@@ -5,9 +5,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AgentProcesses } from '../../aiLauncher/AgentProcesses';
 import { AGENT_UPGRADE_PROTOCOL } from '../../aiLauncher/agentStream';
 import type { TAiTokenKind } from '../../aiLauncher/aiToken';
-import { createLauncherServer } from '../../aiLauncher/launcherServer';
+import { createLauncherServer, type TLauncherGemini } from '../../aiLauncher/launcherServer';
 import { ndjsonLines } from '../../aiLauncher/ndjson';
 import { FakeDriver } from './fakeAgent';
+import {
+    FakeGemini,
+    IMAGE_RESPONSE,
+    PNG_BASE64,
+    TEST_GEMINI_CONFIG,
+    TEST_IMAGE_MODEL,
+    untilAborted,
+} from './fakeGemini';
 
 const KEY = 'launcher-key';
 const AUTH = { Authorization: `Bearer ${KEY}` };
@@ -20,7 +28,7 @@ let driver: FakeDriver;
 let processes: AgentProcesses;
 let port: number;
 
-const listen = async (tokenKind: TAiTokenKind | null) => {
+const listen = async (tokenKind: TAiTokenKind | null, gemini?: TLauncherGemini) => {
     driver = new FakeDriver();
     processes = new AgentProcesses(driver, { removeAfterMs: 10_000, stderrTailBytes: 4096 }, () => undefined);
     server = createLauncherServer({
@@ -29,6 +37,7 @@ const listen = async (tokenKind: TAiTokenKind | null) => {
         driver,
         processes,
         limits: { models: ['claude-sonnet-5-5'], maxBudgetUsd: 5 },
+        gemini,
         log: () => undefined,
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -44,14 +53,14 @@ const readBody = async (stream: AsyncIterable<Buffer>): Promise<unknown> => {
     return text ? JSON.parse(text) : null;
 };
 
-const call = (method: string, path: string, headers: Record<string, string> = AUTH): Promise<TReply> =>
+const call = (method: string, path: string, headers: Record<string, string> = AUTH, body?: string): Promise<TReply> =>
     new Promise((resolve, reject) => {
         const req = request({ host: '127.0.0.1', port, method, path, headers }, (res) => {
             const finish = async () => resolve({ status: res.statusCode ?? 0, body: await readBody(res) });
             finish().catch(reject);
         });
         req.on('error', reject);
-        req.end();
+        req.end(body);
     });
 
 const openAgent = (body: string, headers: Record<string, string> = AUTH): Promise<TUpgrade> =>
@@ -125,7 +134,14 @@ describe('launcher HTTP API', () => {
     it('reports health', async () => {
         expect(await call('GET', '/health')).toEqual({
             status: 200,
-            body: { docker: '27.0.1', image: true, token: 'api_key', driver: 'docker-run' },
+            body: {
+                docker: '27.0.1',
+                image: true,
+                token: 'api_key',
+                driver: 'docker-run',
+                gemini: false,
+                imageModels: ['gemini-nano-banana-2.1'],
+            },
         });
     });
 
@@ -231,5 +247,144 @@ describe('launcher without a token', () => {
         expect(await call('GET', '/health')).toMatchObject({ status: 200, body: { token: null } });
         expect(await openAgent(VALID)).toEqual({ kind: 'reply', status: 503, body: { error: 'token_unavailable' } });
         expect(driver.requests).toEqual([]);
+    });
+});
+
+const IMAGE_REQUEST = {
+    storyId: 'demo',
+    model: TEST_IMAGE_MODEL,
+    prompt: 'Thomas in the Village',
+    references: [{ label: 'Thomas', mimeType: 'image/png', data: PNG_BASE64 }],
+};
+
+const postImage = (body: unknown = IMAGE_REQUEST, headers: Record<string, string> = AUTH) =>
+    call('POST', '/images', { ...headers, 'Content-Type': 'application/json' }, JSON.stringify(body));
+
+const GENERATED = {
+    mimeType: 'image/png',
+    data: PNG_BASE64,
+    usage: { promptTokens: 300, candidatesTokens: 1290, totalTokens: 1590 },
+};
+
+const waitFor = async (condition: () => boolean) => {
+    while (!condition()) await new Promise((resolve) => setTimeout(resolve, 5));
+};
+
+describe('POST /images', () => {
+    let gemini: FakeGemini;
+
+    beforeEach(async () => {
+        gemini = new FakeGemini();
+        await listen('api_key', {
+            client: gemini,
+            config: { ...TEST_GEMINI_CONFIG, maxConcurrent: 1, timeoutMs: 100 },
+        });
+    });
+
+    it('generates an image', async () => {
+        expect(await postImage()).toEqual({ status: 200, body: GENERATED });
+        expect(gemini.calls).toHaveLength(1);
+    });
+
+    it('rejects requests without the bearer key', async () => {
+        expect(await postImage(IMAGE_REQUEST, {})).toEqual({ status: 401, body: { error: 'unauthorized' } });
+        expect(gemini.calls).toEqual([]);
+    });
+
+    it('answers 400 to invalid JSON or an invalid request', async () => {
+        expect(await call('POST', '/images', AUTH, '{storyId')).toEqual({
+            status: 400,
+            body: { error: 'bad_request', message: 'Invalid JSON' },
+        });
+        expect(await postImage({ ...IMAGE_REQUEST, model: 'other' })).toMatchObject({
+            status: 400,
+            body: { error: 'bad_request' },
+        });
+        expect(gemini.calls).toEqual([]);
+    });
+
+    it('answers 413 to a body over 8 MB', async () => {
+        const body = JSON.stringify({ ...IMAGE_REQUEST, prompt: 'x'.repeat(8 * 1024 * 1024) });
+        expect(await call('POST', '/images', AUTH, body)).toEqual({
+            status: 413,
+            body: { error: 'payload_too_large' },
+        });
+        expect(await call('POST', '/images', { ...AUTH, 'Transfer-Encoding': 'chunked' }, body)).toEqual({
+            status: 413,
+            body: { error: 'payload_too_large' },
+        });
+        expect(gemini.calls).toEqual([]);
+    });
+
+    it('answers 429 over the concurrency limit', async () => {
+        let release = () => {};
+        gemini.respond = async () => {
+            await new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            return IMAGE_RESPONSE;
+        };
+        const first = postImage();
+        await waitFor(() => gemini.calls.length === 1);
+        expect(await postImage()).toEqual({ status: 429, body: { error: 'too_many_requests' } });
+        release();
+        expect(await first).toEqual({ status: 200, body: GENERATED });
+        gemini.answerWith(IMAGE_RESPONSE);
+        expect(await postImage()).toMatchObject({ status: 200 });
+    });
+
+    it('answers 504 when Gemini takes longer than the timeout', async () => {
+        gemini.respond = untilAborted;
+        expect(await postImage()).toEqual({
+            status: 504,
+            body: { error: 'timeout', message: 'Gemini took longer than 100 ms' },
+        });
+    });
+
+    it('answers 422 when Gemini returns no image and 503 when it is unavailable', async () => {
+        gemini.answerWith({ candidates: [{ finishReason: 'IMAGE_SAFETY' }] });
+        expect(await postImage()).toEqual({
+            status: 422,
+            body: { error: 'image_failed', message: 'Gemini returned no image (IMAGE_SAFETY)' },
+        });
+        gemini.failWith(Object.assign(new Error('{"error":{"status":"RESOURCE_EXHAUSTED"}}'), { status: 429 }));
+        expect(await postImage()).toMatchObject({ status: 503, body: { error: 'gemini_unavailable' } });
+    });
+
+    it('answers 405 to other methods', async () => {
+        expect(await call('GET', '/images')).toEqual({ status: 405, body: { error: 'method_not_allowed' } });
+    });
+});
+
+describe('launcher with a Gemini key and no Anthropic token', () => {
+    let gemini: FakeGemini;
+
+    beforeEach(async () => {
+        gemini = new FakeGemini();
+        await listen(null, { client: gemini, config: TEST_GEMINI_CONFIG });
+    });
+
+    it('reports gemini in its health and serves images', async () => {
+        expect(await call('GET', '/health')).toMatchObject({
+            status: 200,
+            body: { token: null, gemini: true, imageModels: [TEST_IMAGE_MODEL] },
+        });
+        expect(await postImage()).toEqual({ status: 200, body: GENERATED });
+        expect(await openAgent(VALID)).toEqual({ kind: 'reply', status: 503, body: { error: 'token_unavailable' } });
+    });
+});
+
+describe('launcher without a Gemini key', () => {
+    beforeEach(() => listen('api_key', { client: null, config: TEST_GEMINI_CONFIG }));
+
+    it('reports gemini false and refuses images with 503', async () => {
+        expect(await call('GET', '/health')).toMatchObject({
+            status: 200,
+            body: { gemini: false, imageModels: [TEST_IMAGE_MODEL] },
+        });
+        expect(await postImage()).toEqual({
+            status: 503,
+            body: { error: 'gemini_unavailable', message: 'No Gemini key configured' },
+        });
     });
 });

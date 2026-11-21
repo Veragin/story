@@ -45,7 +45,14 @@ import type {
     TPassageDto,
     TUpdatePassageBody,
 } from './dto/passage';
-import type { TDeleteImageBody, TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type {
+    TDeleteImageBody,
+    TGenerateImageBody,
+    TGenerateImageResult,
+    TImageDto,
+    TImageOwner,
+    TUploadImageBody,
+} from './dto/image';
 import type { TPlayManifestDto } from './dto/play';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
@@ -172,6 +179,7 @@ export const STORY_ROUTES = {
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
     deleteImage: { method: 'DELETE', path: '/images/:owner/:id', access: 'write' },
+    generateImage: { method: 'POST', path: '/images/:owner/:id/generate', access: 'write' },
 
     getPlayManifest: { method: 'GET', path: '/play', access: 'read' },
     getPlayFile: { method: 'GET', path: '/play/:file', access: 'read' },
@@ -403,6 +411,8 @@ export type TApiSpec = {
     uploadImage: { body: TUploadImageBody; response: TImageDto };
     /** Answers the image as it is now: none. Deleting a missing image (`version: ''`) changes nothing. */
     deleteImage: { body: TDeleteImageBody; response: TImageDto };
+    /** Generates the image from `prompt` with AI and stores it as WebP, like an upload; costs AI credits. */
+    generateImage: { body: TGenerateImageBody; response: TGenerateImageResult };
 
     getPlayManifest: { body: undefined; response: TPlayManifestDto };
     /**

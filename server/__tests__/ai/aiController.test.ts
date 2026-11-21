@@ -24,10 +24,17 @@ afterEach(async () => {
     sessionsDir = undefined;
 });
 
-const start = async ({ enabled = true, credits = 300, available = true, messagesPerMinute = 20 } = {}) => {
+const start = async ({
+    enabled = true,
+    credits = 300,
+    available = true,
+    images = true,
+    messagesPerMinute = 20,
+} = {}) => {
     sessionsDir = await mkdtemp(path.join(tmpdir(), 'ai-ctrl-sessions-'));
     const connection = new FakeAgentConnection(sessionsDir);
     if (!available) connection.healthResult = { available: false, reason: 'no launcher' };
+    connection.imageGeneration = images;
     app = await createTestApp({
         stories: ['alpha'],
         agentConnection: connection,
@@ -55,6 +62,7 @@ describe('AI routes', () => {
         const { call, events, connection } = await start({ enabled: false, credits: 0 });
         expect((await call('GET', '')).body).toEqual({
             available: true,
+            imageGeneration: true,
             enabled: false,
             credits: 0,
             status: 'disabled',
@@ -74,8 +82,13 @@ describe('AI routes', () => {
     });
 
     it('no launcher: 503 ai_unavailable', async () => {
-        const { call } = await start({ available: false });
-        expect((await call('GET', '')).body).toMatchObject({ available: false, enabled: true, status: 'unavailable' });
+        const { call } = await start({ available: false, images: false });
+        expect((await call('GET', '')).body).toMatchObject({
+            available: false,
+            imageGeneration: false,
+            enabled: true,
+            status: 'unavailable',
+        });
         const sent = await call('POST', '/messages', { text: 'hi' });
         expect([sent.status, sent.body.error]).toEqual([503, 'ai_unavailable']);
     });
@@ -135,6 +148,7 @@ describe('AI routes', () => {
         expect(await testApp.app.get(AiCreditRepository).balance('alpha')).toBe(292);
         expect((await call('GET', '')).body).toEqual({
             available: true,
+            imageGeneration: true,
             enabled: true,
             credits: 292,
             status: 'ready',

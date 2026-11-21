@@ -11,6 +11,8 @@ import { AiController } from './AiController';
 import { AI_MESSAGE_LIMITER, aiMessageLimiter } from './aiMessageLimiter';
 import { AI_OPTIONS, aiOptionsFromConfig } from './aiOptions';
 import { AiService } from './AiService';
+import { AI_IMAGE_LIMITER, aiImageLimiter } from './imageGen/aiImageLimiter';
+import { ImageGenService } from './imageGen/ImageGenService';
 
 @Module({
     imports: [DatabaseModule, StoriesModule],
@@ -18,11 +20,13 @@ import { AiService } from './AiService';
     providers: [
         { provide: AI_OPTIONS, inject: [ConfigService], useFactory: aiOptionsFromConfig },
         { provide: AI_MESSAGE_LIMITER, inject: [AI_OPTIONS], useFactory: aiMessageLimiter },
+        { provide: AI_IMAGE_LIMITER, inject: [AI_OPTIONS], useFactory: aiImageLimiter },
         { provide: AGENT_CONNECTION, inject: [AI_OPTIONS, StoryFolders], useFactory: createAgentConnection },
         AiAvailability,
         AiAgents,
         AiService,
+        ImageGenService,
     ],
-    exports: [AiAvailability],
+    exports: [AiAvailability, ImageGenService],
 })
 export class AiModule {}

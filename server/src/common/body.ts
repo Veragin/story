@@ -34,10 +34,16 @@ export const jsonObjectBody = (body: unknown): Record<string, unknown> => {
     return body;
 };
 
-export const versionedBody = (body: Record<string, unknown>): Record<string, unknown> => {
-    if (typeof body.version !== 'string') {
+export const versionField = (body: Record<string, unknown>): string => {
+    const { version } = body;
+    if (typeof version !== 'string') {
         throw HttpError.badRequest('Field "version" must be a string (the version the change is based on)');
     }
+    return version;
+};
+
+export const versionedBody = (body: Record<string, unknown>): Record<string, unknown> => {
+    versionField(body);
     return body;
 };
 

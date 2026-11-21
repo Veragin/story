@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { Inventory } from './Inventory/Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { observer } from 'mobx-react-lite';
+import { describeMentions } from '@story/shared';
 import { useEngine, useWorldState } from '../../context';
 import { characterImage } from '../../images';
+import { mentionNameOf } from '../../mentionNames';
 import { restartGame } from '../../restartGame';
 import { StoryTopbar } from './Topbar/StoryTopbar';
 
@@ -23,7 +25,10 @@ export const StatusBar = observer(() => {
                 {portrait && (
                     <SAvatar
                         src={portrait}
-                        alt={character.image ?? character.name}
+                        alt={describeMentions(
+                            character.image ?? character.name,
+                            mentionNameOf(e.storyModule)
+                        )}
                     />
                 )}
                 <Text>{character.name}</Text>

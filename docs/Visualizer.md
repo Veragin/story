@@ -102,7 +102,7 @@ Invariants to keep:
 - **A chapter's characters are the `<character>.passages/` folders in the chapter's folder**; `TChapter` has no list of them.
 - Trigger ids are global (unique across chapters).
 - Location geometry lives in `data/locations/map.json`, not in `*.location.ts`.
-- **Story art is found by convention**: the image of a passage, character, npc or location is the `.webp` or `.png` next to its `.ts` file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.webp` or `.png`, `npcs/Franta.ts` → `npcs/Franta.png`); `.webp` wins when both exist. The owner's `image` field is only a text description, except that a passage's `image` of `@<path>` links another `.png` under `data/`, relative to the passage file, and the player shows that one instead (so passages can share an image). `project/images.ts` resolves the owner's file the way every other route does; deleting a passage or entity deletes its `.webp` and `.png`. `data/assets/story.png` is only the apps' favicon.
+- **Story art is found by convention**: the image of a passage, character, npc or location is the `.webp` or `.png` next to its `.ts` file, with the same basename (`annie.passages/palace.ts` → `annie.passages/palace.webp` or `.png`, `npcs/Franta.ts` → `npcs/Franta.png`); `.webp` wins when both exist. The owner's `image` field is only a text description, except that a passage's `image` of `@<path>` links another `.png` or `.webp` under `data/`, relative to the passage file (text starting with a mention, `@character:…`, is a description, not a link), and the player shows that one instead (so passages can share an image). `project/images.ts` resolves the owner's file the way every other route does; deleting a passage or entity deletes its `.webp` and `.png`. `data/assets/story.png` is only the apps' favicon.
 - **Structure** (`project/readers/structure.ts`, `GET /structure`):
     - **Literals** are string-literal unions (`type TMood = 'calm' | 'angry'`). Global ones live in `types/literals.ts`; a local one is declared in the file that uses it (`TItemType` in `data/items/itemInfo.ts`). A name is unique across the story; a second declaration is ignored with a structure diagnostic. Aliases named `T*Id` are never literals.
     - **Classes** (`kind: 'class'`) are the structures with instances. A class is declaration-only: `export class Race { declare name: string; declare kin?: TClanId; }` in its own `types/<Name>.ts`, re-exported from `types/index.ts` (`declare`, so `useDefineForClassFields` emits nothing). Its instances are plain object literals, never `new`: `races = { … } satisfies Record<string, Race>` and `export const Hero: Character<'hero'> = { … }`, and data files import classes with `import type`. A class name is `PascalCase` without the `T` prefix (`CLASS_NAME_RE = /^(?!T[A-Z])[A-Z][A-Za-z0-9]*$/`; `Item` and `Chapter` are reserved, their ids would clash with `TItemId` / `TChapterId`); its id type is `T<Name>Id` (`refIdTypeName('Race') = 'TRaceId'`). A field of another class or type that points at a class stores the id, `ch: TCharacterId`, read as `{ t: 'ref', name: 'Character' }`; `ch: Character` is not a value field and reads as code. Only `declare`d plain properties are fields; a class with a method, an initializer or a modifier, or a generic story class, is shown as its code.
@@ -162,7 +162,9 @@ theme.ts    the single dark MUI theme
     - `FunctionEditor` edits a **described function** (`TFunctionDto`: passage `execute`, link `onFinish`, body item `condition`, trigger `condition` / `action`): a **Code ⇄ Description** toggle (it starts on the description when there is one), the whole initializer in the code view and the JSDoc text in the description view. Both values are kept while switching, a dot on the other view's button marks it as empty, clearing the description drops the key (and the comment on Save), and the code's diagnostics show in both views. `FormFunctionEditor`'s `emptyCode` is the code of a new value.
     - `values/valueSource.ts`: `TValue` ⇄ source text (`valueToSource`, `parseValueSource`), the guards (`isString`, `isTextRecord`, `isArrayOf`, …) and `toMaybeCode(value, guard)`, which turns an input's `TValue` back into a DTO field (anything that does not fit becomes code).
     - **`StructureContext`** (`structure/structureContext.ts`): `literalValues`, `refOptions`, `addLiteralValue`, `structFields`, `structNamesVisibleFrom`, `literalsVisibleFrom`, the literal and type names and `refTypeNames` (the classes). `privateOwnerOf(type)` is the class a type editor's new literals become private to. `Shell` provides `structureStore`; a dialog outside the shell provides it itself, tests use `staticStructureContext(structure, options)`, and `withoutRefOption` hides one id (a location is never its own sublocation). Any `ValueEditor`, `ArrayEditor`, `ObjectEditor` or `StructureEditor` needs it. `useTypeContext()` gives the `TTypeDefaultContext` for `typeDefault` (the default of a new required value: `''`, `0`, `false`, the first literal value or id).
-- **Images** (`components/editors/ImageEditor.tsx`): the shared image component of a passage, character, npc or location. With an image it shows only the picture; overlay buttons in its top-right corner (on hover, on keyboard focus and always on touch devices) replace it or switch the frame to the `image` description and back. Without an image it shows the description (a multiline text field) and an **Upload image** button. PNG, WebP or JPEG, up to `MAX_IMAGE_BYTES` (`imageUpload.ts`: a JPEG is converted to WebP in the browser, quality 0.8, like `yarn to-webp`); a `409 stale` shows the image on disk and asks to upload again, and a late response for another owner is dropped. A description that is code (`_('…')`) is shown read-only with **Convert to text**. The upload is written right away; the description is part of the draft and is written on Save (the tooltip next to the label says so). With `linkFrom` (passages pass their `file`) a description starting with `@` is an image link: typing `@` lists the story's `.png` files as paths relative to the passage, with thumbnails (arrows and Enter/Tab pick, Escape closes; `ImageDescriptionInput`). While it is a link, the linked image is previewed instead of the upload controls, or an error says no image is at that path. The file list is `listImageFiles`, the `.png` files under `data/` of the play manifest, shown through `getPlayFile`.
+- **Images** (`components/editors/ImageEditor.tsx`): the shared image component of a passage, character, npc or location. With an image it shows the picture with the `image` description beside it and **Download**, **Upload**, **Generate** and **Delete** beneath; without one, the description with Upload and Generate in one row. Uploads take PNG, WebP or JPEG up to `MAX_IMAGE_BYTES` and store WebP: `imageUpload.ts` converts PNG and JPEG in the browser at `STORED_WEBP_QUALITY` (0.8, like `yarn to-webp`; a browser that cannot encode WebP sends a PNG, which the server accepts). A `409 stale` shows the image on disk and asks to upload again, and a late response for another owner is dropped. A description that is code (`_('…')`) is shown read-only with **Convert to text**. The upload is written right away; the description is part of the draft and is written on Save (the tooltip next to the label says so).
+    - **Description** (`ImageDescriptionInput`, multiline): typing `@` anywhere opens suggestions at the cursor (`mentionSuggestions`, `ai/aiMentions.ts`, the AI input's list, rendered by `inputs/SuggestionList.tsx`): first the classes, then the entries, so `@character:thomas`, `@location:village` or `@passage:village-thomas-intro` goes into the text (arrows and Enter/Tab pick, Escape closes). A mention is the `@<class>:<id>` form of `@story/shared` `mentions.ts`; previews, `alt` and the players show it as the entity's name (`imageDescription(text, nameOf)`). With `linkFrom` (passages pass their `file`) a description starting with `@` that is not a mention is an image link: at the very start the suggestions also list the story's `.png` / `.webp` files as paths relative to the passage, with thumbnails. While it is a link, the linked image is previewed instead of the passage's own, or an error says no image is at that path. The file list is `listImageFiles`, the image files under `data/` of the play manifest, shown through `getPlayFile`.
+    - **Generate** (`GenerateImageButton.tsx`, an `AutoAwesome` icon, next to Upload when the description is editable): shown only when `aiStore.imageGeneration`, `aiStore.enabled` and the story info says `access: 'edit'` (it does not need Claude's `available`). Disabled with the tooltip "No AI credits left" at credits ≤ 0, and while the image loads or another image action runs; otherwise enabled whatever the description, so a click can say why nothing happens. A click first runs `generateBlockReason(description, linkFrom)` (`imageGeneration.ts`): code ("Convert the description to text first."), empty after trim ("Write a description of the picture first.") or, for a passage, an image link ("This passage shows a linked image. Replace the link with a description to generate one.") shows the message in the editor's error line, sends nothing and clears on the next edit or click. With an existing image it confirms "Replace the image with a generated one?". Then `api.generateImage(owner, id, { prompt, version })` through the upload's `save()` (busy spinner on the button, Upload and Delete disabled, `409 stale`, the late-response drop, `onImageChange`), and `aiStore.setCredits` from the answer. The prompt is the **draft** description, saved or not; expect 10–30 s. Server side: [`Server.md`](Server.md#image-generation).
 - **Style**: MobX stores, `@story/ui` primitives, MUI `styled`, 4-space prettier, `_()` for user-facing strings where the surrounding code uses it.
 
 ### Canvas library (`canvas/`)
@@ -254,10 +256,10 @@ A story with `aiFeature` (set on the server with `ai:enable`) gets a chat with a
 
     Any other `/x` goes to the agent as a prompt (its skills' commands).
 
-- **Store** (`ai/AiStore.ts`, `aiStore` in `context.ts`): `open`, `available`, `enabled`, `status`, `statusMessage`, `credits`, `messages`, `sessionId`, `draft`, `lastError`, `sessions`, `touchedFiles`, `sending`; computed `visible`, `noCredits` (`credits <= 0` or status `no_credits`), `working` (busy or starting), `locked`, `canSend`. While the sidebar is visible it holds the event stream (`api.aiEvents`, `api/aiEvents.ts` over the shared `api/ReconnectingEventSource.ts`, the same reconnect and backoff as the story's `/events`), and the server keeps the agent running for as long as a stream is open. Closing the sidebar or leaving the Visualizer closes it; the server stops the agent about 30 s later. A `snapshot` replaces everything, `status`, `message`, `activity` and `usage` update their part.
+- **Store** (`ai/AiStore.ts`, `aiStore` in `context.ts`): `open`, `available`, `imageGeneration` (the Generate button of [Images](#client-clientsvisualizersrc)), `enabled`, `status`, `statusMessage`, `credits`, `messages`, `sessionId`, `draft`, `lastError`, `sessions`, `touchedFiles`, `sending`; computed `visible`, `noCredits` (`credits <= 0` or status `no_credits`), `working` (busy or starting), `locked`, `canSend`. While the sidebar is visible it holds the event stream (`api.aiEvents`, `api/aiEvents.ts` over the shared `api/ReconnectingEventSource.ts`, the same reconnect and backoff as the story's `/events`), and the server keeps the agent running for as long as a stream is open. Closing the sidebar or leaving the Visualizer closes it; the server stops the agent about 30 s later. A `snapshot` replaces everything, `status`, `message`, `activity` and `usage` update their part, and `credits` (after a generated image) sets the balance.
 - **Sending** (`send`): the trimmed draft is added at once as a local `user` message (replaced by the server's echo) and the draft is cleared. When the server refuses it, the message is removed, the draft is restored, and `lastError` gets the error text (`api/errorMessage.ts` has messages for the `ai_*` codes); `ai_no_credits` also sets the status to `no_credits`.
 - **Editing while the agent works** stays enabled everywhere. The agent's edits arrive as normal change events, so the forms and pages refresh; the activity bar is the only warning, because a form with unsaved input can still overwrite a file the agent just wrote.
-- **Mock mode**: `createMockApi` takes `aiAvailable` (default `true`), `aiCredits` (`100`) and `aiStepMs` (`600`, the delay between the steps of a fake turn); the mock story has `aiFeature: true`. `api/mockAiApi.ts` is a scripted agent: opening the stream starts it (`starting` → `ready` after one step), a prompt is echoed back as "You said: …" and costs 1 credit, a prompt with the word edit, change, write or add first reports an `Edit` of `data/chapters/start/start.passages.ts` (so the activity bar shows a touched file), interrupt cancels the turn, and `/clear`, `/resume [n]`, `/cost`, `/help` work on up to 10 in-memory sessions. `VITE_VISUALIZER_API=mock` uses the defaults; tests pass their own (`createMockApi({ aiCredits: 0 })`) or replace single routes.
+- **Mock mode**: `createMockApi` takes `aiAvailable` (default `true`), `aiImageGeneration` (`true`), `aiCredits` (`100`) and `aiStepMs` (`600`, the delay between the steps of a fake turn); the mock story has `aiFeature: true`. `api/mockAiApi.ts` is a scripted agent: opening the stream starts it (`starting` → `ready` after one step), a prompt is echoed back as "You said: …" and costs 1 credit, a prompt with the word edit, change, write or add first reports an `Edit` of `data/chapters/start/start.passages.ts` (so the activity bar shows a touched file), interrupt cancels the turn, and `/clear`, `/resume [n]`, `/cost`, `/help` work on up to 10 in-memory sessions. Its `generateImage` checks like the server (`ai_unavailable`, `ai_disabled`, `ai_no_credits`, empty prompt, a passage link, `ai_image_busy` for the same owner), waits `aiStepMs`, stores a fixed placeholder WebP like an upload (`409 stale` included), costs `AI_IMAGE_CREDITS` (4, charged before the version check) and sends a `credits` event; a prompt with the word `fail` answers `502 ai_image_failed` instead. `VITE_VISUALIZER_API=mock` uses the defaults; tests pass their own (`createMockApi({ aiCredits: 0 })`) or replace single routes.
 
 ## Files the Visualizer owns
 
@@ -286,98 +288,101 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 - `:section` is one of `onLinkClick | topbar` (`ENGINE_SECTIONS`). `updateEngineSection` takes `{ version, description?, code? }` (the one left out is kept; empty `code` writes the stub; `version: ''` creates the file and its entry in `data/engine/index.ts`) or `{ version, delete: true }`, and answers the section's DTO (`exists: false` after a delete).
 - `:kind` is one of `characters | npcs | locations | items`. `:name` of a catalog is its export name (`races`), of a class, type or literal its name (`Race`, `TData`, `TItemType`). `:mapId` is `global` or a location id. For the images `:owner` is one of `passages | characters | npcs | locations`, and its `:id` is a full passage id or an entity id; for the source it is `chapter | passage` (a chapter id or a full passage id).
 
-| Name                                        | Method           | Path                                              |
-| ------------------------------------------- | ---------------- | ------------------------------------------------- |
-| `health`                                    | `GET`            | `/api/health`                                     |
-| `listStories`                               | `GET`            | `/api/stories` (`TStoryListItemDto[]`)            |
-| `createStory`                               | `POST`           | `/api/stories` (201 + cookie)                     |
-| `importStory`                               | `POST`           | `/api/stories/import` (multipart, 201 + cookie)   |
-| `login`                                     | `POST`           | `/api/stories/:storyId/login` (204 + cookie)      |
-| `logout`                                    | `POST`           | `/api/logout` (204, cookie cleared)               |
-| `getSession`                                | `GET`            | `/api/session` (unlocked story ids)               |
-| `getStoryAccess`                            | `GET`            | `/api/stories/:storyId/access` (`canEdit/Play`)   |
-| `events`                                    | `GET`            | `/events` (SSE)                                   |
-| `getProject`                                | `GET`            | `/project` (id/title lists of everything)         |
-| `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (the story's row without the password)    |
-| `exportStory`                               | `GET`            | `/export` (`<storyId>.zip`, an attachment)        |
-| `exportPlayable`                            | `GET`            | `/export/web` (`<storyId>-web.zip`, standalone)   |
-| `addStoryFiles`                             | `POST`           | `/files` (multipart zip, adds/replaces files)     |
-| `createChapter`                             | `POST`           | `/chapters`                                       |
-| `get/update/deleteChapter`                  | `GET/PUT/DELETE` | `/chapters/:chapterId`                            |
-| `addChapterCharacter`                       | `POST`           | `/chapters/:chapterId/characters`                 |
-| `removeChapterCharacter`                    | `DELETE`         | `/chapters/:chapterId/characters/:characterId`    |
-| `listChapterPassages`                       | `GET`            | `/chapters/:chapterId/passages` (with edges)      |
-| `createPassage`                             | `POST`           | `/chapters/:chapterId/passages`                   |
-| `get/update/deletePassage`                  | `GET/PUT/DELETE` | `/passages/:passageId`                            |
-| `createTrigger`                             | `POST`           | `/chapters/:chapterId/triggers`                   |
-| `get/update/deleteTrigger`                  | `GET/PUT/DELETE` | `/triggers/:triggerId`                            |
-| `listEntities` / `createEntity`             | `GET/POST`       | `/entities/:kind`                                 |
-| `get/update/deleteEntity`                   | `GET/PUT/DELETE` | `/entities/:kind/:id`                             |
-| `getEntityReferences`                       | `GET`            | `/entities/:kind/:id/references` (delete preview) |
-| `listCatalogEntries` / `createCatalogEntry` | `GET/POST`       | `/catalogs/:name`                                 |
-| `get/update/deleteCatalogEntry`             | `GET/PUT/DELETE` | `/catalogs/:name/:id` (`PUT`: the whole `values`) |
-| `getCatalogEntryReferences`                 | `GET`            | `/catalogs/:name/:id/references`                  |
-| `getStructure`                              | `GET`            | `/structure` (literals + classes and types)       |
-| `createType`                                | `POST`           | `/structure/types`                                |
-| `update/deleteType`                         | `PUT/DELETE`     | `/structure/types/:name`                          |
-| `createLiteral`                             | `POST`           | `/structure/literals`                             |
-| `update/deleteLiteral`                      | `PUT/DELETE`     | `/structure/literals/:name`                       |
-| `addLiteralValue`                           | `POST`           | `/structure/literals/:name/values`                |
-| `get/updateSource`                          | `GET/PUT`        | `/source/:owner/:id` (the whole file as text)     |
-| `getEngineSection` / `updateEngineSection`  | `GET/PUT`        | `/engine/:section` (`PUT` `delete: true` removes) |
-| `getImage` / `uploadImage`                  | `GET/PUT`        | `/images/:owner/:id` (`TImageDto`; base64 image)  |
-| `getImageFile`                              | `GET`            | `/images/:owner/:id/png` (bytes, `ETag`)          |
-| `getPlayManifest`                           | `GET`            | `/play` (`TPlayManifestDto`, for the player)      |
-| `getPlayFile`                               | `GET`            | `/play/:file` (`.ts`/`.tsx`/`.png`, `ETag`)       |
-| `getMap` / `updateMap` / `deleteMap`        | `GET/PUT/DELETE` | `/maps/:mapId`                                    |
-| `get/updateTimelineLayout`                  | `GET/PUT`        | `/layout/timeline`                                |
-| `get/updateChapterLayout`                   | `GET/PUT`        | `/layout/chapters/:chapterId`                     |
-| `getGit`                                    | `GET`            | `/git` (`TGitDto`; write access)                  |
-| `setupGit`                                  | `POST`           | `/git/setup` (`initial`: `push`/`pull`, 201)      |
-| `updateGitConfig` / `deleteGitConfig`       | `PUT/DELETE`     | `/git/config` (`DELETE`: `removeRepo`, 204)       |
-| `gitFetch`                                  | `POST`           | `/git/fetch` (`TGitStatusDto`)                    |
-| `gitCommit`                                 | `POST`           | `/git/commit` (`{ message, push }`)               |
-| `gitPush`                                   | `POST`           | `/git/push`                                       |
-| `gitForcePush`                              | `POST`           | `/git/push/force`                                 |
-| `gitPull`                                   | `POST`           | `/git/pull` (fetch + merge)                       |
-| `gitCheckout`                               | `POST`           | `/git/checkout` (`{ branch, create }`)            |
-| `gitDiscard`                                | `POST`           | `/git/discard`                                    |
-| `getGitBranches`                            | `GET`            | `/git/branches` (write access)                    |
-| `deleteGitBranch`                           | `POST`           | `/git/branches/delete` (`{ branch, remote }`)     |
-| `getAi`                                     | `GET`            | `/ai` (`TAiDto`)                                  |
-| `aiEvents`                                  | `GET`            | `/ai/events` (SSE of `TAiEvent`, event `ai`)      |
-| `sendAiMessage`                             | `POST`           | `/ai/messages` (`{ text }`, prompt or command)    |
-| `interruptAi`                               | `POST`           | `/ai/interrupt`                                   |
-| `listAiSessions`                            | `GET`            | `/ai/sessions` (`TAiSessionDto[]`, ≤ 10)          |
-| `resumeAi`                                  | `POST`           | `/ai/resume` (`{ sessionId }`)                    |
-| `clearAi`                                   | `POST`           | `/ai/clear`                                       |
+| Name                                        | Method           | Path                                                                            |
+| ------------------------------------------- | ---------------- | ------------------------------------------------------------------------------- |
+| `health`                                    | `GET`            | `/api/health`                                                                   |
+| `listStories`                               | `GET`            | `/api/stories` (`TStoryListItemDto[]`)                                          |
+| `createStory`                               | `POST`           | `/api/stories` (201 + cookie)                                                   |
+| `importStory`                               | `POST`           | `/api/stories/import` (multipart, 201 + cookie)                                 |
+| `login`                                     | `POST`           | `/api/stories/:storyId/login` (204 + cookie)                                    |
+| `logout`                                    | `POST`           | `/api/logout` (204, cookie cleared)                                             |
+| `getSession`                                | `GET`            | `/api/session` (unlocked story ids)                                             |
+| `getStoryAccess`                            | `GET`            | `/api/stories/:storyId/access` (`canEdit/Play`)                                 |
+| `events`                                    | `GET`            | `/events` (SSE)                                                                 |
+| `getProject`                                | `GET`            | `/project` (id/title lists of everything)                                       |
+| `get/updateStoryInfo`                       | `GET/PUT`        | `/info` (the story's row without the password)                                  |
+| `exportStory`                               | `GET`            | `/export` (`<storyId>.zip`, an attachment)                                      |
+| `exportPlayable`                            | `GET`            | `/export/web` (`<storyId>-web.zip`, standalone)                                 |
+| `addStoryFiles`                             | `POST`           | `/files` (multipart zip, adds/replaces files)                                   |
+| `createChapter`                             | `POST`           | `/chapters`                                                                     |
+| `get/update/deleteChapter`                  | `GET/PUT/DELETE` | `/chapters/:chapterId`                                                          |
+| `addChapterCharacter`                       | `POST`           | `/chapters/:chapterId/characters`                                               |
+| `removeChapterCharacter`                    | `DELETE`         | `/chapters/:chapterId/characters/:characterId`                                  |
+| `listChapterPassages`                       | `GET`            | `/chapters/:chapterId/passages` (with edges)                                    |
+| `createPassage`                             | `POST`           | `/chapters/:chapterId/passages`                                                 |
+| `get/update/deletePassage`                  | `GET/PUT/DELETE` | `/passages/:passageId`                                                          |
+| `createTrigger`                             | `POST`           | `/chapters/:chapterId/triggers`                                                 |
+| `get/update/deleteTrigger`                  | `GET/PUT/DELETE` | `/triggers/:triggerId`                                                          |
+| `listEntities` / `createEntity`             | `GET/POST`       | `/entities/:kind`                                                               |
+| `get/update/deleteEntity`                   | `GET/PUT/DELETE` | `/entities/:kind/:id`                                                           |
+| `getEntityReferences`                       | `GET`            | `/entities/:kind/:id/references` (delete preview)                               |
+| `listCatalogEntries` / `createCatalogEntry` | `GET/POST`       | `/catalogs/:name`                                                               |
+| `get/update/deleteCatalogEntry`             | `GET/PUT/DELETE` | `/catalogs/:name/:id` (`PUT`: the whole `values`)                               |
+| `getCatalogEntryReferences`                 | `GET`            | `/catalogs/:name/:id/references`                                                |
+| `getStructure`                              | `GET`            | `/structure` (literals + classes and types)                                     |
+| `createType`                                | `POST`           | `/structure/types`                                                              |
+| `update/deleteType`                         | `PUT/DELETE`     | `/structure/types/:name`                                                        |
+| `createLiteral`                             | `POST`           | `/structure/literals`                                                           |
+| `update/deleteLiteral`                      | `PUT/DELETE`     | `/structure/literals/:name`                                                     |
+| `addLiteralValue`                           | `POST`           | `/structure/literals/:name/values`                                              |
+| `get/updateSource`                          | `GET/PUT`        | `/source/:owner/:id` (the whole file as text)                                   |
+| `getEngineSection` / `updateEngineSection`  | `GET/PUT`        | `/engine/:section` (`PUT` `delete: true` removes)                               |
+| `getImage` / `uploadImage`                  | `GET/PUT`        | `/images/:owner/:id` (`TImageDto`; base64 image)                                |
+| `generateImage`                             | `POST`           | `/images/:owner/:id/generate` (`{ prompt, version }` → `TImageDto` + `credits`) |
+| `getImageFile`                              | `GET`            | `/images/:owner/:id/png` (bytes, `ETag`)                                        |
+| `getPlayManifest`                           | `GET`            | `/play` (`TPlayManifestDto`, for the player)                                    |
+| `getPlayFile`                               | `GET`            | `/play/:file` (`.ts`/`.tsx`/`.png`, `ETag`)                                     |
+| `getMap` / `updateMap` / `deleteMap`        | `GET/PUT/DELETE` | `/maps/:mapId`                                                                  |
+| `get/updateTimelineLayout`                  | `GET/PUT`        | `/layout/timeline`                                                              |
+| `get/updateChapterLayout`                   | `GET/PUT`        | `/layout/chapters/:chapterId`                                                   |
+| `getGit`                                    | `GET`            | `/git` (`TGitDto`; write access)                                                |
+| `setupGit`                                  | `POST`           | `/git/setup` (`initial`: `push`/`pull`, 201)                                    |
+| `updateGitConfig` / `deleteGitConfig`       | `PUT/DELETE`     | `/git/config` (`DELETE`: `removeRepo`, 204)                                     |
+| `gitFetch`                                  | `POST`           | `/git/fetch` (`TGitStatusDto`)                                                  |
+| `gitCommit`                                 | `POST`           | `/git/commit` (`{ message, push }`)                                             |
+| `gitPush`                                   | `POST`           | `/git/push`                                                                     |
+| `gitForcePush`                              | `POST`           | `/git/push/force`                                                               |
+| `gitPull`                                   | `POST`           | `/git/pull` (fetch + merge)                                                     |
+| `gitCheckout`                               | `POST`           | `/git/checkout` (`{ branch, create }`)                                          |
+| `gitDiscard`                                | `POST`           | `/git/discard`                                                                  |
+| `getGitBranches`                            | `GET`            | `/git/branches` (write access)                                                  |
+| `deleteGitBranch`                           | `POST`           | `/git/branches/delete` (`{ branch, remote }`)                                   |
+| `getAi`                                     | `GET`            | `/ai` (`TAiDto`)                                                                |
+| `aiEvents`                                  | `GET`            | `/ai/events` (SSE of `TAiEvent`, event `ai`)                                    |
+| `sendAiMessage`                             | `POST`           | `/ai/messages` (`{ text }`, prompt or command)                                  |
+| `interruptAi`                               | `POST`           | `/ai/interrupt`                                                                 |
+| `listAiSessions`                            | `GET`            | `/ai/sessions` (`TAiSessionDto[]`, ≤ 10)                                        |
+| `resumeAi`                                  | `POST`           | `/ai/resume` (`{ sessionId }`)                                                  |
+| `clearAi`                                   | `POST`           | `/ai/clear`                                                                     |
 
 **Errors** (`dto/errors.ts`): every non-2xx answer is `{ error, message?, diagnostics?, references?, current?, files? }`.
 
-| Status | `error`                 | Meaning                                                                                                  |
-| ------ | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| 400    | `bad_request`           | malformed JSON, missing or invalid fields, bad id                                                        |
-| 401    | `unauthorized`          | no grant for the story (log in), or a wrong password                                                     |
-| 403    | `forbidden`             | a mutation from a foreign `Origin`; deleting an extendable or engine class or type                       |
-| 404    | `not_found`             | no such route or resource                                                                                |
-| 409    | `stale`                 | `version` is not the one on disk; `current` is the fresh DTO (or `null`)                                 |
-| 409    | `referenced`            | delete refused; `references` lists file, line and text of each reference                                 |
-| 409    | `exists`                | create refused, the id is taken (chapter, passage, entity, type, …)                                      |
-| 422    | `invalid`               | the edit does not type-check (`diagnostics`, with a `field` path); nothing written                       |
-| 409    | `git_not_configured`    | the story is not connected to git (or its `.git` is gone)                                                |
-| 409    | `git_dirty`             | pull or branch switch with uncommitted changes                                                           |
-| 409    | `git_conflict`          | the pull's merge conflicted and was aborted; `files` lists the paths                                     |
-| 409    | `git_rejected`          | push rejected, the remote is ahead: pull first                                                           |
-| 409    | `git_auth`              | the remote refused the token, or it must be re-entered (not `401`: the story is not locked)              |
-| 409    | `git_nothing_to_commit` | commit on a clean tree                                                                                   |
-| 429    | `too_many_requests`     | too many wrong passwords or reset mails, or more than 20 AI messages a minute (`AI_MESSAGES_PER_MINUTE`) |
-| 500    | `internal`              | bug                                                                                                      |
-| 502    | `git_remote`            | network or other remote error (token scrubbed)                                                           |
-| 503    | `git_unavailable`       | git is off on this server or for this story                                                              |
-| 402    | `ai_no_credits`         | the story has no AI credits left                                                                         |
-| 403    | `ai_disabled`           | the story's `aiFeature` is off                                                                           |
-| 409    | `ai_busy`               | the agent is still working on the previous message                                                       |
-| 503    | `ai_unavailable`        | the server cannot run AI agents (launcher, image or token missing), or the agent did not start           |
+| Status | `error`                 | Meaning                                                                                                                                                                                                     |
+| ------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `bad_request`           | malformed JSON, missing or invalid fields, bad id                                                                                                                                                           |
+| 401    | `unauthorized`          | no grant for the story (log in), or a wrong password                                                                                                                                                        |
+| 403    | `forbidden`             | a mutation from a foreign `Origin`; deleting an extendable or engine class or type                                                                                                                          |
+| 404    | `not_found`             | no such route or resource                                                                                                                                                                                   |
+| 409    | `stale`                 | `version` is not the one on disk; `current` is the fresh DTO (or `null`)                                                                                                                                    |
+| 409    | `referenced`            | delete refused; `references` lists file, line and text of each reference                                                                                                                                    |
+| 409    | `exists`                | create refused, the id is taken (chapter, passage, entity, type, …)                                                                                                                                         |
+| 422    | `invalid`               | the edit does not type-check (`diagnostics`, with a `field` path); nothing written                                                                                                                          |
+| 409    | `git_not_configured`    | the story is not connected to git (or its `.git` is gone)                                                                                                                                                   |
+| 409    | `git_dirty`             | pull or branch switch with uncommitted changes                                                                                                                                                              |
+| 409    | `git_conflict`          | the pull's merge conflicted and was aborted; `files` lists the paths                                                                                                                                        |
+| 409    | `git_rejected`          | push rejected, the remote is ahead: pull first                                                                                                                                                              |
+| 409    | `git_auth`              | the remote refused the token, or it must be re-entered (not `401`: the story is not locked)                                                                                                                 |
+| 409    | `git_nothing_to_commit` | commit on a clean tree                                                                                                                                                                                      |
+| 429    | `too_many_requests`     | too many wrong passwords or reset mails, more than 20 AI messages a minute (`AI_MESSAGES_PER_MINUTE`), or too many generated images (`gemini.imagesPerMinute` per story, or the launcher's `maxConcurrent`) |
+| 500    | `internal`              | bug                                                                                                                                                                                                         |
+| 502    | `git_remote`            | network or other remote error (token scrubbed)                                                                                                                                                              |
+| 503    | `git_unavailable`       | git is off on this server or for this story                                                                                                                                                                 |
+| 402    | `ai_no_credits`         | the story has no AI credits left                                                                                                                                                                            |
+| 403    | `ai_disabled`           | the story's `aiFeature` is off                                                                                                                                                                              |
+| 409    | `ai_busy`               | the agent is still working on the previous message                                                                                                                                                          |
+| 503    | `ai_unavailable`        | the server cannot run AI agents (launcher, image or token missing), or the agent did not start; for `generateImage`: no launcher or Gemini key, or Gemini's quota or outage                                 |
+| 502    | `ai_image_failed`       | Gemini refused (safety block, no image in the answer), failed, or took too long                                                                                                                             |
+| 409    | `ai_image_busy`         | this owner's image, or `gemini.maxPerStory` images of the story, are already being generated                                                                                                                |
 
 **Events** (`dto/events.ts`): a story's `GET /api/stories/:storyId/events` sends `hello` on connect, then an `event: change` with `{ kind, id, version, op?, chapterId? }` for each change. `kind` is one of `chapter | passage | trigger | entity | map | layout | project | structure | catalog | engine`, and `version` is `null` for a deletion. One server operation is one event, however many files it writes. Hand edits are batched over about 150 ms. An id ending in `*` is a wildcard: `trigger` `*` for a hand edit of `triggers.ts`, `entity` `items/*` for an items file, `catalog` `races/*` for a hand edit of a catalog file. `structure` (id `structure`) follows every change under `types/`, of a catalog file or of an items file; a catalog entry's id is `<catalog>/<id>`; an `engine` id is the section (`onLinkClick`, `topbar`), or `*` for another file under `data/engine/`. After a git pull, branch switch or setup pull, an `event: story` with `{ type: "story", reason: "git" }` says the whole story changed: the client refetches every store, as after a reconnect.
 
@@ -397,7 +402,7 @@ The source of truth is [`protocol/src/routes.ts`](../protocol/src/routes.ts): `S
 - `shell/router.ts` defines its own `ENTITY_KINDS`. Its order is the menu order, which differs from the protocol's.
 - `clients/Visualizer/index.html` links its favicon from `stories/example/data/assets`.
 - Images are not resources of the event feed: an upload emits no event, and a `.png` added or changed by hand shows up the next time the form or panel is opened.
-- Uploads are PNG or WebP (the server checks the signature and writes the sibling with that extension, removing the one in the other format). The file picker also offers JPEG, which the browser converts to WebP, since the server has no image library.
+- Uploads are PNG or WebP (the server checks the signature and writes the sibling with that extension, removing the one in the other format). The browser converts PNG and JPEG to WebP, so new images are WebP; existing `.png` files stay until replaced.
 - Structure and Engine drafts are not kept across a page reload, and switching the selection drops an unsaved type, literal or engine-setting draft without asking.
 - The mock API's versions are per object (the server's are file hashes), and the mock has no code references, so nothing blocks a delete there.
 - Deleting a chapter's last trigger leaves an empty `triggers.ts`.

@@ -39,14 +39,18 @@ export type TAiEvent =
     | { type: 'message'; message: TAiMessageDto }
     /** Story-relative paths edited in the running turn; `[]` when the turn ends. */
     | { type: 'activity'; touchedFiles: string[] }
-    | { type: 'usage'; credits: number; turnCredits: number; tokens: TAiTokensDto };
+    | { type: 'usage'; credits: number; turnCredits: number; tokens: TAiTokensDto }
+    /** The balance changed outside a turn (a generated image). */
+    | { type: 'credits'; credits: number };
 
 /**
- * `available`: the server can run agents (launcher, image and token). `enabled`: the story's `aiFeature`.
+ * `available`: the server can run agents (launcher, image and token). `imageGeneration`: the server can generate
+ * images (launcher and Gemini key), independent of `available`. `enabled`: the story's `aiFeature`.
  * `credits` may be negative: the last turn can overdraw.
  */
 export type TAiDto = {
     available: boolean;
+    imageGeneration: boolean;
     enabled: boolean;
     credits: number;
     status: TAiStatus;

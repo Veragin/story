@@ -124,6 +124,28 @@ describe('AiStore', () => {
         expect(store.noCredits).toBe(true);
     });
 
+    it('keeps whether images can be generated', async () => {
+        expect(store.imageGeneration).toBe(true);
+        release();
+        api = createMockApi({ aiImageGeneration: false });
+        store = new AiStore({ api });
+        release = store.start();
+        await settle();
+        expect(store.imageGeneration).toBe(false);
+        expect(store.enabled).toBe(true);
+    });
+
+    it('applies a credits event and a generated image charge', async () => {
+        store.applyEvent({ type: 'credits', credits: 6 });
+        expect(store.credits).toBe(6);
+
+        await openReady();
+        expect(store.credits).toBe(10);
+        const generated = await api.generateImage('characters', 'thomas', { prompt: 'Thomas waving', version: '' });
+        expect(generated.credits).toBe(6);
+        await vi.waitFor(() => expect(store.credits).toBe(6));
+    });
+
     it('handles the commands through the server', async () => {
         await openReady();
         await store.send('First prompt');

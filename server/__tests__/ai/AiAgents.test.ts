@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { TAiEvent } from '@story/protocol';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { DEFAULT_AGENTS_CONFIG } from '../../aiLauncher/agentsConfig';
 import { AiAgents, FOLDER_REPLACED, SERVER_SHUTDOWN, STORY_DELETED } from '../../src/ai/AiAgents';
 import type { TAiOptions } from '../../src/ai/aiOptions';
 import { AiCreditRepository } from '../../src/database/repositories/AiCreditRepository';
@@ -34,6 +35,8 @@ const OPTIONS: TAiOptions = {
     maxBudgetUsd: 5,
     messagesPerMinute: 20,
     requireApiKey: false,
+    gemini: DEFAULT_AGENTS_CONFIG.gemini,
+    localGeminiKey: null,
 };
 
 const oldSessionId = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;

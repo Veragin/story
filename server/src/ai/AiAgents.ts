@@ -97,6 +97,16 @@ export class AiAgents implements OnModuleInit, OnApplicationBootstrap, OnApplica
         };
     }
 
+    // a listener of a story whose agent may not start (disabled, unavailable); returns the unsubscribe
+    subscribe(storyId: string, listener: (event: TAiEvent) => void): () => void {
+        return this.entry(storyId).agent.subscribe(listener);
+    }
+
+    // to every open stream of the story
+    publish(storyId: string, event: TAiEvent): void {
+        this.find(storyId)?.publish(event);
+    }
+
     send(storyId: string, text: string): Promise<TSendOutcome> {
         return this.entry(storyId).agent.send(text);
     }

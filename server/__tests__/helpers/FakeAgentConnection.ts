@@ -1,7 +1,9 @@
 import path from 'node:path';
+import type { TGeneratedImage, TImageGeneration } from '../../aiLauncher/gemini/generateImage';
 import { TRANSCRIPTS_FOLDER } from '../../src/ai/agentConnection/LauncherConnection';
 import type {
     TAgentConnection,
+    TAgentHealth,
     TAgentExit,
     TAgentHandle,
     TAgentLaunch,
@@ -9,6 +11,7 @@ import type {
     TAgentStream,
     TAiHealth,
 } from '../../src/ai/agentConnection/TAgentConnection';
+import { solidImage } from './images';
 
 export const FAKE_STORY_ROOT = '/repo/stories/story';
 
@@ -128,8 +131,26 @@ export class FakeAgentStream implements TAgentStream {
     }
 }
 
+export const FAKE_IMAGE_USAGE: TGeneratedImage['usage'] = {
+    promptTokens: 300,
+    candidatesTokens: 1290,
+    totalTokens: 1590,
+};
+
+export const generatedPng = async (): Promise<TGeneratedImage> => ({
+    mimeType: 'image/png',
+    data: (await solidImage('png')).toString('base64'),
+    usage: FAKE_IMAGE_USAGE,
+});
+
+export type TImageCall = { storyId: string; request: TImageGeneration };
+
 export class FakeAgentConnection implements TAgentConnection {
     healthResult: TAiHealth = { available: true };
+    imageGeneration = true;
+    readonly imageCalls: TImageCall[] = [];
+    // scripts the answer of each generateImage call
+    respondImage: (call: TImageCall) => Promise<TGeneratedImage> = generatedPng;
     readonly launches: TAgentLaunch[] = [];
     readonly streams: FakeAgentStream[] = [];
     failOpen: Error | null = null;
@@ -140,9 +161,15 @@ export class FakeAgentConnection implements TAgentConnection {
 
     constructor(readonly sessionsDir: string) {}
 
-    async health(): Promise<TAiHealth> {
+    async health(): Promise<TAgentHealth> {
         await Promise.resolve();
-        return this.healthResult;
+        return { agents: this.healthResult, imageGeneration: this.imageGeneration };
+    }
+
+    async generateImage(storyId: string, request: TImageGeneration): Promise<TGeneratedImage> {
+        const call = { storyId, request };
+        this.imageCalls.push(call);
+        return await this.respondImage(call);
     }
 
     async open(launch: TAgentLaunch): Promise<TAgentStream> {

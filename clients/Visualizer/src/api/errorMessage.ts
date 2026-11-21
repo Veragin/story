@@ -30,6 +30,8 @@ const AI_MESSAGES: Record<TAiErrorCode, () => string> = {
     ai_busy: () => _('The agent is still working on the previous message. Wait, or stop it.'),
     ai_disabled: () => _('The AI agent is not enabled for this story.'),
     ai_unavailable: () => _('The AI agent is not available on this server.'),
+    ai_image_failed: () => _('The image could not be generated. Try again, or change the description.'),
+    ai_image_busy: () => _('An image is already being generated. Wait for it to finish.'),
 };
 
 const isAiErrorCode = (code: TApiErrorCode): code is TAiErrorCode => code in AI_MESSAGES;

@@ -34,6 +34,21 @@ export type TUploadImageBody = TVersionedBody & {
 /** `version` is the image's current one. */
 export type TDeleteImageBody = TVersionedBody;
 
+/** `version` is the owner's current image version (`''` when there is none), as for an upload. */
+export type TGenerateImageBody = TVersionedBody & {
+    /** The image description; `@<class>:<id>` mentions add the referenced entities' images. */
+    prompt: string;
+};
+
+/** `credits`: the story's AI balance after the charge. */
+export type TGenerateImageResult = TImageDto & { credits: number };
+
+/** The longest `generateImage` prompt, in characters. */
+export const IMAGE_PROMPT_MAX_LENGTH = 4_000;
+
+/** The WebP quality of every stored image, generated or uploaded (canvas `toBlob` scale). */
+export const STORED_WEBP_QUALITY = 0.8;
+
 /** Its base64 still fits the server's JSON body limit. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 

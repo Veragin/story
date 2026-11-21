@@ -35,9 +35,9 @@ type TAiState = { enabled: boolean; available: boolean; credits: number; block: 
 
 const OK: TOkDto = { ok: true };
 
-const DISABLED_MESSAGE = 'The AI agent is not enabled for this story';
+export const DISABLED_MESSAGE = 'The AI agent is not enabled for this story';
 const UNAVAILABLE_MESSAGE = 'The server cannot run AI agents right now';
-const NO_CREDITS_MESSAGE = 'The story has no AI credits left';
+export const NO_CREDITS_MESSAGE = 'The story has no AI credits left';
 
 const BLOCK_ERRORS = {
     disabled: 'ai_disabled',
@@ -82,6 +82,7 @@ export class AiService {
         const running = agent?.running ?? false;
         return {
             available,
+            imageGeneration: this.availability.imageGeneration,
             enabled,
             credits,
             status: block && !running ? block.status : (agent?.status ?? 'stopped'),
@@ -102,7 +103,7 @@ export class AiService {
                     touchedFiles: [],
                 });
                 sink({ type: 'status', status: block.status, message: block.message });
-                return () => undefined;
+                return this.agents.subscribe(storyId, sink);
             }
             const blockedStatus = block?.status;
             const detach = this.agents.attach(storyId, sink, { credits, start: block === null, blockedStatus });

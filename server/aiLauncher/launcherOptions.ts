@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { DEFAULT_AGENTS_CONFIG_FILE, readAgentsConfig, type TAgentsConfig } from './agentsConfig';
 
 export type TSandboxDriverName = 'docker-run' | 'docker-sandbox';
 
@@ -7,6 +8,7 @@ export type TStoriesMount = { kind: 'volume'; volume: string } | { kind: 'bind';
 
 export type TLauncherOptions = {
     tokenFile: string;
+    geminiTokenFile: string;
     keyFile: string;
     port: number;
     driver: TSandboxDriverName;
@@ -16,15 +18,13 @@ export type TLauncherOptions = {
     sessionsVolume: string;
     network: string;
     instance: string;
-    models: readonly string[];
-    maxBudgetUsd: number;
+    agents: TAgentsConfig;
 };
 
 export const DEFAULT_LAUNCHER_PORT = 8155;
 
 const DOCKER_NAME = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
 const IMAGE_REFERENCE = /^[a-z0-9][a-z0-9_.\-/:@]*$/;
-const MODEL_ID = /^[a-z0-9][a-z0-9.\-[\]]*$/i;
 
 const optionalText = z.string().trim().optional();
 
@@ -43,6 +43,7 @@ const hostDir = optionalText
 
 const LAUNCHER_ENV_SCHEMA = z.object({
     AI_TOKEN_FILE: text('/secret/ai_token'),
+    AI_GEMINI_TOKEN_FILE: text('/secret/gemini_token'),
     AI_LAUNCHER_KEY_FILE: text('/secret/ai_launcher_key'),
     AI_LAUNCHER_PORT: z.coerce.number().int().min(1).max(65535).default(DEFAULT_LAUNCHER_PORT),
     AI_SANDBOX_DRIVER: z.enum(['docker-run', 'docker-sandbox']).default('docker-run'),
@@ -53,15 +54,18 @@ const LAUNCHER_ENV_SCHEMA = z.object({
     AI_SESSIONS_VOLUME: dockerName('story-ai-sessions'),
     AI_NETWORK: dockerName('story-ai'),
     AI_INSTANCE: dockerName('prod'),
-    AI_MODELS: text('claude-sonnet-5-5,claude-opus-5-5')
-        .transform((value) =>
-            value
-                .split(',')
-                .map((model) => model.trim())
-                .filter(Boolean)
-        )
-        .pipe(z.array(z.string().regex(MODEL_ID)).min(1)),
-    AI_MAX_BUDGET_USD: z.coerce.number().positive().finite().default(5),
+    AI_AGENTS_CONFIG_FILE: text(DEFAULT_AGENTS_CONFIG_FILE),
+    AI_MODELS: optionalText.transform((value) =>
+        value
+            ? value
+                  .split(',')
+                  .map((model) => model.trim())
+                  .filter(Boolean)
+            : undefined
+    ),
+    AI_MAX_BUDGET_USD: optionalText
+        .transform((value) => (value ? Number(value) : undefined))
+        .pipe(z.number().positive().finite().optional()),
 });
 
 const storiesMount = (volume: string | null, hostDirectory: string | null): TStoriesMount => {
@@ -72,12 +76,16 @@ const storiesMount = (volume: string | null, hostDirectory: string | null): TSto
     throw new Error('Set AI_STORIES_VOLUME (prod) or AI_STORIES_HOST_DIR (dev)');
 };
 
-export const launcherOptionsFromEnv = (env: NodeJS.ProcessEnv): TLauncherOptions => {
+export const launcherOptionsFromEnv = (
+    env: NodeJS.ProcessEnv,
+    log: (message: string) => void = () => {}
+): TLauncherOptions => {
     const parsed = LAUNCHER_ENV_SCHEMA.safeParse(env);
     if (!parsed.success) throw new Error(`Invalid launcher environment: ${z.prettifyError(parsed.error)}`);
     const values = parsed.data;
     return {
         tokenFile: values.AI_TOKEN_FILE,
+        geminiTokenFile: values.AI_GEMINI_TOKEN_FILE,
         keyFile: values.AI_LAUNCHER_KEY_FILE,
         port: values.AI_LAUNCHER_PORT,
         driver: values.AI_SANDBOX_DRIVER,
@@ -87,7 +95,10 @@ export const launcherOptionsFromEnv = (env: NodeJS.ProcessEnv): TLauncherOptions
         sessionsVolume: values.AI_SESSIONS_VOLUME,
         network: values.AI_NETWORK,
         instance: values.AI_INSTANCE,
-        models: values.AI_MODELS,
-        maxBudgetUsd: values.AI_MAX_BUDGET_USD,
+        agents: readAgentsConfig(
+            values.AI_AGENTS_CONFIG_FILE,
+            { AI_MODELS: values.AI_MODELS, AI_MAX_BUDGET_USD: values.AI_MAX_BUDGET_USD },
+            log
+        ),
     };
 };

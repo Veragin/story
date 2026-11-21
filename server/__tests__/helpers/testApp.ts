@@ -6,6 +6,7 @@ import type { INestApplication, Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
+import { DEFAULT_AGENTS_CONFIG } from '../../aiLauncher/agentsConfig';
 import { AppModule } from '../../src/AppModule';
 import { AGENT_CONNECTION } from '../../src/ai/agentConnection/TAgentConnection';
 import { AI_OPTIONS, type TAiOptions } from '../../src/ai/aiOptions';
@@ -90,12 +91,15 @@ const TEST_AI_OPTIONS: TAiOptions = {
     maxBudgetUsd: 5,
     messagesPerMinute: 20,
     requireApiKey: false,
+    gemini: DEFAULT_AGENTS_CONFIG.gemini,
+    localGeminiKey: null,
 };
 
 // without a launcher in tests, AI stays unavailable unless a test brings its own connection
 const unavailableConnection = (sessionsDir: string) => {
     const connection = new FakeAgentConnection(sessionsDir);
     connection.healthResult = { available: false, reason: 'No AI launcher in tests' };
+    connection.imageGeneration = false;
     return connection;
 };
 
@@ -123,7 +127,7 @@ const storyOf = (story: TTestStory): { id: string; overrides: Partial<TStoryFile
 // copy of the example (unless its folder exists) and a row with the example's metadata (password `example`).
 // The web export zips a stub player unless `standalonePlayerDir` names another folder.
 // The story contexts do not watch the files unless `watch: true`. Git is unavailable unless `git.tokenKey` is set.
-// AI is unavailable unless `agentConnection` reports healthy.
+// AI (agents and images) is unavailable unless `agentConnection` reports healthy.
 // Mails go to `mailer`; the wrong-email delay of a password reset request is only counted.
 export const createTestApp = async ({
     controllers = [],

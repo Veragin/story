@@ -11,6 +11,9 @@ import {
 import { BIGINT_NUMBER } from '../bigintNumber';
 import { Story } from './Story';
 
+export const AI_USAGE_KINDS = ['turn', 'image'] as const;
+export type TAiUsageKind = (typeof AI_USAGE_KINDS)[number];
+
 @Entity({ name: 'story_ai_usage' })
 @Index(['storyId', 'createdAt'])
 export class StoryAiUsage {
@@ -20,8 +23,12 @@ export class StoryAiUsage {
     @Column({ type: 'varchar', length: 64 })
     storyId: string;
 
-    @Column({ type: 'varchar', length: 64 })
-    sessionId: string;
+    @Column({ type: 'enum', enum: AI_USAGE_KINDS, default: 'turn' })
+    kind: TAiUsageKind;
+
+    // null for an image
+    @Column({ type: 'varchar', length: 64, nullable: true })
+    sessionId: string | null;
 
     @Column({ type: 'varchar', length: 128 })
     model: string;

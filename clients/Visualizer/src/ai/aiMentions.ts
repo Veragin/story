@@ -1,11 +1,16 @@
-import { ENTITY_KINDS, type TEntityKind, type TProjectDto } from '@story/protocol';
+import type { TEntityKind, TProjectDto } from '@story/protocol';
+import {
+    formatMention,
+    MENTION_CLASSES as MENTION_CLASS_NAMES,
+    type TMentionClass,
+    type TMentionNameOf,
+} from '@story/shared';
+import type { EntityStore } from '../stores/EntityStore';
 import type { TSuggestion } from './aiToken';
 
+export { formatMention, type TMentionClass };
+
 export type TMentionKind = TEntityKind | 'chapters' | 'passages';
-
-type TSingular<K extends string> = K extends `${infer S}s` ? S : never;
-
-export type TMentionClass = TSingular<TMentionKind>;
 
 export type TMentionClassInfo = {
     name: TMentionClass;
@@ -31,6 +36,11 @@ export type TMentionSources = {
     passages: readonly TPassageEntry[];
 };
 
+export type TMentionStores = {
+    entities: Pick<EntityStore, 'project' | 'start'>;
+    passages: TPassageSource;
+};
+
 export type TMentionResult = {
     mentionClass: TMentionClass | null;
     matches: TSuggestion[];
@@ -38,23 +48,19 @@ export type TMentionResult = {
 
 type TMentionEntry = { id: string; name: string; detail?: string };
 
-const CLASS_OF_KIND: { [K in TMentionKind]: { name: TSingular<K>; label: () => string } } = {
-    characters: { name: 'character', label: () => _('Characters') },
-    npcs: { name: 'npc', label: () => _('NPCs') },
-    locations: { name: 'location', label: () => _('Locations') },
-    items: { name: 'item', label: () => _('Items') },
-    chapters: { name: 'chapter', label: () => _('Chapters') },
-    passages: { name: 'passage', label: () => _('Passages') },
+const INFO_OF_CLASS: { [C in TMentionClass]: { kind: `${C}s`; label: () => string } } = {
+    character: { kind: 'characters', label: () => _('Characters') },
+    npc: { kind: 'npcs', label: () => _('NPCs') },
+    location: { kind: 'locations', label: () => _('Locations') },
+    item: { kind: 'items', label: () => _('Items') },
+    chapter: { kind: 'chapters', label: () => _('Chapters') },
+    passage: { kind: 'passages', label: () => _('Passages') },
 };
 
-const MENTION_KINDS: readonly TMentionKind[] = [...ENTITY_KINDS, 'chapters', 'passages'];
-
-export const MENTION_CLASSES: readonly TMentionClassInfo[] = MENTION_KINDS.map((kind) => ({
-    kind,
-    ...CLASS_OF_KIND[kind],
+export const MENTION_CLASSES: readonly TMentionClassInfo[] = MENTION_CLASS_NAMES.map((name) => ({
+    name,
+    ...INFO_OF_CLASS[name],
 }));
-
-export const formatMention = (mentionClass: TMentionClass, id: string): string => `@${mentionClass}:${id}`;
 
 export const splitMention = (query: string): { className: string; entryQuery: string | null } => {
     const colon = query.indexOf(':');
@@ -102,3 +108,8 @@ export const mentionSuggestions = (query: string, sources: TMentionSources): TMe
     if (!info) return { mentionClass: null, matches: [] };
     return { mentionClass: info.name, matches: entrySuggestions(info, entryQuery, sources) };
 };
+
+export const mentionNameOf =
+    (sources: TMentionSources): TMentionNameOf =>
+    (mentionClass, id) =>
+        entriesOf(INFO_OF_CLASS[mentionClass].kind, sources).find((entry) => entry.id === id)?.name;

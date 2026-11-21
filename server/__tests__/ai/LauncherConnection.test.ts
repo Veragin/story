@@ -6,12 +6,20 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AgentProcesses } from '../../aiLauncher/AgentProcesses';
 import type { TAiTokenKind } from '../../aiLauncher/aiToken';
-import { createLauncherServer } from '../../aiLauncher/launcherServer';
+import { createLauncherServer, type TLauncherGemini } from '../../aiLauncher/launcherServer';
 import { ndjsonLines } from '../../aiLauncher/ndjson';
-import { LauncherConnection, LauncherError, TRANSCRIPTS_FOLDER } from '../../src/ai/agentConnection/LauncherConnection';
+import {
+    healthOf,
+    imageTimeoutOf,
+    LauncherConnection,
+    LauncherError,
+    TRANSCRIPTS_FOLDER,
+} from '../../src/ai/agentConnection/LauncherConnection';
 import type { TAgentStream } from '../../src/ai/agentConnection/TAgentConnection';
-import { waitFor } from '../helpers/http';
+import { isHttpError, type HttpError } from '../../src/common/HttpError';
+import { sleep, waitFor } from '../helpers/http';
 import { FakeDriver } from '../aiLauncher/fakeAgent';
+import { FakeGemini, PNG_BASE64, TEST_GEMINI_CONFIG, TEST_IMAGE_MODEL } from '../aiLauncher/fakeGemini';
 
 const KEY = 'launcher-key';
 
@@ -44,7 +52,7 @@ const listen = async (http: Server): Promise<string> => {
     return `http://127.0.0.1:${address.port}`;
 };
 
-const startLauncher = async (tokenKind: TAiTokenKind | null = 'api_key') => {
+const startLauncher = async (tokenKind: TAiTokenKind | null = 'api_key', gemini?: TLauncherGemini) => {
     driver = new FakeDriver();
     const processes = new AgentProcesses(driver, { removeAfterMs: 10_000, stderrTailBytes: 4096 }, () => undefined);
     return await listen(
@@ -54,18 +62,36 @@ const startLauncher = async (tokenKind: TAiTokenKind | null = 'api_key') => {
             driver,
             processes,
             limits: { models: ['claude-sonnet-5-5'], maxBudgetUsd: 5 },
+            gemini,
             log: () => undefined,
         })
     );
 };
 
-const connect = (url: string, requireApiKey = false) =>
-    new LauncherConnection({ url, keyFile, sessionsDir: '/app/ai-sessions', requireApiKey, requestTimeoutMs: 2000 });
+const connect = (url: string, requireApiKey = false, imageTimeoutMs = 2000) =>
+    new LauncherConnection({
+        url,
+        keyFile,
+        sessionsDir: '/app/ai-sessions',
+        requireApiKey,
+        requestTimeoutMs: 2000,
+        imageTimeoutMs,
+    });
 
 const collect = async (stream: TAgentStream): Promise<string[]> => {
     const lines: string[] = [];
     for await (const line of stream.lines) lines.push(line);
     return lines;
+};
+
+const httpError = async (task: Promise<unknown>): Promise<HttpError> => {
+    try {
+        await task;
+    } catch (e) {
+        if (isHttpError(e)) return e;
+        throw e;
+    }
+    throw new Error('expected an HttpError');
 };
 
 const refusal = async (task: Promise<unknown>): Promise<LauncherError> => {
@@ -81,25 +107,25 @@ const refusal = async (task: Promise<unknown>): Promise<LauncherError> => {
 describe('LauncherConnection against the launcher server', () => {
     it('reports health and its reasons', async () => {
         const url = await startLauncher('api_key');
-        expect(await connect(url).health()).toEqual({ available: true });
+        expect(await connect(url).health()).toEqual({ agents: { available: true }, imageGeneration: false });
         driver.healthResult = { docker: null, image: true };
-        expect(await connect(url).health()).toEqual({
+        expect((await connect(url).health()).agents).toEqual({
             available: false,
             reason: 'The AI launcher cannot reach Docker',
         });
         driver.healthResult = { docker: '27.0.1', image: false };
-        expect(await connect(url).health()).toMatchObject({ reason: 'The agent image is missing' });
+        expect((await connect(url).health()).agents).toMatchObject({ reason: 'The agent image is missing' });
         await writeFile(keyFile, 'wrong');
         expect(await connect(url).health()).toEqual({
-            available: false,
-            reason: 'The AI launcher answered 401 unauthorized',
+            agents: { available: false, reason: 'The AI launcher answered 401 unauthorized' },
+            imageGeneration: false,
         });
     });
 
     it('a subscription token is not enough in production', async () => {
         const url = await startLauncher('oauth');
-        expect(await connect(url).health()).toEqual({ available: true });
-        expect(await connect(url, true).health()).toEqual({
+        expect((await connect(url).health()).agents).toEqual({ available: true });
+        expect((await connect(url, true).health()).agents).toEqual({
             available: false,
             reason: 'Production needs an Anthropic API key, not a subscription token',
         });
@@ -107,11 +133,16 @@ describe('LauncherConnection against the launcher server', () => {
 
     it('no token, no key file, no launcher: unavailable', async () => {
         const url = await startLauncher(null);
-        expect(await connect(url).health()).toMatchObject({ reason: 'The AI launcher has no Anthropic token' });
+        expect((await connect(url).health()).agents).toMatchObject({
+            reason: 'The AI launcher has no Anthropic token',
+        });
         const unreachable = await connect('http://127.0.0.1:1').health();
-        expect(unreachable).toMatchObject({ available: false, reason: expect.stringContaining('unreachable') });
+        expect(unreachable).toEqual({
+            agents: { available: false, reason: expect.stringContaining('unreachable') },
+            imageGeneration: false,
+        });
         await rm(keyFile);
-        expect((await connect(url).health()).available).toBe(false);
+        expect((await connect(url).health()).agents.available).toBe(false);
         await expect(connect(url).open({ storyId: 'demo', maxBudgetUsd: 1 })).rejects.toThrow(/key file .* missing/);
     });
 
@@ -222,5 +253,146 @@ describe('LauncherConnection framing', () => {
         await expect(connect(url).open({ storyId: 'demo', maxBudgetUsd: 1 })).rejects.toThrow(
             'The AI launcher did not report a started agent'
         );
+    });
+});
+
+const LAUNCHER_HEALTH = { docker: '27.0.1', image: true, token: 'api_key', driver: 'docker-run' };
+
+const GENERATION = {
+    model: TEST_IMAGE_MODEL,
+    prompt: 'Thomas in the village',
+    references: [{ label: 'Thomas', mimeType: 'image/png' as const, data: PNG_BASE64 }],
+};
+
+describe('health split', () => {
+    it('images work without Claude', () => {
+        expect(
+            healthOf({ docker: null, image: false, token: null, gemini: true, imageModels: [TEST_IMAGE_MODEL] }, true)
+        ).toEqual({
+            agents: { available: false, reason: 'The AI launcher cannot reach Docker' },
+            imageGeneration: true,
+        });
+    });
+
+    it('Claude works without images', () => {
+        expect(healthOf({ ...LAUNCHER_HEALTH, gemini: false, imageModels: [TEST_IMAGE_MODEL] }, true)).toEqual({
+            agents: { available: true },
+            imageGeneration: false,
+        });
+        expect(healthOf({ ...LAUNCHER_HEALTH, gemini: true, imageModels: [] }, true).imageGeneration).toBe(false);
+        expect(healthOf({ ...LAUNCHER_HEALTH }, true).imageGeneration).toBe(false);
+        expect(healthOf(null, true).imageGeneration).toBe(false);
+    });
+
+    it('a launcher with a Gemini key and no Anthropic token offers images only', async () => {
+        const url = await startLauncher(null, { client: new FakeGemini(), config: TEST_GEMINI_CONFIG });
+        expect(await connect(url).health()).toEqual({
+            agents: { available: false, reason: 'The AI launcher has no Anthropic token' },
+            imageGeneration: true,
+        });
+    });
+});
+
+describe('LauncherConnection.generateImage', () => {
+    it('waits the Gemini timeout plus a margin, not the default request timeout', () => {
+        expect(imageTimeoutOf(120_000)).toBe(135_000);
+    });
+
+    it('posts the request to the launcher and returns its image', async () => {
+        const gemini = new FakeGemini();
+        const url = await startLauncher(null, { client: gemini, config: TEST_GEMINI_CONFIG });
+        expect(await connect(url).generateImage('demo', GENERATION)).toEqual({
+            mimeType: 'image/png',
+            data: PNG_BASE64,
+            usage: { promptTokens: 300, candidatesTokens: 1290, totalTokens: 1590 },
+        });
+        expect(gemini.calls[0]).toMatchObject({
+            model: TEST_IMAGE_MODEL,
+            contents: [
+                {
+                    parts: [
+                        { text: 'Thomas in the village' },
+                        { inlineData: { mimeType: 'image/png', data: PNG_BASE64 } },
+                    ],
+                },
+            ],
+        });
+    });
+
+    it('maps a refused image to ai_image_failed and a missing key to ai_unavailable', async () => {
+        const gemini = new FakeGemini();
+        gemini.answerWith({ candidates: [{ content: { parts: [{ text: 'I cannot draw that' }] } }] });
+        const url = await startLauncher(null, { client: gemini, config: TEST_GEMINI_CONFIG });
+        const failed = await httpError(connect(url).generateImage('demo', GENERATION));
+        expect([failed.status, failed.body]).toEqual([
+            502,
+            { error: 'ai_image_failed', message: 'Gemini returned no image: I cannot draw that' },
+        ]);
+
+        const noKey = await startLauncher(null);
+        const unavailable = await httpError(connect(noKey).generateImage('demo', GENERATION));
+        expect([unavailable.status, unavailable.body.error]).toEqual([503, 'ai_unavailable']);
+    });
+
+    // a launcher stub that answers /images with the given status and body after `delayMs`
+    const imagesStub = (status: number, body: unknown, delayMs = 0) =>
+        createServer((_req, res) => {
+            const answer = async () => {
+                await sleep(delayMs);
+                res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body));
+            };
+            void answer();
+        });
+
+    it('maps the launcher answers 429, 503, 504 and an unreadable image', async () => {
+        const cases: [number, unknown, number, string, string][] = [
+            [429, { error: 'too_many_requests' }, 429, 'too_many_requests', expect.any(String)],
+            [
+                503,
+                { error: 'gemini_unavailable', message: 'quota' },
+                503,
+                'ai_unavailable',
+                expect.stringContaining('quota'),
+            ],
+            [504, { error: 'timeout', message: 'slow' }, 502, 'ai_image_failed', 'Generating took too long'],
+            [200, { mimeType: 'image/png' }, 502, 'ai_image_failed', 'The AI launcher sent an unreadable image'],
+        ];
+        for (const [launcherStatus, body, status, error, message] of cases) {
+            const url = await listen(imagesStub(launcherStatus, body));
+            const e = await httpError(connect(url).generateImage('demo', GENERATION));
+            expect([e.status, e.body.error, e.body.message]).toEqual([status, error, message]);
+            await new Promise((resolve) => server?.close(resolve));
+        }
+    });
+
+    it('gives up after the image timeout with "Generating took too long"', async () => {
+        const url = await listen(imagesStub(200, {}, 5_000));
+        const started = Date.now();
+        const e = await httpError(connect(url, false, 150).generateImage('demo', GENERATION));
+        expect([e.status, e.body.error, e.body.message]).toEqual([502, 'ai_image_failed', 'Generating took too long']);
+        expect(Date.now() - started).toBeLessThan(2000);
+    });
+
+    it('uses the image timeout, which outlasts the request timeout', async () => {
+        const image = {
+            mimeType: 'image/png',
+            data: PNG_BASE64,
+            usage: { promptTokens: 1, candidatesTokens: 2, totalTokens: 3 },
+        };
+        const url = await listen(imagesStub(200, image, 300));
+        const slowImages = new LauncherConnection({
+            url,
+            keyFile,
+            sessionsDir: '/app/ai-sessions',
+            requireApiKey: false,
+            requestTimeoutMs: 50,
+            imageTimeoutMs: 2000,
+        });
+        expect(await slowImages.generateImage('demo', GENERATION)).toEqual(image);
+    });
+
+    it('an unreachable launcher is ai_unavailable', async () => {
+        const e = await httpError(connect('http://127.0.0.1:1').generateImage('demo', GENERATION));
+        expect([e.status, e.body.error]).toEqual([503, 'ai_unavailable']);
     });
 });

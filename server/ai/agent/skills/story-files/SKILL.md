@@ -155,3 +155,11 @@ The picture of a passage, character, npc or location is the `.webp` or `.png` ne
 basename (`thomas.passages/forest.ts` → `forest.png`). The `image` field is only a text description of it. A
 passage may reuse another picture with `image: '@../../kingdom/annie.passages/palace.png'` (relative to the passage
 file). You can't create image files.
+
+The description is also the prompt the editor's **Generate image** button sends to an image model, so write it as a
+picture: who and what is in it, where, the light and the mood. Refer to the story's own characters, npcs, locations,
+items, chapters and passages with mentions: `@character:thomas`, `@npc:<id>`, `@location:village`, `@item:<id>`,
+`@chapter:<id>`, `@passage:village-thomas-intro`. A mention of something with a picture sends that picture along, so
+the generated image keeps its look; players and the editor show the name in its place. Use only ids that exist, and
+keep the mentions already in a description when you edit it. A description that starts with `@` followed by a path is a
+link, never a mention.

@@ -1,3 +1,5 @@
+import { describeMentions, startsWithMention, type TMentionNameOf } from './mentions';
+
 export const IMAGE_LINK_PREFIX = '@';
 
 export const STORY_DATA_DIR = 'data/';
@@ -8,6 +10,11 @@ export const isStoryImageFile = (file: string) =>
     file.startsWith(STORY_DATA_DIR) && STORY_IMAGE_EXTENSIONS.some((extension) => file.endsWith(extension));
 
 export const imageLinkPath = (image: string): string | undefined =>
-    image.startsWith(IMAGE_LINK_PREFIX) ? image.slice(IMAGE_LINK_PREFIX.length).trim() : undefined;
+    image.startsWith(IMAGE_LINK_PREFIX) && !startsWithMention(image)
+        ? image.slice(IMAGE_LINK_PREFIX.length).trim()
+        : undefined;
 
-export const imageDescription = (image: string): string => (imageLinkPath(image) === undefined ? image : '');
+const idOnly: TMentionNameOf = () => undefined;
+
+export const imageDescription = (image: string, nameOf: TMentionNameOf = idOnly): string =>
+    imageLinkPath(image) === undefined ? describeMentions(image, nameOf) : '';

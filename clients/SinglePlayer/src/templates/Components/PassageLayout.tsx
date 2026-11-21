@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { styled } from '@mui/material';
 import { imageDescription } from '@story/shared';
 import { Row, spacingCss, WholeContainer } from '@story/ui';
+import { useEngine } from '../../context';
 import { passageImage } from '../../images';
+import { mentionNameOf } from '../../mentionNames';
 import { StatusBar } from './StatusBar';
 
 type Props = {
@@ -11,8 +13,12 @@ type Props = {
 };
 
 export const PassageLayout = ({ passage, children }: Props) => {
+    const e = useEngine();
     const image = passageImage(passage);
-    const description = imageDescription(passage.image);
+    const description = imageDescription(
+        passage.image,
+        mentionNameOf(e.storyModule)
+    );
     return (
         <WholeContainer>
             <StatusBar />

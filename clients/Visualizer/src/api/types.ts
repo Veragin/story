@@ -28,6 +28,8 @@ import type {
     TEntityDtoByKind,
     TEntityKind,
     TEntityListDto,
+    TGenerateImageBody,
+    TGenerateImageResult,
     TGitBranchDto,
     TGitCheckoutBody,
     TGitCommitBody,
@@ -137,6 +139,7 @@ export type TVisualizerApi = {
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
     uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;
     deleteImage(owner: TImageOwner, id: string, body: TVersionedBody): Promise<TImageDto>;
+    generateImage(owner: TImageOwner, id: string, body: TGenerateImageBody): Promise<TGenerateImageResult>;
     listImageFiles(): Promise<TStoryImageFile[]>;
 
     getMap(mapId: string): Promise<TMapDto>;

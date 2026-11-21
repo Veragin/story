@@ -4,6 +4,7 @@ import { ApiError } from '../ApiError';
 import { AuthStore } from '../auth';
 import { ApiEvents, matchesFilter } from '../events';
 import { createHttpApi } from '../httpApi';
+import { AI_IMAGE_CREDITS } from '../mockAiApi';
 import { createMockApi, extractEdges } from '../mockApi';
 
 const ev = (e: Partial<TChangeEvent>): TChangeEvent => ({ kind: 'passage', id: 'a-b-c', version: 'v1', ...e });
@@ -578,6 +579,62 @@ describe('mockApi images', () => {
         await expect(api.deleteImage('story', 'landing', { version: '' })).rejects.toMatchObject({ isStale: true });
         expect(await api.deleteImage('story', 'landing', { version: up.version })).toMatchObject({ url: null });
         expect(await api.getStoryInfo()).toMatchObject({ hasLandingImage: false });
+    });
+});
+
+describe('mockApi image generation', () => {
+    const generate = (api: ReturnType<typeof createMockApi>, prompt: string, version = '') =>
+        api.generateImage('characters', 'thomas', { prompt, version });
+
+    it('stores a WebP placeholder with a new version and charges AI_IMAGE_CREDITS', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        expect((await api.getAi()).imageGeneration).toBe(true);
+        const first = await generate(api, 'Thomas waving');
+        expect(first).toMatchObject({ file: 'data/characters/thomas.webp', credits: 10 - AI_IMAGE_CREDITS });
+        expect(first.url).toMatch(/^data:image\/webp;base64,UklGR/);
+        const { credits, ...stored } = first;
+        expect(await api.getImage('characters', 'thomas')).toEqual(stored);
+        expect(credits).toBe((await api.getAi()).credits);
+
+        const second = await generate(api, 'Thomas sitting', first.version);
+        expect(second.version).not.toBe(first.version);
+    });
+
+    it('refuses a stale version after charging, like the server', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        await generate(api, 'Thomas waving');
+        await expect(generate(api, 'Thomas again', '')).rejects.toMatchObject({ isStale: true });
+        expect((await api.getAi()).credits).toBe(10 - 2 * AI_IMAGE_CREDITS);
+    });
+
+    it('fails on the word fail, without a charge', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        await expect(generate(api, 'Please fail now')).rejects.toMatchObject({ code: 'ai_image_failed' });
+        expect((await api.getAi()).credits).toBe(10);
+    });
+
+    it('checks availability, credits, the owner and the prompt first', async () => {
+        const unavailable = createMockApi({ aiImageGeneration: false });
+        expect((await unavailable.getAi()).imageGeneration).toBe(false);
+        await expect(generate(unavailable, 'Thomas')).rejects.toMatchObject({ code: 'ai_unavailable' });
+        await expect(generate(createMockApi({ aiCredits: 0 }), 'Thomas')).rejects.toMatchObject({
+            code: 'ai_no_credits',
+        });
+        const api = createMockApi({ aiStepMs: 0 });
+        await expect(api.generateImage('story', 'landing', { prompt: 'A castle', version: '' })).rejects.toMatchObject({
+            code: 'bad_request',
+        });
+        await expect(generate(api, '  ')).rejects.toMatchObject({ code: 'bad_request' });
+        await expect(
+            api.generateImage('passages', 'village-thomas-intro', { prompt: '@forest.png', version: '' })
+        ).rejects.toMatchObject({ code: 'bad_request' });
+    });
+
+    it('refuses a second generation of the same owner while one runs', async () => {
+        const api = createMockApi({ aiStepMs: 20 });
+        const running = generate(api, 'Thomas waving');
+        await expect(generate(api, 'Thomas again')).rejects.toMatchObject({ code: 'ai_image_busy' });
+        await running;
     });
 });
 

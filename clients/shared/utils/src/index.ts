@@ -5,6 +5,7 @@ export * from './time/const';
 export * from './geometry';
 export * from './ids';
 export * from './passage';
+export * from './mentions';
 export * from './storyImage';
 export * from './storyPath';
 

@@ -10,6 +10,10 @@ export type TLauncherErrorCode =
     | 'payload_too_large'
     | 'token_unavailable'
     | 'spawn_failed'
+    | 'gemini_unavailable'
+    | 'image_failed'
+    | 'too_many_requests'
+    | 'timeout'
     | 'internal_error';
 
 export type TLauncherErrorBody = { error: TLauncherErrorCode; message?: string };

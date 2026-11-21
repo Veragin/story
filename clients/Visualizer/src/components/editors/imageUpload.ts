@@ -1,21 +1,21 @@
-export const STORED_IMAGE_TYPES = ['image/png', 'image/webp'];
+import { STORED_WEBP_QUALITY } from '@story/protocol';
 
-export const CONVERTED_IMAGE_TYPES = ['image/jpeg'];
+const WEBP_TYPE = 'image/webp';
+const PNG_TYPE = 'image/png';
 
-export const ACCEPTED_IMAGE_TYPES = [...STORED_IMAGE_TYPES, ...CONVERTED_IMAGE_TYPES].join(',');
+export const CONVERTED_IMAGE_TYPES = [PNG_TYPE, 'image/jpeg'];
 
-const WEBP_QUALITY = 0.8;
+export const ACCEPTED_IMAGE_TYPES = [WEBP_TYPE, ...CONVERTED_IMAGE_TYPES].join(',');
 
 const canvasBlob = (canvas: HTMLCanvasElement) =>
     new Promise<Blob>((resolve, reject) =>
         canvas.toBlob(
             (blob) => (blob ? resolve(blob) : reject(new Error('Could not convert the image'))),
-            'image/webp',
-            WEBP_QUALITY
+            WEBP_TYPE,
+            STORED_WEBP_QUALITY
         )
     );
 
-// a browser that cannot encode webp falls back to a png, which the server accepts too
 const toWebp = async (file: Blob): Promise<Blob> => {
     const bitmap = await createImageBitmap(file);
     try {
@@ -31,8 +31,11 @@ const toWebp = async (file: Blob): Promise<Blob> => {
     }
 };
 
-export const isUploadableImage = (file: Blob) =>
-    STORED_IMAGE_TYPES.includes(file.type) || CONVERTED_IMAGE_TYPES.includes(file.type);
+export const isUploadableImage = (file: Blob) => file.type === WEBP_TYPE || CONVERTED_IMAGE_TYPES.includes(file.type);
 
-export const toStoredImage = (file: Blob): Promise<Blob> =>
-    STORED_IMAGE_TYPES.includes(file.type) ? Promise.resolve(file) : toWebp(file);
+export const toStoredImage = async (file: Blob): Promise<Blob> => {
+    if (file.type === WEBP_TYPE) return file;
+    const converted = await toWebp(file);
+    // a browser that cannot encode webp answers a png, which the server accepts too; an original png is kept then
+    return converted.type !== WEBP_TYPE && file.type === PNG_TYPE ? file : converted;
+};

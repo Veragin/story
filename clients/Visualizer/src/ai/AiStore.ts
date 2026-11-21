@@ -36,6 +36,7 @@ const isLocal = (message: TAiMessageDto) => message.id.startsWith(LOCAL_ID_PREFI
 export class AiStore {
     open: boolean;
     available = false;
+    imageGeneration = false;
     enabled = false;
     status: TAiStatus = 'stopped';
     statusMessage: string | null = null;
@@ -70,6 +71,7 @@ export class AiStore {
         makeObservable<AiStore, 'applyDto' | 'syncConnection'>(this, {
             open: observable,
             available: observable,
+            imageGeneration: observable,
             enabled: observable,
             status: observable,
             statusMessage: observable,
@@ -90,6 +92,7 @@ export class AiStore {
             setOpen: action,
             toggle: action,
             setDraft: action,
+            setCredits: action,
             requestFocus: action,
             insertMention: action,
             clearError: action,
@@ -135,6 +138,10 @@ export class AiStore {
         this.draft = draft;
     };
 
+    setCredits = (credits: number) => {
+        this.credits = credits;
+    };
+
     requestFocus = () => {
         this.focusRequest++;
     };
@@ -160,6 +167,7 @@ export class AiStore {
             if (token !== this.loadToken) return;
             runInAction(() => {
                 this.available = false;
+                this.imageGeneration = false;
                 if (!(e instanceof ApiError && (e.code === 'ai_unavailable' || e.code === 'ai_disabled'))) {
                     console.error('[ai] could not load the agent state', e);
                 }
@@ -253,6 +261,7 @@ export class AiStore {
                 this.touchedFiles = event.touchedFiles;
                 break;
             case 'usage':
+            case 'credits':
                 this.credits = event.credits;
                 break;
         }
@@ -270,6 +279,7 @@ export class AiStore {
 
     private applyDto(dto: TAiDto) {
         this.available = dto.available;
+        this.imageGeneration = dto.imageGeneration;
         this.enabled = dto.enabled;
         this.credits = dto.credits;
         this.status = dto.status;

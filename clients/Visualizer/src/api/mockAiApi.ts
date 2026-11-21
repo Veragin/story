@@ -1,4 +1,14 @@
-import { isAiSessionId, type TAiEvent, type TAiMessageDto, type TAiSessionDto, type TAiStatus } from '@story/protocol';
+import {
+    isAiSessionId,
+    type TAiEvent,
+    type TAiMessageDto,
+    type TAiSessionDto,
+    type TAiStatus,
+    type TImageDto,
+    type TImageOwner,
+    type TVersion,
+} from '@story/protocol';
+import { imageLinkPath } from '@story/shared';
 import { commandHelp } from '../ai/aiCommands';
 import type { TAiEventListener } from './aiEvents';
 import { clone, fail, notFound } from './mockHelpers';
@@ -6,13 +16,23 @@ import type { TVisualizerApi } from './types';
 
 type TMockAiContext = {
     available: boolean;
+    imageGeneration: boolean;
     enabled: () => boolean;
     credits: number;
     stepMs: number;
     reply: <T>(fn: () => T) => Promise<T>;
+    storeImage: (owner: TImageOwner, id: string, version: TVersion, data: string) => TImageDto;
 };
 
-type TAiRoutes = 'getAi' | 'aiEvents' | 'sendAiMessage' | 'interruptAi' | 'listAiSessions' | 'resumeAi' | 'clearAi';
+type TAiRoutes =
+    | 'getAi'
+    | 'aiEvents'
+    | 'sendAiMessage'
+    | 'interruptAi'
+    | 'listAiSessions'
+    | 'resumeAi'
+    | 'clearAi'
+    | 'generateImage';
 
 type TMockSession = TAiSessionDto & { messages: TAiMessageDto[] };
 
@@ -22,6 +42,11 @@ const TURN_CREDITS = 1;
 const FAKE_EDIT_FILE = 'data/chapters/start/start.passages.ts';
 const EDIT_REQUEST = /\b(edit|change|write|add)\b/i;
 const RESUME_COMMAND = /^\/resume(?:\s+(\d+))?$/;
+const IMAGE_FAILURE = /\bfail\b/i;
+const PLACEHOLDER_WEBP =
+    'UklGRowAAABXRUJQVlA4IIAAAAAwBQCdASpAAEAAPm02mUkkIyKhIggAgA2JZQZwDDIEMMI39AKVzchf//9uf//sn//6QAD+zYRyiv/nv38efx5znd7icqe1/8Q9IUKQvvGfFFpSnXnrTXMJ/L6Iad0JVI82hbITh2ZBfyJ9uArwgQXLqwjcE1VVwd1FEYcW2Z5AAA==';
+
+export const AI_IMAGE_CREDITS = 4;
 
 const sessionIdOf = (n: number) => {
     const hex = n.toString(16).padStart(8, '0');
@@ -39,6 +64,7 @@ export const createMockAiApi = (ctx: TMockAiContext) => {
     let sessionCounter = 0;
     let timers: ReturnType<typeof setTimeout>[] = [];
     const listeners = new Set<TAiEventListener>();
+    const generating = new Set<string>();
 
     const currentStatus = (): TAiStatus => {
         if (!ctx.available) return 'unavailable';
@@ -192,10 +218,26 @@ export const createMockAiApi = (ctx: TMockAiContext) => {
         if (!ctx.enabled()) fail(403, { error: 'ai_disabled' });
     };
 
+    const startImage = (owner: TImageOwner, id: string, prompt: string) => {
+        if (!ctx.imageGeneration) fail(503, { error: 'ai_unavailable' });
+        if (!ctx.enabled()) fail(403, { error: 'ai_disabled' });
+        if (credits <= 0) fail(402, { error: 'ai_no_credits' });
+        if (owner === 'story') fail(400, { error: 'bad_request', message: 'The landing image is not generated' });
+        if (prompt.trim() === '') fail(400, { error: 'bad_request', message: 'The prompt is empty' });
+        if (owner === 'passages' && imageLinkPath(prompt) !== undefined) {
+            fail(400, { error: 'bad_request', message: 'The prompt is an image link' });
+        }
+        const key = `${owner}/${id}`;
+        if (generating.has(key)) fail(409, { error: 'ai_image_busy' });
+        generating.add(key);
+        return key;
+    };
+
     const routes: Pick<TVisualizerApi, TAiRoutes> = {
         getAi: () =>
             ctx.reply(() => ({
                 available: ctx.available,
+                imageGeneration: ctx.imageGeneration,
                 enabled: ctx.enabled(),
                 credits,
                 status: currentStatus(),
@@ -273,6 +315,24 @@ export const createMockAiApi = (ctx: TMockAiContext) => {
                 restart(null);
                 return { ok: true as const };
             }),
+
+        generateImage: async (owner, id, { prompt, version }) => {
+            const key = await ctx.reply(() => startImage(owner, id, prompt));
+            try {
+                await new Promise((resolve) => setTimeout(resolve, ctx.stepMs));
+                return await ctx.reply(() => {
+                    if (IMAGE_FAILURE.test(prompt)) {
+                        fail(502, { error: 'ai_image_failed', message: 'The mock fails a prompt with "fail"' });
+                    }
+                    credits -= AI_IMAGE_CREDITS;
+                    emit({ type: 'credits', credits });
+                    // charged before the version check: like the server, a stale result was still generated
+                    return { ...ctx.storeImage(owner, id, version, PLACEHOLDER_WEBP), credits };
+                });
+            } finally {
+                generating.delete(key);
+            }
+        },
     };
 
     const reset = () => {
@@ -285,6 +345,7 @@ export const createMockAiApi = (ctx: TMockAiContext) => {
         touchedFiles = [];
         sessions = [];
         listeners.clear();
+        generating.clear();
     };
 
     return { routes, reset };

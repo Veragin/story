@@ -34,8 +34,13 @@
 # launcher creates the `story-ai` network at startup. Needs, next to this file:
 #   DOCKER_GID in `.env`        the group of /var/run/docker.sock on the host (`stat -c %g /var/run/docker.sock`)
 #   secrets/ai_token            the Anthropic API key (`sk-ant-api…`); empty = AI unavailable
+#   secrets/gemini_token        the Gemini API key (paid tier); empty = image generation unavailable
+#                               (`make prod-up` creates it empty when missing); launcher only
 #   secrets/ai_launcher_key     shared by the server and the launcher: `openssl rand -hex 32`
-# Both files must exist and be readable by uid 1000 (`chmod 644`, or a group the host shares with uid 1000).
+#   secrets/ai_agents.json      models, budget cap and image limits for both (see ai_agents.example.json);
+#                               empty = the built-in defaults (`make prod-up` creates it empty when missing).
+#                               Read at start: `docker compose restart ai-launcher server` after a change
+# All four files must exist and be readable by uid 1000 (`chmod 644`, or a group the host shares with uid 1000).
 # The stories and sessions volumes have fixed names, because the launcher names them in `docker run`.
 name: story-prod
 
@@ -74,13 +79,14 @@ services:
       PUBLIC_URL: https://${SITE_ADDRESS:-localhost}
       SMTP_URL: ${SMTP_URL:-}
       AI_LAUNCHER_URL: http://ai-launcher:8155
-      AI_MAX_BUDGET_USD: ${AI_MAX_BUDGET_USD:-5}
     volumes:
       - stories:/app/stories
       - ai-sessions:/app/ai-sessions
     secrets:
       - source: ai_launcher_key
         target: /secret/ai_launcher_key
+      - source: ai_agents
+        target: /secret/ai_agents.json
     networks:
       - default
       - ai-control
@@ -117,17 +123,20 @@ services:
       AI_STORIES_VOLUME: story-prod_stories
       AI_SESSIONS_VOLUME: story-ai-sessions
       AI_NETWORK: story-ai
-      AI_MODELS: ${AI_MODELS:-claude-sonnet-5-5,claude-opus-5-5}
-      AI_MAX_BUDGET_USD: ${AI_MAX_BUDGET_USD:-5}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - source: ai_token
         target: /secret/ai_token
+      - source: gemini_token
+        target: /secret/gemini_token
       - source: ai_launcher_key
         target: /secret/ai_launcher_key
+      - source: ai_agents
+        target: /secret/ai_agents.json
     networks:
       - ai-control
+      - gemini-egress
 
   # Build only (`docker compose --profile build build ai-image`, part of `make prod-up`): the agent image the
   # launcher runs. Never started by compose.
@@ -192,9 +201,15 @@ networks:
   # the server and the launcher only, no internet
   ai-control:
     internal: true
+  # the launcher only: its in-process Gemini calls reach generativelanguage.googleapis.com
+  gemini-egress:
 
 secrets:
   ai_token:
     file: ./secrets/ai_token
   ai_launcher_key:
     file: ./secrets/ai_launcher_key
+  ai_agents:
+    file: ./secrets/ai_agents.json
+  gemini_token:
+    file: ./secrets/gemini_token

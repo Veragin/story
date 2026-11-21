@@ -211,6 +211,7 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         getImage: (owner, id) => request('getImage', { owner, id }),
         uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),
         deleteImage: (owner, id, body) => request('deleteImage', { owner, id }, body),
+        generateImage: (owner, id, body) => request('generateImage', { owner, id }, body),
         listImageFiles: async () =>
             (await request('getPlayManifest', {})).files.filter(isStoryImageFile).map((file) => ({
                 file,
