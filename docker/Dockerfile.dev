@@ -18,6 +18,10 @@ RUN playwright-cli install-browser --with-deps chrome
 RUN su -s /bin/bash "$UNAME" -c "playwright install ffmpeg"
 
 RUN corepack enable
+# Pre-fetches the yarn of package.json's `packageManager` into node's cache, so `yarn` never prompts to download it
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+COPY package.json /tmp/corepack/package.json
+RUN su -s /bin/bash "$UNAME" -c "cd /tmp/corepack && corepack install" && rm -rf /tmp/corepack
 
 # The password reset mails' sender, hardcoded for now (plans/rosti-release.md); without SMTP_URL they are only logged
 ENV MAIL_FROM=info@story.cz

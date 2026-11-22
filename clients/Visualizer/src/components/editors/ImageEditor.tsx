@@ -35,6 +35,7 @@ import { CodeFallback } from '../code/CodeFallback';
 import { codeToText } from '../../values/codeLiterals';
 import { TooltipIconButton } from '../buttons/TooltipIconButton';
 import { DeleteButton } from '../buttons/DeleteButton';
+import { VIEW_TOGGLE_WIDTH } from '../buttons/ViewToggle';
 import { LoadingState } from '../feedback/LoadingState';
 import { ImageDescriptionInput } from './ImageDescriptionInput';
 import {
@@ -299,7 +300,7 @@ export const ImageEditor = observer(
         const linkMissing = !!link && imageFiles.files !== null && !linked;
 
         const uploadButtons = (
-            <>
+            <SUploadButtons>
                 <TooltipIconButton
                     title={_('Upload image')}
                     icon={UploadIcon}
@@ -317,7 +318,7 @@ export const ImageEditor = observer(
                         onClick={() => void generate()}
                     />
                 )}
-            </>
+            </SUploadButtons>
         );
 
         // the description keeps its place in every layout, so typing `@` does not remount it and drop the focus
@@ -436,10 +437,20 @@ const SMain = styled('div')`
     &[data-layout='inline'] {
         flex-direction: row;
         align-items: center;
+        gap: ${spacingCss(1)};
     }
 `;
 
 const SActions = styled('div')`
     display: flex;
+    align-items: flex-start;
+    gap: ${spacingCss(0.5)};
+`;
+
+const SUploadButtons = styled('div')`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: ${VIEW_TOGGLE_WIDTH}px;
     gap: ${spacingCss(0.5)};
 `;
