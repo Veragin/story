@@ -1,13 +1,10 @@
-import { Avatar, Button, styled, Tooltip } from '@mui/material';
+import { Button, styled, Tooltip } from '@mui/material';
 import { Modal, Row, spacingCss, Text } from '@story/ui';
 import { useState } from 'react';
 import { Inventory } from './Inventory/Inventory';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { observer } from 'mobx-react-lite';
-import { describeMentions } from '@story/shared';
 import { useEngine, useWorldState } from '../../context';
-import { characterImage } from '../../images';
-import { mentionNameOf } from '../../mentionNames';
 import { restartGame } from '../../restartGame';
 import { StoryTopbar } from './Topbar/StoryTopbar';
 
@@ -16,23 +13,11 @@ export const StatusBar = observer(() => {
     const s = useWorldState();
     const [openInventory, setOpenInventory] = useState(false);
     const character = e.storyModule.register.characters[s.mainCharacterId];
-    const portrait = characterImage(s.mainCharacterId);
 
     return (
         <SRow>
             <Text>{e.timeManager.renderTime(s.time, 'dateTime')}</Text>
-            <SCharacter>
-                {portrait && (
-                    <SAvatar
-                        src={portrait}
-                        alt={describeMentions(
-                            character.image ?? character.name,
-                            mentionNameOf(e.storyModule)
-                        )}
-                    />
-                )}
-                <Text>{character.name}</Text>
-            </SCharacter>
+            <Text>{character.name}</Text>
             <SStats>
                 <StoryTopbar />
             </SStats>
@@ -75,11 +60,6 @@ export const SRow = styled(Row)`
     row-gap: ${spacingCss(0.5)};
 `;
 
-export const SCharacter = styled(Row)`
-    align-items: center;
-    gap: ${spacingCss(1)};
-`;
-
 export const SStats = styled(Row)`
     align-items: center;
     gap: ${spacingCss(2)};
@@ -91,9 +71,4 @@ export const SButtons = styled(Row)`
     gap: ${spacingCss(1)};
     flex: 1;
     justify-content: flex-end;
-`;
-
-const SAvatar = styled(Avatar)`
-    width: 28px;
-    height: 28px;
 `;

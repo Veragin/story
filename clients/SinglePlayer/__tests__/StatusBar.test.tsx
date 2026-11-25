@@ -2,7 +2,6 @@ import { act } from 'react';
 import { runInAction } from 'mobx';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TTopbarProps } from '@story/types';
-import { register } from '@story/data';
 import { setStoryImages } from '../src/images';
 import { StatusBar } from '../src/templates/Components/StatusBar';
 import { newSession, renderWithSession, unmount } from './support/render';
@@ -10,7 +9,6 @@ import { newSession, renderWithSession, unmount } from './support/render';
 afterEach(() => {
     unmount();
     setStoryImages({});
-    register.characters.thomas.image = undefined;
     vi.restoreAllMocks();
 });
 
@@ -92,26 +90,13 @@ describe('StatusBar topbar', () => {
     });
 });
 
-describe('StatusBar portrait', () => {
-    it('describes the portrait with names instead of mentions', async () => {
-        setStoryImages({ 'characters/thomas.png': 'thomas-url' });
-        register.characters.thomas.image =
-            '@character:thomas with @npc:franta in @location:village, @item:bow, @npc:ghost';
-
-        const container = await renderStatusBar(newSession({}));
-
-        expect(container.querySelector('img')?.getAttribute('alt')).toBe(
-            'Thomas with Franta in Village, Bow, ghost'
-        );
-    });
-
-    it('falls back to the name without a description', async () => {
+describe('StatusBar character', () => {
+    it('shows the character name without a portrait', async () => {
         setStoryImages({ 'characters/thomas.png': 'thomas-url' });
 
         const container = await renderStatusBar(newSession({}));
 
-        expect(container.querySelector('img')?.getAttribute('alt')).toBe(
-            'Thomas'
-        );
+        expect(container.textContent).toContain('Thomas');
+        expect(container.querySelector('img')).toBeNull();
     });
 });
