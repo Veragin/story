@@ -27,6 +27,7 @@ export const BodyItemEditor = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const set = <K extends keyof TBodyItemDto>(
         key: K,
@@ -72,6 +73,7 @@ export const BodyItemEditor = ({
                 diag={diag}
                 passageOptions={passageOptions}
                 itemOptions={itemOptions}
+                passageCreator={passageCreator}
             />
         </SItem>
     );

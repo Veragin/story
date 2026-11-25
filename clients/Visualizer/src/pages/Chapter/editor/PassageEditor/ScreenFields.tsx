@@ -14,6 +14,7 @@ export const ScreenFields = observer(
         diag,
         passageOptions,
         itemOptions,
+        passageCreator,
         api,
         preamble,
     }: TFieldsProps<TScreenPassageDto>) => (
@@ -52,6 +53,7 @@ export const ScreenFields = observer(
                         diag={diag}
                         passageOptions={passageOptions}
                         itemOptions={itemOptions}
+                        passageCreator={passageCreator}
                     />
                 )}
             </FormSection>

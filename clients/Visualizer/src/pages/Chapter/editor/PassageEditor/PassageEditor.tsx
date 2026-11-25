@@ -17,11 +17,12 @@ import type { PassageEditorStore } from '../PassageEditorStore';
 import { PassageAlerts } from './PassageAlerts';
 import { PassageFields } from './PassageFields';
 import { PassageHeading } from './PassageHeading';
-import type { TDiag } from './types';
+import type { TDiag, TPassageCreator } from './types';
 
 type TProps = {
     store: PassageEditorStore;
     passageOptions: TOption[];
+    passageCreator?: TPassageCreator;
     finishOptions: TOption[];
     itemOptions: TOption[];
     onClose: () => void;
@@ -35,6 +36,7 @@ export const PassageEditor = observer(
     ({
         store,
         passageOptions,
+        passageCreator,
         finishOptions,
         itemOptions,
         onClose,
@@ -107,6 +109,7 @@ export const PassageEditor = observer(
                         edit={edit}
                         diag={diag}
                         passageOptions={passageOptions}
+                        passageCreator={passageCreator}
                         finishOptions={finishOptions}
                         itemOptions={itemOptions}
                         api={api}

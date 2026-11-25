@@ -23,6 +23,7 @@ import {
 import { InStructure } from '../../../components/inputs/__tests__/harness';
 import { PassageEditor } from '../editor/PassageEditor/PassageEditor';
 import { PassageEditorStore } from '../editor/PassageEditorStore';
+import type { TPassageCreator } from '../editor/PassageEditor/types';
 
 const ITEMS = [
     { id: 'bread', label: 'Bread' },
@@ -52,13 +53,17 @@ describe('PassageEditor', () => {
         store.destroy();
     });
 
-    const open = async (passage: TPassageDto) => {
+    const open = async (
+        passage: TPassageDto,
+        passageCreator?: TPassageCreator
+    ) => {
         store = new PassageEditorStore(passage, api);
         await mountAsync(
             <InStructure>
                 <PassageEditor
                     store={store}
                     passageOptions={PASSAGES}
+                    passageCreator={passageCreator}
                     finishOptions={[{ id: 'kingdom-thomas-visit' }]}
                     itemOptions={ITEMS}
                     onClose={() => undefined}
@@ -183,6 +188,26 @@ describe('PassageEditor', () => {
             items: [{ id: 'bread', amount: 4 }],
             tools: ['bread'],
         });
+    });
+
+    it('adds a link with an empty target and creates a new passage from the typed id', async () => {
+        const create = vi.fn(() => Promise.resolve(true));
+        await open(screen('village-thomas-intro'), {
+            idPrefix: 'village-thomas-',
+            create,
+        });
+        click('[data-action="add-link"]');
+        const newLink = 'body.0.links.1';
+        expect(input(`${newLink}.passageId`).value).toBe('');
+
+        typeInto(input(`${newLink}.passageId`), 'Old Lake');
+        const firstRow = get('[role="listbox"] li');
+        expect(firstRow.dataset.create).toBe('village-thomas-oldLake');
+        expect(firstRow.textContent).toBe('+ village-thomas-oldLake');
+
+        click('[data-create]');
+        await flush();
+        expect(create).toHaveBeenCalledWith('oldLake');
     });
 
     it('switches a time-only cost to minutes', async () => {

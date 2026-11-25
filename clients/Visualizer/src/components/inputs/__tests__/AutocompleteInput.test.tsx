@@ -93,6 +93,41 @@ describe('AutocompleteInput', () => {
     });
 });
 
+describe('AutocompleteInput with a mapped create id', () => {
+    afterEach(unmount);
+
+    it('lists the create row first and creates the mapped id', async () => {
+        const create = vi.fn(() => Promise.resolve(true));
+        const onChange = vi.fn();
+        mount(
+            <Controlled initial="" onChange={onChange}>
+                {(value, change) => (
+                    <AutocompleteInput
+                        value={value}
+                        onChange={change}
+                        options={optionsOf(['ch-tom-lake', 'ch-tom-lakeside'])}
+                        onCreateOption={create}
+                        createIdOf={(typed) => `ch-tom-${typed}`}
+                        createFirst
+                        ariaLabel="Type"
+                    />
+                )}
+            </Controlled>
+        );
+        typeInto(input(), 'lake');
+        expect($('[data-create]')).toBeNull();
+
+        typeInto(input(), 'la');
+        expect(get('[role="listbox"] li').dataset.create).toBe('ch-tom-la');
+        expect(shownOptions()).toEqual(['ch-tom-lake', 'ch-tom-lakeside']);
+
+        click('[data-create]');
+        await flush();
+        expect(create).toHaveBeenCalledWith('ch-tom-la');
+        expect(onChange).toHaveBeenLastCalledWith('ch-tom-la');
+    });
+});
+
 describe('AutocompleteInput with labels', () => {
     afterEach(unmount);
 

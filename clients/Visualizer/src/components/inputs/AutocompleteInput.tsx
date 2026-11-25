@@ -10,6 +10,8 @@ type TProps = TInputProps<string> & {
     freeSolo?: boolean;
     onCreateOption?: (value: string) => Promise<boolean>;
     createLabel?: (value: string) => string;
+    createIdOf?: (input: string) => string | null;
+    createFirst?: boolean;
     groupOf?: (option: TOption) => string;
     placeholder?: string;
 };
@@ -37,6 +39,8 @@ export const AutocompleteInput = ({
     freeSolo,
     onCreateOption,
     createLabel = (input) => _('+ Add %s', input),
+    createIdOf = (input) => input,
+    createFirst,
     groupOf,
     placeholder,
     hasError,
@@ -122,9 +126,11 @@ export const AutocompleteInput = ({
                     state
                 );
                 const input = state.inputValue.trim();
-                if (onCreateOption && input !== '' && !byId.has(input))
-                    shown.push(`${CREATE}${input}`);
-                return shown;
+                const createdId = input === '' ? null : createIdOf(input);
+                if (!onCreateOption || createdId === null || byId.has(createdId))
+                    return shown;
+                const createRow = `${CREATE}${createdId}`;
+                return createFirst ? [createRow, ...shown] : [...shown, createRow];
             }}
             renderOption={(liProps: TLiProps, id) =>
                 isCreate(id) ? (

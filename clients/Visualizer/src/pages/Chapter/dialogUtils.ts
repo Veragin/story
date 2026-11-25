@@ -8,3 +8,5 @@ export const idError = (id: string) =>
           : !ID_RE.test(id)
             ? _('Letters, digits and _ only; not starting with a digit')
             : null;
+
+export const passageIdPrefix = (chapterId: string, characterId: string) => `${chapterId}-${characterId}-`;

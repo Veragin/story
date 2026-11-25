@@ -7,6 +7,8 @@ import { AddCharacterDialog } from './AddCharacterDialog';
 import { AddPassageDialog } from './AddPassageDialog';
 import { ReferencesDialog } from '../../components/dialog/ReferencesDialog';
 import { ChapterInfoDialog } from './ChapterInfoForm/ChapterInfoDialog';
+import { passageIdPrefix } from './dialogUtils';
+import type { TPassageCreator } from './editor/PassageEditor/types';
 
 const showReferences = (
     title: string,
@@ -73,6 +75,28 @@ export const openAddPassage = (store: ChapterGraphStore) =>
             onAddCharacter={(onAdded) => openAddCharacter(store, onAdded)}
         />
     ));
+
+export const linkedPassageCreator = (
+    store: ChapterGraphStore,
+    characterId: string
+): TPassageCreator => {
+    const idPrefix = passageIdPrefix(store.chapterId, characterId);
+    return {
+        idPrefix,
+        create: async (localId) => {
+            try {
+                await store.addPassage({ characterId, localId, type: 'screen' });
+                return true;
+            } catch (e) {
+                await modals.alert(
+                    errorMessage(e),
+                    _('Could not create %s', idPrefix + localId)
+                );
+                return false;
+            }
+        },
+    };
+};
 
 export const confirmDeletePassage = async (
     store: ChapterGraphStore,

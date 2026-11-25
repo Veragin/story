@@ -10,6 +10,7 @@ export const BodyItems = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TListProps<TBodyItemDto>) => (
     <>
         {items.map((item, i) => (
@@ -23,6 +24,7 @@ export const BodyItems = ({
                 diag={diag}
                 passageOptions={passageOptions}
                 itemOptions={itemOptions}
+                passageCreator={passageCreator}
             />
         ))}
         <SAddButton

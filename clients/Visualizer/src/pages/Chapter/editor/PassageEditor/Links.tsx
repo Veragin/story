@@ -24,6 +24,7 @@ export const Links = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
     if (value === undefined) {
@@ -49,10 +50,7 @@ export const Links = ({
     }
     const add = () => {
         setOpen((o) => new Set(o).add(value.length));
-        onChange([
-            ...value,
-            { text: '', passageId: passageOptions[0]?.id ?? '' },
-        ]);
+        onChange([...value, { text: '', passageId: '' }]);
     };
     const remove = (j: number) => {
         // the open set is keyed by index: the links after `j` move up by one
@@ -102,12 +100,18 @@ export const Links = ({
                                 diag={diag}
                                 passageOptions={passageOptions}
                                 itemOptions={itemOptions}
+                                passageCreator={passageCreator}
                             />
                         )}
                     </SLink>
                 );
             })}
-            <SAddButton label={_('Add link')} tone="inherit" onClick={add} />
+            <SAddButton
+                label={_('Add link')}
+                data-action="add-link"
+                tone="inherit"
+                onClick={add}
+            />
         </FormSection>
     );
 };

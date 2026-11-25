@@ -11,7 +11,7 @@ import { AppDialog } from '../../components/dialog/AppDialog';
 import { DialogButtons } from '../../components/dialog/DialogButtons';
 import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
 import type { ChapterGraphStore } from './ChapterGraphStore';
-import { idError } from './dialogUtils';
+import { idError, passageIdPrefix } from './dialogUtils';
 
 const PASSAGE_TYPE_LABELS: Record<TPassageType, () => string> = {
     start: () => _('start — entry point of the chapter'),
@@ -32,7 +32,7 @@ export const AddPassageDialog = observer(
         const characters = store.chapterCharacters;
         const [characterId, setCharacterId] = useState(characters[0]?.id ?? '');
         const [type, setType] = useState<TPassageType>('screen');
-        const idPrefix = `${store.chapterId}-${characterId}-`;
+        const idPrefix = passageIdPrefix(store.chapterId, characterId);
         const isTaken = (id: string) =>
             store.passages.some((p) => p.passageId === idPrefix + id);
         const titleId = useTitleId('passage', isTaken);

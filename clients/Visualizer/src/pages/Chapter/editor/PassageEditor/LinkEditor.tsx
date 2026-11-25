@@ -7,6 +7,7 @@ import { nestedDiagnostics } from '../../../../components/inputs/inputTypes';
 import { CostField } from '../CostField/CostField';
 import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { setField } from './listUtils';
+import { newPassageOption } from './newPassageOption';
 import type { TDiag, TOptionsProps } from './types';
 
 type TProps = TOptionsProps & {
@@ -23,6 +24,7 @@ export const LinkEditor = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const set = <K extends keyof TLinkDto>(
         key: K,
@@ -43,6 +45,7 @@ export const LinkEditor = ({
                 value={link.passageId}
                 onChange={(v) => set('passageId', v ?? '')}
                 options={passageOptions}
+                {...newPassageOption(passageCreator)}
                 diagnostics={diag(`${path}.passageId`)}
                 dataField={`${path}.passageId`}
             />

@@ -464,9 +464,14 @@ export class ChapterGraphStore {
     }
 
     async createPassage(body: TCreatePassageBody): Promise<TPassageDto> {
+        const passage = await this.addPassage(body);
+        this.select(passage.passageId);
+        return passage;
+    }
+
+    async addPassage(body: TCreatePassageBody): Promise<TPassageDto> {
         const passage = await this.api.createPassage(this.chapterId, body);
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
-        this.select(passage.passageId);
         return passage;
     }
 

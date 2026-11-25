@@ -21,6 +21,7 @@ import { ControlBar, PageContainer, router, useKey } from '../../shell';
 import { ChapterGraphStore } from './ChapterGraphStore';
 import {
     confirmDeletePassage,
+    linkedPassageCreator,
     openChapterInfoDialog,
     openAddPassage,
 } from './dialogs';
@@ -124,6 +125,10 @@ export const ChapterPage = observer(
                                             api={store.api}
                                             passageOptions={store.passages.map(
                                                 (p) => ({ id: p.passageId })
+                                            )}
+                                            passageCreator={linkedPassageCreator(
+                                                store,
+                                                store.editor.base.characterId
                                             )}
                                             finishOptions={store.finishOptions}
                                             itemOptions={(
