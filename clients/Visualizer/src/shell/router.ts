@@ -8,7 +8,7 @@ export type TEntityKind = (typeof ENTITY_KINDS)[number];
 export const STRUCTURE_SECTIONS = ['classes', 'types', 'literals'] as const;
 export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
 
-export const SETTINGS_SECTIONS = ['git'] as const;
+export const SETTINGS_SECTIONS = ['general', 'ai', 'git'] as const;
 export type TSettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export type TRoute =

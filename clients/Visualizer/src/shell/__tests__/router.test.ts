@@ -22,6 +22,8 @@ describe('router hash parsing', () => {
         ['#/engine/onLinkClick', { page: 'engine', section: 'onLinkClick' }],
         ['#/engine/topbar', { page: 'engine', section: 'topbar' }],
         ['#/settings', { page: 'settings' }],
+        ['#/settings/general', { page: 'settings', section: 'general' }],
+        ['#/settings/ai', { page: 'settings', section: 'ai' }],
         ['#/settings/git', { page: 'settings', section: 'git' }],
         ['#/_canvas', { page: 'canvas' }],
         ['#/_inputs', { page: 'inputs' }],

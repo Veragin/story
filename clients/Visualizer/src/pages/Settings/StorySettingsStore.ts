@@ -9,6 +9,7 @@ import {
     type TStoryFormValue,
 } from '@story/ui';
 import { ApiError, errorMessage, type TVisualizerApi } from '../../api';
+import { deepEqual } from '../../deepEqual';
 import type { AuthStore } from '../../api/auth';
 import type { GitStore } from '../../git/GitStore';
 import type { StoryInfoStore } from '../../shell/storyInfoStore';
@@ -40,6 +41,7 @@ export class StorySettingsStore {
             error: observable,
             conflict: observable.ref,
             errors: computed,
+            dirty: computed,
             submitBlocked: computed,
             setValue: action,
             reload: action,
@@ -51,6 +53,10 @@ export class StorySettingsStore {
 
     get errors(): TStoryFormErrors {
         return this.value ? validateStoryForm(this.value, { passwordRequired: false }) : {};
+    }
+
+    get dirty(): boolean {
+        return this.info !== null && this.value !== null && !deepEqual(this.value, storyFormOf(this.info));
     }
 
     get submitBlocked(): boolean {
