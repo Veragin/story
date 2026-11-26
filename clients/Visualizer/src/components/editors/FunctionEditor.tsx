@@ -5,6 +5,7 @@ import NotesIcon from '@mui/icons-material/Notes';
 import type { TFunctionDto } from '@story/protocol';
 import { CodeTextArea } from '../code/CodeTextArea';
 import type { TInputProps } from '../inputs/inputTypes';
+import { useBulletList } from '../inputs/useBulletList';
 import { ViewToggle } from '../buttons/ViewToggle';
 import { withDescription } from '../../values/withDescription';
 import { InlineRow } from '../layout/InlineRow';
@@ -29,6 +30,9 @@ export const FunctionEditor = ({
     );
     const noCode = value.code.trim() === '';
     const noDescription = !value.description;
+    const onDescriptionKey = useBulletList((description) =>
+        onChange(withDescription(value, description))
+    );
 
     return (
         <SRow data-view={view} data-field={dataField}>
@@ -60,6 +64,7 @@ export const FunctionEditor = ({
                         onChange={(e) =>
                             onChange(withDescription(value, e.target.value))
                         }
+                        onKeyDown={onDescriptionKey}
                     />
                 )}
             </div>

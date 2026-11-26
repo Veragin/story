@@ -8,6 +8,7 @@ import { RowActions } from '../../buttons/RowActions';
 import { DescriptionToggleButton } from '../../buttons/DescriptionToggleButton';
 import { FieldTypePicker } from './FieldTypePicker';
 import { withDescription } from '../../../values/withDescription';
+import { useBulletList } from '../../inputs/useBulletList';
 import type {
     TLiteralDraft,
     TStructureRow,
@@ -43,6 +44,9 @@ export const StructureRow = ({
     const locked = !!field.locked;
     const off = disabled || locked;
     const set = (next: TFieldDesc) => onChange({ ...row, field: next });
+    const onDescriptionKey = useBulletList((description) =>
+        set(withDescription(field, description))
+    );
     const keyError =
         field.key === ''
             ? _('Enter a name')
@@ -131,6 +135,7 @@ export const StructureRow = ({
                     onChange={(e) =>
                         set(withDescription(field, e.target.value))
                     }
+                    onKeyDown={onDescriptionKey}
                 />
             )}
         </SRow>

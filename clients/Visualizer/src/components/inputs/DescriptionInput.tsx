@@ -1,4 +1,5 @@
 import { InputBase, styled } from '@mui/material';
+import { useBulletList } from './useBulletList';
 
 type TProps = {
     value: string;
@@ -14,21 +15,25 @@ export const DescriptionInput = ({
     disabled,
     dataField = 'docComment',
     minRows,
-}: TProps) => (
-    <SInput
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={_('Write down description here')}
-        disabled={disabled}
-        multiline
-        minRows={minRows}
-        fullWidth
-        inputProps={{
-            'aria-label': _('Author description'),
-            'data-field': dataField,
-        }}
-    />
-);
+}: TProps) => {
+    const onBulletKey = useBulletList(onChange);
+    return (
+        <SInput
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onBulletKey}
+            placeholder={_('Write down description here')}
+            disabled={disabled}
+            multiline
+            minRows={minRows}
+            fullWidth
+            inputProps={{
+                'aria-label': _('Author description'),
+                'data-field': dataField,
+            }}
+        />
+    );
+};
 
 const SInput = styled(InputBase)`
     padding: 2px 4px;

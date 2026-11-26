@@ -1,12 +1,14 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import type { TChapterDto, TDiagnosticDto, TUpdateChapterBody } from '@story/protocol';
 import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
+import { NO_DIAGNOSTICS } from '../../../api/diagnostics';
 import type { IEditorSource } from '../../../components/layout/editorSource';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
-import { mapDiagnostics } from '../editor/diagnostics';
+import { mapDiagnostics, type TDiagnosticIndex } from '../editor/diagnostics';
 import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
 
 const draftKey = (chapterId: string) => `chapter-info-draft:${chapterId}`;
+const NO_DIAGNOSTIC_INDEX: TDiagnosticIndex = { byField: new Map(), unmapped: [] };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 export class ChapterInfoEditorStore implements IEditorSource {
@@ -22,7 +24,7 @@ export class ChapterInfoEditorStore implements IEditorSource {
         readonly chapterId: string,
         private readonly api: TVisualizerApi
     ) {
-        makeObservable(this, {
+        makeObservable<this, 'diagnosticIndex'>(this, {
             chapter: observable.ref,
             draft: observable.ref,
             saving: observable,
@@ -32,7 +34,8 @@ export class ChapterInfoEditorStore implements IEditorSource {
             patch: computed,
             dirty: computed,
             stale: computed,
-            setDraft: action,
+            diagnosticIndex: computed,
+            setDraft: action.bound,
             reset: action,
             reloadFromDisk: action,
             onExternal: action,
@@ -58,11 +61,14 @@ export class ChapterInfoEditorStore implements IEditorSource {
         return this.conflict;
     }
 
-    private get diagnosticIndex() {
+    // without diagnostics the draft is not read, so typing does not re-render the fields that ask
+    private get diagnosticIndex(): TDiagnosticIndex {
+        if (this.diagnostics.length === 0) return NO_DIAGNOSTIC_INDEX;
         return mapDiagnostics(this.diagnostics, chapterFieldPaths(this.draft));
     }
 
-    diagnosticsFor = (path: string) => this.diagnosticIndex.byField.get(path) ?? [];
+    diagnosticsFor = (path: string): readonly TDiagnosticDto[] =>
+        this.diagnosticIndex.byField.get(path) ?? NO_DIAGNOSTICS;
 
     get unmappedDiagnostics() {
         return this.diagnosticIndex.unmapped;

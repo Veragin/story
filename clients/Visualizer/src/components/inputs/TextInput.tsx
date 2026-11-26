@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { INPUT_DEFAULTS } from './inputDefaults';
 import { inputSlotProps } from './inputSlotProps';
+import { useBulletList } from './useBulletList';
 import type { TInputProps } from './inputTypes';
 
 type TProps = TInputProps<string> & {
@@ -40,44 +41,51 @@ export const TextInput = ({
     disabled,
     ariaLabel,
     dataField,
-}: TProps) => (
-    <TextField
-        {...INPUT_DEFAULTS}
-        type={type}
-        multiline={multiline}
-        minRows={multiline ? minRows : undefined}
-        value={value}
-        error={hasError}
-        disabled={disabled}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        autoComplete={autoComplete}
-        slotProps={{
-            ...inputSlotProps(
-                { ariaLabel, dataField },
-                { maxLength, spellCheck }
-            ),
-            input: {
-                readOnly,
-                startAdornment: startAdornment ? (
-                    <InputAdornment position="start">
-                        {startAdornment}
-                    </InputAdornment>
-                ) : undefined,
-            },
-        }}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-            if (onEscape && e.key === 'Escape') {
-                // the field consumes Escape, so an enclosing dialog or page shortcut stays put
-                e.stopPropagation();
-                onEscape();
-                return;
-            }
-            if (!onEnter || e.key !== 'Enter' || multiline) return;
-            e.preventDefault();
-            onEnter();
-        }}
-        onBlur={onBlur}
-    />
-);
+}: TProps) => {
+    const onBulletKey = useBulletList(onChange);
+    return (
+        <TextField
+            {...INPUT_DEFAULTS}
+            type={type}
+            multiline={multiline}
+            minRows={multiline ? minRows : undefined}
+            value={value}
+            error={hasError}
+            disabled={disabled}
+            placeholder={placeholder}
+            autoFocus={autoFocus}
+            autoComplete={autoComplete}
+            slotProps={{
+                ...inputSlotProps(
+                    { ariaLabel, dataField },
+                    { maxLength, spellCheck }
+                ),
+                input: {
+                    readOnly,
+                    startAdornment: startAdornment ? (
+                        <InputAdornment position="start">
+                            {startAdornment}
+                        </InputAdornment>
+                    ) : undefined,
+                },
+            }}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+                if (onEscape && e.key === 'Escape') {
+                    // the field consumes Escape, so an enclosing dialog or page shortcut stays put
+                    e.stopPropagation();
+                    onEscape();
+                    return;
+                }
+                if (multiline) {
+                    onBulletKey(e);
+                    return;
+                }
+                if (!onEnter || e.key !== 'Enter') return;
+                e.preventDefault();
+                onEnter();
+            }}
+            onBlur={onBlur}
+        />
+    );
+};

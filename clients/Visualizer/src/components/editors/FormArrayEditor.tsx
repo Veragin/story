@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { TMaybeCode, TTypeRef, TValue } from '@story/protocol';
 import { ArrayEditor } from './ArrayEditor';
 import type { TDiagnosticsOf } from '../inputs/inputTypes';
@@ -16,7 +16,7 @@ type TProps = TFormInputProps<TMaybeCode<TValue[]>, TValue[]> & {
     newItem?: () => TValue;
 };
 
-export const FormArrayEditor = (props: TProps) => {
+export const FormArrayEditor = memo((props: TProps) => {
     const { labelProps, inputProps } = splitFormProps({
         emptyValue: [],
         ...props,
@@ -26,4 +26,4 @@ export const FormArrayEditor = (props: TProps) => {
             {inputProps && <ArrayEditor {...inputProps} />}
         </FormField>
     );
-};
+});

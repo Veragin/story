@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { TFieldDesc, TMaybeCode, TValueRecord } from '@story/protocol';
 import { FormField } from '../form/FormField';
 import { splitFormProps, type TFormInputProps } from '../form/formProps';
@@ -11,7 +12,7 @@ type TProps = TFormInputProps<TMaybeCode<TValueRecord>> & {
     diagnosticsOf?: TDiagnosticsOf;
 };
 
-export const FormObjectEditor = ({ actions, ...props }: TProps) => {
+export const FormObjectEditor = memo(({ actions, ...props }: TProps) => {
     const { labelProps, inputProps } = splitFormProps({
         emptyValue: {},
         ...props,
@@ -27,4 +28,4 @@ export const FormObjectEditor = ({ actions, ...props }: TProps) => {
             )}
         </FormField>
     );
-};
+});

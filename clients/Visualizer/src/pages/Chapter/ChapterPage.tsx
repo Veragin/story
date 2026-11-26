@@ -13,7 +13,7 @@ import {
 import type { AiStore } from '../../ai/AiStore';
 import { aiStore } from '../../context';
 import { TooltipIconButton } from '../../components/buttons/TooltipIconButton';
-import { ResizableSplitter } from '../../components/layout/ResizableSplitter';
+import { SideDrawer } from '../../components/layout/SideDrawer';
 import { SaveStatus } from '../../components/feedback/SaveStatus';
 import { ErrorAlert } from '../../components/feedback/ErrorAlert';
 import { openSourceEditor } from '../../components/code/openSourceEditor';
@@ -37,7 +37,12 @@ type TProps = {
 };
 
 export const ChapterPage = observer(
-    ({ chapterId, api = defaultApi, events = apiEvents, ai = aiStore }: TProps) => {
+    ({
+        chapterId,
+        api = defaultApi,
+        events = apiEvents,
+        ai = aiStore,
+    }: TProps) => {
         const [store] = useState(
             () => new ChapterGraphStore({ chapterId, api, events })
         );
@@ -114,60 +119,53 @@ export const ChapterPage = observer(
                             )}
                         />
                     ) : (
-                        <ResizableSplitter
-                            leftContent={<ChapterGraphCanvas store={store} ai={ai} />}
-                            rightContent={
-                                <SSide>
-                                    {store.editor ? (
-                                        <PassageEditor
-                                            key={store.editor.passageId}
-                                            store={store.editor}
-                                            api={store.api}
-                                            passageOptions={store.passages.map(
-                                                (p) => ({ id: p.passageId })
-                                            )}
-                                            passageCreator={linkedPassageCreator(
+                        <>
+                            <ChapterGraphCanvas store={store} ai={ai} />
+                            <SideDrawer>
+                                {store.editor ? (
+                                    <PassageEditor
+                                        key={store.editor.passageId}
+                                        store={store.editor}
+                                        api={store.api}
+                                        passageOptions={store.passages.map(
+                                            (p) => ({ id: p.passageId })
+                                        )}
+                                        passageCreator={linkedPassageCreator(
+                                            store,
+                                            store.editor.base.characterId
+                                        )}
+                                        finishOptions={store.finishOptions}
+                                        itemOptions={(
+                                            store.project?.items ?? []
+                                        ).map((i) => ({
+                                            id: i.id,
+                                            label: i.name,
+                                        }))}
+                                        onClose={() => store.closeEditor()}
+                                        onDelete={() =>
+                                            void confirmDeletePassage(
                                                 store,
-                                                store.editor.base.characterId
-                                            )}
-                                            finishOptions={store.finishOptions}
-                                            itemOptions={(
-                                                store.project?.items ?? []
-                                            ).map((i) => ({
-                                                id: i.id,
-                                                label: i.name,
-                                            }))}
-                                            onClose={() => store.closeEditor()}
-                                            onDelete={() =>
-                                                void confirmDeletePassage(
-                                                    store,
-                                                    store.editor?.passageId
-                                                )
-                                            }
-                                            onEditSource={() =>
-                                                editSource(
-                                                    store.editor?.passageId
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <ChapterOverview
-                                            store={store}
-                                            events={events}
-                                            onEditInfo={() =>
-                                                openChapterInfoDialog(
-                                                    chapterId,
-                                                    api
-                                                )
-                                            }
-                                        />
-                                    )}
-                                </SSide>
-                            }
-                            initialLeftWidth={65}
-                            minLeftWidth={30}
-                            maxLeftWidth={85}
-                        />
+                                                store.editor?.passageId
+                                            )
+                                        }
+                                        onEditSource={() =>
+                                            editSource(store.editor?.passageId)
+                                        }
+                                    />
+                                ) : (
+                                    <ChapterOverview
+                                        store={store}
+                                        events={events}
+                                        onEditInfo={() =>
+                                            openChapterInfoDialog(
+                                                chapterId,
+                                                api
+                                            )
+                                        }
+                                    />
+                                )}
+                            </SideDrawer>
+                        </>
                     )}
                 </SContent>
             </PageContainer>
@@ -192,16 +190,10 @@ const STitle = styled(ButtonBase)`
 `;
 
 const SContent = styled('div')`
+    position: relative;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-`;
-
-const SSide = styled('div')`
-    height: 100%;
-    overflow-y: auto;
-    background: #1a1a1a;
-    color: #fff;
 `;
 
 const SErrorAlert = styled(ErrorAlert)`

@@ -20,6 +20,7 @@ import {
 } from '../../ai/AiSuggestStore';
 import { findActiveToken, replaceToken } from '../../ai/aiToken';
 import { INPUT_DEFAULTS } from '../inputs/inputDefaults';
+import { useBulletList } from '../inputs/useBulletList';
 import { inputSlotProps } from '../inputs/inputSlotProps';
 import type { TInputProps } from '../inputs/inputTypes';
 import {
@@ -173,7 +174,9 @@ export const ImageDescriptionInput = observer(
             setDismissed(!hint.continues);
         };
 
-        const onKeyDown = (e: KeyboardEvent) => {
+        const onBulletKey = useBulletList(onChange);
+
+        const onHintKey = (e: KeyboardEvent) => {
             if (!open || hints.length === 0) return;
             const move = (by: number) => {
                 e.preventDefault();
@@ -189,6 +192,11 @@ export const ImageDescriptionInput = observer(
                 e.stopPropagation();
                 setDismissed(true);
             }
+        };
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            onHintKey(e);
+            onBulletKey(e);
         };
 
         return (

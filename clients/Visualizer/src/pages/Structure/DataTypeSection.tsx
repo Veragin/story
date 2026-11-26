@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button, styled, Typography } from '@mui/material';
 import { spacingCss } from '@story/ui';
 import {
@@ -25,90 +26,92 @@ type TProps = {
     dataField?: string;
 };
 
-export const DataTypeSection = ({
-    value,
-    onChange,
-    newName,
-    file,
-    diagnostics = [],
-    disabled,
-    dataField,
-}: TProps) => {
-    const title = value?.name ?? _('Data type');
-    const hasError = diagnostics.length > 0;
+export const DataTypeSection = memo(
+    ({
+        value,
+        onChange,
+        newName,
+        file,
+        diagnostics = [],
+        disabled,
+        dataField,
+    }: TProps) => {
+        const title = value?.name ?? _('Data type');
+        const hasError = diagnostics.length > 0;
 
-    const renderBody = () => {
-        if (!value) {
-            return (
-                <div>
-                    <Button
-                        size="small"
+        const renderBody = () => {
+            if (!value) {
+                return (
+                    <div>
+                        <Button
+                            size="small"
+                            disabled={disabled}
+                            onClick={() =>
+                                onChange(
+                                    { name: newName, code: '{}', fields: [] },
+                                    {}
+                                )
+                            }
+                        >
+                            {_('Add a data type')}
+                        </Button>
+                    </div>
+                );
+            }
+            if (!value.fields) {
+                // not an object type: only its text can be edited
+                return (
+                    <CodeTextArea
+                        value={value.code}
+                        onChange={(code) => onChange({ ...value, code }, {})}
+                        hasError={hasError}
                         disabled={disabled}
-                        onClick={() =>
-                            onChange(
-                                { name: newName, code: '{}', fields: [] },
-                                {}
-                            )
-                        }
-                    >
-                        {_('Add a data type')}
-                    </Button>
-                </div>
-            );
-        }
-        if (!value.fields) {
-            // not an object type: only its text can be edited
+                        ariaLabel={title}
+                        dataField={dataField}
+                    />
+                );
+            }
             return (
-                <CodeTextArea
-                    value={value.code}
-                    onChange={(code) => onChange({ ...value, code }, {})}
+                <StructureEditor
+                    value={structureRows(value.fields)}
+                    onChange={(rows) => {
+                        const fields = rowFields(rows);
+                        // the server writes the text from `fields`; `code` mirrors it for the draft
+                        onChange(
+                            { ...value, fields, code: objectTypeText(fields) },
+                            rowRenames(rows)
+                        );
+                    }}
+                    literals={{ file }}
                     hasError={hasError}
                     disabled={disabled}
                     ariaLabel={title}
                     dataField={dataField}
                 />
             );
-        }
-        return (
-            <StructureEditor
-                value={structureRows(value.fields)}
-                onChange={(rows) => {
-                    const fields = rowFields(rows);
-                    // the server writes the text from `fields`; `code` mirrors it for the draft
-                    onChange(
-                        { ...value, fields, code: objectTypeText(fields) },
-                        rowRenames(rows)
-                    );
-                }}
-                literals={{ file }}
-                hasError={hasError}
-                disabled={disabled}
-                ariaLabel={title}
-                dataField={dataField}
-            />
-        );
-    };
+        };
 
-    return (
-        <SSection data-form-section="dataType">
-            <SHeader>
-                <Typography variant="overline" color="text.secondary">
-                    {_('Data type')}
-                </Typography>
-                {value && (
-                    <Typography
-                        variant="subtitle1"
-                        color={hasError ? 'error' : 'text.primary'}
-                    >
-                        {value.name}
+        return (
+            <SSection data-form-section="dataType">
+                <SHeader>
+                    <Typography variant="overline" color="text.secondary">
+                        {_('Data type')}
                     </Typography>
-                )}
-            </SHeader>
-            {renderBody()}
-            <FieldDiagnostics diagnostics={diagnostics} />
-        </SSection>
-    );
-};
+                    {value && (
+                        <Typography
+                            variant="subtitle1"
+                            color={hasError ? 'error' : 'text.primary'}
+                        >
+                            {value.name}
+                        </Typography>
+                    )}
+                </SHeader>
+                {renderBody()}
+                <FieldDiagnostics diagnostics={diagnostics} />
+            </SSection>
+        );
+    }
+);
 
 const SSection = styled('section')`
     display: flex;

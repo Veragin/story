@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import { memo, type ComponentType } from 'react';
 import type { TInputProps } from '../inputs/inputTypes';
 import { FormField } from './FormField';
 import { splitFormProps, type TFormInputProps } from './formProps';
@@ -48,5 +48,5 @@ export const createFormInput = <
             </FormField>
         );
     };
-    return FormInput;
+    return memo(FormInput);
 };

@@ -1,18 +1,16 @@
 import { observer } from 'mobx-react-lite';
 import { AppDialog } from '../../../components/dialog/AppDialog';
 import { DialogButtons } from '../../../components/dialog/DialogButtons';
-import { LoadingState } from '../../../components/feedback/LoadingState';
 import {
     apiEvents,
     displayText,
     type ApiEvents,
     type TVisualizerApi,
 } from '../../../api';
-import { StructureContext } from '../../../structure/structureContext';
 import type { EntityStore } from '../../../stores/EntityStore';
 import type { StructureStore } from '../../../stores/StructureStore';
 import { ChapterInfoAlerts } from './ChapterInfoAlerts';
-import { ChapterInfoForm } from './ChapterInfoForm';
+import { ChapterInfoEditorForm } from './ChapterInfoEditorForm';
 import { useChapterInfoEditor } from './useChapterInfoEditor';
 import { useStructureStores } from './useStructureStores';
 
@@ -67,20 +65,7 @@ export const ChapterInfoDialog = observer(
                 }
             >
                 <ChapterInfoAlerts store={store} />
-                {store.draft && store.chapter ? (
-                    <StructureContext.Provider value={structure}>
-                        <ChapterInfoForm
-                            chapterId={chapterId}
-                            file={store.chapter.file}
-                            value={store.draft}
-                            onChange={(v) => store.setDraft(v)}
-                            diagnostics={store.diagnosticsFor}
-                            disabled={store.saving}
-                        />
-                    </StructureContext.Provider>
-                ) : (
-                    !store.error && <LoadingState />
-                )}
+                <ChapterInfoEditorForm store={store} structure={structure} />
             </AppDialog>
         );
     }
