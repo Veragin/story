@@ -1,23 +1,21 @@
-import {
-    Button,
-    CircularProgress,
-    styled,
-    TextField,
-    Typography,
-} from '@mui/material';
+import { Button, styled } from '@mui/material';
 import Code from '@mui/icons-material/Code';
 import { observer } from 'mobx-react-lite';
 import type { TEngineSectionDto } from '@story/protocol';
 import { spacingCss } from '@story/ui';
-import { CodeEditor } from '../../components/CodeEditor/CodeEditor';
-import { FormHeader } from '../../components/FormHeader';
+import { CodeEditor } from '../../components/code/CodeEditor';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { FormSection } from '../../components/form/FormSection';
+import { FormTextInput } from '../../components/form/FormTextInput';
+import { HintText } from '../../components/feedback/HintText';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { Notices } from '../../components/feedback/Notices';
 import { modals } from '../../shell';
 import type { EngineEditorStore } from './EngineEditorStore';
 import { ENGINE_SECTION_INFO } from './engineSections';
@@ -47,7 +45,7 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
     if (!base || !draft) {
         return (
             <FormCenter>
-                {!editor.loaded && <CircularProgress size={24} />}
+                {!editor.loaded && <LoadingState />}
                 {notices}
             </FormCenter>
         );
@@ -70,7 +68,7 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
+            <EditorHeader
                 title={info.title()}
                 store={resource}
                 onDelete={base.exists ? () => void onDelete() : undefined}
@@ -83,10 +81,10 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
             </FormMeta>
             {notices}
             <FormFields>
-                <TextField
+                <FormTextInput
                     label={_('Description')}
                     value={draft.description}
-                    onChange={(e) => editor.setDescription(e.target.value)}
+                    onChange={(next) => editor.setDescription(next ?? '')}
                     placeholder={info.placeholder()}
                     helperText={_(
                         'What this setting should do, in plain words. It is saved as the JSDoc of the code, so it can be saved without any code.'
@@ -94,13 +92,9 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
                     disabled={resource.saving}
                     multiline
                     minRows={5}
-                    fullWidth
-                    inputProps={{ 'data-field': 'description' }}
+                    dataField="description"
                 />
-                <SSection data-section="implementation">
-                    <Typography variant="subtitle2">
-                        {_('Implementation')}
-                    </Typography>
+                <FormSection title={_('Implementation')}>
                     {editor.codeOpen ? (
                         <>
                             <CodeEditor
@@ -112,26 +106,28 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
                                 minHeight="240px"
                                 ariaLabel={_('Code of %s', info.title())}
                             />
-                            {editor.hasTypeErrors && (
-                                <SHelp>
-                                    {_(
-                                        'Type error positions refer to the saved file, which also holds the description.'
-                                    )}
-                                </SHelp>
-                            )}
-                            <SHelp>{info.arguments()}</SHelp>
-                            <SHelp>{info.imports()}</SHelp>
-                            <SHelp>
-                                {_(
-                                    'Empty code saves the stub, which keeps the default.'
+                            <SHints>
+                                {editor.hasTypeErrors && (
+                                    <HintText>
+                                        {_(
+                                            'Type error positions refer to the saved file, which also holds the description.'
+                                        )}
+                                    </HintText>
                                 )}
-                            </SHelp>
+                                <HintText>{info.arguments()}</HintText>
+                                <HintText>{info.imports()}</HintText>
+                                <HintText>
+                                    {_(
+                                        'Empty code saves the stub, which keeps the default.'
+                                    )}
+                                </HintText>
+                            </SHints>
                         </>
                     ) : (
                         <SCollapsed>
-                            <SHelp>
+                            <HintText>
                                 {_('Not implemented yet.')} {info.whenMissing()}
-                            </SHelp>
+                            </HintText>
                             <Button
                                 size="small"
                                 variant="outlined"
@@ -144,13 +140,13 @@ export const EngineSectionEditor = observer(({ editor }: TProps) => {
                             </Button>
                         </SCollapsed>
                     )}
-                </SSection>
+                </FormSection>
             </FormFields>
         </FormPage>
     );
 });
 
-const SSection = styled('div')`
+const SHints = styled('div')`
     display: flex;
     flex-direction: column;
     gap: ${spacingCss(1)};
@@ -161,9 +157,4 @@ const SCollapsed = styled('div')`
     flex-direction: column;
     align-items: flex-start;
     gap: ${spacingCss(1)};
-`;
-
-const SHelp = styled('div')`
-    font-size: 12px;
-    color: ${({ theme }) => theme.palette.text.secondary};
 `;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, styled } from '@mui/material';
+import { Button, styled, ToggleButton } from '@mui/material';
 import { Camera } from '../Camera';
 import { boundsOf, rectToPolygon } from '../geometry';
 import { LineTool } from '../controllers/LineTool';
@@ -281,21 +281,23 @@ export const CanvasPlayground = () => {
     return (
         <SRoot>
             <SToolbar>
-                <Button
+                <ToggleButton
+                    value="editable"
                     size="small"
-                    variant={editable ? 'contained' : 'outlined'}
-                    onClick={toggleEditable}
+                    selected={editable}
+                    onChange={toggleEditable}
                 >
                     {editable ? 'Editable' : 'View mode'}
-                </Button>
-                <Button
+                </ToggleButton>
+                <ToggleButton
+                    value="line"
                     size="small"
-                    variant={lineActive ? 'contained' : 'outlined'}
+                    selected={lineActive}
                     disabled={!editable}
-                    onClick={() => rigRef.current?.lineTool.toggle()}
+                    onChange={() => rigRef.current?.lineTool.toggle()}
                 >
                     Line tool
-                </Button>
+                </ToggleButton>
                 <Button
                     size="small"
                     variant="outlined"
@@ -349,7 +351,7 @@ const SToolbar = styled('div')`
 `;
 
 const SInfo = styled('span')`
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
     opacity: 0.7;
 `;
 
@@ -372,7 +374,7 @@ const STooltip = styled('div')`
     padding: 4px 8px;
     border-radius: 4px;
     background: #333e;
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
 `;
 
 const SLog = styled('div')`

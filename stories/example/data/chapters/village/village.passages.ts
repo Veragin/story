@@ -1,4 +1,4 @@
-import coolPassage from './thomas.passages/cool.transition';
+import coolPassage from './thomas.passages/cool.finish';
 import type { TWorldState } from '../../TWorldState';
 import { TChapterPassage } from '@story/types';
 import { introPassage } from './thomas.passages/intro';

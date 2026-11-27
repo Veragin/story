@@ -1,10 +1,11 @@
 /**
  * `@story/types` — the author's type surface (REFACTOR_PLAN §2.1: flat, no `src/`).
  *
- * Depends on `@story/shared` only (for `Time` / `DeltaTime` / `TimeRange` / `TPassageIdFor`).
+ * Depends on `@story/shared` only (time, the passage-id format and the passage structure).
  *
  * Engine types the author never edits are NOT here — they are exports of `@story/shared`:
- * `TPoint` / `TSize` / `TVec` (geometry) and `TPassageId` / `TPassageIdFor` (the id format).
+ * `TPoint` / `TSize` / `TVec` (geometry), `TPassageId` / `TPassageIdFor` (the id format) and the
+ * passage structure (`PASSAGE_TYPES`, `TPassageScreen`, `TLink`, …), which `./TPassage` binds to the story's ids.
  */
 
 /* TCharacterId, TNpcId, TChapterId,
@@ -15,15 +16,15 @@ export * from './literals';
 
 /* TChapter */
 export * from './TChapter';
-/* TCharacter, TCharacterData */
-export * from './TCharacter';
-/* TNpc, TNpcData */
-export * from './TNpc';
+/* Character, TCharacterData */
+export * from './Character';
+/* Npc, TNpcData */
+export * from './Npc';
 /* TItemId, TItem, TItemPartial, TInitInventory */
 export * from './TItem';
-/* TLocation, TLocationId */
-export * from './TLocation';
-/* TChapterPassage, TPassage, TPassageScreen, TPassageTransition, TPassageLinear,
+/* Location, TLocationId */
+export * from './Location';
+/* TChapterPassage, TPassage, TPassageStart, TPassageScreen, TPassageLinear, TPassageRedirect, TPassageFinish,
    TLink, TLinkCost, TChapterPassageType, getWholePassageId */
 export * from './TPassage';
 /* TTimeTrigger */

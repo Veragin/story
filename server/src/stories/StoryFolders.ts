@@ -11,6 +11,7 @@ import { STORIES_ROOT } from './storiesRoot';
 import type { TStoryFile } from './storyFile';
 import { STORY_TOP_FILES } from './storyFiles';
 import { StoryRepository } from '../database/repositories/StoryRepository';
+import { StoryLifecycle } from './StoryLifecycle';
 import { storyTsconfig } from './storyTsconfig';
 import { TEMPLATE_ROOT } from './templateRoot';
 import { zipStory } from './zip';
@@ -46,7 +47,8 @@ export class StoryFolders {
 
     constructor(
         @Inject(STORIES_ROOT) readonly root: string,
-        private readonly stories: StoryRepository
+        private readonly stories: StoryRepository,
+        private readonly lifecycle: StoryLifecycle
     ) {}
 
     dir(storyId: string): string {
@@ -99,6 +101,7 @@ export class StoryFolders {
     async replace(storyId: string, tmp: string): Promise<void> {
         const dir = this.dir(storyId);
         const old = path.join(this.root, `.replace-${randomBytes(6).toString('hex')}`);
+        await this.lifecycle.beforeFolderSwap(storyId);
         await rename(dir, old);
         try {
             await rename(tmp, dir);

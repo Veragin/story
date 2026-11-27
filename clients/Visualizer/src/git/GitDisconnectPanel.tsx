@@ -1,18 +1,27 @@
 import { useState } from 'react';
-import {
-    Alert,
-    Button,
-    FormControlLabel,
-    Radio,
-    RadioGroup,
-    Stack,
-} from '@mui/material';
+import { Alert, Button } from '@mui/material';
+import { FormFields } from '../components/form/FormFields';
+import { FormRadioInput } from '../components/form/FormRadioInput';
+import { ActionRow } from '../components/layout/ActionRow';
 
 type TProps = {
     busy: boolean;
     onDisconnect: (removeRepo: boolean) => void;
     onCancel: () => void;
 };
+
+const repoOptions = () => [
+    {
+        id: 'keep',
+        label: _('Keep the local repository (.git) and its history'),
+    },
+    {
+        id: 'delete',
+        label: _(
+            'Delete the local repository (.git); commits not pushed are lost'
+        ),
+    },
+];
 
 export const GitDisconnectPanel = ({
     busy,
@@ -23,30 +32,18 @@ export const GitDisconnectPanel = ({
 
     return (
         <Alert severity="warning" icon={false}>
-            <Stack gap={1}>
+            <FormFields>
                 {_(
                     'Disconnect removes the remote URL and the token from this story.'
                 )}
-                <RadioGroup
+                <FormRadioInput
+                    label={_('Local repository')}
                     value={removeRepo ? 'delete' : 'keep'}
-                    onChange={(e) => setRemoveRepo(e.target.value === 'delete')}
-                >
-                    <FormControlLabel
-                        value="keep"
-                        control={<Radio size="small" />}
-                        label={_(
-                            'Keep the local repository (.git) and its history'
-                        )}
-                    />
-                    <FormControlLabel
-                        value="delete"
-                        control={<Radio size="small" />}
-                        label={_(
-                            'Delete the local repository (.git); commits not pushed are lost'
-                        )}
-                    />
-                </RadioGroup>
-                <Stack direction="row" gap={1} justifyContent="flex-end">
+                    onChange={(next) => setRemoveRepo(next === 'delete')}
+                    options={repoOptions()}
+                    dataField="removeRepo"
+                />
+                <ActionRow>
                     <Button color="inherit" size="small" onClick={onCancel}>
                         {_('Cancel')}
                     </Button>
@@ -59,8 +56,8 @@ export const GitDisconnectPanel = ({
                     >
                         {_('Disconnect')}
                     </Button>
-                </Stack>
-            </Stack>
+                </ActionRow>
+            </FormFields>
         </Alert>
     );
 };

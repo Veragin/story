@@ -19,6 +19,7 @@ export {
     Shape,
     applyStroke,
     type IShapeHost,
+    type TDragAxis,
     type TDragOptions,
     type TLabelStyle,
     type TRenderContext,

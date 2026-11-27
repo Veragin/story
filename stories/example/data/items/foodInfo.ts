@@ -2,7 +2,7 @@ import type { TItemInfo } from './itemInfo';
 
 export const foodInfo = {
     berries: {
-        name: 'Berries',
+        name: _('Berries'),
         type: 'food',
         hungerValue: 5,
     },

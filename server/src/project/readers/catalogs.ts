@@ -5,21 +5,35 @@ import { HttpError } from '../../common/HttpError';
 import { lineOf } from '../ast';
 import { findObjectEntry, objectEntries, readEntryValues, type TObjectEntry } from '../objectCatalog';
 import type { SourceProject } from '../SourceProject';
-import { S, schemaOf, type TField } from '../values';
-import { catalogObject, readCatalogs, readType, type TCatalogSource } from './structure';
+import { S, schemaOf, type TField, type TStructFields } from '../values';
+import {
+    catalogObject,
+    readCatalogs,
+    readType,
+    readTypeNames,
+    storyStructFields,
+    type TCatalogSource,
+} from './structure';
 
-export type TCatalog = TCatalogSource & { fields: TFieldDesc[] };
+export type TCatalog = TCatalogSource & { fields: TFieldDesc[]; structFields: TStructFields };
 
 export type TCatalogEntrySource = TObjectEntry & { catalog: TCatalog; sf: SourceFile };
 
 export const findCatalog = (sp: SourceProject, name: string): TCatalog => {
     const source = readCatalogs(sp).find((c) => c.name === name);
     if (!source) throw HttpError.notFound(`No catalog "${name}"`);
-    return { ...source, fields: readType(sp, source.typeName)?.fields ?? [] };
+    const names = readTypeNames(sp);
+    return {
+        ...source,
+        fields: readType(sp, source.typeName, names)?.fields ?? [],
+        structFields: storyStructFields(sp, names),
+    };
 };
 
 export const catalogFields = (catalog: TCatalog): Record<string, TField> =>
-    Object.fromEntries(catalog.fields.map((field) => [field.key, { schema: schemaOf(field.type) }]));
+    Object.fromEntries(
+        catalog.fields.map((field) => [field.key, { schema: schemaOf(field.type, catalog.structFields) }])
+    );
 
 export const catalogEntrySources = (sp: SourceProject, catalog: TCatalog): TCatalogEntrySource[] =>
     objectEntries(catalogObject(sp, catalog.name)).map((entry) => ({ ...entry, catalog, sf: catalog.sf }));

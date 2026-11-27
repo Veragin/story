@@ -10,8 +10,6 @@ export const GIT_LIMITS = {
     branchMaxLength: 255,
     authorNameMaxLength: 255,
     authorEmailMaxLength: 255,
-    logLimitDefault: 50,
-    logLimitMax: 200,
 } as const;
 
 /** What the clients offer for a new connection. */
@@ -42,11 +40,22 @@ export type TGitChangeDto = {
     kind: TGitChangeKind;
 };
 
+export type TGitCommitDto = {
+    hash: string;
+    shortHash: string;
+    subject: string;
+    author: string;
+    /** ISO date-time. */
+    date: string;
+};
+
 /** `ahead` / `behind` and `remoteBranches` reflect the last `gitFetch`. */
 export type TGitStatusDto = {
     /** The short commit hash when `detached`. */
     branch: string;
     detached: boolean;
+    /** `null` before the first commit. */
+    head: TGitCommitDto | null;
     ahead: number;
     behind: number;
     /** `origin/<branch>`, or `null` when the branch tracks nothing. */
@@ -87,7 +96,8 @@ export type TSetupGitBody = {
 /** `removeRepo` also deletes the story's `.git` folder. */
 export type TDeleteGitConfigBody = TVersionedBody & { removeRepo: boolean };
 
-export type TGitCommitBody = { message: string; push: boolean };
+/** `paths`: commits only these changes (each a `TGitChangeDto.path`); absent commits every change. */
+export type TGitCommitBody = { message: string; push: boolean; paths?: string[] };
 
 /** A failed push keeps the commit: `pushed: false` with the reason in `pushError`. */
 export type TGitCommitResultDto = {
@@ -105,18 +115,20 @@ export type TGitPullResultDto = {
     status: TGitStatusDto;
 };
 
-/** `create`: a new branch from HEAD; else a local branch, or a remote one (a tracking branch is created). */
+/**
+ * `create`: a new branch from HEAD, the uncommitted changes come along;
+ * else a local branch, or a remote one (a tracking branch is created).
+ */
 export type TGitCheckoutBody = { branch: string; create: boolean };
 
-export type TGitLogEntryDto = {
-    hash: string;
-    shortHash: string;
-    subject: string;
-    author: string;
-    /** ISO date-time. */
-    date: string;
-    files?: string[];
+/** `local` / `remote`: where the branch exists; `commit` is the local tip, else the remote one. */
+export type TGitBranchDto = {
+    name: string;
+    current: boolean;
+    local: boolean;
+    remote: boolean;
+    commit: TGitCommitDto;
 };
 
-/** The `getGitLog` query string. `before`: a commit hash, the page starts at its parent. */
-export type TGitLogQuery = { limit?: number; before?: string };
+/** `remote` also deletes the branch on `origin`; the current branch cannot be deleted. */
+export type TDeleteGitBranchBody = { branch: string; remote: boolean };

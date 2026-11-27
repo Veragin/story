@@ -1,7 +1,14 @@
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { register } from '@story/data';
+import { setStoryImages } from '../src/images';
 import { Landing } from '../src/landing/Landing';
-import { buttonByText, newSession, renderWithSession, unmount } from './support/render';
+import {
+    buttonByText,
+    newSession,
+    renderWithSession,
+    unmount,
+} from './support/render';
 
 const MANIFEST = {
     name: 'The Example',
@@ -12,36 +19,102 @@ const MANIFEST = {
 
 afterEach(() => {
     unmount();
+    setStoryImages({});
+    register.characters.annie.image = undefined;
     vi.restoreAllMocks();
 });
 
 describe('Landing', () => {
-    it('shows the story info and one button per playable character', () => {
-        const container = renderWithSession(newSession(), <Landing manifest={MANIFEST} />);
+    it('shows the story info and a Start button first', () => {
+        const container = renderWithSession(
+            newSession(),
+            <Landing manifest={MANIFEST} />
+        );
 
         expect(container.querySelector('h1')?.textContent).toBe('The Example');
         expect(container.textContent).toContain('by Jane');
         expect(container.textContent).toContain('A short tale.');
-        expect(buttonByText(container, 'Annie')).toBeDefined();
-        expect(buttonByText(container, 'Thomas')).toBeDefined();
+        expect(buttonByText(container, 'Start')).toBeDefined();
+        expect(buttonByText(container, 'Annie')).toBeUndefined();
         expect(buttonByText(container, 'Continue')).toBeUndefined();
     });
 
-    it('starts the game as the clicked character', () => {
+    it('lists the playable characters after Start with the first one selected', () => {
+        const container = renderWithSession(
+            newSession(),
+            <Landing manifest={MANIFEST} />
+        );
+
+        act(() => buttonByText(container, 'Start')?.click());
+
+        const pressed = [
+            ...container.querySelectorAll('button[aria-pressed]'),
+        ].map((b) => [b.textContent, b.getAttribute('aria-pressed')]);
+        expect(container.querySelector('h1')).toBeNull();
+        expect(pressed).toEqual([
+            ['Thomas', 'true'],
+            ['Annie', 'false'],
+        ]);
+        expect(buttonByText(container, 'Choose')).toBeDefined();
+    });
+
+    it('describes a portrait with names instead of mentions', () => {
+        setStoryImages({ 'characters/annie.png': 'annie-url' });
+        register.characters.annie.image =
+            '@character:annie in @location:kingdom';
+
+        const container = renderWithSession(
+            newSession(),
+            <Landing manifest={MANIFEST} />
+        );
+        act(() => buttonByText(container, 'Start')?.click());
+        act(() => buttonByText(container, 'Annie')?.click());
+
+        expect(
+            container.querySelector('img[src="annie-url"]')?.getAttribute('alt')
+        ).toBe('Annie in kingdom');
+    });
+
+    it('selecting a character does not start the game', () => {
         const session = newSession();
         const startAs = vi.spyOn(session.e, 'startAs').mockResolvedValue();
-        const container = renderWithSession(session, <Landing manifest={MANIFEST} />);
+        const container = renderWithSession(
+            session,
+            <Landing manifest={MANIFEST} />
+        );
+        act(() => buttonByText(container, 'Start')?.click());
 
-        act(() => buttonByText(container, 'Thomas')?.click());
+        act(() => buttonByText(container, 'Annie')?.click());
 
-        expect(startAs).toHaveBeenCalledWith('thomas');
+        expect(
+            buttonByText(container, 'Annie')?.getAttribute('aria-pressed')
+        ).toBe('true');
+        expect(startAs).not.toHaveBeenCalled();
+    });
+
+    it('starts the game as the selected character on Choose', () => {
+        const session = newSession();
+        const startAs = vi.spyOn(session.e, 'startAs').mockResolvedValue();
+        const container = renderWithSession(
+            session,
+            <Landing manifest={MANIFEST} />
+        );
+        act(() => buttonByText(container, 'Start')?.click());
+        act(() => buttonByText(container, 'Annie')?.click());
+
+        act(() => buttonByText(container, 'Choose')?.click());
+
+        expect(startAs).toHaveBeenCalledWith('annie');
     });
 
     it('offers Continue and New game instead of the characters when a save exists', () => {
         newSession().e.saveStateToLocalStorage();
-        const container = renderWithSession(newSession(), <Landing manifest={MANIFEST} />);
+        const container = renderWithSession(
+            newSession(),
+            <Landing manifest={MANIFEST} />
+        );
 
-        expect(buttonByText(container, 'Annie')).toBeUndefined();
+        expect(buttonByText(container, 'Start')).toBeUndefined();
         expect(buttonByText(container, 'Continue')).toBeDefined();
         expect(buttonByText(container, 'New game')).toBeDefined();
     });
@@ -52,7 +125,10 @@ describe('Landing', () => {
         first.e.saveStateToLocalStorage();
         const session = newSession();
         const startAs = vi.spyOn(session.e, 'startAs').mockResolvedValue();
-        const container = renderWithSession(session, <Landing manifest={MANIFEST} />);
+        const container = renderWithSession(
+            session,
+            <Landing manifest={MANIFEST} />
+        );
 
         act(() => buttonByText(container, 'Continue')?.click());
 
@@ -62,11 +138,18 @@ describe('Landing', () => {
     it('continues a save with history by replaying it', async () => {
         const first = newSession();
         await first.e.startAs('annie');
-        await vi.waitFor(() => expect(Object.keys(first.s.currentHistory)).not.toHaveLength(0));
+        await vi.waitFor(() =>
+            expect(Object.keys(first.s.currentHistory)).not.toHaveLength(0)
+        );
         first.e.saveStateToLocalStorage();
         const session = newSession();
-        const handleAutoStart = vi.spyOn(session.e, 'handleAutoStart').mockResolvedValue();
-        const container = renderWithSession(session, <Landing manifest={MANIFEST} />);
+        const handleAutoStart = vi
+            .spyOn(session.e, 'handleAutoStart')
+            .mockResolvedValue();
+        const container = renderWithSession(
+            session,
+            <Landing manifest={MANIFEST} />
+        );
 
         act(() => buttonByText(container, 'Continue')?.click());
 
@@ -77,7 +160,10 @@ describe('Landing', () => {
         newSession().e.saveStateToLocalStorage();
         const session = newSession();
         vi.spyOn(window, 'confirm').mockReturnValue(false);
-        const container = renderWithSession(session, <Landing manifest={MANIFEST} />);
+        const container = renderWithSession(
+            session,
+            <Landing manifest={MANIFEST} />
+        );
 
         act(() => buttonByText(container, 'New game')?.click());
 

@@ -5,7 +5,7 @@ import { TVillageChapterData } from './chapters/village/village.chapter';
 import { TThomasCharacterData } from './characters/thomas';
 import { TFrantaNpcData } from './npcs/Franta';
 import { TVillageLocationData } from './locations/village.location';
-import { TChapter, TCharacter, TCharacterData, TCharacterId, TLocation, TNpc, TNpcData } from '@story/types';
+import type { TChapter, Character, TCharacterData, TCharacterId, Location, Npc, TNpcData } from '@story/types';
 import { TNobleManNpcData } from './npcs/NobleMan';
 import { TAnnieCharacterData } from './characters/annie';
 import { TKingdomChapterData } from './chapters/kingdom/kingdom.chapter';
@@ -17,12 +17,12 @@ export type TWorldState = {
     currentHistory: Partial<Record<TCharacterId, THistoryItem>>;
 
     characters: {
-        thomas: { ref: TCharacter<'thomas'> } & TCharacterData & Partial<TThomasCharacterData>;
-        annie: { ref: TCharacter<'annie'> } & TCharacterData & Partial<TAnnieCharacterData>;
+        thomas: { ref: Character<'thomas'> } & TCharacterData & Partial<TThomasCharacterData>;
+        annie: { ref: Character<'annie'> } & TCharacterData & Partial<TAnnieCharacterData>;
     };
     npcs: {
-        franta: { ref: TNpc<'franta'> } & TNpcData & Partial<TFrantaNpcData>;
-        nobleMan: { ref: TNpc<'nobleMan'> } & TNpcData & Partial<TNobleManNpcData>;
+        franta: { ref: Npc<'franta'> } & TNpcData & Partial<TFrantaNpcData>;
+        nobleMan: { ref: Npc<'nobleMan'> } & TNpcData & Partial<TNobleManNpcData>;
     };
 
     chapters: {
@@ -31,7 +31,7 @@ export type TWorldState = {
         wedding: { ref: TChapter<'wedding'> } & TWeddingChapterData;
     };
     locations: {
-        village: { ref: TLocation<'village'> } & TVillageLocationData;
-        kingdom: { ref: TLocation<'kingdom'> } & Partial<TKingdomLocationData>;
+        village: { ref: Location<'village'> } & TVillageLocationData;
+        kingdom: { ref: Location<'kingdom'> } & Partial<TKingdomLocationData>;
     };
 };

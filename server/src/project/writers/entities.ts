@@ -15,11 +15,12 @@ import { Node, type ObjectLiteralExpression, type SourceFile } from 'ts-morph';
 import { version } from '../../events/version';
 import { HttpError } from '../../common/HttpError';
 import { removeLocationMap, removeLocationPolygon } from '../../json/storeCleanup';
-import { siblingPng } from '../images';
+import { deleteFiles, siblingImages } from '../images';
 import { capitalize } from '@story/shared';
-import { deleteClearingReferences, deleteReferences, entityResource, type TDeletePlan } from '../clearReferences';
+import { deleteClearingReferences, deleteReferences, type TDeletePlan } from '../clearReferences';
+import { entityResource } from '../valueHolders';
 import { addObjectEntry, entryText } from '../objectCatalog';
-import { asObject, getProp, getPropInit, keyText, propertyKey, quote } from '../ast';
+import { asObject, getProp, getPropInit, keyText, propertyKey, quote, translated } from '../ast';
 import {
     containerForType,
     DATA_TYPE_SUFFIX,
@@ -29,6 +30,7 @@ import {
     findEntitySource,
     findItem,
     itemNodes,
+    itemSchemaOf,
     readEntity,
     readEntitySource,
     readItemNode,
@@ -70,11 +72,11 @@ const NEW_ENTITY: Record<
         file: (id) => `data/characters/${id}.ts`,
         exportName: (id) => capitalize(id),
         dataType: (id) => `T${capitalize(id)}CharacterData`,
-        text: (id, exportName, dataType) => `import { TCharacter } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Character } from '@story/types';
 
-export const ${exportName}: TCharacter<'${id}'> = {
+export const ${exportName}: Character<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
+    name: ${translated(capitalize(id))},
 
     init: {
         health: 100,
@@ -84,19 +86,19 @@ export const ${exportName}: TCharacter<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TCharacter<'${id}'> } & TCharacterData & Partial<${dataType}>`,
-        storyTypes: ['TCharacter', 'TCharacterData'],
+        worldState: (id, dataType) => `{ ref: Character<'${id}'> } & TCharacterData & Partial<${dataType}>`,
+        storyTypes: ['Character', 'TCharacterData'],
     },
     npcs: {
         file: (id) => `data/npcs/${capitalize(id)}.ts`,
         exportName: (id) => capitalize(id),
         dataType: (id) => `T${capitalize(id)}NpcData`,
-        text: (id, exportName, dataType) => `import { TNpc } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Npc } from '@story/types';
 
-export const ${exportName}: TNpc<'${id}'> = {
+export const ${exportName}: Npc<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
-    description: '',
+    name: ${translated(capitalize(id))},
+    description: _(''),
 
     init: {
         inventory: [],
@@ -107,19 +109,19 @@ export const ${exportName}: TNpc<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TNpc<'${id}'> } & TNpcData & Partial<${dataType}>`,
-        storyTypes: ['TNpc', 'TNpcData'],
+        worldState: (id, dataType) => `{ ref: Npc<'${id}'> } & TNpcData & Partial<${dataType}>`,
+        storyTypes: ['Npc', 'TNpcData'],
     },
     locations: {
         file: (id) => `data/locations/${id}.location.ts`,
         exportName: (id) => `${id}Location`,
         dataType: (id) => `T${capitalize(id)}LocationData`,
-        text: (id, exportName, dataType) => `import { TLocation } from '@story/types';
+        text: (id, exportName, dataType) => `import type { Location } from '@story/types';
 
-export const ${exportName}: TLocation<'${id}'> = {
+export const ${exportName}: Location<'${id}'> = {
     id: '${id}',
-    name: ${quote(capitalize(id))},
-    description: '',
+    name: ${translated(capitalize(id))},
+    description: _(''),
 
     localCharacters: [],
 
@@ -128,8 +130,8 @@ export const ${exportName}: TLocation<'${id}'> = {
 
 export type ${dataType} = {};
 `,
-        worldState: (id, dataType) => `{ ref: TLocation<'${id}'> } & ${dataType}`,
-        storyTypes: ['TLocation'],
+        worldState: (id, dataType) => `{ ref: Location<'${id}'> } & ${dataType}`,
+        storyTypes: ['Location'],
     },
 };
 
@@ -189,12 +191,12 @@ const itemProps = (value: unknown): Record<string, unknown> => {
 const itemText = (sp: SourceProject, c: TItemContainer, dto: Record<string, unknown>) => {
     const ctx = { sf: c.sf, path: '', file: sp.root.rel(c.sf.getFilePath()) };
     const parts: [string, string][] = [
-        ['name', genValue(dto.name ?? '', S.string, { ...ctx, path: 'name' })],
+        ['name', genValue(dto.name ?? '', S.text, { ...ctx, path: 'name' })],
         ['type', quote(String(dto.type))],
     ];
     for (const [k, v] of Object.entries(itemProps(dto.props))) {
         if (k === 'name' || k === 'type') throw HttpError.badRequest(`props.${k}: use the "${k}" field`);
-        parts.push([k, genValue(v, S.value, { ...ctx, path: `props.${k}` })]);
+        parts.push([k, genValue(v, itemSchemaOf(k), { ...ctx, path: `props.${k}` })]);
     }
     return entryText(parts);
 };
@@ -262,11 +264,11 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
         if (body.name !== undefined) {
             const nameCtx = { ...ctx, path: 'name' };
             const prop = getProp(n.item, 'name');
-            if (prop) updateValue(prop.getInitializerOrThrow(), S.string, body.name, nameCtx);
+            if (prop) updateValue(prop.getInitializerOrThrow(), S.text, body.name, nameCtx);
             else
                 n.item.insertPropertyAssignment(0, {
                     name: 'name',
-                    initializer: genValue(body.name, S.string, nameCtx),
+                    initializer: genValue(body.name, S.text, nameCtx),
                 });
         }
         if (body.type !== undefined && body.type !== current.type) {
@@ -277,11 +279,12 @@ const updateItem = async ({ sp, bus }: TWriter, id: string, body: Record<string,
             for (const [k, v] of Object.entries(props)) {
                 if (k === 'name' || k === 'type') throw HttpError.badRequest(`props.${k}: use the "${k}" field`);
                 const prop = getProp(n.item, k);
-                if (prop) updateValue(prop.getInitializerOrThrow(), S.value, v, { ...ctx, path: `props.${k}` });
+                const propCtx = { ...ctx, path: `props.${k}` };
+                if (prop) updateValue(prop.getInitializerOrThrow(), itemSchemaOf(k), v, propCtx);
                 else
                     n.item.addPropertyAssignment({
                         name: keyText(k),
-                        initializer: genValue(v, S.value, { ...ctx, path: `props.${k}` }),
+                        initializer: genValue(v, itemSchemaOf(k), propCtx),
                     });
             }
             for (const p of [...n.item.getProperties()]) {
@@ -361,9 +364,9 @@ export const updateEntity = ({ sp, bus }: TWriter, kind: TEntityKind, id: string
     });
 
 const ENTITY_REF_NAME: Record<TEntityKind, string> = {
-    characters: 'TCharacter',
-    npcs: 'TNpc',
-    locations: 'TLocation',
+    characters: 'Character',
+    npcs: 'Npc',
+    locations: 'Location',
     items: 'TItem',
 };
 
@@ -397,10 +400,11 @@ const sourceDeletePlan = (sp: SourceProject, kind: TSourceKind, id: string): TDe
             s.delete(abs);
             registerRemove(s, kind, id);
             worldStateRemove(s, kind, id);
+            s.after((tx) => deleteFiles(tx, siblingImages(abs)));
             if (kind === 'locations') {
                 s.after((tx) => removeLocationPolygon(tx, id));
                 s.after((tx) => removeLocationMap(tx, id));
-            } else s.after((tx) => tx.deleteFile(siblingPng(abs)));
+            }
         },
     };
 };

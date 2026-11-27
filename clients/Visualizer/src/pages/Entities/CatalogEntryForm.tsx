@@ -1,19 +1,20 @@
-import { CircularProgress, Link } from '@mui/material';
+import { Link } from '@mui/material';
+import { LoadingState } from '../../components/feedback/LoadingState';
 import { observer } from 'mobx-react-lite';
 import { isCode, type TStructTypeDto } from '@story/protocol';
-import { FormHeader } from '../../components/FormHeader';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { ObjectInput } from '../../components/inputs/ObjectInput/ObjectInput';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { ObjectEditor } from '../../components/editors/ObjectEditor/ObjectEditor';
+import { Notices } from '../../components/feedback/Notices';
 import { router } from '../../shell';
 import type { CatalogFormStore } from './CatalogFormStore';
-import { confirmDelete } from './confirmDelete';
-import { displayName } from './entityFields';
+import { confirmDelete } from './entityDialogs';
+import { displayText } from '../../api';
 
 type TProps = {
     store: CatalogFormStore;
@@ -28,7 +29,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
     if (store.loading && !draft)
         return (
             <FormCenter>
-                <CircularProgress size={24} />
+                <LoadingState />
             </FormCenter>
         );
     if (store.notFound) {
@@ -47,7 +48,12 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
     if (!draft || !base) {
         return (
             <FormCenter>
-                <div>{_('Select an entry on the left, or add one.')}</div>
+                <div>
+                    {_(
+                        'Select a %s on the left, or add one.',
+                        type?.name ?? _('entry')
+                    )}
+                </div>
                 {notices}
             </FormCenter>
         );
@@ -76,8 +82,8 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
-                title={displayName(draft.name, base.id)}
+            <EditorHeader
+                title={displayText(draft.name, base.id)}
                 store={resource}
                 onDelete={() => void onDelete()}
             />
@@ -91,7 +97,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
                 <Link
                     href={router.href({
                         page: 'structure',
-                        section: 'types',
+                        section: 'classes',
                         name: base.type,
                     })}
                 >
@@ -100,7 +106,7 @@ export const CatalogEntryForm = observer(({ store, type }: TProps) => {
             </FormMeta>
             {notices}
             <FormFields>
-                <ObjectInput
+                <ObjectEditor
                     ariaLabel={base.type}
                     value={draft}
                     onChange={(next) => {

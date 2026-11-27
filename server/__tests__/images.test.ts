@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LANDING_IMAGE_FILE, PNG_SIGNATURE } from '@story/protocol';
+import { LANDING_IMAGE_FILE, LANDING_WEBP_FILE, PNG_SIGNATURE, RIFF_SIGNATURE, WEBP_SIGNATURE } from '@story/protocol';
 import { startSourceApp } from './helpers/sourceHelpers';
 
 let t: Awaited<ReturnType<typeof startSourceApp>>;
@@ -19,6 +19,7 @@ const abs = (rel: string) => path.join(t.project.root, rel);
 
 // the server only checks the signature
 const fakePng = (tail: number) => Buffer.from([...PNG_SIGNATURE, 0, 0, 0, tail]);
+const fakeWebp = (tail: number) => Buffer.from([...RIFF_SIGNATURE, 0, 0, 0, 0, ...WEBP_SIGNATURE, tail]);
 
 const fetchFile = (url: string, headers: Record<string, string> = {}) =>
     fetch(t.base + url, { headers: { cookie: t.cookie, ...headers } });
@@ -63,7 +64,7 @@ describe('images', () => {
         expect((await t.get('/api/stories/example/images/items/bow')).status).toBe(404);
     });
 
-    it('uploads a character and an npc portrait next to their files', async () => {
+    it('uploads a character, an npc and a location image next to their files', async () => {
         let res = await t.get('/api/stories/example/images/characters/thomas');
         expect(res.body).toMatchObject({ file: 'data/characters/thomas.png', url: null });
         res = await t.put('/api/stories/example/images/characters/thomas', {
@@ -81,6 +82,14 @@ describe('images', () => {
         expect(res.status).toBe(200);
         expect(res.body.file).toBe('data/npcs/Franta.png');
         expect(existsSync(abs('data/npcs/Franta.png'))).toBe(true);
+
+        res = await t.put('/api/stories/example/images/locations/village', {
+            version: '',
+            data: fakePng(3).toString('base64'),
+        });
+        expect(res.status).toBe(200);
+        expect(res.body.file).toBe('data/locations/village.location.png');
+        expect(existsSync(abs('data/locations/village.location.png'))).toBe(true);
     });
 
     it('replaces an image only from its current version, and only with a PNG', async () => {
@@ -105,6 +114,43 @@ describe('images', () => {
         expect(res.body.url).not.toBe(current.url);
     });
 
+    it('stores a WebP as the sibling .webp, replacing the .png, and serves it as image/webp', async () => {
+        const PNG = 'data/chapters/village/thomas.passages/intro.png';
+        const WEBP = 'data/chapters/village/thomas.passages/intro.webp';
+        const current = (await t.get('/api/stories/example/images/passages/village-thomas-intro')).body;
+        let res = await t.put('/api/stories/example/images/passages/village-thomas-intro', {
+            version: current.version,
+            data: fakeWebp(1).toString('base64'),
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.file).toBe(WEBP);
+        expect((await readFile(abs(WEBP))).equals(fakeWebp(1))).toBe(true);
+        expect(existsSync(abs(PNG))).toBe(false);
+        const file = await fetchFile(res.body.url);
+        expect(file.headers.get('content-type')).toBe('image/webp');
+
+        res = await t.put('/api/stories/example/images/passages/village-thomas-intro', {
+            version: res.body.version,
+            data: fakePng(2).toString('base64'),
+        });
+        expect(res.status).toBe(200);
+        expect(res.body.file).toBe(PNG);
+        expect(existsSync(abs(WEBP))).toBe(false);
+    });
+
+    it('prefers the .webp when both exist, and deletes both', async () => {
+        const WEBP = 'data/characters/thomas.webp';
+        await writeFile(abs('data/characters/thomas.png'), fakePng(3));
+        await writeFile(abs(WEBP), fakeWebp(3));
+        const current = (await t.get('/api/stories/example/images/characters/thomas')).body;
+        expect(current.file).toBe(WEBP);
+        const res = await t.del('/api/stories/example/images/characters/thomas', { version: current.version });
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ file: 'data/characters/thomas.png', url: null });
+        expect(existsSync(abs(WEBP))).toBe(false);
+        expect(existsSync(abs('data/characters/thomas.png'))).toBe(false);
+    });
+
     it('ignores a symlinked image, as the play files do', async () => {
         await symlink(abs('data/chapters/village/thomas.passages/intro.png'), abs('data/characters/thomas.png'));
         const res = await t.get('/api/stories/example/images/characters/thomas');
@@ -124,11 +170,13 @@ describe('images', () => {
             data: fakePng(4).toString('base64'),
         });
         expect(res.status).toBe(200);
+        await writeFile(abs('data/chapters/village/thomas.passages/pic.webp'), fakeWebp(4));
         expect(existsSync(abs('data/chapters/village/thomas.passages/pic.png'))).toBe(true);
         const passage = (await t.get('/api/stories/example/passages/village-thomas-pic')).body;
         res = await t.del('/api/stories/example/passages/village-thomas-pic', { version: passage.version });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(existsSync(abs('data/chapters/village/thomas.passages/pic.png'))).toBe(false);
+        expect(existsSync(abs('data/chapters/village/thomas.passages/pic.webp'))).toBe(false);
     });
 });
 
@@ -159,6 +207,10 @@ describe('the story landing image', () => {
         expect(existsSync(abs(LANDING_IMAGE_FILE))).toBe(false);
         expect(await landingFlags()).toEqual({ info: false, manifest: false });
         expect((await fetchFile(`${LANDING}/png`)).status).toBe(404);
+
+        res = await t.put(LANDING, { version: '', data: fakeWebp(5).toString('base64') });
+        expect(res.body.file).toBe(LANDING_WEBP_FILE);
+        expect(await landingFlags()).toEqual({ info: true, manifest: true });
     });
 
     it('rejects another id of the story owner', async () => {
@@ -209,7 +261,7 @@ describe('deleteImage', () => {
 });
 
 describe('image descriptions', () => {
-    it('reads and writes `image` of characters and npcs as an optional string', async () => {
+    it('reads and writes `image` of characters, npcs and locations as an optional string', async () => {
         let npc = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(npc.image).toBeUndefined();
         let res = await t.put('/api/stories/example/entities/npcs/franta', {
@@ -220,7 +272,7 @@ describe('image descriptions', () => {
         npc = (await t.get('/api/stories/example/entities/npcs/franta')).body;
         expect(npc.image).toBe('An old man with a cane');
         expect(await readFile(abs('data/npcs/Franta.ts'), 'utf8')).toContain(
-            "description: 'Franta is a very old',\n    image: 'An old man with a cane',"
+            "description: _('Franta is a very old'),\n    image: 'An old man with a cane',"
         );
 
         const thomas = (await t.get('/api/stories/example/entities/characters/thomas')).body;
@@ -230,5 +282,13 @@ describe('image descriptions', () => {
         });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body.image).toBe('A young hunter');
+
+        const village = (await t.get('/api/stories/example/entities/locations/village')).body;
+        res = await t.put('/api/stories/example/entities/locations/village', {
+            version: village.version,
+            image: 'A few huts by a river',
+        });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.image).toBe('A few huts by a river');
     });
 });

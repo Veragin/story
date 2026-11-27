@@ -7,6 +7,12 @@ import {
     type TStoryEvent,
     type TVersion,
 } from '@story/protocol';
+import {
+    defaultCreateEventSource,
+    eventData,
+    ReconnectingEventSource,
+    type TCreateEventSource,
+} from './ReconnectingEventSource';
 import { STORY_ID } from './story';
 
 export type TEventFilter = {
@@ -18,22 +24,16 @@ export type TEventFilter = {
 export type TEventListener = (event: TChangeEvent) => void;
 export type TConnectionStatus = 'idle' | 'connecting' | 'open' | 'reconnecting';
 
-type TEventSourceLike = Pick<EventSource, 'addEventListener' | 'close' | 'readyState'> & {
-    onerror: ((this: EventSource, ev: Event) => unknown) | null;
-};
-
 export type TApiEventsOptions = {
     url?: string;
     // `null` never opens a stream; `undefined` means the browser default
-    createEventSource?: ((url: string) => TEventSourceLike) | null;
+    createEventSource?: TCreateEventSource | null;
     savedTtlMs?: number;
     holdMaxMs?: number;
     reconnectMinMs?: number;
     reconnectMaxMs?: number;
     onGiveUp?: () => void;
 };
-
-const EVENT_SOURCE_CLOSED = 2;
 
 const addTo = <T>(set: Set<T>, entry: T): (() => void) => {
     set.add(entry);
@@ -60,24 +60,10 @@ const isStoryEvent = (value: unknown): value is TStoryEvent =>
     'reason' in value &&
     STORY_EVENT_REASONS.some((reason) => reason === value.reason);
 
-const eventData = (e: Event): unknown => {
-    if (!('data' in e) || typeof e.data !== 'string') return undefined;
-    try {
-        return JSON.parse(e.data);
-    } catch {
-        return undefined;
-    }
-};
-
 export class ApiEvents {
-    private readonly url: string;
-    private readonly createEventSource?: (url: string) => TEventSourceLike;
     private readonly savedTtlMs: number;
-    private readonly reconnectMinMs: number;
-    private readonly reconnectMaxMs: number;
-    private readonly onGiveUp?: () => void;
+    private readonly stream: ReconnectingEventSource | null;
 
-    private source: TEventSourceLike | null = null;
     private listeners = new Set<{ filter: TEventFilter; listener: TEventListener }>();
     private resyncListeners = new Set<() => void>();
     private statusListeners = new Set<(status: TConnectionStatus) => void>();
@@ -87,27 +73,50 @@ export class ApiEvents {
     private holds = 0;
     private held: TChangeEvent[] = [];
     private connectedOnce = false;
-    private reconnectDelay: number;
-    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private _status: TConnectionStatus = 'idle';
 
     constructor({
         url = buildPath(STORY_ID, 'events', {}),
-        createEventSource = typeof EventSource === 'undefined' ? undefined : (u) => new EventSource(u),
+        createEventSource = defaultCreateEventSource(),
         savedTtlMs = 30_000,
         holdMaxMs = 30_000,
         reconnectMinMs = 1000,
         reconnectMaxMs = 15_000,
         onGiveUp,
     }: TApiEventsOptions = {}) {
-        this.url = url;
-        this.onGiveUp = onGiveUp;
-        this.createEventSource = createEventSource ?? undefined;
         this.savedTtlMs = savedTtlMs;
         this.holdMaxMs = holdMaxMs;
-        this.reconnectMinMs = reconnectMinMs;
-        this.reconnectMaxMs = reconnectMaxMs;
-        this.reconnectDelay = reconnectMinMs;
+        this.stream = createEventSource
+            ? new ReconnectingEventSource({
+                  url,
+                  createEventSource,
+                  reconnectMinMs,
+                  reconnectMaxMs,
+                  onGiveUp,
+                  onConnecting: () => this.setStatus(this.connectedOnce ? 'reconnecting' : 'connecting'),
+                  onReconnecting: () => this.setStatus('reconnecting'),
+                  listen: (source) => {
+                      source.addEventListener(SSE_EVENT.hello, () => {
+                          this.stream?.resetBackoff();
+                          this.setStatus('open');
+                          if (this.connectedOnce) this.resyncListeners.forEach((l) => l());
+                          this.connectedOnce = true;
+                      });
+                      source.addEventListener(SSE_EVENT.change, (e) => {
+                          try {
+                              this.dispatch(JSON.parse((e as MessageEvent<string>).data) as TChangeEvent);
+                          } catch (err) {
+                              console.error('[api/events] bad event', err);
+                          }
+                      });
+                      source.addEventListener(SSE_EVENT.story, (e) => {
+                          const data = eventData(e);
+                          if (isStoryEvent(data)) this.storyChanged();
+                          else console.error('[api/events] bad story event', data);
+                      });
+                  },
+              })
+            : null;
     }
 
     get status() {
@@ -187,61 +196,15 @@ export class ApiEvents {
     }
 
     connect() {
-        if (this.source || this.reconnectTimer || !this.createEventSource) return;
-        this.setStatus(this.connectedOnce ? 'reconnecting' : 'connecting');
-        const source = this.createEventSource(this.url);
-        this.source = source;
-
-        source.addEventListener(SSE_EVENT.hello, () => {
-            this.reconnectDelay = this.reconnectMinMs;
-            this.setStatus('open');
-            if (this.connectedOnce) this.resyncListeners.forEach((l) => l());
-            this.connectedOnce = true;
-        });
-        source.addEventListener(SSE_EVENT.change, (e) => {
-            try {
-                this.dispatch(JSON.parse((e as MessageEvent<string>).data) as TChangeEvent);
-            } catch (err) {
-                console.error('[api/events] bad event', err);
-            }
-        });
-        source.addEventListener(SSE_EVENT.story, (e) => {
-            const data = eventData(e);
-            if (isStoryEvent(data)) this.storyChanged();
-            else console.error('[api/events] bad story event', data);
-        });
-        source.onerror = () => {
-            if (this.source !== source) return;
-            // while CONNECTING the browser retries by itself; CLOSED means it gave up
-            if (source.readyState === EVENT_SOURCE_CLOSED) {
-                source.close();
-                this.source = null;
-                this.setStatus('reconnecting');
-                this.reconnectTimer = setTimeout(() => {
-                    this.reconnectTimer = null;
-                    this.connect();
-                }, this.reconnectDelay);
-                this.reconnectDelay = Math.min(this.reconnectMaxMs, this.reconnectDelay * 2);
-                this.onGiveUp?.();
-            } else {
-                this.setStatus('reconnecting');
-            }
-        };
+        this.stream?.connect();
     }
 
     reconnectNow() {
-        if (!this.reconnectTimer) return;
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-        this.reconnectDelay = this.reconnectMinMs;
-        this.connect();
+        this.stream?.reconnectNow();
     }
 
     close() {
-        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-        this.source?.close();
-        this.source = null;
+        this.stream?.close();
         this.setStatus('idle');
     }
 

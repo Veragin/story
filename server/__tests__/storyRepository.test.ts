@@ -124,4 +124,23 @@ describe('StoryRepository', () => {
             version: '2',
         });
     });
+
+    it('reads and sets aiFeature apart from the story file, without bumping the version', async () => {
+        await stories().insert('alpha', storyFixture());
+        expect(await stories().aiFeature('alpha')).toBe(false);
+        await stories().setAiFeature('alpha', true);
+        expect(await stories().aiFeature('alpha')).toBe(true);
+        expect(await stories().readVersioned('alpha')).toEqual({ file: storyFixture(), version: '1' });
+        expect(await stories().write('alpha', storyFixture({ name: 'Renamed' }), '1')).toBe('2');
+        expect(await stories().upsert('alpha', storyFixture())).toBe('updated');
+        expect(await stories().aiFeature('alpha')).toBe(true);
+        await stories().setAiFeature('alpha', false);
+        expect(await stories().aiFeature('alpha')).toBe(false);
+    });
+
+    it('answers aiFeature false for a missing or malformed id', async () => {
+        expect(await stories().aiFeature('missing')).toBe(false);
+        expect(await stories().aiFeature('../etc')).toBe(false);
+        await expect(stories().setAiFeature('Not An Id', true)).rejects.toThrow('Not a story id');
+    });
 });

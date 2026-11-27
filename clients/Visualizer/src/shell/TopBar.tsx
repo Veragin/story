@@ -1,19 +1,11 @@
 import { useEffect } from 'react';
-import {
-    Button,
-    IconButton,
-    styled,
-    Tab,
-    Tabs,
-    Tooltip,
-    Typography,
-} from '@mui/material';
+import { Button, styled, Tab, Tabs } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { appTheme, Row, spacingCss } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { landingUrl, playerUrl, STORY_ID } from '../api';
+import { AiButton } from './AiButton';
 import { GitButton } from './GitButton';
 import { router, TPage, TRoute } from './router';
 import { shell } from './shellStore';
@@ -27,6 +19,12 @@ type TTab = {
 };
 
 const TABS: TTab[] = [
+    {
+        value: 'settings',
+        label: () => storyInfo.info?.name ?? STORY_ID,
+        route: { page: 'settings' },
+        pages: ['settings'],
+    },
     {
         value: 'map',
         label: () => _('Map'),
@@ -69,29 +67,9 @@ export const TopBar = observer(() => {
 
     return (
         <SBar>
-            <SBack
-                color="inherit"
-                size="small"
-                startIcon={<ArrowBackIcon />}
-                href={landingUrl()}
-            >
-                {_('Stories')}
-            </SBack>
-            <SStoryName variant="subtitle2" title={STORY_ID}>
-                {storyInfo.info?.name ?? STORY_ID}
-            </SStoryName>
-            <Tooltip title={_('Story settings')}>
-                <SSettings
-                    color="inherit"
-                    size="small"
-                    aria-label={_('Story settings')}
-                    data-action="story-settings"
-                    href={router.href({ page: 'settings' })}
-                    data-active={router.route.page === 'settings'}
-                >
-                    <SettingsIcon fontSize="small" />
-                </SSettings>
-            </Tooltip>
+            <Button color="inherit" size="small" href={landingUrl()}>
+                <ArrowBackIcon />
+            </Button>
             <STabs
                 value={active}
                 textColor="inherit"
@@ -107,18 +85,18 @@ export const TopBar = observer(() => {
                     />
                 ))}
             </STabs>
-            <Button
+            <SPlayButton
                 color="inherit"
                 size="small"
                 startIcon={<PlayArrowIcon />}
                 href={playerUrl(STORY_ID)}
                 target="_blank"
                 rel="noopener"
-                sx={{ flexShrink: 0, textTransform: 'none' }}
             >
                 {_('Play')}
-            </Button>
+            </SPlayButton>
             <GitButton />
+            <AiButton />
             <SControlBar ref={shell.setControlBarEl} />
         </SBar>
     );
@@ -136,32 +114,6 @@ const SBar = styled(Row)`
     color: white;
 `;
 
-const SBack = styled(Button)`
-    flex-shrink: 0;
-    text-transform: none;
-    opacity: 0.8;
-` as typeof Button;
-
-const SStoryName = styled(Typography)`
-    flex-shrink: 1;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 600;
-`;
-
-const SSettings = styled(IconButton)`
-    flex-shrink: 0;
-    margin-left: -${spacingCss(1.5)};
-    opacity: 0.8;
-
-    &[data-active='true'] {
-        opacity: 1;
-        color: ${appTheme.palette.secondary.main};
-    }
-` as typeof IconButton;
-
 const STabs = styled(Tabs)`
     min-height: ${TOP_BAR_HEIGHT}px;
 `;
@@ -169,7 +121,7 @@ const STabs = styled(Tabs)`
 const STab = styled(Tab)`
     min-height: ${TOP_BAR_HEIGHT}px;
     text-transform: none;
-` as typeof Tab;
+`;
 
 const SControlBar = styled(Row)`
     flex: 1;
@@ -183,4 +135,9 @@ const SControlBar = styled(Row)`
     & > * {
         flex-shrink: 0;
     }
+`;
+
+const SPlayButton = styled(Button)<{ target: string; rel: string }>`
+    flex-shrink: 0;
+    text-transform: none;
 `;

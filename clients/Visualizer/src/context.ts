@@ -1,5 +1,8 @@
 import { createSafeContext } from '@story/ui';
 import type { TimeManager } from '@story/shared';
+import type { TMentionStores } from './ai/aiMentions';
+import { AiStore } from './ai/AiStore';
+import { PassageIndex } from './ai/PassageIndex';
 import { api, apiEvents, auth } from './api';
 import { GitStore } from './git/GitStore';
 import { EntityStore } from './stores/EntityStore';
@@ -17,3 +20,12 @@ export const entityStore = new EntityStore({ api, events: apiEvents });
 export const structureStore = new StructureStore({ api, events: apiEvents, entities: entityStore });
 
 export const gitStore = new GitStore({ api, events: apiEvents, auth });
+
+export const aiStore = new AiStore({
+    api,
+    auth,
+    entities: entityStore,
+    passages: new PassageIndex({ api, events: apiEvents, entities: entityStore }),
+});
+
+export const mentionStores: TMentionStores = { entities: entityStore, passages: aiStore.passages };

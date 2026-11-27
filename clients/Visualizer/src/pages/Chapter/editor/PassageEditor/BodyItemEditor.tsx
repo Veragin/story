@@ -1,10 +1,9 @@
-import { IconButton, Tooltip, Typography } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { styled, Typography } from '@mui/material';
+import { DeleteButton } from '../../../../components/buttons/DeleteButton';
 import type { TBodyItemDto } from '@story/protocol';
-import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
-import { ItemDiagnostics } from './ItemDiagnostics';
+import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { Links } from './Links';
 import { setField } from './listUtils';
 import { SItem, SSpacer, STitleRow } from './styles';
@@ -28,6 +27,7 @@ export const BodyItemEditor = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const set = <K extends keyof TBodyItemDto>(
         key: K,
@@ -36,22 +36,18 @@ export const BodyItemEditor = ({
     return (
         <SItem variant="outlined">
             <STitleRow>
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                <STitle variant="caption">
                     {_('Body item %d', index + 1)}
-                </Typography>
+                </STitle>
                 <SSpacer />
-                <Tooltip title={_('Remove body item')}>
-                    <IconButton
-                        size="small"
-                        aria-label={_('Remove body item')}
-                        onClick={onRemove}
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
+                <DeleteButton
+                    iconOnly
+                    label={_('Remove body item')}
+                    onClick={onRemove}
+                />
             </STitleRow>
-            <ItemDiagnostics diagnostics={diag(path)} />
-            <FormFunctionInput
+            <DiagnosticsList diagnostics={diag(path)} />
+            <FormFunctionEditor
                 label={_('Condition')}
                 value={item.condition}
                 onChange={(v) => set('condition', v)}
@@ -61,16 +57,7 @@ export const BodyItemEditor = ({
                 diagnostics={diag(`${path}.condition`)}
                 dataField={`${path}.condition`}
             />
-            <FormTypeInput
-                label={_('Redirect')}
-                value={item.redirect}
-                onChange={(v) => set('redirect', v)}
-                options={passageOptions}
-                optional
-                diagnostics={diag(`${path}.redirect`)}
-                dataField={`${path}.redirect`}
-            />
-            <FormStringInput
+            <FormMaybeCodeTextInput
                 label={_('Text')}
                 multiline
                 value={item.text}
@@ -86,7 +73,12 @@ export const BodyItemEditor = ({
                 diag={diag}
                 passageOptions={passageOptions}
                 itemOptions={itemOptions}
+                passageCreator={passageCreator}
             />
         </SItem>
     );
 };
+
+const STitle = styled(Typography)`
+    font-weight: 600;
+`;

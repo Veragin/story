@@ -1,6 +1,7 @@
+import type { TPassageType } from '@story/shared';
 import type { TDeltaTimeDto, TFunctionDto, TMaybeCode, TSourceRef, TVersioned, TVersionedBody } from './common';
 
-export type TPassageType = 'screen' | 'linear' | 'transition';
+export type { TPassageType };
 
 type TPassageBaseDto = TVersioned &
     TSourceRef & {
@@ -13,38 +14,75 @@ type TPassageBaseDto = TVersioned &
         params: string[];
         /** Statements before the `return` of a block-bodied passage function, verbatim; read-only. */
         preamble?: string;
+        /** The JSDoc on the passage function: an author's note of what it should do (`''` for none). */
+        docComment: string;
         execute?: TFunctionDto;
     };
 
 export type TScreenPassageDto = TPassageBaseDto & {
     type: 'screen';
     title: TMaybeCode<string>;
-    /** A text description of the art (`''` for none); the picture is the sibling `.png`. */
+    /** A text description of the art (`''` for none); the picture is the sibling `.webp` or `.png`, or `@<path>` links another image, relative to `file`. */
     image: TMaybeCode<string>;
     body: TMaybeCode<TBodyItemDto[]>;
 };
 
-export type TLinearPassageDto = TPassageBaseDto & {
-    type: 'linear';
-    description: TMaybeCode<string>;
+type TNextPassageDto = {
     nextPassageId?: TMaybeCode<string>;
 };
 
-export type TTransitionPassageDto = TPassageBaseDto & {
-    type: 'transition';
+export type TLinearPassageDto = TPassageBaseDto &
+    TNextPassageDto & {
+        type: 'linear';
+        title: TMaybeCode<string>;
+        /** A text description of the art (`''` for none); the picture is the sibling `.webp` or `.png`, or `@<path>` links another image, relative to `file`. */
+        image: TMaybeCode<string>;
+        body: TMaybeCode<string>;
+    };
+
+/** The chapter's entry point. */
+export type TStartPassageDto = TPassageBaseDto &
+    TNextPassageDto & {
+        type: 'start';
+        description: TMaybeCode<string>;
+    };
+
+export type TRedirectPassageDto = TPassageBaseDto & {
+    type: 'redirect';
+    body: TMaybeCode<TRedirectItemDto[]>;
+};
+
+export type TFinishPassageDto = TPassageBaseDto & {
+    type: 'finish';
     /** A full passage id in another chapter, for the same character. */
     nextPassageId: TMaybeCode<string>;
 };
 
-export type TPassageDto = TScreenPassageDto | TLinearPassageDto | TTransitionPassageDto;
+export type TPassageDto =
+    | TStartPassageDto
+    | TScreenPassageDto
+    | TLinearPassageDto
+    | TRedirectPassageDto
+    | TFinishPassageDto;
+
+/** Passages with an optional next passage and no links. */
+export type TSequentialPassageDto = TStartPassageDto | TLinearPassageDto;
+
+/** Passages shown with a title and an image. */
+export type TIllustratedPassageDto = TScreenPassageDto | TLinearPassageDto;
 
 export type TBodyItemDto = {
     /** An expression, not a function; a literal `true` reads as `{ code: 'true' }`. */
     condition?: TFunctionDto;
-    /** Full passage id. */
-    redirect?: TMaybeCode<string>;
     text?: TMaybeCode<string>;
     links?: TMaybeCode<TLinkDto[]>;
+};
+
+export type TRedirectItemDto = {
+    /** An expression, not a function; the first item whose condition holds wins. */
+    condition?: TFunctionDto;
+    /** Full passage id. */
+    redirect: TMaybeCode<string>;
 };
 
 export type TLinkDto = {
@@ -86,8 +124,10 @@ export type TChapterPassagesDto = {
 
 export type TPassageEditable =
     | Partial<Pick<TScreenPassageDto, 'execute' | 'title' | 'image' | 'body'>>
-    | Partial<Pick<TLinearPassageDto, 'execute' | 'description' | 'nextPassageId'>>
-    | Partial<Pick<TTransitionPassageDto, 'execute' | 'nextPassageId'>>;
+    | Partial<Pick<TStartPassageDto, 'execute' | 'description' | 'nextPassageId'>>
+    | Partial<Pick<TLinearPassageDto, 'execute' | 'title' | 'image' | 'body' | 'nextPassageId'>>
+    | Partial<Pick<TRedirectPassageDto, 'execute' | 'body'>>
+    | Partial<Pick<TFinishPassageDto, 'execute' | 'nextPassageId'>>;
 
 export type TCreatePassageBody = {
     characterId: string;
@@ -97,6 +137,6 @@ export type TCreatePassageBody = {
 };
 
 /** Omitted fields are left untouched. */
-export type TUpdatePassageBody = TVersionedBody & TPassageEditable;
+export type TUpdatePassageBody = TVersionedBody & TPassageEditable & { docComment?: string };
 
 export type TDeletePassageBody = TVersionedBody;

@@ -25,6 +25,23 @@
 # volume), so a restart keeps everyone logged in. On start the server service (and only it:
 # STORY_DB_SETUP=1) applies the migrations, imports any legacy `story.json` and seeds the example
 # and demo stories into an empty database (`docker/prod-entrypoint.sh`).
+#
+# AI agent (docs/Server.md#ai-agent): `ai-launcher` is the only service with the docker socket. It starts
+# one `story-ai` container per story (the image of the `ai-image` service, `docker/Dockerfile.ai`) on the
+# `story-ai` network, with only that story's `data/` and `types/` mounted (subpaths of the `stories`
+# volume, Docker Engine >= 26) and its transcripts in the `story-ai-sessions` volume. The server reaches the
+# launcher on the internal `ai-control` network; agents cannot. `make prod-up` builds the agent image; the
+# launcher creates the `story-ai` network at startup. Needs, next to this file:
+#   DOCKER_GID in `.env`        the group of /var/run/docker.sock on the host (`stat -c %g /var/run/docker.sock`)
+#   secrets/ai_token            the Anthropic API key (`sk-ant-api…`); empty = AI unavailable
+#   secrets/gemini_token        the Gemini API key (paid tier); empty = image generation unavailable
+#                               (`make prod-up` creates it empty when missing); launcher only
+#   secrets/ai_launcher_key     shared by the server and the launcher: `openssl rand -hex 32`
+#   secrets/ai_agents.json      models, budget cap and image limits for both (see ai_agents.example.json);
+#                               empty = the built-in defaults (`make prod-up` creates it empty when missing).
+#                               Read at start: `docker compose restart ai-launcher server` after a change
+# All four files must exist and be readable by uid 1000 (`chmod 644`, or a group the host shares with uid 1000).
+# The stories and sessions volumes have fixed names, because the launcher names them in `docker run`.
 name: story-prod
 
 x-app: &app
@@ -48,7 +65,7 @@ services:
     environment:
       STORY_DB_SETUP: '1'
       STORIES_ROOT: /app/stories
-      PORT: '8123'
+      PORT: '8154'
       COOKIE_SECURE: '1'
       ALLOWED_ORIGINS: https://${SITE_ADDRESS:-localhost}
       TRUST_PROXY: '1'
@@ -61,6 +78,18 @@ services:
       GIT_ALLOWED_HOSTS: ${GIT_ALLOWED_HOSTS:-}
       PUBLIC_URL: https://${SITE_ADDRESS:-localhost}
       SMTP_URL: ${SMTP_URL:-}
+      AI_LAUNCHER_URL: http://ai-launcher:8155
+    volumes:
+      - stories:/app/stories
+      - ai-sessions:/app/ai-sessions
+    secrets:
+      - source: ai_launcher_key
+        target: /secret/ai_launcher_key
+      - source: ai_agents
+        target: /secret/ai_agents.json
+    networks:
+      - default
+      - ai-control
     depends_on:
       mysql:
         condition: service_healthy
@@ -69,11 +98,54 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:8123/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+        - "fetch('http://127.0.0.1:8154/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # The AI launcher (server/aiLauncher/): no published port, reachable only on `ai-control`.
+  ai-launcher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+      target: launcher
+    image: story-prod-launcher
+    restart: unless-stopped
+    init: true
+    user: node
+    group_add:
+      - ${DOCKER_GID:?set DOCKER_GID in docker/.env (stat -c %g /var/run/docker.sock)}
+    environment:
+      AI_LAUNCHER_PORT: '8155'
+      AI_SANDBOX_DRIVER: docker-run
+      AI_IMAGE: story-ai:latest
+      AI_STORIES_VOLUME: story-prod_stories
+      AI_SESSIONS_VOLUME: story-ai-sessions
+      AI_NETWORK: story-ai
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - source: ai_token
+        target: /secret/ai_token
+      - source: gemini_token
+        target: /secret/gemini_token
+      - source: ai_launcher_key
+        target: /secret/ai_launcher_key
+      - source: ai_agents
+        target: /secret/ai_agents.json
+    networks:
+      - ai-control
+      - gemini-egress
+
+  # Build only (`docker compose --profile build build ai-image`, part of `make prod-up`): the agent image the
+  # launcher runs. Never started by compose.
+  ai-image:
+    profiles: [build]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ai
+    image: story-ai:latest
 
   mysql:
     image: mysql:8.4
@@ -115,7 +187,29 @@ services:
       - server
 
 volumes:
+  # fixed names: the launcher mounts them into the agent containers by name
   stories:
+    name: story-prod_stories
+  ai-sessions:
+    name: story-ai-sessions
   mysql:
   caddy_data:
   caddy_config:
+
+networks:
+  default:
+  # the server and the launcher only, no internet
+  ai-control:
+    internal: true
+  # the launcher only: its in-process Gemini calls reach generativelanguage.googleapis.com
+  gemini-egress:
+
+secrets:
+  ai_token:
+    file: ./secrets/ai_token
+  ai_launcher_key:
+    file: ./secrets/ai_launcher_key
+  ai_agents:
+    file: ./secrets/ai_agents.json
+  gemini_token:
+    file: ./secrets/gemini_token

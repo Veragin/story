@@ -70,7 +70,7 @@ describe('parsePassageId', () => {
 
     describe('malformed input (pins the current, unvalidated behaviour)', () => {
         it('returns an empty local id when the third segment is missing', () => {
-            // `data/chapters/village/thomas.passages/cool.transition.ts` ships exactly this
+            // `data/chapters/village/thomas.passages/cool.finish.ts` ships exactly this
             // shape as its `nextPassageId` — see `data/__tests__/story.test.ts`.
             expect(parsePassageId('village-thomas-')).toEqual({
                 chapterId: 'village',

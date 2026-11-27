@@ -3,10 +3,11 @@ import {
     isGitBranchName,
     type TApiErrorBody,
     type TChangeEvent,
+    type TGitBranchDto,
     type TGitChangeKind,
+    type TGitCommitDto,
     type TGitConfigDto,
     type TGitDto,
-    type TGitLogEntryDto,
     type TGitStatusDto,
     type TVersion,
 } from '@story/protocol';
@@ -32,11 +33,14 @@ type TGitRoutes =
     | 'gitFetch'
     | 'gitCommit'
     | 'gitPush'
+    | 'gitForcePush'
     | 'gitPull'
     | 'gitCheckout'
-    | 'getGitLog';
+    | 'gitDiscard'
+    | 'getGitBranches'
+    | 'deleteGitBranch';
 
-type TBranches = Map<string, TGitLogEntryDto[]>;
+type TBranches = Map<string, TGitCommitDto[]>;
 
 type TRepo = {
     branch: string;
@@ -50,6 +54,8 @@ type TRepo = {
 export type TMockRemoteCommit = { branch?: string; subject?: string; conflict?: string[] };
 
 const copyBranches = (branches: TBranches): TBranches => new Map([...branches].map(([b, list]) => [b, [...list]]));
+
+const tipOf = (list: TGitCommitDto[] | undefined) => list?.[0] ?? null;
 
 const changePath = (event: TChangeEvent) =>
     event.kind === 'map' ? `data/locations/${event.id}.json` : `data/${event.kind}/${event.id}.ts`;
@@ -81,9 +87,9 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
     let conflicts = new Map<string, string[]>();
     let hashCounter = 0;
 
-    const commitOf = (subject: string, author: string, files?: string[]): TGitLogEntryDto => {
+    const commitOf = (subject: string, author: string): TGitCommitDto => {
         const hash = (++hashCounter).toString(16).padStart(8, '0').repeat(5);
-        return { hash, shortHash: hash.slice(0, 7), subject, author, date: new Date().toISOString(), files };
+        return { hash, shortHash: hash.slice(0, 7), subject, author, date: new Date().toISOString() };
     };
 
     const requireRepo = (): { config: TGitConfigDto; repo: TRepo } => {
@@ -96,7 +102,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         if (r.changes.size > 0) fail(409, { error: 'git_dirty', message: `${r.changes.size} uncommitted changes` });
     };
 
-    const missingFrom = (list: TGitLogEntryDto[], other: TGitLogEntryDto[]) => {
+    const missingFrom = (list: TGitCommitDto[], other: TGitCommitDto[]) => {
         const hashes = new Set(other.map((c) => c.hash));
         return list.filter((c) => !hashes.has(c.hash));
     };
@@ -107,6 +113,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         return {
             branch: r.branch,
             detached: false,
+            head: tipOf(local),
             ahead: missingFrom(local, remote ?? []).length,
             behind: missingFrom(remote ?? [], local).length,
             upstream: remote ? `origin/${r.branch}` : null,
@@ -128,9 +135,9 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
         r.lastFetchedAt = new Date().toISOString();
     };
 
-    const pushNow = (r: TRepo) => {
+    const pushNow = (r: TRepo, force = false) => {
         const local = r.local.get(r.branch) ?? [];
-        if (missingFrom(origin.get(r.branch) ?? [], local).length > 0) {
+        if (!force && missingFrom(origin.get(r.branch) ?? [], local).length > 0) {
             fail(409, { error: 'git_rejected', message: 'Updates were rejected: the remote contains newer work' });
         }
         origin.set(r.branch, [...local]);
@@ -162,7 +169,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
 
     const simulateRemoteCommit = ({ branch, subject = 'Remote change', conflict }: TMockRemoteCommit = {}) => {
         const target = branch ?? config?.branch ?? 'main';
-        const commit = commitOf(subject, 'Someone else', conflict);
+        const commit = commitOf(subject, 'Someone else');
         origin.set(target, [commit, ...(origin.get(target) ?? [])]);
         if (conflict) conflicts.set(commit.hash, conflict);
     };
@@ -243,17 +250,19 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 return statusOf(r);
             }),
 
-        gitCommit: ({ message, push }) =>
+        gitCommit: ({ message, push, paths }) =>
             ctx.reply(() => {
                 const { config: c, repo: r } = requireRepo();
                 const text = message.trim();
                 if (text.length < GIT_LIMITS.messageMinLength || text.length > GIT_LIMITS.messageMaxLength) {
                     badRequest('The commit message is empty or too long');
                 }
-                if (r.changes.size === 0) fail(409, { error: 'git_nothing_to_commit', message: 'Nothing to commit' });
-                const commit = commitOf(text.split('\n')[0], c.authorName, [...r.changes.keys()]);
+                if (paths?.length === 0) badRequest('Field "paths" must be a non-empty list of paths');
+                const committed = paths?.filter((p) => r.changes.has(p)) ?? [...r.changes.keys()];
+                if (committed.length === 0) fail(409, { error: 'git_nothing_to_commit', message: 'Nothing to commit' });
+                const commit = commitOf(text.split('\n')[0], c.authorName);
                 r.local.set(r.branch, [commit, ...(r.local.get(r.branch) ?? [])]);
-                r.changes.clear();
+                for (const p of committed) r.changes.delete(p);
                 let pushError: TApiErrorBody | undefined;
                 if (push) {
                     try {
@@ -275,6 +284,13 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
             ctx.reply(() => {
                 const r = requireRepo().repo;
                 pushNow(r);
+                return statusOf(r);
+            }),
+
+        gitForcePush: () =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                pushNow(r, true);
                 return statusOf(r);
             }),
 
@@ -302,7 +318,7 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
             ctx.reply(() => {
                 const r = requireRepo().repo;
                 validateBranch(branch);
-                requireClean(r);
+                if (!create) requireClean(r);
                 if (create) {
                     if (r.local.has(branch)) fail(409, { error: 'exists', message: `Branch "${branch}" exists` });
                     r.local.set(branch, [...(r.local.get(r.branch) ?? [])]);
@@ -316,14 +332,42 @@ export const createMockGitApi = (ctx: TMockGitContext) => {
                 return statusOf(r);
             }),
 
-        getGitLog: (query = {}) =>
+        gitDiscard: () =>
             ctx.reply(() => {
                 const r = requireRepo().repo;
-                const limit = Math.min(Math.max(query.limit ?? GIT_LIMITS.logLimitDefault, 1), GIT_LIMITS.logLimitMax);
-                const list = r.local.get(r.branch) ?? [];
-                const index = query.before ? list.findIndex((c) => c.hash === query.before) : -1;
-                if (query.before && index === -1) return [];
-                return list.slice(index + 1, index + 1 + limit);
+                if (r.changes.size === 0) return statusOf(r);
+                r.changes.clear();
+                ctx.emitStory();
+                return statusOf(r);
+            }),
+
+        getGitBranches: () =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                const names = new Set([...r.local.keys(), ...r.known.keys()]);
+                return [...names]
+                    .flatMap((name): TGitBranchDto[] => {
+                        const commit = tipOf(r.local.get(name)) ?? tipOf(r.known.get(name));
+                        if (!commit) return [];
+                        const current = name === r.branch;
+                        return [{ name, current, local: r.local.has(name), remote: r.known.has(name), commit }];
+                    })
+                    .sort((a, b) => b.commit.date.localeCompare(a.commit.date) || a.name.localeCompare(b.name));
+            }),
+
+        deleteGitBranch: ({ branch, remote }) =>
+            ctx.reply(() => {
+                const r = requireRepo().repo;
+                validateBranch(branch);
+                if (branch === r.branch) badRequest('Switch to another branch before you delete this one');
+                const onRemote = remote && r.known.has(branch);
+                if (!r.local.has(branch) && !onRemote) notFound(`branch "${branch}"`);
+                if (onRemote) {
+                    origin.delete(branch);
+                    r.known.delete(branch);
+                }
+                r.local.delete(branch);
+                return statusOf(r);
             }),
     };
 

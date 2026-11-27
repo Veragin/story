@@ -1,0 +1,5 @@
+{"type":"control_response","response":{"subtype":"success","request_id":"interrupt-1"}}
+{"type":"system","subtype":"compact_boundary","session_id":"f3b1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d","uuid":"1f0a9b8c-7d6e-4f5a-8b4c-3d2e1f0a9b01"}
+{"type":"result","subtype":"error_max_budget_usd","is_error":true,"duration_ms":40210,"duration_api_ms":38000,"num_turns":9,"session_id":"f3b1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d","total_cost_usd":0.51,"usage":{"input_tokens":40,"cache_creation_input_tokens":0,"cache_read_input_tokens":90000,"output_tokens":1500},"modelUsage":{},"permission_denials":[],"uuid":"2a1b0c9d-8e7f-4a6b-9c5d-4e3f2a1b0c02"}
+not json at all
+{"type":"stream_event","event":{"type":"content_block_delta"}}

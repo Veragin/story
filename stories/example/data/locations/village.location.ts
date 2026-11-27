@@ -1,14 +1,14 @@
-import { TLocation } from '@story/types';
+import type { Location } from '@story/types';
 
-export const villageLocation: TLocation<'village'> = {
+export const villageLocation: Location<'village'> = {
     id: 'village',
-    name: 'Village',
-    description: 'The village is a small place, with a few houses and a tavern.',
+    name: _('Village'),
+    description: _('The village is a small place, with a few houses and a tavern.'),
 
     localCharacters: [
         {
-            name: 'Pepa',
-            description: 'Pepa is a very smart',
+            name: _('Pepa'),
+            description: _('Pepa is a very smart'),
         },
     ],
 

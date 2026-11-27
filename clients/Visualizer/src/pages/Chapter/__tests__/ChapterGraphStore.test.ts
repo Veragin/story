@@ -45,7 +45,7 @@ describe('buildGraph', () => {
         expect(g.ghosts).toEqual([]);
     });
 
-    it('turns a dangling transition target into an unresolved ghost', async () => {
+    it('turns a dangling finish target into an unresolved ghost', async () => {
         const api = createMockApi();
         const { passages, edges } = await api.listChapterPassages('village');
         const g = buildGraph(passages, edges);
@@ -357,13 +357,13 @@ describe('passage editor', () => {
     });
 });
 
-describe('transition targets', () => {
+describe('finish targets', () => {
     it('lists the passages of the same character in the other chapters', async () => {
         const { store } = setup('village');
         await store.load();
         store.openEditor('village-thomas-cool');
         await settle();
-        expect(store.transitionOptions).toEqual([{ id: 'kingdom-thomas-visit', label: 'Kingdom Chapter' }]);
+        expect(store.finishOptions).toEqual([{ id: 'kingdom-thomas-visit', label: 'Kingdom Chapter' }]);
         await store.destroy();
     });
 });

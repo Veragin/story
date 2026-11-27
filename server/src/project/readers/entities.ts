@@ -27,9 +27,9 @@ import {
 import { findObjectEntry, objectEntries, readEntryValues } from '../objectCatalog';
 import type { SourceProject } from '../SourceProject';
 import { locationRef, registerEntries, type TRegisterEntry } from '../story';
-import { readFields, S, schemaOf, type TField } from '../values';
+import { readFields, S, schemaOf, type TField, type TSchema } from '../values';
 import { readDataType } from './chapters';
-import { readType, readTypeNames, type TTypeNames, userFieldsOf } from './structure';
+import { readType, readTypeNames, storyStructFields, type TTypeNames, userFieldsOf } from './structure';
 
 type TSourceKind = Exclude<TEntityKind, 'items'>;
 
@@ -47,18 +47,27 @@ export const DATA_TYPE_SUFFIX: Record<TSourceKind, string> = {
 
 /** The extendable types behind an entity kind: the entity object's, and its `init`'s. */
 export const ENTITY_TYPES: Record<TSourceKind, { entity: string; data?: string }> = {
-    characters: { entity: 'TCharacter', data: 'TCharacterData' },
-    npcs: { entity: 'TNpc', data: 'TNpcData' },
-    locations: { entity: 'TLocation' },
+    characters: { entity: 'Character', data: 'TCharacterData' },
+    npcs: { entity: 'Npc', data: 'TNpcData' },
+    locations: { entity: 'Location' },
 };
 
 const entityUserFields = (sp: SourceProject, kind: TSourceKind, names?: TTypeNames): TFieldDesc[] =>
     userFieldsOf(readType(sp, ENTITY_TYPES[kind].entity, names));
 
-export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => ({
-    ...builtInEntityFields(sp, kind),
-    ...Object.fromEntries(entityUserFields(sp, kind).map((field) => [field.key, { schema: schemaOf(field.type) }])),
-});
+export const entityFields = (sp: SourceProject, kind: TSourceKind): Record<string, TField> => {
+    const names = readTypeNames(sp);
+    const structFields = storyStructFields(sp, names);
+    return {
+        ...builtInEntityFields(sp, kind),
+        ...Object.fromEntries(
+            entityUserFields(sp, kind, names).map((field) => [
+                field.key,
+                { schema: schemaOf(field.type, structFields) },
+            ])
+        ),
+    };
+};
 
 export const entityOptional = (sp: SourceProject, kind: TSourceKind): string[] => [
     ...ENTITY_OPTIONAL[kind],
@@ -71,24 +80,25 @@ const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
     switch (kind) {
         case 'characters':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
+                name: { schema: S.text },
+                description: { schema: S.text },
                 image: { schema: S.string, after: ['description', 'name'] },
                 startPassageId: { schema: S.string },
                 init: { schema: S.record() },
             };
         case 'npcs':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
+                name: { schema: S.text },
+                description: { schema: S.text },
                 image: { schema: S.string, after: ['description', 'name'] },
                 init: { schema: S.record() },
             };
         case 'locations':
             return {
-                name: { schema: S.string },
-                description: { schema: S.string },
-                localCharacters: { schema: S.array(S.object({ name: S.string, description: S.string })) },
+                name: { schema: S.text },
+                description: { schema: S.text },
+                image: { schema: S.string, after: ['description', 'name'] },
+                localCharacters: { schema: S.array(S.object({ name: S.text, description: S.text })) },
                 sublocations: { schema: S.array(S.ref(locationRef(sp))) },
                 mapId: { schema: S.string },
                 init: { schema: S.record() },
@@ -99,7 +109,7 @@ const builtInEntityFields = (sp: SourceProject, kind: TSourceKind): Record<strin
 const ENTITY_OPTIONAL: Record<TSourceKind, string[]> = {
     characters: ['description', 'image', 'startPassageId'],
     npcs: ['image'],
-    locations: ['sublocations', 'mapId'],
+    locations: ['image', 'sublocations', 'mapId'],
 };
 
 export type TEntitySource = {
@@ -187,6 +197,7 @@ export const readEntitySource = (sp: SourceProject, src: TEntitySource): TCharac
                 ...base,
                 kind: 'locations',
                 description: (fields.description ?? '') as TMaybeCode<string>,
+                ...opt('image'),
                 localCharacters: (fields.localCharacters ?? []) as TLocationDto['localCharacters'],
                 ...opt('sublocations'),
                 ...opt('mapId'),
@@ -232,8 +243,12 @@ export const containerForType = (sp: SourceProject, type: string): TItemContaine
 
 const ITEM_INFO_KEYS = ['name', 'type'];
 
+const ITEM_TEXT_KEYS = ['name', 'description'];
+
+export const itemSchemaOf = (key: string): TSchema => (ITEM_TEXT_KEYS.includes(key) ? S.text : S.value);
+
 export const readItemNode = (sp: SourceProject, node: TItemSourceNode): TItemDto => {
-    const values = readEntryValues(node.item, (key) => (key === 'name' ? S.string : S.value));
+    const values = readEntryValues(node.item, itemSchemaOf);
     const typeInit = getPropInit(node.item, 'type');
     return {
         kind: 'items',

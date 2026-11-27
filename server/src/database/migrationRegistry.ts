@@ -5,6 +5,8 @@ import { CreateSession1791918196110 } from './migrations/1791918196110-CreateSes
 import { DropSessionLastSeenAt1792108800000 } from './migrations/1792108800000-DropSessionLastSeenAt';
 import { AddStoryGit1792255209068 } from './migrations/1792255209068-AddStoryGit';
 import { AddStoryEmail1792921521872 } from './migrations/1792921521872-AddStoryEmail';
+import { AddAi1794836824906 } from './migrations/1794836824906-AddAi';
+import { AddAiImageUsage1795293625627 } from './migrations/1795293625627-AddAiImageUsage';
 
 // explicit classes, not a glob: TypeORM loads globs with native import(), which bypasses Vitest's transform
 export const MIGRATIONS: (new () => MigrationInterface)[] = [
@@ -14,4 +16,6 @@ export const MIGRATIONS: (new () => MigrationInterface)[] = [
     DropSessionLastSeenAt1792108800000,
     AddStoryGit1792255209068,
     AddStoryEmail1792921521872,
+    AddAi1794836824906,
+    AddAiImageUsage1795293625627,
 ];

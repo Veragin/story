@@ -1,4 +1,54 @@
-import { alpha, createTheme, type ThemeOptions } from '@mui/material';
+import { createTheme, type ThemeOptions } from '@mui/material';
+import type { CSSProperties } from 'react';
+
+type TSurfacePalette = {
+    code: string;
+    overlay: string;
+};
+
+type TBorderPalette = {
+    subtle: string;
+    strong: string;
+};
+
+declare module '@mui/material/styles' {
+    interface Palette {
+        surface: TSurfacePalette;
+        border: TBorderPalette;
+    }
+    interface PaletteOptions {
+        surface?: TSurfacePalette;
+        border?: TBorderPalette;
+    }
+    interface TypeText {
+        code: string;
+    }
+    interface TypographyVariants {
+        meta: CSSProperties;
+        small: CSSProperties;
+    }
+    interface TypographyVariantsOptions {
+        meta?: CSSProperties;
+        small?: CSSProperties;
+    }
+}
+
+declare module '@mui/material/Typography' {
+    interface TypographyPropsVariantOverrides {
+        meta: true;
+        small: true;
+    }
+}
+
+const SURFACE: TSurfacePalette = {
+    code: '#111',
+    overlay: 'rgba(17, 17, 17, 0.92)',
+};
+
+const BORDER: TBorderPalette = {
+    subtle: 'rgba(255, 255, 255, 0.12)',
+    strong: 'rgba(255, 255, 255, 0.25)',
+};
 
 const FORM = {
     text: '#ffffff',
@@ -9,17 +59,37 @@ const FORM = {
     accent: '#66bb6a',
 };
 
+const TOGGLE = {
+    text: 'rgba(255, 255, 255, 0.7)',
+    track: 'rgba(255, 255, 255, 0.05)',
+    hover: 'rgba(255, 255, 255, 0.08)',
+    selected: '#2e7d32',
+    selectedHover: '#388e3c',
+};
+
 const formComponents: ThemeOptions['components'] = {
     MuiToggleButton: {
         styleOverrides: {
             root: {
-                'color': FORM.text,
-                'borderColor': FORM.border,
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-                '&.Mui-selected, &.Mui-selected:hover': {
-                    color: FORM.accent,
-                    borderColor: FORM.accent,
-                    backgroundColor: alpha(FORM.accent, 0.16),
+                'gap': 4,
+                'padding': '4px 12px',
+                'border': `1px solid ${BORDER.subtle}`,
+                'borderRadius': 8,
+                'color': TOGGLE.text,
+                'textTransform': 'none',
+                'transition': 'background-color 120ms, color 120ms',
+                '&:hover': {
+                    color: FORM.text,
+                    backgroundColor: TOGGLE.hover,
+                },
+                '&.Mui-selected': {
+                    'color': FORM.text,
+                    'backgroundColor': TOGGLE.selected,
+                    '&:hover': { backgroundColor: TOGGLE.selectedHover },
+                },
+                '&.Mui-focusVisible': {
+                    outline: `2px solid ${FORM.accent}`,
+                    outlineOffset: 1,
                 },
                 '&.Mui-disabled': {
                     color: 'rgba(255, 255, 255, 0.3)',
@@ -30,13 +100,26 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiToggleButtonGroup: {
         styleOverrides: {
-            // MUI blanks the left border of later grouped buttons
-            grouped: { '&.Mui-selected': { borderLeftColor: FORM.accent } },
+            root: {
+                gap: 2,
+                padding: 2,
+                borderRadius: 10,
+                border: `1px solid ${BORDER.subtle}`,
+                backgroundColor: TOGGLE.track,
+            },
+            grouped: {
+                // outranks MUI's first/middle/last button radius and border resets
+                '&.MuiToggleButton-root': {
+                    margin: 0,
+                    border: 0,
+                    borderRadius: 7,
+                },
+            },
         },
     },
     MuiOutlinedInput: {
         styleOverrides: {
-            root: {
+            root: ({ theme }) => ({
                 'color': FORM.text,
                 '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: FORM.border,
@@ -46,12 +129,12 @@ const formComponents: ThemeOptions['components'] = {
                 },
                 '&.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: FORM.accent },
                 '&.Mui-error .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#f44336',
+                    borderColor: theme.palette.error.main,
                 },
                 '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
                     borderColor: FORM.borderDisabled,
                 },
-            },
+            }),
         },
     },
     MuiInputLabel: {
@@ -64,6 +147,7 @@ const formComponents: ThemeOptions['components'] = {
     },
     MuiSelect: {
         styleOverrides: {
+            root: { color: FORM.text },
             icon: { color: FORM.label },
         },
     },
@@ -82,7 +166,10 @@ export const darkTheme = createTheme({
         text: {
             primary: '#ffffff',
             secondary: 'rgba(255, 255, 255, 0.7)',
+            code: '#e6db74',
         },
+        surface: SURFACE,
+        border: BORDER,
         divider: 'rgba(255, 255, 255, 0.2)',
         grey: {
             50: '#fafafa',
@@ -96,6 +183,10 @@ export const darkTheme = createTheme({
             800: '#424242',
             900: '#212121',
         },
+    },
+    typography: {
+        meta: { fontSize: '12px' },
+        small: { fontSize: '13px' },
     },
     components: {
         MuiPaper: {
@@ -115,14 +206,6 @@ export const darkTheme = createTheme({
                     '& .MuiFormHelperText-root': {
                         color: 'rgba(255, 255, 255, 0.6)',
                     },
-                },
-            },
-        },
-        MuiSelect: {
-            styleOverrides: {
-                ...formComponents.MuiSelect?.styleOverrides,
-                root: {
-                    color: '#ffffff',
                 },
             },
         },

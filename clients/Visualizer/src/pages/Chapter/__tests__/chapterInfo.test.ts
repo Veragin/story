@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TFieldDesc, TTypeDefaultContext } from '@story/protocol';
 import { chapterFieldPaths, migrateInit, type TChapterInfoValue } from '../ChapterInfoForm/chapterInfo';
 
-const ctx: TTypeDefaultContext = { literalValues: () => [], idsOf: () => ['village'] };
+const ctx: TTypeDefaultContext = { literalValues: () => [], idsOf: () => ['village'], structFields: () => [] };
 
 const field = (key: string, optional = false): TFieldDesc => ({ key, type: { t: 'number' }, optional });
 
@@ -16,7 +16,7 @@ describe('migrateInit', () => {
             field('maybe', true),
             {
                 key: 'where',
-                type: { t: 'ref', name: 'TLocation' },
+                type: { t: 'ref', name: 'Location' },
                 optional: false,
             } satisfies TFieldDesc,
         ];
@@ -63,6 +63,7 @@ describe('chapterFieldPaths', () => {
             timeRange: { start: '1.1. 8:00', end: '2.1. 8:00' },
             children: [{ chapterId: 'kingdom', condition: 'x' }],
             init: { mojePromena: { time: 0 } },
+            docComment: '',
         };
         const paths = chapterFieldPaths(value);
         for (const path of ['children.0.chapterId', 'children.0.condition', 'init.mojePromena.time', 'timeRange.end']) {

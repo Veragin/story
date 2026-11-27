@@ -12,7 +12,7 @@ import {
 
 export type TChapterInfoValue = Pick<
     TChapterDto,
-    'title' | 'description' | 'location' | 'timeRange' | 'children' | 'init' | 'dataType'
+    'title' | 'description' | 'location' | 'timeRange' | 'children' | 'init' | 'dataType' | 'docComment'
 >;
 
 export const CHAPTER_INFO_FIELDS = [
@@ -23,6 +23,7 @@ export const CHAPTER_INFO_FIELDS = [
     'children',
     'init',
     'dataType',
+    'docComment',
 ] as const;
 
 export const chapterInfoOf = (c: TChapterInfoValue): TChapterInfoValue => ({
@@ -33,6 +34,7 @@ export const chapterInfoOf = (c: TChapterInfoValue): TChapterInfoValue => ({
     children: c.children,
     init: c.init,
     dataType: c.dataType,
+    docComment: c.docComment,
 });
 
 // containers are included so a diagnostic about a whole item shows at that item

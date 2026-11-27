@@ -1,15 +1,16 @@
 import { FormEvent, useEffect, useState } from 'react';
 import {
-    Alert,
     Button,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
-    TextField,
+    styled,
 } from '@mui/material';
+import { LabeledTextField } from './LabeledTextField';
 import { passwordErrorMessage } from './passwordErrorMessage';
 import { PasswordResetRequestForm } from './PasswordResetRequestForm';
+import { StackedAlert } from './StackedAlert';
 
 type Props = {
     open: boolean;
@@ -82,33 +83,30 @@ export const PasswordDialog = ({
                 <form onSubmit={(e) => void submit(e)}>
                     <DialogContent>
                         {message && (
-                            <Alert severity="info" sx={{ mb: 2 }}>
+                            <StackedAlert severity="info">
                                 {message}
-                            </Alert>
+                            </StackedAlert>
                         )}
-                        <TextField
+                        <LabeledTextField
                             type="password"
                             label={_('Password')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            error={error !== null}
-                            helperText={error ?? ' '}
+                            error={error}
                             disabled={busy}
                             autoComplete="current-password"
                             autoFocus
-                            fullWidth
-                            margin="dense"
+                            dataField="password"
                         />
                         {onRequestReset && (
-                            <Button
+                            <SLinkButton
                                 size="small"
                                 onClick={() => setResetting(true)}
                                 disabled={busy}
                                 data-action="forgotten-password"
-                                sx={{ textTransform: 'none', px: 0 }}
                             >
                                 {_('Forgotten password?')}
-                            </Button>
+                            </SLinkButton>
                         )}
                     </DialogContent>
                     <DialogActions>
@@ -132,3 +130,9 @@ export const PasswordDialog = ({
         </Dialog>
     );
 };
+
+const SLinkButton = styled(Button)`
+    text-transform: none;
+    padding-left: 0;
+    padding-right: 0;
+`;

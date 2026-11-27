@@ -1,6 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { StructureContext, type IStructureContext } from '../structureContext';
-import { sampleStructure } from '../playground/sampleStructure';
+import {
+    StructureContext,
+    type IStructureContext,
+} from '../../../structure/structureContext';
+import { sampleStructure } from '../../../dev/sampleStructure';
 
 export const InStructure = ({
     structure = sampleStructure(),

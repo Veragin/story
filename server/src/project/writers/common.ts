@@ -66,7 +66,7 @@ const dataTypeText = (
 ): string | undefined => {
     const fields = changedFields(sp, value, alias);
     if (fields) {
-        assertKnownNames(fields, readStructure(sp));
+        assertKnownNames(fields, readStructure(sp), { file });
         ensureTypeImports(sp, sf, fieldTypeNames(fields));
         return objectTypeText(fields);
     }

@@ -1,8 +1,9 @@
 import { observer } from 'mobx-react-lite';
-import { Alert, Button } from '@mui/material';
-import { formatDiagnostic } from '../diagnostics';
+import { Button } from '@mui/material';
+import { ConflictAlert } from '../../../../components/feedback/ConflictAlert';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
+import { ErrorAlert } from '../../../../components/feedback/ErrorAlert';
 import type { PassageEditorStore } from '../PassageEditorStore';
-import { SList } from './styles';
 
 type TProps = {
     store: PassageEditorStore;
@@ -15,32 +16,14 @@ export const PassageAlerts = observer(({ store, onClose }: TProps) => {
         <>
             {conflict &&
                 (conflict.current ? (
-                    <Alert
-                        severity="warning"
-                        action={
-                            <>
-                                <Button
-                                    color="inherit"
-                                    size="small"
-                                    onClick={() => store.reloadFromDisk()}
-                                >
-                                    {_('Reload')}
-                                </Button>
-                                <Button
-                                    color="inherit"
-                                    size="small"
-                                    onClick={() => void store.keepMine()}
-                                >
-                                    {_('Keep mine')}
-                                </Button>
-                            </>
-                        }
-                    >
-                        {_('Changed on disk.')}
-                    </Alert>
+                    <ConflictAlert
+                        onReload={() => store.reloadFromDisk()}
+                        onKeepMine={() => store.keepMine()}
+                    />
                 ) : (
-                    <Alert
-                        severity="error"
+                    <ConflictAlert
+                        deleted
+                        what={_('passage')}
                         action={
                             <Button
                                 color="inherit"
@@ -50,20 +33,10 @@ export const PassageAlerts = observer(({ store, onClose }: TProps) => {
                                 {_('Close')}
                             </Button>
                         }
-                    >
-                        {_('This passage was deleted on disk.')}
-                    </Alert>
+                    />
                 ))}
-            {error && <Alert severity="error">{error}</Alert>}
-            {diagnosticIndex.unmapped.length > 0 && (
-                <Alert severity="error">
-                    <SList>
-                        {diagnosticIndex.unmapped.map((d, i) => (
-                            <li key={i}>{formatDiagnostic(d)}</li>
-                        ))}
-                    </SList>
-                </Alert>
-            )}
+            <ErrorAlert error={error} />
+            <DiagnosticsList diagnostics={diagnosticIndex.unmapped} />
         </>
     );
 });

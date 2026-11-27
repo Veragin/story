@@ -53,6 +53,9 @@ const SAFETY_FLAGS = [
     'core.hooksPath=/dev/null',
     '-c',
     'core.fsmonitor=false',
+    // a pulled `data -> ../other-story/data` would hand this story, and its AI agent's mount, another story's files
+    '-c',
+    'core.symlinks=false',
     '-c',
     'core.quotePath=false',
     '-c',

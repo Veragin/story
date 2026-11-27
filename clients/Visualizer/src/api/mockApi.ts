@@ -12,6 +12,7 @@ import {
     type TEntityDto,
     type TEntityDtoByKind,
     type TEntityKind,
+    type TFunctionDto,
     type TImageDto,
     type TImageOwner,
     type TItemDto,
@@ -25,7 +26,6 @@ import {
     type TSourceOwner,
     type TTimelineLayoutDto,
     type TTriggerDto,
-    type TValue,
     type TValueRecord,
     type TVersion,
 } from '@story/protocol';
@@ -33,16 +33,24 @@ import { clone, fail, notFound } from './mockHelpers';
 import type { ApiEvents } from './events';
 import { createMockSeed, type TMockSeed } from './mockData';
 import { type TMockHolder } from './mockInstances';
+import { createMockAiApi } from './mockAiApi';
 import { createMockGitApi, type TMockRemoteCommit } from './mockGitApi';
 import { createMockEngineApi } from './mockEngineApi';
 import { createMockStructureApi } from './mockStructureApi';
 import type { TVisualizerApi } from './types';
+
+// base64 of `RIFF`, how a webp starts
+const WEBP_BASE64_PREFIX = 'UklGR';
 
 export type TMockApiOptions = {
     seed?: TMockSeed;
     events?: ApiEvents;
     latencyMs?: number;
     gitAvailable?: boolean;
+    aiAvailable?: boolean;
+    aiCredits?: number;
+    aiStepMs?: number;
+    aiImageGeneration?: boolean;
 };
 
 export type TMockApi = TVisualizerApi & {
@@ -52,9 +60,9 @@ export type TMockApi = TVisualizerApi & {
 };
 
 const ENTITY_REF_NAMES: Record<TEntityKind, string> = {
-    characters: 'TCharacter',
-    npcs: 'TNpc',
-    locations: 'TLocation',
+    characters: 'Character',
+    npcs: 'Npc',
+    locations: 'Location',
     items: 'TItem',
 };
 
@@ -71,16 +79,14 @@ const MOCK_STORY: TEditStoryInfoDto = {
     version: 'mock-story',
     hasLandingImage: false,
     email: '',
+    aiFeature: true,
 };
 
-export const displayText = (value: TValue | undefined, fallback: string): string => {
-    if (typeof value === 'string') return value || fallback;
-    if (isCode(value)) {
-        const m = /^_\(\s*(['"`])(.*)\1\s*\)$/s.exec(value.code.trim());
-        return m?.[2] || fallback;
-    }
-    return fallback;
-};
+export const displayText = (value: unknown, fallback: string): string =>
+    typeof value === 'string' && value !== '' ? value : fallback;
+
+const isConditional = (item: { condition?: TFunctionDto }) =>
+    item.condition !== undefined && item.condition.code.trim() !== 'true';
 
 export const extractEdges = (
     passages: TPassageDto[],
@@ -103,14 +109,21 @@ export const extractEdges = (
                 continue;
             }
             for (const item of p.body) {
-                const conditional = item.condition !== undefined && item.condition.code.trim() !== 'true';
-                if (item.redirect !== undefined) add(p.passageId, item.redirect, 'redirect', conditional);
+                const conditional = isConditional(item);
                 if (item.links === undefined) continue;
                 if (isCode(item.links)) {
                     add(p.passageId, item.links, 'link');
                     continue;
                 }
                 for (const link of item.links) add(p.passageId, link.passageId, 'link', conditional);
+            }
+        } else if (p.type === 'redirect') {
+            if (isCode(p.body)) {
+                add(p.passageId, p.body, 'redirect');
+                continue;
+            }
+            for (const item of p.body) {
+                add(p.passageId, item.redirect, 'redirect', isConditional(item));
             }
         } else if (p.nextPassageId !== undefined) {
             add(p.passageId, p.nextPassageId, 'next');
@@ -119,7 +132,16 @@ export const extractEdges = (
     return edges;
 };
 
-export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true }: TMockApiOptions = {}): TMockApi => {
+export const createMockApi = ({
+    seed,
+    events,
+    latencyMs = 0,
+    gitAvailable = true,
+    aiAvailable = true,
+    aiCredits = 100,
+    aiStepMs = 600,
+    aiImageGeneration = true,
+}: TMockApiOptions = {}): TMockApi => {
     let counter = 0;
     const nextVersion = (): TVersion => `mock-${++counter}`;
 
@@ -244,6 +266,31 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
     const imageOf = (owner: TImageOwner, id: string): TImageDto =>
         images.get(`${owner}/${id}`) ?? { owner, id, file: imageFileOf(owner, id), version: '', url: null };
 
+    // no change event, like the server: an image is not a resource of `dto/events.ts`
+    const storeImage = (owner: TImageOwner, id: string, version: TVersion, data: string): TImageDto => {
+        const current = imageOf(owner, id);
+        checkVersion(current, version);
+        const type = data.startsWith(WEBP_BASE64_PREFIX) ? 'webp' : 'png';
+        const next: TImageDto = {
+            ...current,
+            file: current.file.replace(/\.[^./]+$/, `.${type}`),
+            version: nextVersion(),
+            url: `data:image/${type};base64,${data}`,
+        };
+        images.set(`${owner}/${id}`, next);
+        return next;
+    };
+
+    const ai = createMockAiApi({
+        available: aiAvailable,
+        imageGeneration: aiImageGeneration,
+        enabled: () => story.aiFeature,
+        credits: aiCredits,
+        stepMs: aiStepMs,
+        reply,
+        storeImage,
+    });
+
     const sourceOf = (owner: TSourceOwner, id: string): TSourceDto => {
         const saved = sources.get(`${owner}/${id}`);
         if (saved) return saved;
@@ -288,7 +335,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
     const locationHolder = (e: TLocationDto): TMockHolder =>
         entityHolder(
             e,
-            'TLocation',
+            'Location',
             '',
             { ...e.userFields, ...(Array.isArray(e.sublocations) ? { sublocations: e.sublocations } : {}) },
             ({ sublocations, ...userFields }) => ({ userFields, sublocations })
@@ -323,10 +370,10 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
 
     const holders = (): TMockHolder[] => [
         ...[...entities.characters.values()].flatMap((e) => [
-            userFieldsHolder(e, 'TCharacter'),
+            userFieldsHolder(e, 'Character'),
             ...initHolder(e, 'TCharacterData'),
         ]),
-        ...[...entities.npcs.values()].flatMap((e) => [userFieldsHolder(e, 'TNpc'), ...initHolder(e, 'TNpcData')]),
+        ...[...entities.npcs.values()].flatMap((e) => [userFieldsHolder(e, 'Npc'), ...initHolder(e, 'TNpcData')]),
         ...[...entities.locations.values()].map(locationHolder),
         ...[...entities.items.values()].map(itemHolder),
         ...[...chapters.values()].map(chapterHolder),
@@ -431,6 +478,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                     version: nextVersion(),
                     file: `data/chapters/${body.chapterId}/${body.chapterId}.chapter.ts`,
                     exportName: `${body.chapterId}Chapter`,
+                    docComment: '',
                     title: body.title,
                     description: body.description ?? '',
                     timeRange: body.timeRange,
@@ -487,6 +535,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                     file: `data/chapters/${chapterId}/${characterId}.passages/${startPassageLocalId}.ts`,
                     exportName: `${startPassageLocalId}Passage`,
                     params: [],
+                    docComment: '',
                     version: nextVersion(),
                     type: 'screen',
                     title: startPassageLocalId,
@@ -542,6 +591,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                     file: `data/chapters/${chapterId}/${characterId}.passages/${localId}.ts`,
                     exportName: `${localId}Passage`,
                     params: [],
+                    docComment: '',
                     version: nextVersion(),
                 };
                 const passage: TPassageDto =
@@ -554,8 +604,12 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                               body: [{ condition: { code: 'true' }, text: '', links: [] }],
                           }
                         : type === 'linear'
-                          ? { ...base, type, description: title ?? '' }
-                          : { ...base, type, nextPassageId: '' };
+                          ? { ...base, type, title: title ?? localId, image: '', body: '' }
+                          : type === 'start'
+                            ? { ...base, type, description: title ?? '' }
+                            : type === 'redirect'
+                              ? { ...base, type, body: [] }
+                              : { ...base, type, nextPassageId: '' };
                 passages.set(passageId, passage);
                 refreshDerived();
                 emit({ kind: 'passage', id: passageId, version: passage.version, op: 'created', chapterId });
@@ -596,6 +650,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         ...structureApi.routes,
         ...engineApi.routes,
         ...git.routes,
+        ...ai.routes,
 
         getSource: (owner, id) => reply(() => sourceOf(owner, id)),
         updateSource: (owner, id, { version, text }) =>
@@ -736,15 +791,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
             }),
 
         getImage: (owner, id) => reply(() => imageOf(owner, id)),
-        uploadImage: (owner, id, { version, data }) =>
-            reply(() => {
-                const current = imageOf(owner, id);
-                checkVersion(current, version);
-                // no change event, like the server: an image is not a resource of `dto/events.ts`
-                const next: TImageDto = { ...current, version: nextVersion(), url: `data:image/png;base64,${data}` };
-                images.set(`${owner}/${id}`, next);
-                return next;
-            }),
+        uploadImage: (owner, id, { version, data }) => reply(() => storeImage(owner, id, version, data)),
         deleteImage: (owner, id, { version }) =>
             reply(() => {
                 const current = imageOf(owner, id);
@@ -752,6 +799,8 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
                 images.delete(`${owner}/${id}`);
                 return imageOf(owner, id);
             }),
+        listImageFiles: () =>
+            reply(() => [...images.values()].flatMap(({ file, url }) => (url === null ? [] : [{ file, url }]))),
 
         getMap: (mapId) => reply(() => get(maps, mapId, `map "${mapId}"`)),
         updateMap: (mapId, { version, ...file }) =>
@@ -816,6 +865,7 @@ export const createMockApi = ({ seed, events, latencyMs = 0, gitAvailable = true
         simulateRemoteGitCommit: git.simulateRemoteCommit,
         reset: () => {
             git.reset();
+            ai.reset();
             load(seed ?? createMockSeed());
         },
     };

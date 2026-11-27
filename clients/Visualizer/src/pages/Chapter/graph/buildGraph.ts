@@ -30,7 +30,8 @@ export type TGraph = { nodes: TGraphNode[]; ghosts: TGhostNode[]; edges: TGraphE
 export const ghostId = (passageId: string) => `ghost:${passageId}`;
 export const isGhostId = (id: string) => id.startsWith('ghost:');
 
-const passageTitle = (p: TPassageDto): string => (p.type === 'screen' ? displayText(p.title, p.localId) : p.localId);
+const passageTitle = (p: TPassageDto): string =>
+    p.type === 'screen' || p.type === 'linear' ? displayText(p.title, p.localId) : p.localId;
 
 export const buildGraph = (passages: TPassageDto[], edges: TPassageEdgeDto[]): TGraph => {
     const ids = new Set(passages.map((p) => p.passageId));

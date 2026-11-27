@@ -12,8 +12,8 @@
  *     `core` would turn a type-only edge into a value-shaped `core → data` one. `core` imports
  *     it `import type`, so nothing of it survives to runtime.
  *  2. **A type-only `types ⇄ data` cycle is accepted.** `@story/types` derives its id unions
- *     from this story (`types/ids.ts`, `TChapter`, `TCharacter`, `TLocation` read
- *     `TWorldState`; `TItem` reads `itemInfo`; `TLocation` reads `register`), while the story is
+ *     from this story (`types/ids.ts`, `TChapter`, `Character`, `Location` read
+ *     `TWorldState`; `TItem` reads `itemInfo`; `Location` reads `register`), while the story is
  *     typed by `@story/types`. Every one of those imports is an `import type` and is elided at
  *     runtime, so the cycle exists only in the type graph, where it is legal and resolved by
  *     `tsc` in a single pass. Keep it that way: a value import from `types/` into `data/` would

@@ -58,7 +58,7 @@ describe('CSRF: content type and origin of every mutation', () => {
             { error: 'forbidden', message: 'Origin https://evil.example is not allowed (ALLOWED_ORIGINS)' },
         ]);
         expect((await put('null')).status).toBe(403);
-        expect((await put('http://localhost:8100')).status).toBe(403);
+        expect((await put('http://localhost:8150')).status).toBe(403);
         expect((await put('https://stories.example.com')).status).toBe(200);
         expect((await put('HTTPS://Stories.Example.com/')).status).toBe(200);
         // the server's own origin passes because the Vite proxy keeps Host
@@ -100,7 +100,7 @@ describe('CSRF: content type and origin of every mutation', () => {
 
     it('allows the dev ports by default', async () => {
         const base = await start();
-        for (const port of [8100, 8101, 8103, 8123]) {
+        for (const port of [8150, 8151, 8153, 8154]) {
             for (const host of ['localhost', '127.0.0.1']) {
                 const res = await tryLogin(base, { ...JSON_TYPE, origin: `http://${host}:${port}` });
                 expect([port, host, res.status]).toEqual([port, host, 204]);

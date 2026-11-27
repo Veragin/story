@@ -1,11 +1,10 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import type {
     TApiErrorCode,
+    TGitBranchDto,
     TGitCommitResultDto,
     TGitConfigDto,
     TGitDto,
-    TGitLogEntryDto,
-    TGitLogQuery,
     TGitPullResultDto,
     TGitStatusDto,
     TSetupGitBody,
@@ -51,6 +50,7 @@ const notConfigured = (): TGitFailure => ({
 export class GitStore {
     canEdit = false;
     dto: TGitDto | null = null;
+    branches: TGitBranchDto[] | null = null;
     busy = false;
     lastError: string | null = null;
 
@@ -64,6 +64,7 @@ export class GitStore {
     private lastFetchAt: number | null = null;
     private refreshTimer: ReturnType<typeof setTimeout> | null = null;
     private loadToken = 0;
+    private branchesRequest = 0;
 
     constructor({
         api,
@@ -83,6 +84,7 @@ export class GitStore {
         makeObservable<GitStore, 'setStatus'>(this, {
             canEdit: observable,
             dto: observable.ref,
+            branches: observable.ref,
             busy: observable,
             lastError: observable,
             available: computed,
@@ -92,6 +94,7 @@ export class GitStore {
             changeCount: computed,
             dirty: computed,
             canPush: computed,
+            refsKey: computed,
             clearError: action,
             setStatus: action,
         });
@@ -123,6 +126,14 @@ export class GitStore {
 
     get canPush(): boolean {
         return (this.status?.ahead ?? 0) > 0 && !this.dirty;
+    }
+
+    // changes whenever a branch tip or the branch list may have moved
+    get refsKey(): string {
+        const status = this.status;
+        if (!status) return '';
+        const { branch, head, localBranches, remoteBranches, lastFetchedAt } = status;
+        return JSON.stringify([branch, head?.hash, localBranches, remoteBranches, lastFetchedAt]);
     }
 
     start = (): (() => void) => this.subscription.acquire();
@@ -183,9 +194,9 @@ export class GitStore {
         }
     };
 
-    commit = async (message: string, push: boolean): Promise<TGitResult<TGitCommitResultDto>> => {
+    commit = async (message: string, push: boolean, paths?: string[]): Promise<TGitResult<TGitCommitResultDto>> => {
         const result = await this.run(
-            () => this.api.gitCommit({ message, push }),
+            () => this.api.gitCommit({ message, push, ...(paths && { paths }) }),
             (value) => this.setStatus(value.status)
         );
         const pushError = result.ok ? result.value.pushError : undefined;
@@ -196,6 +207,12 @@ export class GitStore {
     push = (): Promise<TGitResult<TGitStatusDto>> =>
         this.run(
             () => this.api.gitPush(),
+            (status) => this.setStatus(status)
+        );
+
+    forcePush = (): Promise<TGitResult<TGitStatusDto>> =>
+        this.run(
+            () => this.api.gitForcePush(),
             (status) => this.setStatus(status)
         );
 
@@ -215,6 +232,29 @@ export class GitStore {
             () => this.api.gitCheckout({ branch, create }),
             (status) => this.setStatus(status)
         );
+
+    discard = (): Promise<TGitResult<TGitStatusDto>> =>
+        this.run(
+            () => this.api.gitDiscard(),
+            (status) => this.setStatus(status)
+        );
+
+    deleteBranch = (branch: string, remote: boolean): Promise<TGitResult<TGitStatusDto>> =>
+        this.run(
+            () => this.api.deleteGitBranch({ branch, remote }),
+            (status) => this.setStatus(status)
+        );
+
+    loadBranches = async (): Promise<TGitResult<TGitBranchDto[]>> => {
+        const request = ++this.branchesRequest;
+        try {
+            const branches = await this.api.getGitBranches();
+            if (request === this.branchesRequest) runInAction(() => (this.branches = branches));
+            return { ok: true, value: branches };
+        } catch (e) {
+            return gitFailure(e);
+        }
+    };
 
     setup = (body: TSetupGitBody): Promise<TGitResult<TGitDto>> =>
         this.run(
@@ -238,14 +278,6 @@ export class GitStore {
             () => this.api.deleteGitConfig({ version, removeRepo }),
             () => (this.dto = { available: true, config: null, status: null })
         );
-    };
-
-    log = async (query?: TGitLogQuery): Promise<TGitResult<TGitLogEntryDto[]>> => {
-        try {
-            return { ok: true, value: await this.api.getGitLog(query) };
-        } catch (e) {
-            return gitFailure(e);
-        }
     };
 
     private run = async <T>(call: () => Promise<T>, apply: (value: T) => void): Promise<TGitResult<T>> => {

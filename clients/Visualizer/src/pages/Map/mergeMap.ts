@@ -2,11 +2,16 @@ import type { TMapDto } from '@story/protocol';
 import { createDefaultMapData } from '../../MapEditor/createDefaultMapData';
 import type { TMapDocument, TMapTile } from '../../MapEditor/types';
 
-export const toMapDocument = (dto: TMapDto): TMapDocument => {
-    const doc: Partial<TMapDto> = structuredClone(dto);
-    delete doc.version;
-    return doc as TMapDocument;
-};
+export const toMapDocument = ({
+    mapId,
+    title,
+    width,
+    height,
+    data,
+    palette,
+    locations,
+    maps,
+}: TMapDto): TMapDocument => structuredClone({ mapId, title, width, height, data, palette, locations, maps });
 
 const sameTile = (a: TMapTile | undefined, b: TMapTile | undefined) =>
     a?.tile === b?.tile && (a?.label ?? '') === (b?.label ?? '') && (a?.description ?? '') === (b?.description ?? '');

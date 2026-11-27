@@ -8,7 +8,7 @@ import {
     createMockSeed,
     type TMockApi,
 } from '../../../api';
-import { StructureContext } from '../../../components/inputs/structureContext';
+import { StructureContext } from '../../../structure/structureContext';
 import {
     $,
     $$,
@@ -16,6 +16,7 @@ import {
     flush,
     get,
     mountAsync,
+    selectOption,
     typeInto,
     unmount,
 } from '../../../components/inputs/__tests__/dom';
@@ -27,7 +28,7 @@ import { EntityFormStore } from '../EntityFormStore';
 const seedWithUserFields = () => {
     const seed = createMockSeed();
     const character = seed.structure.types.find(
-        (type) => type.name === 'TCharacter'
+        (type) => type.name === 'Character'
     );
     character?.fields.push(
         { key: 'energy', type: { t: 'number' }, optional: false },
@@ -74,23 +75,23 @@ describe('EntityForm', () => {
         release();
     });
 
-    it('renders the user fields of TCharacter and the init fields of TCharacterData + the data type', () => {
+    it('renders the user fields of Character and the init fields of TCharacterData + the data type', () => {
         const labels = $$('[data-form-field]').map(
             (el) => el.dataset.formField
         );
         expect(labels).toEqual(
             expect.arrayContaining([
-                'name',
-                'startPassageId',
+                'Name',
+                'Start passage',
                 'energy',
                 'nickname',
-                'init',
+                'Init',
                 'health',
                 'inventory',
             ])
         );
         expect(
-            get('[data-form-field="init"] [data-key="knowsMagic"]')
+            get('[data-form-field="Init"] [data-key="knowsMagic"]')
         ).toBeTruthy();
     });
 
@@ -134,6 +135,23 @@ describe('EntityForm', () => {
         ]);
         expect(dataType?.code).toBe('{ knowsMagic: boolean; field: string }');
         await flush();
-        expect($('[data-form-field="init"] [data-key="field"]')).toBeTruthy();
+        expect($('[data-form-field="Init"] [data-key="field"]')).toBeTruthy();
+    });
+
+    it('offers class and type fields in the data type, written as the id type and the type name', () => {
+        const section = '[data-form-section="dataType"]';
+        click(`${section} [data-action="add-structure-field"]`);
+        const kind = () =>
+            get<HTMLSelectElement>(
+                `${section} select[aria-label="field type"]`
+            );
+        selectOption(kind(), 'ref');
+        expect((store.draft as TCharacterDto).dataType?.code).toBe(
+            '{ knowsMagic: boolean; field: TLocationId }'
+        );
+        selectOption(kind(), 'struct');
+        expect((store.draft as TCharacterDto).dataType?.code).toBe(
+            '{ knowsMagic: boolean; field: TStats }'
+        );
     });
 });

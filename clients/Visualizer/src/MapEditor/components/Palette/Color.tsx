@@ -1,5 +1,5 @@
-import styled from '@emotion/styled';
-import { Row, spacingCss } from '@story/ui';
+import { styled } from '@mui/material';
+import { spacingCss } from '@story/ui';
 
 type TColorProps = {
     name: string;
@@ -8,36 +8,53 @@ type TColorProps = {
     onClick: () => void;
 };
 
-export const Color = ({ color, isActive, name, onClick }: TColorProps) => {
-    return (
-        <SRow
-            $isActive={isActive}
-            onClick={onClick}
-            onWheel={(e) => e.stopPropagation()}
-            onMouseMove={(e) => e.stopPropagation()}
-        >
-            <SColor color={color}></SColor>
-            <span>{name}</span>
-        </SRow>
-    );
-};
+export const Color = ({ color, isActive, name, onClick }: TColorProps) => (
+    <SOption
+        type="button"
+        role="option"
+        aria-selected={isActive}
+        active={isActive}
+        onClick={onClick}
+    >
+        <SSwatch style={{ backgroundColor: color }} />
+        <SName>{name}</SName>
+    </SOption>
+);
 
-const SRow = styled(Row)<{ $isActive: boolean }>`
-    background-color: ${({ $isActive }) => ($isActive ? '#444' : '#000')};
-    color: ${({ $isActive }) => ($isActive ? '#fff' : '#ddd')};
-    &:hover {
-        background-color: #333;
-    }
-    padding: ${spacingCss(0.5)};
-    gap: ${spacingCss(0.5)};
+const SOption = styled('button', {
+    shouldForwardProp: (prop) => prop !== 'active',
+})<{ active: boolean }>`
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: ${spacingCss(0.75)};
+    padding: ${spacingCss(0.375)} ${spacingCss(0.75)};
+    border: 1px solid
+        ${({ theme, active }) =>
+            active ? theme.palette.border.strong : 'transparent'};
+    border-radius: 6px;
+    background-color: ${({ theme, active }) =>
+        active ? theme.palette.action.selected : 'transparent'};
+    color: inherit;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
-    align-self: stretch;
+    &:hover {
+        background-color: ${({ theme }) => theme.palette.action.hover};
+    }
 `;
 
-const SColor = styled.div<{ color: string }>`
-    background-color: ${({ color }) => color};
-    width: 20px;
-    height: 20px;
+const SSwatch = styled('span')`
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
     border-radius: 4px;
-    border: 1px solid #000;
+    border: 1px solid ${({ theme }) => theme.palette.text.secondary};
+`;
+
+const SName = styled('span')`
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 `;

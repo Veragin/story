@@ -2,11 +2,13 @@
 import '@story/shared'; // installs the global `_`
 import { act } from 'react';
 import { runInAction } from 'mobx';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
     TLinearPassageDto,
     TPassageDto,
+    TRedirectPassageDto,
     TScreenPassageDto,
+    TStartPassageDto,
 } from '@story/protocol';
 import { createMockApi, type TMockApi } from '../../../api';
 import {
@@ -21,6 +23,7 @@ import {
 import { InStructure } from '../../../components/inputs/__tests__/harness';
 import { PassageEditor } from '../editor/PassageEditor/PassageEditor';
 import { PassageEditorStore } from '../editor/PassageEditorStore';
+import type { TPassageCreator } from '../editor/PassageEditor/types';
 
 const ITEMS = [
     { id: 'bread', label: 'Bread' },
@@ -50,14 +53,18 @@ describe('PassageEditor', () => {
         store.destroy();
     });
 
-    const open = async (passage: TPassageDto) => {
+    const open = async (
+        passage: TPassageDto,
+        passageCreator?: TPassageCreator
+    ) => {
         store = new PassageEditorStore(passage, api);
         await mountAsync(
             <InStructure>
                 <PassageEditor
                     store={store}
                     passageOptions={PASSAGES}
-                    transitionOptions={[{ id: 'kingdom-thomas-visit' }]}
+                    passageCreator={passageCreator}
+                    finishOptions={[{ id: 'kingdom-thomas-visit' }]}
                     itemOptions={ITEMS}
                     onClose={() => undefined}
                     onDelete={() => undefined}
@@ -105,17 +112,53 @@ describe('PassageEditor', () => {
         expect(store.dirty).toBe(true);
     });
 
-    it('shows a code title read-only and converts it', async () => {
+    it('shows the local id as a read-only heading for a code title', async () => {
         await open({
             ...screen('village-thomas-intro'),
-            title: { code: "_('Hi')" },
+            title: { code: "'Hi'" },
         });
         expect($('[data-field="title"]')).toBeNull();
-        expect(inField('Title', '[data-code-value]').textContent).toBe(
-            "_('Hi')"
+        expect(get('h2').textContent).toBe('intro');
+    });
+
+    it('shows the local id as the heading of a passage without a title', async () => {
+        await open(passage('village-thomas-cool'));
+        expect($('[data-field="title"]')).toBeNull();
+        expect(get('h2').textContent).toBe('cool');
+        expect(document.body.textContent).toContain('finish');
+    });
+
+    it('edits the description, saves it in the patch and discards it', async () => {
+        await open({ ...screen('village-thomas-intro'), docComment: '' });
+        const description = get<HTMLTextAreaElement>(
+            'textarea[data-field="docComment"]'
         );
-        click('[data-form-field="Title"] [data-action="convert-to-value"]');
-        expect(store.draft.type === 'screen' && store.draft.title).toBe('Hi');
+        expect(description.placeholder).toBe('Write down description here');
+        typeInto(description, 'Wakes up in the village');
+        expect(store.draft.docComment).toBe('Wakes up in the village');
+        expect(store.patch).toEqual({ docComment: 'Wakes up in the village' });
+        click('[data-action="discard"]');
+        expect(store.draft.docComment).toBe('');
+        expect(store.dirty).toBe(false);
+    });
+
+    it('copies the passage id and the file on click', async () => {
+        const writeText = vi.fn(() => Promise.resolve());
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        });
+        const intro = screen('village-thomas-intro');
+        await open(intro);
+        click(`[data-copy="${intro.passageId}"]`);
+        await flush();
+        expect(writeText).toHaveBeenCalledWith(intro.passageId);
+        expect(get(`[data-copy="${intro.passageId}"]`).dataset.copyState).toBe(
+            'copied'
+        );
+        click(`[data-copy="${intro.file}"]`);
+        await flush();
+        expect(writeText).toHaveBeenLastCalledWith(intro.file);
     });
 
     it('edits a link: text, priority and the cost items', async () => {
@@ -145,6 +188,26 @@ describe('PassageEditor', () => {
             items: [{ id: 'bread', amount: 4 }],
             tools: ['bread'],
         });
+    });
+
+    it('adds a link with an empty target and creates a new passage from the typed id', async () => {
+        const create = vi.fn(() => Promise.resolve(true));
+        await open(screen('village-thomas-intro'), {
+            idPrefix: 'village-thomas-',
+            create,
+        });
+        click('[data-action="add-link"]');
+        const newLink = 'body.0.links.1';
+        expect(input(`${newLink}.passageId`).value).toBe('');
+
+        typeInto(input(`${newLink}.passageId`), 'Old Lake');
+        const firstRow = get('[role="listbox"] li');
+        expect(firstRow.dataset.create).toBe('village-thomas-oldLake');
+        expect(firstRow.textContent).toBe('+ village-thomas-oldLake');
+
+        click('[data-create]');
+        await flush();
+        expect(create).toHaveBeenCalledWith('oldLake');
     });
 
     it('switches a time-only cost to minutes', async () => {
@@ -223,10 +286,13 @@ describe('PassageEditor', () => {
         const linear: TLinearPassageDto = {
             ...screen('village-thomas-intro'),
             type: 'linear',
-            description: 'Walking',
+            body: 'Walking',
         };
         await open(linear);
-        expect(input('description').value).toBe('Walking');
+        expect(input('title').value).toBe(linear.title);
+        expect(input('body').value).toBe('Walking');
+        typeInto(input('title'), 'Walk');
+        expect(store.patch).toEqual({ title: 'Walk' });
         click('[data-form-field="Next passage"] [data-action="add-field"]');
         expect(store.draft.type === 'linear' && store.draft.nextPassageId).toBe(
             'village-thomas-intro'
@@ -236,7 +302,35 @@ describe('PassageEditor', () => {
         ).toBeNull();
     });
 
-    it('offers the passages of other chapters as a transition target', async () => {
+    it('edits the description of a start passage', async () => {
+        const start: TStartPassageDto = {
+            ...screen('village-thomas-intro'),
+            type: 'start',
+            description: 'Waking up',
+        };
+        await open(start);
+        typeInto(input('description'), 'Morning');
+        expect(store.draft.type === 'start' && store.draft.description).toBe(
+            'Morning'
+        );
+    });
+
+    it('edits the target of a redirect and adds another one', async () => {
+        const redirect: TRedirectPassageDto = {
+            ...screen('village-thomas-intro'),
+            type: 'redirect',
+            body: [{ redirect: 'village-thomas-forest' }],
+        };
+        await open(redirect);
+        expect(input('body.0.redirect').value).toBe('village-thomas-forest');
+        click('[data-action="add-redirect"]');
+        expect(store.draft.type === 'redirect' && store.draft.body).toEqual([
+            { redirect: 'village-thomas-forest' },
+            { condition: { code: 'true' }, redirect: '' },
+        ]);
+    });
+
+    it('offers the passages of other chapters as a finish target', async () => {
         await open(passage('village-thomas-cool'));
         const target = input('nextPassageId');
         expect(target.value).toBe('village-thomas-');

@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { buildPath, LANDING_IMAGE_FILE, PLAY_MANIFEST_FILE, PNG_SIGNATURE } from '@story/protocol';
+import { buildPath, LANDING_IMAGE_FILE, LANDING_WEBP_FILE, PLAY_MANIFEST_FILE, PNG_SIGNATURE } from '@story/protocol';
 import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PLAY_SITE_HEADER } from '../src/auth/PlaySiteGuard';
@@ -136,7 +136,7 @@ describe('getPlayManifest', () => {
         expect(files).toContain('data/chapters/village/thomas.passages/intro.png');
         expect(files).toContain('data/engine/Topbar.tsx');
         expect(files).toEqual([...files].sort());
-        expect(files.every((f) => /^(data|types)\/.+\.(ts|tsx|png)$/.test(f))).toBe(true);
+        expect(files.every((f) => /^(data|types)\/.+\.(ts|tsx|png|webp)$/.test(f))).toBe(true);
         expect(files.some((f) => f.includes('__tests__') || f.includes('node_modules'))).toBe(false);
     });
 
@@ -155,6 +155,14 @@ describe('getPlayManifest', () => {
         const res = await manifest('open');
         expect(res.body.hasLandingImage).toBe(true);
         expect(res.body.files).toContain(LANDING_IMAGE_FILE);
+    });
+
+    it('reports a webp landing image', async () => {
+        await mkdir(path.dirname(abs('open', LANDING_WEBP_FILE)), { recursive: true });
+        await writeFile(abs('open', LANDING_WEBP_FILE), 'webp');
+        const res = await manifest('open');
+        expect(res.body.hasLandingImage).toBe(true);
+        expect(res.body.files).toContain(LANDING_WEBP_FILE);
     });
 });
 
@@ -187,6 +195,14 @@ describe('getPlayFile', () => {
         expect(res.headers.get('content-type')).toBe('image/png');
         const bytes = Buffer.from(await res.arrayBuffer());
         expect(bytes.equals(await readFile(abs('open', 'data/chapters/village/thomas.passages/intro.png')))).toBe(true);
+    });
+
+    it('serves an image as WebP', async () => {
+        const file = 'data/chapters/village/thomas.passages/intro.webp';
+        await writeFile(abs('open', file), 'webp');
+        const res = await playFile('open', file);
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toBe('image/webp');
     });
 
     it('rejects paths outside data/ and types/, traversal and other file types', async () => {

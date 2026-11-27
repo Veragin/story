@@ -1,4 +1,10 @@
-FROM node:22.14.0
+# The AI launcher of the dev stack (`ai-launcher` in docker-compose.yml): node and the docker CLI. It runs
+# `server/aiLauncher/` from the repo bind mount. The last stage, the dev container, stays the default target.
+FROM node:22.14.0 AS launcher
+COPY docker/install-docker-cli.sh /tmp/install-docker-cli.sh
+RUN sh /tmp/install-docker-cli.sh && rm /tmp/install-docker-cli.sh
+
+FROM node:22.14.0 AS dev
 
 ARG UNAME=node
 ARG UGROUP=node
@@ -11,16 +17,14 @@ RUN npm install -g @playwright/cli @playwright/test
 RUN playwright-cli install-browser --with-deps chrome
 RUN su -s /bin/bash "$UNAME" -c "playwright install ffmpeg"
 
-# claude
-# `make rebuild` passes a fresh CLAUDE_REBUILD, which invalidates the cache from this line
-# down and so reinstalls the CLI. The apt and playwright layers above stay cached, so the
-# browsers are not downloaded again.
-ARG CLAUDE_REBUILD=0
-RUN npm install -g @anthropic-ai/claude-code
-RUN mkdir -p /home/$UNAME/.claude
-RUN chown -R $UNAME:$UGROUP /home/$UNAME/.claude/
-
 RUN corepack enable
+# Pre-fetches the yarn of package.json's `packageManager` into node's cache, so `yarn` never prompts to download it
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+COPY package.json /tmp/corepack/package.json
+RUN su -s /bin/bash "$UNAME" -c "cd /tmp/corepack && corepack install" && rm -rf /tmp/corepack
 
 # The password reset mails' sender, hardcoded for now (plans/rosti-release.md); without SMTP_URL they are only logged
 ENV MAIL_FROM=info@story.cz
+
+# The mount point of the `story-ai-sessions-dev` volume (AI_SESSIONS_DIR): created here so a new volume is owned by node
+RUN mkdir -p /ai-sessions && chown node:node /ai-sessions

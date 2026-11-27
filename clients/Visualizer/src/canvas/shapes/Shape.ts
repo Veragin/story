@@ -1,4 +1,5 @@
 import type { Camera } from '../Camera';
+import type { TScenePointerEvent } from '../Scene';
 import { rectBorderPoint, rectCenter } from '../geometry';
 import type { TPoint, TRect, TStroke } from '../types';
 
@@ -8,8 +9,12 @@ export interface IShapeHost {
     markOrderDirty(): void;
 }
 
+export type TDragAxis = 'x' | 'y' | 'both';
+
 export type TDragOptions = {
     axis?: 'x' | 'y';
+    // read on every move, so held keys can change it mid-drag; `null` keeps the shape at its start
+    resolveAxis?: (e: TScenePointerEvent) => TDragAxis | null;
     constrain?: (origin: TPoint, shape: Shape) => TPoint;
 };
 

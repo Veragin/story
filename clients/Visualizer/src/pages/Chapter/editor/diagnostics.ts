@@ -28,16 +28,26 @@ const closestField = (path: string, fields: ReadonlySet<string>): string | null 
 // containers are included so a diagnostic about a whole item shows at that item
 export const passageFieldPaths = (p: TPassageDto): Set<string> => {
     const fields = new Set<string>(['execute']);
-    if (p.type === 'linear') {
+    if (p.type === 'start') {
         fields.add('description').add('nextPassageId');
-    } else if (p.type === 'transition') {
+    } else if (p.type === 'linear') {
+        fields.add('title').add('image').add('body').add('nextPassageId');
+    } else if (p.type === 'finish') {
         fields.add('nextPassageId');
+    } else if (p.type === 'redirect') {
+        fields.add('body');
+        if (!isCode(p.body)) {
+            p.body.forEach((_item, i) => {
+                const b = `body.${i}`;
+                fields.add(b).add(`${b}.condition`).add(`${b}.redirect`);
+            });
+        }
     } else {
         fields.add('title').add('image').add('body');
         if (!isCode(p.body)) {
             p.body.forEach((item, i) => {
                 const b = `body.${i}`;
-                fields.add(b).add(`${b}.condition`).add(`${b}.redirect`).add(`${b}.text`).add(`${b}.links`);
+                fields.add(b).add(`${b}.condition`).add(`${b}.text`).add(`${b}.links`);
                 if (item.links === undefined || isCode(item.links)) return;
                 item.links.forEach((link, j) => {
                     const l = `${b}.links.${j}`;
@@ -57,6 +67,3 @@ export const passageFieldPaths = (p: TPassageDto): Set<string> => {
     }
     return fields;
 };
-
-export const formatDiagnostic = (d: TDiagnosticDto) =>
-    `${d.file}:${d.line}:${d.column} ${d.code ? `TS${d.code}: ` : ''}${d.message}`;

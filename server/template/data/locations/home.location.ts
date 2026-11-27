@@ -1,9 +1,9 @@
-import { TLocation } from '@story/types';
+import type { Location } from '@story/types';
 
-export const homeLocation: TLocation<'home'> = {
+export const homeLocation: Location<'home'> = {
     id: 'home',
-    name: 'Home',
-    description: 'Where the story begins.',
+    name: _('Home'),
+    description: _('Where the story begins.'),
 
     localCharacters: [],
 

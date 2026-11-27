@@ -14,7 +14,11 @@ import {
     type TRouteResponse,
     type TStoryRouteName,
 } from '@story/protocol';
+import { isStoryImageFile } from '@story/shared';
+import { openAiEvents } from './aiEvents';
 import { ApiError } from './ApiError';
+import { errorMessage } from './errorMessage';
+import type { TCreateEventSource } from './ReconnectingEventSource';
 import { STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
@@ -26,6 +30,7 @@ export type THttpApiOptions = {
     onMutation?: () => () => void;
     onStoryWrite?: () => void;
     onUnauthorized?: (error: ApiError) => Promise<void>;
+    createEventSource?: TCreateEventSource | null;
 };
 
 // a source save rewrites whole files behind the forms' back, so its echo must reach the pages
@@ -41,18 +46,16 @@ const NOT_STORY_WRITES: readonly TRouteName[] = [
     'gitFetch',
     'gitCommit',
     'gitPush',
+    'gitForcePush',
     'gitPull',
     'gitCheckout',
+    'gitDiscard',
+    'deleteGitBranch',
+    'sendAiMessage',
+    'interruptAi',
+    'resumeAi',
+    'clearAi',
 ];
-
-export type TQuery = Record<string, string | number | undefined>;
-
-const queryString = (query: TQuery | undefined): string => {
-    const entries = Object.entries(query ?? {}).flatMap(([key, value]) =>
-        value === undefined ? [] : [[key, String(value)]]
-    );
-    return entries.length === 0 ? '' : `?${new URLSearchParams(entries)}`;
-};
 
 const parseError = async (res: Response): Promise<TApiErrorBody> => {
     try {
@@ -90,24 +93,19 @@ export const createRequest = ({
     return async <R extends TRouteName>(
         route: R,
         params: TRouteParams<R>,
-        body?: TRouteBody<R>,
-        query?: TQuery
+        body?: TRouteBody<R>
     ): Promise<TRouteResponse<R>> => {
         const { method, path } = endpoint(storyId, route, params);
         const send = async (): Promise<Response> => {
             try {
-                return await fetchImpl(baseUrl + path + queryString(query), {
+                return await fetchImpl(baseUrl + path, {
                     method,
                     // on every mutation, bodyless ones included: the server's CSRF check requires it
                     headers: method === 'GET' ? undefined : { 'content-type': 'application/json' },
                     body: body === undefined ? undefined : JSON.stringify(body),
                 });
             } catch (e) {
-                throw new ApiError(
-                    0,
-                    { error: 'internal', message: `Network error: ${e instanceof Error ? e.message : String(e)}` },
-                    route
-                );
+                throw new ApiError(0, { error: 'internal', message: `Network error: ${errorMessage(e)}` }, route);
             }
         };
         const hold = () => (method !== 'GET' && onMutation ? onMutation() : () => {});
@@ -140,6 +138,14 @@ export const createRequest = ({
 
 export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => {
     const request = createRequest(options);
+    // an `EventSource` can't see a 401, so probe with a plain request to trigger the login prompt
+    const probeAi = async () => {
+        try {
+            await request('getAi', {});
+        } catch {
+            // the probe only exists for its 401 side effect
+        }
+    };
     return {
         health: () => request('health', {}),
         login: (password) => request('login', { storyId: options.storyId ?? STORY_ID }, { password }),
@@ -205,6 +211,12 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         getImage: (owner, id) => request('getImage', { owner, id }),
         uploadImage: (owner, id, body) => request('uploadImage', { owner, id }, body),
         deleteImage: (owner, id, body) => request('deleteImage', { owner, id }, body),
+        generateImage: (owner, id, body) => request('generateImage', { owner, id }, body),
+        listImageFiles: async () =>
+            (await request('getPlayManifest', {})).files.filter(isStoryImageFile).map((file) => ({
+                file,
+                url: (options.baseUrl ?? '') + buildPath(options.storyId ?? STORY_ID, 'getPlayFile', { file }),
+            })),
 
         getMap: (mapId) => request('getMap', { mapId }),
         updateMap: (mapId, body) => request('updateMap', { mapId }, body),
@@ -222,8 +234,25 @@ export const createHttpApi = (options: THttpApiOptions = {}): TVisualizerApi => 
         gitFetch: () => request('gitFetch', {}),
         gitCommit: (body) => request('gitCommit', {}, body),
         gitPush: () => request('gitPush', {}),
+        gitForcePush: () => request('gitForcePush', {}),
         gitPull: () => request('gitPull', {}),
         gitCheckout: (body) => request('gitCheckout', {}, body),
-        getGitLog: (query) => request('getGitLog', {}, undefined, query),
+        gitDiscard: () => request('gitDiscard', {}),
+        getGitBranches: () => request('getGitBranches', {}),
+        deleteGitBranch: (body) => request('deleteGitBranch', {}, body),
+
+        getAi: () => request('getAi', {}),
+        aiEvents: (onEvent) =>
+            openAiEvents({
+                url: (options.baseUrl ?? '') + buildPath(options.storyId ?? STORY_ID, 'aiEvents', {}),
+                onEvent,
+                createEventSource: options.createEventSource,
+                onGiveUp: () => void probeAi(),
+            }),
+        sendAiMessage: (body) => request('sendAiMessage', {}, body),
+        interruptAi: () => request('interruptAi', {}),
+        listAiSessions: () => request('listAiSessions', {}),
+        resumeAi: (body) => request('resumeAi', {}, body),
+        clearAi: () => request('clearAi', {}),
     };
 };

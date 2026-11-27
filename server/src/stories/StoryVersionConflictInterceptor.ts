@@ -22,6 +22,13 @@ export class StoryVersionConflictInterceptor implements NestInterceptor {
         if (!(e instanceof StoryVersionConflictError)) throw e;
         const current = await this.stories.readVersioned(e.storyId);
         if (!current) throw HttpError.noStory(e.storyId);
-        throw HttpError.stale(await buildStoryInfo(e.storyId, current, this.folders.dir(e.storyId)));
+        throw HttpError.stale(
+            await buildStoryInfo(
+                e.storyId,
+                current,
+                this.folders.dir(e.storyId),
+                await this.stories.aiFeature(e.storyId)
+            )
+        );
     }
 }

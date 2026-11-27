@@ -1,12 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import {
-    Alert,
-    Button,
-    DialogActions,
-    DialogContent,
-    TextField,
-} from '@mui/material';
+import { Alert, Button, DialogActions, DialogContent } from '@mui/material';
 import { STORY_LIMITS } from '@story/protocol';
+import { LabeledTextField } from './LabeledTextField';
 import { resetRequestErrorMessage } from './passwordErrorMessage';
 
 type TProps = {
@@ -60,24 +55,21 @@ export const PasswordResetRequestForm = ({
     return (
         <form onSubmit={(e) => void submit(e)}>
             <DialogContent>
-                <TextField
+                <LabeledTextField
                     type="email"
                     label={_("The story's email")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    error={error !== null}
-                    helperText={
-                        error ??
-                        _('We will send a link to set a new password there.')
-                    }
+                    error={error}
+                    helperText={_(
+                        'We will send a link to set a new password there.'
+                    )}
                     disabled={busy}
                     autoComplete="email"
                     autoFocus
-                    fullWidth
-                    margin="dense"
-                    inputProps={{
-                        'maxLength': STORY_LIMITS.emailMaxLength,
-                        'data-field': 'email',
+                    dataField="email"
+                    slotProps={{
+                        htmlInput: { maxLength: STORY_LIMITS.emailMaxLength },
                     }}
                 />
             </DialogContent>

@@ -35,7 +35,7 @@ export class ApiError extends Error {
     }
 
     get current(): unknown {
-        return this.body.current;
+        return this.body.current ?? null;
     }
 
     get diagnostics(): TDiagnosticDto[] {

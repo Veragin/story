@@ -29,6 +29,9 @@ export class Story {
     @Column({ type: 'varchar', length: 255, nullable: true })
     email: string | null;
 
+    @Column({ type: 'boolean', default: false })
+    aiFeature: boolean;
+
     @VersionColumn({ type: 'int', unsigned: true })
     version: number;
 

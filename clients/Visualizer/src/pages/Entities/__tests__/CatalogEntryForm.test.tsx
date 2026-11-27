@@ -1,7 +1,7 @@
 import '@story/shared';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { StructureContext } from '../../../components/inputs/structureContext';
+import { StructureContext } from '../../../structure/structureContext';
 import {
     click,
     get,
@@ -36,7 +36,7 @@ describe('CatalogEntryForm', () => {
             <StructureContext.Provider value={stores.structure}>
                 <CatalogEntryForm
                     store={store}
-                    type={stores.structure.type('TRace')}
+                    type={stores.structure.type('Race')}
                 />
             </StructureContext.Provider>
         );
@@ -63,17 +63,55 @@ describe('CatalogEntryForm', () => {
         ).toEqual({ name: 'Elf', strength: 7 });
     });
 
+    it('links to its class and edits a struct field as a fixed-shape object', async () => {
+        expect(get('a[href="#/structure/classes/Race"]').textContent).toBe(
+            'Race'
+        );
+        const race = stores.structure.type('Race');
+        await act(async () => {
+            await stores.structure.updateType('Race', {
+                version: race?.version ?? '',
+                fields: [
+                    ...(race?.fields ?? []),
+                    {
+                        key: 'stats',
+                        type: { t: 'struct', name: 'TStats' },
+                        optional: false,
+                    },
+                ],
+            });
+            await settle();
+            await store.show('races', 'dwarf');
+        });
+        expect(
+            (await stores.api.getCatalogEntry('races', 'dwarf')).values.stats
+        ).toEqual({ strength: 0 });
+        const stats = '[data-form-field="stats"]';
+        expect(document.querySelector(`${stats} [data-add-field]`)).toBeNull();
+        typeInto(
+            get<HTMLInputElement>(`${stats} input[aria-label="strength"]`),
+            '9'
+        );
+        await act(async () => {
+            click('[data-action="save"]');
+            await settle();
+        });
+        expect(
+            (await stores.api.getCatalogEntry('races', 'dwarf')).values
+        ).toEqual({ name: 'Dwarf', strength: 5, stats: { strength: 9 } });
+    });
+
     it('shows the cleared notice after a delete', async () => {
         const { api } = stores;
         const character = (await api.getStructure()).types.find(
-            (t) => t.name === 'TCharacter'
+            (t) => t.name === 'Character'
         );
-        await api.updateType('TCharacter', {
+        await api.updateType('Character', {
             version: character?.version ?? '',
             fields: [
                 {
                     key: 'race',
-                    type: { t: 'ref', name: 'TRace' },
+                    type: { t: 'ref', name: 'Race' },
                     optional: true,
                 },
             ],

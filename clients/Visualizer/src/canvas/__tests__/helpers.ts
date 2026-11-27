@@ -71,13 +71,19 @@ export const doubleClick = (canvas: HTMLCanvasElement, x: number, y: number): vo
     fire(canvas, 'dblclick', x, y);
 };
 
-export const drag = (canvas: HTMLCanvasElement, from: [number, number], to: [number, number], steps = 4): void => {
-    fire(canvas, 'pointerdown', from[0], from[1]);
+export const drag = (
+    canvas: HTMLCanvasElement,
+    from: [number, number],
+    to: [number, number],
+    steps = 4,
+    opts: Pick<TMouseOpts, 'shiftKey' | 'ctrlKey'> = {}
+): void => {
+    fire(canvas, 'pointerdown', from[0], from[1], opts);
     for (let i = 1; i <= steps; i++) {
         const t = i / steps;
-        fire(canvas, 'pointermove', from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t);
+        fire(canvas, 'pointermove', from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, opts);
     }
-    fire(canvas, 'pointerup', to[0], to[1]);
+    fire(canvas, 'pointerup', to[0], to[1], opts);
 };
 
 export const hover = (canvas: HTMLCanvasElement, x: number, y: number): void => {

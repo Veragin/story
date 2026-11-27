@@ -1,15 +1,21 @@
 import { capitalize } from '@story/shared';
-import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { spacingCss } from '@story/ui';
-import type { TDataTypeDto, TTypeRef } from '@story/protocol';
-import { FormArrayInput } from '../../../components/inputs/form/FormArrayInput';
-import { FormDataTypeInput } from '../../../components/inputs/form/FormDataTypeInput';
-import { FormObjectInput } from '../../../components/inputs/form/FormObjectInput';
-import { FormStringInput } from '../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../components/inputs/form/FormTypeInput';
+import { useCallback, useMemo, useRef, type ReactNode } from 'react';
+import type {
+    TDataTypeDto,
+    TMaybeCode,
+    TTypeRef,
+    TValue,
+    TValueRecord,
+} from '@story/protocol';
+import { FormFields } from '../../../components/form/FormFields';
+import { FormArrayEditor } from '../../../components/editors/FormArrayEditor';
+import { DataTypeSection } from '../../Structure/DataTypeSection';
+import { FormObjectEditor } from '../../../components/editors/FormObjectEditor';
+import { FormMaybeCodeTimeRangeInput } from '../../../components/code/FormMaybeCodeTimeRangeInput';
+import { DescriptionInput } from '../../../components/inputs/DescriptionInput';
 import {
-    NO_DIAGNOSTICS,
+    noDiagnosticsOf,
     nestedDiagnostics,
     type TDiagnosticsOf,
 } from '../../../components/inputs/inputTypes';
@@ -18,14 +24,14 @@ import {
     typeContextOf,
     useStructureContext,
     withoutRefOption,
-} from '../../../components/inputs/structureContext';
+} from '../../../structure/structureContext';
 import {
     isArrayOf,
     isTextRecord,
     toMaybeCode,
-} from '../../../components/inputs/valueSource';
+} from '../../../values/valueSource';
 import { migrateInit, type TChapterInfoValue } from './chapterInfo';
-import { TimeRangeInput } from './TimeRangeInput';
+import { ChapterLocationField } from './ChapterLocationField';
 
 type TChapterInfoFormProps = {
     chapterId: string;
@@ -34,6 +40,7 @@ type TChapterInfoFormProps = {
     onChange: (value: TChapterInfoValue) => void;
     diagnostics?: TDiagnosticsOf;
     disabled?: boolean;
+    parents?: ReactNode;
 };
 
 const CHAPTER_REF = 'TChapter';
@@ -58,117 +65,137 @@ export const ChapterInfoForm = observer(
         file,
         value,
         onChange,
-        diagnostics = NO_DIAGNOSTICS,
+        diagnostics = noDiagnosticsOf,
         disabled,
+        parents,
     }: TChapterInfoFormProps) => {
         const structure = useStructureContext();
-        const set = <K extends keyof TChapterInfoValue>(
-            key: K,
-            next: TChapterInfoValue[K] | undefined
-        ) => {
-            if (next !== undefined) onChange({ ...value, [key]: next });
-        };
-        const setDataType = (
-            dataType: TDataTypeDto,
-            renames: Record<string, string>
-        ) =>
-            onChange({
-                ...value,
-                dataType,
-                init: dataType.fields
-                    ? migrateInit(
-                          value.init,
-                          value.dataType?.fields ?? [],
-                          dataType.fields,
-                          renames,
-                          typeContextOf(structure)
-                      )
-                    : value.init,
-            });
+        // handlers read the latest props, so they stay stable and unchanged sections skip re-rendering
+        const latest = useRef({ value, onChange, structure });
+        latest.current = { value, onChange, structure };
+
+        const handlers = useMemo(() => {
+            const setter =
+                <K extends keyof TChapterInfoValue>(key: K) =>
+                (next: TChapterInfoValue[K] | undefined) => {
+                    const { value: current, onChange: change } = latest.current;
+                    if (next !== undefined) change({ ...current, [key]: next });
+                };
+            const setChildren = setter('children');
+            const setInit = setter('init');
+            return {
+                docComment: setter('docComment'),
+                location: setter('location'),
+                timeRange: setter('timeRange'),
+                children: (next: TValue[] = []) =>
+                    setChildren(toMaybeCode(next, isChildren)),
+                init: (next: TMaybeCode<TValueRecord> = {}) => setInit(next),
+                dataType: (
+                    dataType: TDataTypeDto,
+                    renames: Record<string, string>
+                ) => {
+                    const { value: current, onChange: change } = latest.current;
+                    change({
+                        ...current,
+                        dataType,
+                        init: dataType.fields
+                            ? migrateInit(
+                                  current.init,
+                                  current.dataType?.fields ?? [],
+                                  dataType.fields,
+                                  renames,
+                                  typeContextOf(latest.current.structure)
+                              )
+                            : current.init,
+                    });
+                },
+            };
+        }, []);
+
+        const rangeDiagnostics = diagnostics('timeRange');
+        const startDiagnostics = diagnostics('timeRange.start');
+        const endDiagnostics = diagnostics('timeRange.end');
+        const timeRangeDiagnostics = useMemo(
+            () => [...rangeDiagnostics, ...startDiagnostics, ...endDiagnostics],
+            [rangeDiagnostics, startDiagnostics, endDiagnostics]
+        );
+        const timeRangeEndHasError = useCallback(
+            (end: string) => diagnostics(`timeRange.${end}`).length > 0,
+            [diagnostics]
+        );
+        const childrenDiagnosticsOf = useMemo(
+            () => nestedDiagnostics(diagnostics, 'children'),
+            [diagnostics]
+        );
+        const initDiagnosticsOf = useMemo(
+            () => nestedDiagnostics(diagnostics, 'init'),
+            [diagnostics]
+        );
+        const childStructure = useMemo(
+            () => withoutRefOption(structure, CHAPTER_REF, chapterId),
+            [structure, chapterId]
+        );
         const fields = value.dataType?.fields;
 
         return (
-            <SForm>
-                <FormStringInput
-                    label={_('Title')}
-                    value={value.title}
-                    onChange={(next) => set('title', next)}
-                    diagnostics={diagnostics('title')}
+            <FormFields>
+                <DescriptionInput
+                    value={value.docComment ?? ''}
+                    onChange={handlers.docComment}
                     disabled={disabled}
-                    dataField="title"
+                    minRows={6}
                 />
-                <FormStringInput
-                    label={_('Description')}
-                    multiline
-                    value={value.description}
-                    onChange={(next) => set('description', next)}
-                    diagnostics={diagnostics('description')}
-                    disabled={disabled}
-                    dataField="description"
-                />
-                <FormTypeInput
-                    label={_('Location')}
+                <ChapterLocationField
                     value={value.location}
-                    onChange={(next) => set('location', next)}
-                    options={structure.refOptions('TLocation')}
+                    onChange={handlers.location}
                     diagnostics={diagnostics('location')}
                     disabled={disabled}
-                    dataField="location"
                 />
-                <TimeRangeInput
+                <FormMaybeCodeTimeRangeInput
+                    label={_('Time range')}
+                    helperText={_('day.month. hour:minute')}
                     value={value.timeRange}
-                    onChange={(next) => set('timeRange', next)}
-                    diagnostics={diagnostics}
+                    onChange={handlers.timeRange}
+                    endHasError={timeRangeEndHasError}
+                    diagnostics={timeRangeDiagnostics}
                     disabled={disabled}
+                    dataField="timeRange"
                 />
-                <StructureContext.Provider
-                    value={withoutRefOption(structure, CHAPTER_REF, chapterId)}
-                >
-                    <FormArrayInput
+                {parents}
+                <StructureContext.Provider value={childStructure}>
+                    <FormArrayEditor
                         label={_('Child chapters')}
                         itemType={CHILD_TYPE}
                         value={value.children}
-                        onChange={(next = []) =>
-                            set('children', toMaybeCode(next, isChildren))
-                        }
+                        onChange={handlers.children}
                         diagnostics={diagnostics('children')}
-                        diagnosticsOf={nestedDiagnostics(
-                            diagnostics,
-                            'children'
-                        )}
+                        diagnosticsOf={childrenDiagnosticsOf}
                         disabled={disabled}
                         dataField="children"
                     />
                 </StructureContext.Provider>
-                <FormObjectInput
+                <FormObjectEditor
                     label={_('Init')}
                     value={value.init}
-                    onChange={(next = {}) => set('init', next)}
+                    onChange={handlers.init}
                     fields={fields}
                     // without a known data type the keys are free, typed by their values
                     allowCustomFields={!fields}
                     diagnostics={diagnostics('init')}
-                    diagnosticsOf={nestedDiagnostics(diagnostics, 'init')}
+                    diagnosticsOf={initDiagnosticsOf}
                     disabled={disabled}
                     dataField="init"
                 />
-                <FormDataTypeInput
+                <DataTypeSection
                     value={value.dataType}
-                    onChange={setDataType}
+                    onChange={handlers.dataType}
                     newName={`T${capitalize(chapterId)}ChapterData`}
                     file={file}
                     diagnostics={diagnostics('dataType')}
                     disabled={disabled}
                     dataField="dataType"
                 />
-            </SForm>
+            </FormFields>
         );
     }
 );
-
-const SForm = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: ${spacingCss(1.5)};
-    min-width: 0;
-`;

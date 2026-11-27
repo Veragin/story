@@ -1,7 +1,8 @@
 import type { TChapterPassagesDto, TFunctionDto, TPassageDto, TPassageEdgeDto, TPassageType } from '@story/protocol';
+import { isPassageType } from '@story/shared';
 import { Node, type NoSubstitutionTemplateLiteral, type SourceFile, type StringLiteral, SyntaxKind } from 'ts-morph';
 import { version } from '../../events/version';
-import { propertyKey, stringProp, unwrap } from '../ast';
+import { propertyKey, readJsDoc, stringProp, unwrap } from '../ast';
 import type { SourceProject } from '../SourceProject';
 import {
     chapterCharacterFiles,
@@ -15,7 +16,7 @@ import {
 import { readFields, S, type TField } from '../values';
 
 const LINK = S.object({
-    text: S.string,
+    text: S.text,
     passageId: S.string,
     autoPriortiy: S.number,
     cost: S.linkCost,
@@ -24,41 +25,65 @@ const LINK = S.object({
 
 const BODY_ITEM = S.object({
     condition: S.fn('true'),
-    redirect: S.string,
-    text: S.string,
+    text: S.text,
     links: S.array(LINK),
+});
+
+const REDIRECT_ITEM = S.object({
+    condition: S.fn('true'),
+    redirect: S.string,
 });
 
 const EXECUTE: TField = { schema: S.fn(), after: ['id'] };
 
+const NEXT_PASSAGE: TField = { schema: S.string };
+
 export const PASSAGE_FIELDS: Record<TPassageType, Record<string, TField>> = {
+    start: {
+        execute: EXECUTE,
+        description: { schema: S.text },
+        nextPassageId: NEXT_PASSAGE,
+    },
     screen: {
         execute: EXECUTE,
-        title: { schema: S.string },
+        title: { schema: S.text },
         image: { schema: S.string },
         body: { schema: S.array(BODY_ITEM) },
     },
     linear: {
         execute: EXECUTE,
-        description: { schema: S.string },
-        nextPassageId: { schema: S.string },
+        title: { schema: S.text },
+        image: { schema: S.string },
+        body: { schema: S.text },
+        nextPassageId: NEXT_PASSAGE,
     },
-    transition: {
+    redirect: {
+        execute: EXECUTE,
+        body: { schema: S.array(REDIRECT_ITEM) },
+    },
+    finish: {
         execute: EXECUTE,
         nextPassageId: { schema: S.string },
     },
 };
 
 export const PASSAGE_OPTIONAL: Record<TPassageType, string[]> = {
+    start: ['execute', 'nextPassageId'],
     screen: ['execute'],
     linear: ['execute', 'nextPassageId'],
-    transition: ['execute'],
+    redirect: ['execute'],
+    finish: ['execute'],
 };
 
 export const passageType = (src: TPassageSource): TPassageType | undefined => {
     const t = stringProp(src.obj, 'type');
-    return t === 'screen' || t === 'linear' || t === 'transition' ? t : undefined;
+    return isPassageType(t) ? t : undefined;
 };
+
+export const passageDocNode = (src: TPassageSource): Node =>
+    Node.isFunctionDeclaration(src.fn)
+        ? src.fn
+        : (src.fn.getFirstAncestorByKind(SyntaxKind.VariableStatement) ?? src.fn);
 
 const passageOwner = (sp: SourceProject, sf: SourceFile) => {
     const m = /^data\/chapters\/([^/]+)\/([^/]+)\.passages\/[^/]+\.ts$/.exec(sp.root.rel(sf.getFilePath()));
@@ -70,6 +95,9 @@ export const passageIdOfFile = (sp: SourceProject, sf: SourceFile): string | und
     if (!owner) return undefined;
     return `${owner.chapterId}-${owner.characterId}-${passageLocalId(passageSource(sf), sf)}`;
 };
+
+const nextPassageOf = (fields: Record<string, unknown>) =>
+    fields.nextPassageId !== undefined ? { nextPassageId: fields.nextPassageId as never } : {};
 
 export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto => {
     const owner = passageOwner(sp, sf);
@@ -88,6 +116,7 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
         line: src.line,
         exportName: src.exportName,
         params: src.params,
+        docComment: readJsDoc(passageDocNode(src)) ?? '',
         ...(src.preamble.length > 0 ? { preamble: src.preamble.map((s) => s.getText()).join('\n') } : {}),
         ...(fields.execute !== undefined ? { execute: fields.execute as TFunctionDto } : {}),
     };
@@ -100,14 +129,25 @@ export const readPassageFile = (sp: SourceProject, sf: SourceFile): TPassageDto 
                 image: (fields.image ?? '') as never,
                 body: (fields.body ?? []) as never,
             };
-        case 'linear':
+        case 'start':
             return {
                 ...base,
                 type,
                 description: (fields.description ?? '') as never,
-                ...(fields.nextPassageId !== undefined ? { nextPassageId: fields.nextPassageId as never } : {}),
+                ...nextPassageOf(fields),
             };
-        case 'transition':
+        case 'linear':
+            return {
+                ...base,
+                type,
+                title: (fields.title ?? '') as never,
+                image: (fields.image ?? '') as never,
+                body: (fields.body ?? '') as never,
+                ...nextPassageOf(fields),
+            };
+        case 'redirect':
+            return { ...base, type, body: (fields.body ?? []) as never };
+        case 'finish':
             return { ...base, type, nextPassageId: (fields.nextPassageId ?? '') as never };
     }
 };

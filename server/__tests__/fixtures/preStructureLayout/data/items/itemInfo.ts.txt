@@ -5,17 +5,17 @@ void applyFormatting;
 
 export const itemInfo = {
     gold: {
-        name: 'Gold',
+        name: _('Gold'),
         type: 'value',
     },
     ...foodInfo,
     ...toolInfo,
     wood: {
-        name: 'Wood',
+        name: _('Wood'),
         type: 'resource',
     },
     bow: {
-        name: 'Bow',
+        name: _('Bow'),
         type: 'weapon',
         damage: 10,
         asd: { asd: 'asdas', time: false },

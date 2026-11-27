@@ -1,6 +1,6 @@
 import type { Camera, TPoint } from '../../canvas';
 import type { MapStore } from '../MapStore';
-import { computeTileIndex, isInsideMap, mapWorldBounds, minimapSize } from './utils';
+import { computeTileIndex, isInsideMap } from './utils';
 
 type THold = 'paint' | 'select' | 'minimap' | 'pan';
 
@@ -60,22 +60,11 @@ export class MouseListener {
     }
 
     private isOnMinimap(screen: TPoint) {
-        const map = this.mapStore.data;
-        if (!map || !this.mapStore.showMinimap) return false;
-        const size = this.viewSize();
-        const mini = minimapSize(size, map);
-        return screen.x < mini.width && screen.y > size.height - mini.height;
+        return this.mapStore.isOnMinimap(screen, this.viewSize());
     }
 
     private moveByMinimap(screen: TPoint) {
-        const map = this.mapStore.data;
-        if (!map) return;
-        const size = this.viewSize();
-        const mini = minimapSize(size, map);
-        const bounds = mapWorldBounds(map);
-        const fx = Math.min(1, Math.max(0, screen.x / mini.width));
-        const fy = Math.min(1, Math.max(0, (screen.y - (size.height - mini.height)) / mini.height));
-        this.camera.centerOn({ x: bounds.x + fx * bounds.width, y: bounds.y + fy * bounds.height }, size);
+        this.mapStore.moveByMinimap(screen, this.viewSize());
     }
 
     private onPointerDown = (e: PointerEvent) => {

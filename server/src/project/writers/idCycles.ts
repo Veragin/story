@@ -1,4 +1,4 @@
-import { refIdTypeName, refNameOfIdType, type TFieldDesc, type TStructureDto, type TTypeRef } from '@story/protocol';
+import { refIdTypeName, refNameAmong, type TFieldDesc, type TStructureDto, type TTypeRef } from '@story/protocol';
 import { HttpError } from '../../common/HttpError';
 import { syntaxDiagnostic } from '../validate';
 
@@ -28,10 +28,16 @@ const idEdge = (refName: string, g: TGraph): TEdge[] => {
     return source ? [{ to: source, via: refIdTypeName(refName), throughId: true }] : [];
 };
 
+const refNamesOf = ({ written, structure }: TGraph): string[] => [
+    written.name,
+    ...Object.keys(ID_SOURCES),
+    ...structure.types.map((type) => type.name),
+];
+
 const textEdges = (text: string, g: TGraph): TEdge[] =>
     [...new Set(text.match(TYPE_NAME_RE) ?? [])].flatMap((name) => {
-        const refName = refNameOfIdType(name);
-        if (refName) return idEdge(refName, g);
+        const refName = refNameAmong(name, refNamesOf(g));
+        if (refName !== undefined) return idEdge(refName, g);
         return isTypeName(name, g) ? [{ to: name, via: name, throughId: false }] : [];
     });
 
@@ -39,6 +45,8 @@ const refEdges = (ref: TTypeRef, g: TGraph): TEdge[] => {
     switch (ref.t) {
         case 'ref':
             return idEdge(ref.name, g);
+        case 'struct':
+            return [{ to: ref.name, via: ref.name, throughId: false }];
         case 'array':
             return refEdges(ref.of, g);
         case 'object':

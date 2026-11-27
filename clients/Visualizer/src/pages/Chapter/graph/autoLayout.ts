@@ -24,8 +24,7 @@ const rankNodes = (nodes: TLayoutNode[], edges: TLayoutEdge[]): Map<string, numb
     const bfs = (roots: string[]) => {
         const queue = roots.filter((r) => !rank.has(r));
         queue.forEach((r) => rank.set(r, 0));
-        while (queue.length > 0) {
-            const id = queue.shift() as string;
+        for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
             for (const next of out.get(id) ?? []) {
                 if (rank.has(next)) continue;
                 rank.set(next, (rank.get(id) ?? 0) + 1);

@@ -1,44 +1,54 @@
-import { styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { TLocationDto, TTypeRef } from '@story/protocol';
-import { FormArrayInput } from '../../components/inputs/form/FormArrayInput';
-import { FormStringInput } from '../../components/inputs/form/FormStringInput';
+import { FormArrayEditor } from '../../components/editors/FormArrayEditor';
+import { FormImageEditor } from '../../components/editors/FormImageEditor';
+import { FormMaybeCodeTextInput } from '../../components/code/FormMaybeCodeTextInput';
 import {
     StructureContext,
     withoutRefOption,
-} from '../../components/inputs/structureContext';
+} from '../../structure/structureContext';
+import { HintText } from '../../components/feedback/HintText';
 import { router } from '../../shell';
 import { LOCAL_CHARACTER_TYPE } from '../../typeRefs';
-import { DataTypeInput } from './DataTypeInput';
+import { DataTypeField } from './DataTypeField';
 import type { TEntityFieldsProps } from './entityFormProps';
 import { ENTITY_TYPE_NAMES } from './entityFields';
-import { InitInput } from './InitInput';
-import { UserFieldsInput } from './UserFieldsInput';
+import { InitField } from './InitField';
+import { UserFields } from './UserFields';
 
 const TYPES = ENTITY_TYPE_NAMES.locations;
 
-const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
+const LOCATION_REF: TTypeRef = { t: 'ref', name: 'Location' };
 
 export const LocationFields = observer(
     ({ store, structure, draft }: TEntityFieldsProps<TLocationDto>) => (
         <>
-            <FormStringInput
-                label="name"
+            <FormMaybeCodeTextInput
+                label={_('Name')}
                 value={draft.name}
                 onChange={(next) => store.setField('name', next)}
                 diagnostics={store.exactDiagnostics('name')}
                 dataField="name"
             />
-            <FormStringInput
-                label="description"
+            <FormMaybeCodeTextInput
+                label={_('Description')}
                 multiline
                 value={draft.description}
                 onChange={(next) => store.setField('description', next)}
                 diagnostics={store.exactDiagnostics('description')}
                 dataField="description"
             />
-            <FormArrayInput
-                label="localCharacters"
+            <FormImageEditor
+                label={_('Image')}
+                api={store.entities.api}
+                owner="locations"
+                id={draft.id}
+                value={draft.image}
+                onChange={(next) => store.setField('image', next)}
+                diagnostics={store.fieldDiagnostics('image')}
+            />
+            <FormArrayEditor
+                label={_('Local characters')}
                 itemType={LOCAL_CHARACTER_TYPE}
                 value={draft.localCharacters}
                 onChange={(next) =>
@@ -49,10 +59,10 @@ export const LocationFields = observer(
                 dataField="localCharacters"
             />
             <StructureContext.Provider
-                value={withoutRefOption(structure, 'TLocation', draft.id)}
+                value={withoutRefOption(structure, 'Location', draft.id)}
             >
-                <FormArrayInput
-                    label="sublocations"
+                <FormArrayEditor
+                    label={_('Sublocations')}
                     optional
                     itemType={LOCATION_REF}
                     value={draft.sublocations}
@@ -62,8 +72,8 @@ export const LocationFields = observer(
                     dataField="sublocations"
                 />
             </StructureContext.Provider>
-            <FormStringInput
-                label="mapId"
+            <FormMaybeCodeTextInput
+                label={_('Map id')}
                 optional
                 value={draft.mapId}
                 onChange={(next) => store.setField('mapId', next)}
@@ -71,37 +81,29 @@ export const LocationFields = observer(
                 diagnostics={store.exactDiagnostics('mapId')}
                 dataField="mapId"
             />
-            <UserFieldsInput
+            <UserFields
                 store={store}
                 structure={structure}
                 typeName={TYPES.entity}
                 values={draft.userFields}
             />
-            <InitInput
+            <InitField
                 store={store}
                 structure={structure}
                 baseType={TYPES.data}
                 dataType={draft.dataType}
                 value={draft.init}
             />
-            <DataTypeInput
+            <DataTypeField
                 store={store}
                 entity={draft}
                 dataType={draft.dataType}
                 suffix="Location"
             />
-            <SNote>
+            <HintText size="small">
                 {_('The location polygon is edited on the')}{' '}
                 <a href={router.href({ page: 'map' })}>{_('Map page')}</a>.
-            </SNote>
+            </HintText>
         </>
     )
 );
-
-const SNote = styled('div')`
-    font-size: 13px;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    & a {
-        color: ${({ theme }) => theme.palette.primary.main};
-    }
-`;

@@ -11,14 +11,13 @@ import {
     type TReferenceDto,
     type TSourceOwner,
 } from '@story/protocol';
-import { ApiError, displayText, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
-import type { TOption } from '../../components/inputs/inputTypes';
+import { ApiError, displayText, errorMessage, extractEdges, type ApiEvents, type TVisualizerApi } from '../../api';
+import type { TOption } from '../../structure/option';
 import { getUiState, setUiState } from '../../ui-state';
+import type { TSaveStatus } from '../../components/feedback/SaveStatus';
 import { BOX, GAP, placeMissing } from './graph/autoLayout';
 import { buildGraph, type TGraph } from './graph/buildGraph';
 import { PassageEditorStore } from './editor/PassageEditorStore';
-
-export type TSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 type TChapterGraphOptions = {
     chapterId: string;
@@ -86,7 +85,7 @@ export class ChapterGraphStore {
     rawEdges: TPassageEdgeDto[] = [];
     layout: TChapterLayoutDto | null = null;
     project: TProjectDto | null = null;
-    transitionOptions: TOption[] = [];
+    finishOptions: TOption[] = [];
 
     autoPositions: Record<string, TPoint> = {};
 
@@ -117,7 +116,7 @@ export class ChapterGraphStore {
             rawEdges: observable.ref,
             layout: observable.ref,
             project: observable.ref,
-            transitionOptions: observable.ref,
+            finishOptions: observable.ref,
             autoPositions: observable.ref,
             selectedId: observable,
             editor: observable.ref,
@@ -227,7 +226,7 @@ export class ChapterGraphStore {
         } catch (e) {
             runInAction(() => {
                 this.status = 'error';
-                this.loadError = e instanceof Error ? e.message : String(e);
+                this.loadError = errorMessage(e);
             });
         }
     }
@@ -318,10 +317,10 @@ export class ChapterGraphStore {
         this.editor?.destroy();
         this.editor = new PassageEditorStore(passage, this.api, (saved) => this.onPassageSaved(saved));
         setUiState(uiKeys.editor(this.chapterId), passageId);
-        if (passage.type === 'transition') void this.loadTransitionOptions(passage.characterId);
+        if (passage.type === 'finish') void this.loadFinishOptions(passage.characterId);
     }
 
-    async loadTransitionOptions(characterId: string): Promise<void> {
+    async loadFinishOptions(characterId: string): Promise<void> {
         const chapters = (this.project?.chapters ?? []).filter(
             (c) => c.id !== this.chapterId && c.characterIds.includes(characterId)
         );
@@ -334,7 +333,7 @@ export class ChapterGraphStore {
                 label: entry.name,
             }))
         );
-        runInAction(() => (this.transitionOptions = options));
+        runInAction(() => (this.finishOptions = options));
     }
 
     closeEditor() {
@@ -421,7 +420,7 @@ export class ChapterGraphStore {
             }
             runInAction(() => {
                 this.saveStatus = 'error';
-                this.saveError = e instanceof Error ? e.message : String(e);
+                this.saveError = errorMessage(e);
             });
         }
     }
@@ -465,9 +464,14 @@ export class ChapterGraphStore {
     }
 
     async createPassage(body: TCreatePassageBody): Promise<TPassageDto> {
+        const passage = await this.addPassage(body);
+        this.select(passage.passageId);
+        return passage;
+    }
+
+    async addPassage(body: TCreatePassageBody): Promise<TPassageDto> {
         const passage = await this.api.createPassage(this.chapterId, body);
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
-        this.select(passage.passageId);
         return passage;
     }
 
@@ -489,7 +493,7 @@ export class ChapterGraphStore {
         await Promise.all([this.refetchPassages(), this.refetchChapter()]);
     }
 
-    sourceTarget(passageId = this.selectedId): { owner: TSourceOwner; id: string } {
+    sourceTarget(passageId?: string): { owner: TSourceOwner; id: string } {
         return passageId ? { owner: 'passage', id: passageId } : { owner: 'chapter', id: this.chapterId };
     }
 

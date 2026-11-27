@@ -271,7 +271,7 @@ describe('MapPageStore — locations', () => {
         expect((await api.getEntity('locations', 'forest')).name).toBe('Dark forest');
         const saved = await api.getMap('global');
         expect(saved.locations.forest.polygon.length).toBe(6);
-        expect(saved.locations.forest.fill).toMatch(/^#[0-9a-f]{6}59$/i);
+        expect(saved.locations.forest.fill).toMatch(/^#[0-9a-f]{6}73$/i);
         expect(store.selectedLocationId).toBe('forest');
         expect(store.locations.has('forest')).toBe(true);
     });
@@ -348,6 +348,20 @@ describe('MapPageStore — locations', () => {
         });
     });
 
+    it('renames a location', async () => {
+        const { api, store } = await setup();
+        await store.renameLocation('village', 'Town');
+        expect(store.locationName('village')).toBe('Town');
+        expect((await api.getEntity('locations', 'village')).name).toBe('Town');
+    });
+
+    it('reports a failed rename as a notice', async () => {
+        const { api, store } = await setup();
+        vi.spyOn(api, 'updateEntity').mockRejectedValue(new Error('disk full'));
+        await store.renameLocation('village', 'Town');
+        expect(store.notice).toMatchObject({ kind: 'error', text: expect.stringContaining('disk full') });
+    });
+
     it('changes a location colour and polygon through the autosave', async () => {
         const { api, store } = await setup();
         store.setLocationColor('kingdom', '#336699');
@@ -364,7 +378,7 @@ describe('MapPageStore — locations', () => {
                 { x: 10, y: 0 },
                 { x: 10, y: 10 },
             ],
-            fill: '#33669959',
+            fill: '#33669973',
             stroke: '#336699',
         });
     });

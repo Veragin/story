@@ -239,6 +239,7 @@ describe('list and info', () => {
             public: true,
             password: 'new-password',
             hasLandingImage: true,
+            aiFeature: true,
         });
         expect(edited.status).toBe(200);
         expect(edited.body).toMatchObject({
@@ -248,6 +249,7 @@ describe('list and info', () => {
             author: 'Tester',
             version: '2',
             hasLandingImage: false,
+            aiFeature: false,
         });
         expect(await rootEntries()).toContain('alpha'); // the id never changes on rename
 
@@ -324,6 +326,7 @@ describe('email', () => {
             version: '1',
             hasLandingImage: false,
             email: 'me@example.com',
+            aiFeature: false,
         });
         for (const story of (await call('GET', '/api/stories', { cookie })).body) {
             expect(story).not.toHaveProperty('email');

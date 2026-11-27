@@ -1,7 +1,5 @@
-import { eventIds } from '@story/protocol';
 import { Node, type SourceFile, type VariableDeclaration } from 'ts-morph';
 import type { EventBus } from '../../events/EventBus';
-import { isHttpError } from '../../common/HttpError';
 import {
     ensureNamedImport,
     importedNames,
@@ -11,8 +9,9 @@ import {
     removeStatement,
 } from '../ast';
 import { itemContainers } from '../readers/entities';
-import { ITEM_INFO_FILE, LITERALS_FILE, readStructure } from '../readers/structure';
+import { ITEM_INFO_FILE, LITERALS_FILE } from '../readers/structure';
 import type { EditSession, SourceProject } from '../SourceProject';
+import { commitMigration, notMigratedMessage } from './migrationSession';
 
 export type TStructureLayoutStep = 'literals' | 'npcFile' | 'itemInfo';
 
@@ -194,18 +193,11 @@ export const migrateStructureLayout = async (sp: SourceProject, bus: EventBus): 
             s.rollback();
             return [];
         }
-        await s.commit(bus, () => ({
-            kind: 'structure',
-            id: eventIds.structure,
-            version: readStructure(sp).version,
-            op: 'updated',
-        }));
+        await commitMigration(sp, s, bus);
         return steps;
     } catch (e) {
         s.rollback();
-        const diagnostics = isHttpError(e) ? (e.body.diagnostics ?? []) : [];
-        const details = diagnostics.map((d) => `\n  ${d.file}:${d.line} ${d.message}`).join('');
-        log(`${sp.root.storyId} not migrated: ${e instanceof Error ? e.message : String(e)}${details}`);
+        log(notMigratedMessage(sp, e));
         return [];
     }
 };

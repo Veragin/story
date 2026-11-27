@@ -2,7 +2,7 @@ import type { TItemInfo } from './itemInfo';
 
 export const toolInfo = {
     axe: {
-        name: 'Axe',
+        name: _('Axe'),
         type: 'tool',
         dmg: 10,
     },

@@ -83,7 +83,7 @@ describe('two users on one story', () => {
         const form = (await formUser.get(P)).body;
         expect(source.version).toBe(form.version);
 
-        const text = source.text.replace(/title: '[^']*'/, "title: 'From source'");
+        const text = source.text.replace(/title: _\('[^']*'\)/, "title: _('From source')");
         expect(text).not.toBe(source.text);
         const bySource = await sourceUser.put(SRC, { version: source.version, text });
         expect(bySource.status).toBe(200);
@@ -105,7 +105,7 @@ describe('two users on one story', () => {
         expect(staleSource.status).toBe(409);
         expect(staleSource.body.error).toBe('stale');
         expect(staleSource.body.current.version).toBe(byForm.body.version);
-        expect(staleSource.body.current.text).toContain("title: 'From form'");
+        expect(staleSource.body.current.text).toContain("title: _('From form')");
         expect((await formUser.get(P)).body.title).toBe('From form');
     });
 });

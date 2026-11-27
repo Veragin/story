@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCreateBody, diffEditable, displayName, itemSourceForType, validateEntityId } from '../entityFields';
+import { buildCreateBody, diffEditable, itemSourceForType, validateEntityId } from '../entityFields';
 import type { TEntityDto } from '@story/protocol';
 
 describe('entityFields', () => {
@@ -27,10 +27,6 @@ describe('entityFields', () => {
             type: 'food',
             source: 'foodInfo',
         });
-    });
-
-    it('reads a translated name', () => {
-        expect(displayName({ code: "_('kingdom')" }, 'x')).toBe('kingdom');
     });
 
     it('diffs only editable fields', () => {

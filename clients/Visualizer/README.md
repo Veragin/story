@@ -6,29 +6,29 @@ The author's editor for the story: a map, a timeline of chapters and time trigge
 
 ```bash
 yarn dev                        # every service, including the server the client needs
-yarn dev:visualizer             # just the client, http://localhost:8101 (Vite)
-yarn dev:landing-page           # just the landing page (story list), http://localhost:8103 (Vite)
+yarn dev:visualizer             # just the client, http://localhost:8151 (Vite)
+yarn dev:landing-page           # just the landing page (story list), http://localhost:8153 (Vite)
 ```
 
 In docker: `make start` runs everything. Or run `make up` and then `make dev-server` plus `make dev-visualizer` (and `make dev-landing-page`). Running the server: [`docs/Server.md`](../../docs/Server.md#running-it).
 
-**Landing page** (`clients/LandingPage/`, http://localhost:8103): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SinglePlayer, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
+**Landing page** (`clients/LandingPage/`, http://localhost:8153): the list of stories, each with its author, a description toggle and the buttons **Edit** (name, author, description, public, a new password; the map size is read-only), **Open** (the Visualizer, `?story=<id>#/map`), **Play as single** (SinglePlayer, `?story=<id>`) and **Export** (the zip). **New story** and **Import** (a zip made by Export, with the same form as New story minus the map size) are at the top. Edit, Open and Export ask for the story's password unless this browser has unlocked it; Play asks only for a story that is not public. The prompt is `PasswordDialog` from `@story/ui`. Like the client, it calls the server through its own `/api` proxy, so the login cookie is shared with the other apps on the same host.
 
-Open a story from the landing page (http://localhost:8103): the client runs on http://localhost:8101/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8123/api/health` (or `localhost:8101/api/health` through the proxy) answers `{"ok":true,...}`.
+Open a story from the landing page (http://localhost:8153): the client runs on http://localhost:8151/?story=<id>. Without `?story=` it goes back to the landing page; with it, it asks for the story's password when this browser has no grant for it (and again when the 24 h grant expires; Cancel goes back to the story list). The client calls `/api/...` on its own origin, and Vite proxies that to the server. `curl localhost:8154/api/health` (or `localhost:8151/api/health` through the proxy) answers `{"ok":true,...}`.
 
 **Mock mode.** `VITE_VISUALIZER_API=mock yarn dev:visualizer` runs the client on an in-memory implementation of the API (`clients/Visualizer/src/api/mockApi.ts`, seed data in `mockData.ts`) with no server, no login and no `?story=` needed. Nothing is saved; this mode is for UI work.
 
 | Env var               | Where        | Default                 | Meaning                                                                                                               |
 | --------------------- | ------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `STORY_SERVER`        | client       | `http://localhost:8123` | Target of the Vite `/api` proxy.                                                                                      |
+| `STORY_SERVER`        | client       | `http://localhost:8154` | Target of the Vite `/api` proxy.                                                                                      |
 | `VITE_VISUALIZER_API` | client       | (real server)           | `mock` switches the client to the in-memory API.                                                                      |
-| `VITE_LANDING_URL`    | client       | this host, port 8103    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
-| `STORY_SERVER`        | landing page | `http://localhost:8123` | Target of the landing page's Vite `/api` proxy.                                                                       |
-| `VITE_VISUALIZER_URL` | landing page | this host, port 8101    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
-| `VITE_ENGINE_URL`     | landing page | this host, port 8100    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
-| `VITE_PLAYER_URL`     | client       | this host, port 8100    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
-| `STORY_SERVER`        | SinglePlayer | `http://localhost:8123` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
-| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8103    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
+| `VITE_LANDING_URL`    | client       | this host, port 8153    | Where the client goes without `?story=`, after a cancelled password prompt, and with "← Stories" (no trailing slash). |
+| `STORY_SERVER`        | landing page | `http://localhost:8154` | Target of the landing page's Vite `/api` proxy.                                                                       |
+| `VITE_VISUALIZER_URL` | landing page | this host, port 8151    | Where **Open** goes (no trailing slash): `<url>/?story=<id>#/map`.                                                    |
+| `VITE_ENGINE_URL`     | landing page | this host, port 8150    | Where **Play as single** goes (no trailing slash): `<url>/?story=<id>`.                                               |
+| `VITE_PLAYER_URL`     | client       | this host, port 8150    | Where the top bar's **Play** goes, in a new tab (no trailing slash): `<url>/?story=<id>`.                             |
+| `STORY_SERVER`        | SinglePlayer | `http://localhost:8154` | Target of SinglePlayer's Vite `/api` proxy (the play API).                                                            |
+| `VITE_LANDING_URL`    | SinglePlayer | this host, port 8153    | Where SinglePlayer goes without `?story=` or after a cancelled password prompt.                                       |
 
 The server's variables are in [`docs/Server.md`](../../docs/Server.md#environment); the production build variables in [`docs/README.md`](../../docs/README.md#production).
 
@@ -36,15 +36,16 @@ The server's variables are in [`docs/Server.md`](../../docs/Server.md#environmen
 
 ```
 clients/
-  Visualizer/  @story/visualizer-client    React + MobX, Vite on :8101
+  Visualizer/  @story/visualizer-client    React + MobX, Vite on :8151
     src/api/          typed client (httpApi), mockApi, ApiError, live events (events.ts), the story id (story.ts), login (auth.ts)
     src/canvas/       the Canvas library: Scene, Camera, shapes, selection / vertex / line controllers (#/_canvas playground)
     src/shell/        top bar, hash router, control-bar slot, modals, keyboard helper
     src/pages/        Map, Timeline, Chapter, Entities, Structure
-    src/stores/       shared stores: StructureStore (literals, types), EntityStore (entity and catalog lists), DraftResource
+    src/stores/       shared stores: StructureStore (literals, classes, types), EntityStore (entity and catalog lists), DraftResource
     src/MapEditor/    the hex tile renderer (ported from mapMaker), used by the Map page
-    src/components/   inputs/ (the value inputs and their form/ variants), Notices, FormHeader, SourceEditorDialog (CodeMirror 6)
-  LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8103
+    src/components/   shared UI: inputs/ (pure controls), form/ (labeled fields), code/ (code-aware wrappers, SourceEditorDialog), editors/, buttons/, dialog/, feedback/, layout/
+    src/values/, src/structure/, src/hooks/  non-UI value logic, StructureContext, useRowList
+  LandingPage/ @story/visualizer-landing-page  the story list, React + MobX, Vite on :8153
     src/api.ts        typed client over GLOBAL_ROUTES (+ a story's /info)
     src/StoriesStore.ts  the list, the unlocked flags, requireUnlocked → the password prompt
     src/*Dialog.tsx, StoryList / StoryCard / ImportStoryButton  the UI
@@ -70,9 +71,9 @@ Tests: `yarn test` at the root runs the `visualizer-client` and `visualizer-land
     - create passage: `<ch>/<character>.passages/<local>.ts` (`export const <local>Passage`), plus the `T<Ch><Char>PassageId` union and the `Record` in `<ch>.passages.ts`
     - add character to chapter: the `<character>.passages/` folder with a start passage (default `intro`) and its id union; remove character is the reverse, including its positions in `<ch>.layout.json`
     - create entity: the entity file, `register.ts` and `TWorldState.ts`
-    - delete a passage or an entity: its image (the sibling `.png`) goes too
+    - delete a passage or an entity: its image (the sibling `.webp` and `.png`) goes too
     - delete is the reverse of create, refused with `409 referenced` (with file, line and text of each reference) while anything still points at the id, including references that would only show up as type errors. Deleting an entity or a catalog entry clears the values that point at it instead (optional key removed, array element removed, required field set to the first remaining id) and is refused only by code references or a required field with no id left; `GET …/references` previews it
-    - create type: `types/<Name>.ts` and its line in `types/index.ts`; a catalog type also `data/catalogs/<plural>.ts` and `T<Name>Id`. Editing a type rewrites its instances in the same commit (renames, removed keys, defaults for new required fields)
+    - create class or type: `types/<Name>.ts` and its line in `types/index.ts`; a class also `data/catalogs/<plural>.ts` and `T<Name>Id`; a private type or literal goes non-exported into its class's file. Editing a class or type rewrites its instances (for a type, its nested `struct` values) in the same commit (renames, removed keys, defaults for new required fields)
 - **JSON stores** (`json/`): `data/locations/map.json` and the layouts `data/chapters/timeline.layout.json` and `data/chapters/<ch>/<ch>.layout.json`. They are validated whole-document replaces (400 on a bad shape). A missing file reads as the default with `version: ''` (for the map: an empty map of the story's `mapSize`), and a `PUT` with `version: ''` creates it.
 
 ### `map.json`
@@ -104,15 +105,17 @@ Painting a tile is a one-line diff. Colour ids may not contain whitespace or `*`
 
 ## Images
 
-The image of a passage, character or npc is the `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`). The `image` field of a screen passage (and the optional one of a character or npc) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
+The image of a passage, character, npc or location is the `.webp` or `.png` next to its `.ts` file, with the same basename (`data/chapters/kingdom/annie.passages/palace.ts` → `…/palace.webp` or `…/palace.png`, `data/npcs/Franta.ts` → `data/npcs/Franta.png`, `data/locations/village.location.ts` → `data/locations/village.location.png`); `.webp` wins when both exist. The `image` field of a screen passage (and the optional one of a character, npc or location) is only a text description of it. `server/src/project/images.ts` finds the owner's file like every other route does, so the image follows the file's name.
 
-- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs`) answers `TImageDto`: the `.png` path, its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
+- `GET /api/stories/:storyId/images/:owner/:id` (`owner`: `passages | characters | npcs | locations | story`) answers `TImageDto`: the image's path (the `.png` one when there is none), its content hash as `version` (`''` when there is none) and a cache-busted `url` (`/api/stories/:storyId/images/:owner/:id/png?v=<version>`) or `null`.
 - `GET …/images/:owner/:id/png` serves the bytes with an `ETag` (`304` on `If-None-Match`).
-- `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG, at most 10 MB) creates or replaces it; `version: ''` means "there is none yet", a mismatch is `409 stale`. Only PNG is accepted (the signature is checked, nothing is converted).
+- `PUT …/images/:owner/:id` with `{ version, data }` (base64 PNG or WebP, at most 10 MB) creates or replaces it, removing the sibling in the other format; `version: ''` means "there is none yet", a mismatch is `409 stale`. The signature is checked and nothing is converted on the server; the editor converts a JPEG to WebP before uploading.
 
-In the client, `clients/Visualizer/src/components/inputs/ImageInput.tsx` shows the image and the upload button in the passage editor and in the character / npc forms. In mock mode uploads live in memory as `data:` URLs.
+In the client, `clients/Visualizer/src/components/editors/ImageEditor.tsx` shows the image and the upload button in the passage editor and in the character / npc / location forms. In mock mode uploads live in memory as `data:` URLs.
 
 The game finds the same files: the play manifest (`GET /api/stories/<id>/play`) lists every `.png` under `data/`, and `clients/SinglePlayer/src/images.ts` maps them to their play-file URLs, so there too a missing `.png` just means no picture.
+
+A passage can link another image instead of its own: `image: '@<path>'`, the path relative to the passage file (`'@intro.png'`, `'@../../kingdom/annie.passages/palace.png'`). The player resolves it in `passageImage` and shows nothing for a path with no `.png` under `data/`. In the passage editor, typing `@` in the description hints the story's images (from the play manifest) and the linked one is previewed instead of the upload button.
 
 ## Live refresh
 
@@ -145,5 +148,5 @@ The page never reloads because the story changed. `data/` is not in Vite's modul
     - Chapter view: automatic positions are only saved once a box is dragged. There is no reordering of body items or links, and `ChapterInfoForm` does not edit `triggerIds`.
     - Timeline: the wheel zooms time (continuous; there is no slider). Chapters and triggers whose time is code are not drawn (a hint counts them). A stale drag is discarded, not re-applied.
     - Keyboard shortcuts are off while a modal is open.
-    - Structure tab: a type or literal draft is not kept across a reload, and switching the selection drops it without asking.
-    - A catalog type cannot reach its own ids through its fields (`TRace.kin: TRaceId[]`): tsc would turn `TRaceId` into `any`, so the server refuses it.
+    - Structure tab: a class, type or literal draft is not kept across a reload, and switching the selection drops it without asking.
+    - A class cannot reach its own ids through its fields (`Race.kin: TRaceId[]`): tsc would turn `TRaceId` into `any`, so the server refuses it. A type cannot contain itself either (`type TA = { b: TA }`).

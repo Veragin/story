@@ -117,19 +117,18 @@ describe('Inventory', () => {
         expect(s.characters.thomas.inventory).toHaveLength(1);
     });
 
-    describe('known defect: addItem ignores its charId when the item is new', () => {
-        it('puts a brand-new item in the active character"s bag whoever was named', () => {
-            // Pins a known defect: a new item goes to the default character's bag; delete when fixed.
+    describe('addItem with a charId', () => {
+        it('puts a brand-new item in the named character"s bag', () => {
             const { s, e } = newSession();
 
             e.inventory.addItem({ id: 'axe' }, 'annie');
 
-            expect(e.inventory.getItemAmount('axe', 'annie')).toBe(0);
-            expect(e.inventory.getItemAmount('axe', 'thomas')).toBe(1);
-            expect(s.characters.thomas.inventory.map((i) => i.id)).toContain('axe');
+            expect(e.inventory.getItemAmount('axe', 'annie')).toBe(1);
+            expect(e.inventory.getItemAmount('axe', 'thomas')).toBe(0);
+            expect(s.characters.annie.inventory.map((i) => i.id)).toContain('axe');
         });
 
-        it('does stack correctly onto an item the named character already holds', () => {
+        it('stacks onto an item the named character already holds', () => {
             const { e } = newSession();
 
             e.inventory.addItem({ id: 'berries', amount: 5 }, 'annie');

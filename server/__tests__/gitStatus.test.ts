@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { LOG_FORMAT, parseLog, parsePorcelainStatus, parseRefs } from '../src/git/gitStatus';
+import {
+    BRANCH_FORMAT,
+    COMMIT_FORMAT,
+    parseBranches,
+    parseCommitLine,
+    parsePorcelainStatus,
+    parseRefs,
+} from '../src/git/gitStatus';
 
 const z = (...records: string[]) => records.join('\0') + '\0';
 
@@ -37,6 +44,7 @@ describe('parsePorcelainStatus', () => {
                 { path: 'data/both.ts', kind: 'modified' },
                 { path: 'data/untracked.ts', kind: 'added' },
             ],
+            renamedFrom: new Map([['data/new name.ts', 'data/old name.ts']]),
         });
     });
 
@@ -65,29 +73,46 @@ describe('parseRefs', () => {
     });
 });
 
-describe('parseLog', () => {
-    it('reads the records of LOG_FORMAT with their files', () => {
-        expect(LOG_FORMAT).toContain('%H');
+describe('parseCommitLine', () => {
+    it('reads a COMMIT_FORMAT line', () => {
+        expect(COMMIT_FORMAT).toContain('%H');
+        const output = `${'b'.repeat(40)}\x1fbbbbbbb\x1fAnn\x1f2026-01-02T03:04:05+01:00\x1fSecond: a, b\n`;
+        expect(parseCommitLine(output)).toEqual({
+            hash: 'b'.repeat(40),
+            shortHash: 'bbbbbbb',
+            author: 'Ann',
+            date: '2026-01-02T02:04:05.000Z',
+            subject: 'Second: a, b',
+        });
+        expect(parseCommitLine('')).toBeNull();
+    });
+});
+
+describe('parseBranches', () => {
+    const line = (ref: string, hash: string, date: string, subject = 'Subject') =>
+        `${ref}\x1f${hash.repeat(40)}\x1f${hash.repeat(7)}\x1fAnn\x1f${date}\x1f${subject}\n`;
+
+    it('merges a local branch with its origin twin, newest commit first, without origin/HEAD', () => {
+        expect(BRANCH_FORMAT).toContain('%(refname)');
         const output =
-            `\x1e${'b'.repeat(40)}\x1fbbbbbbb\x1fAnn\x1f2026-01-02T03:04:05+01:00\x1fSecond: a, b\n\ndata/x.ts\ndata/y.ts\n` +
-            `\x1e${'c'.repeat(40)}\x1fccccccc\x1fBob\x1f2026-01-01T00:00:00+00:00\x1fFirst\n`;
-        expect(parseLog(output)).toEqual([
-            {
-                hash: 'b'.repeat(40),
-                shortHash: 'bbbbbbb',
-                author: 'Ann',
-                date: '2026-01-02T02:04:05.000Z',
-                subject: 'Second: a, b',
-                files: ['data/x.ts', 'data/y.ts'],
-            },
-            {
-                hash: 'c'.repeat(40),
-                shortHash: 'ccccccc',
-                author: 'Bob',
-                date: '2026-01-01T00:00:00.000Z',
-                subject: 'First',
-            },
+            line('refs/heads/main', 'a', '2026-01-01T00:00:00+00:00', 'Local main') +
+            line('refs/heads/draft', 'b', '2026-01-03T00:00:00+00:00') +
+            line('refs/remotes/origin/HEAD', 'c', '2026-01-02T00:00:00+00:00') +
+            line('refs/remotes/origin/main', 'c', '2026-01-02T00:00:00+00:00', 'Remote main') +
+            line('refs/remotes/origin/feat/x', 'd', '2026-01-02T00:00:00+00:00');
+        const branches = parseBranches(output, 'main');
+        expect(branches.map(({ name, current, local, remote }) => ({ name, current, local, remote }))).toEqual([
+            { name: 'draft', current: false, local: true, remote: false },
+            { name: 'feat/x', current: false, local: false, remote: true },
+            { name: 'main', current: true, local: true, remote: true },
         ]);
-        expect(parseLog('')).toEqual([]);
+        expect(branches[2].commit).toEqual({
+            hash: 'a'.repeat(40),
+            shortHash: 'aaaaaaa',
+            author: 'Ann',
+            date: '2026-01-01T00:00:00.000Z',
+            subject: 'Local main',
+        });
+        expect(parseBranches('', null)).toEqual([]);
     });
 });

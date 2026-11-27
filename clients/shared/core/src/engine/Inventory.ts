@@ -20,7 +20,7 @@ export class Inventory {
         const itemInInv = this.getItem(item.id, charId);
         if (!itemInInv) {
             const info = this.e.storyModule.itemInfo[item.id];
-            this.getInventory().push({ ...info, amount: 1, ...item } as TItem<TItemId>);
+            this.getInventory(charId).push({ ...info, amount: 1, ...item } as TItem<TItemId>);
         } else {
             itemInInv.amount += item.amount ?? 1;
         }

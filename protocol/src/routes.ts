@@ -7,6 +7,7 @@ import type {
     TRemoveChapterCharacterBody,
     TUpdateChapterBody,
 } from './dto/chapter';
+import type { TAiDto, TAiResumeDto, TAiSendMessageDto, TAiSessionDto } from './dto/ai';
 import type { TOkDto } from './dto/common';
 import type { TEngineSection, TEngineSectionDto, TUpdateEngineSectionBody } from './dto/engine';
 import type {
@@ -24,12 +25,13 @@ import type {
     TUpdateTimelineLayoutBody,
 } from './dto/layout';
 import type {
+    TDeleteGitBranchBody,
     TDeleteGitConfigBody,
+    TGitBranchDto,
     TGitCheckoutBody,
     TGitCommitBody,
     TGitCommitResultDto,
     TGitDto,
-    TGitLogEntryDto,
     TGitPullResultDto,
     TGitStatusDto,
     TSetupGitBody,
@@ -43,7 +45,14 @@ import type {
     TPassageDto,
     TUpdatePassageBody,
 } from './dto/passage';
-import type { TDeleteImageBody, TImageDto, TImageOwner, TUploadImageBody } from './dto/image';
+import type {
+    TDeleteImageBody,
+    TGenerateImageBody,
+    TGenerateImageResult,
+    TImageDto,
+    TImageOwner,
+    TUploadImageBody,
+} from './dto/image';
 import type { TPlayManifestDto } from './dto/play';
 import type { THealthDto, TProjectDto } from './dto/project';
 import type { TSourceDto, TSourceOwner, TUpdateSourceBody } from './dto/source';
@@ -170,6 +179,7 @@ export const STORY_ROUTES = {
     getImageFile: { method: 'GET', path: '/images/:owner/:id/png', access: 'read' },
     uploadImage: { method: 'PUT', path: '/images/:owner/:id', access: 'write' },
     deleteImage: { method: 'DELETE', path: '/images/:owner/:id', access: 'write' },
+    generateImage: { method: 'POST', path: '/images/:owner/:id/generate', access: 'write' },
 
     getPlayManifest: { method: 'GET', path: '/play', access: 'read' },
     getPlayFile: { method: 'GET', path: '/play/:file', access: 'read' },
@@ -190,9 +200,20 @@ export const STORY_ROUTES = {
     gitFetch: { method: 'POST', path: '/git/fetch', access: 'write' },
     gitCommit: { method: 'POST', path: '/git/commit', access: 'write' },
     gitPush: { method: 'POST', path: '/git/push', access: 'write' },
+    gitForcePush: { method: 'POST', path: '/git/push/force', access: 'write' },
     gitPull: { method: 'POST', path: '/git/pull', access: 'write' },
     gitCheckout: { method: 'POST', path: '/git/checkout', access: 'write' },
-    getGitLog: { method: 'GET', path: '/git/log', access: 'write' },
+    gitDiscard: { method: 'POST', path: '/git/discard', access: 'write' },
+    getGitBranches: { method: 'GET', path: '/git/branches', access: 'write' },
+    deleteGitBranch: { method: 'POST', path: '/git/branches/delete', access: 'write' },
+
+    getAi: { method: 'GET', path: '/ai', access: 'write' },
+    aiEvents: { method: 'GET', path: '/ai/events', access: 'write' },
+    sendAiMessage: { method: 'POST', path: '/ai/messages', access: 'write' },
+    interruptAi: { method: 'POST', path: '/ai/interrupt', access: 'write' },
+    listAiSessions: { method: 'GET', path: '/ai/sessions', access: 'write' },
+    resumeAi: { method: 'POST', path: '/ai/resume', access: 'write' },
+    clearAi: { method: 'POST', path: '/ai/clear', access: 'write' },
 } as const satisfies Record<string, TStoryRouteDef>;
 
 export const GLOBAL_ROUTES = {
@@ -390,6 +411,8 @@ export type TApiSpec = {
     uploadImage: { body: TUploadImageBody; response: TImageDto };
     /** Answers the image as it is now: none. Deleting a missing image (`version: ''`) changes nothing. */
     deleteImage: { body: TDeleteImageBody; response: TImageDto };
+    /** Generates the image from `prompt` with AI and stores it as WebP, like an upload; costs AI credits. */
+    generateImage: { body: TGenerateImageBody; response: TGenerateImageResult };
 
     getPlayManifest: { body: undefined; response: TPlayManifestDto };
     /**
@@ -416,16 +439,43 @@ export type TApiSpec = {
     deleteGitConfig: { body: TDeleteGitConfigBody; response: undefined };
     /** Refreshes `ahead` / `behind` and the remote branches. */
     gitFetch: { body: undefined; response: TGitStatusDto };
-    /** Stages everything; `409 git_nothing_to_commit` on a clean tree. A failed push keeps the commit. */
+    /** Stages everything, or only `paths`; `409 git_nothing_to_commit` on a clean tree. A failed push keeps the commit. */
     gitCommit: { body: TGitCommitBody; response: TGitCommitResultDto };
     /** `409 git_rejected` when the remote is ahead. */
     gitPush: { body: undefined; response: TGitStatusDto };
+    /** Overwrites the remote branch with the local one. */
+    gitForcePush: { body: undefined; response: TGitStatusDto };
     /** Fetch + merge; `409 git_dirty` with uncommitted changes, `409 git_conflict` (merge aborted) on a conflict. */
     gitPull: { body: undefined; response: TGitPullResultDto };
-    /** `409 git_dirty` with uncommitted changes. */
+    /** Switching (not creating) answers `409 git_dirty` with uncommitted changes. */
     gitCheckout: { body: TGitCheckoutBody; response: TGitStatusDto };
-    /** Newest first; query `TGitLogQuery`. */
-    getGitLog: { body: undefined; response: TGitLogEntryDto[] };
+    /** Drops every uncommitted change, untracked files included (ignored ones stay). */
+    gitDiscard: { body: undefined; response: TGitStatusDto };
+    /** Local and `origin` branches as of the last fetch, newest commit first. */
+    getGitBranches: { body: undefined; response: TGitBranchDto[] };
+    deleteGitBranch: { body: TDeleteGitBranchBody; response: TGitStatusDto };
+
+    /** `available: false` when the server cannot run agents. */
+    getAi: { body: undefined; response: TAiDto };
+    /**
+     * An SSE stream of `AI_SSE_EVENT` messages, not JSON: a `snapshot` first, then `TAiEvent`s. While a viewer
+     * holds it open, the story's agent runs; it starts only with `aiFeature`, credits and availability.
+     */
+    aiEvents: { body: undefined; response: never };
+    /**
+     * A prompt or a command (`/clear`, `/resume [n]`, `/cost`, `/help`); the answer arrives on `aiEvents`.
+     * `403 ai_disabled`, `402 ai_no_credits`, `409 ai_busy` while a turn runs, `503 ai_unavailable`,
+     * `429 too_many_requests` past `AI_MESSAGES_PER_MINUTE` messages of the story (commands count too).
+     */
+    sendAiMessage: { body: TAiSendMessageDto; response: TOkDto };
+    /** Stops the running turn; the agent keeps running. */
+    interruptAi: { body: undefined; response: TOkDto };
+    /** At most 10, most recently used first. */
+    listAiSessions: { body: undefined; response: TAiSessionDto[] };
+    /** Restarts the agent on that session and sends its transcript as a `snapshot`. */
+    resumeAi: { body: TAiResumeDto; response: TOkDto };
+    /** Restarts the agent on a fresh session. */
+    clearAi: { body: undefined; response: TOkDto };
 };
 
 export type TRouteBody<R extends TRouteName> = TApiSpec[R]['body'];
@@ -497,7 +547,16 @@ export const matchPath = (template: string, pathname: string): Record<string, st
 };
 
 /** Mutations without a body; still sent as `application/json`: the CSRF check wants it on every mutation. */
-export const BODYLESS_ROUTES: readonly TRouteName[] = ['logout', 'gitFetch', 'gitPush', 'gitPull'];
+export const BODYLESS_ROUTES: readonly TRouteName[] = [
+    'logout',
+    'gitFetch',
+    'gitPush',
+    'gitForcePush',
+    'gitPull',
+    'gitDiscard',
+    'interruptAi',
+    'clearAi',
+];
 
 /** `204 No Content`. */
 export const NO_CONTENT_ROUTES: readonly TRouteName[] = [

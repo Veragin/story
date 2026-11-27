@@ -1,32 +1,29 @@
-import { Alert, styled } from '@mui/material';
-import { playableCharacters } from '@story/core';
-import { spacingCss } from '@story/ui';
-import { useEngine } from '../context';
+import { styled } from '@mui/material';
+import type { TCharacterId } from '@story/types';
+import { Column, spacingCss } from '@story/ui';
 import { CharacterButton } from './CharacterButton';
 
-export const CharacterList = () => {
-    const e = useEngine();
-    const characters = playableCharacters(e.storyModule.register);
-
-    if (characters.length === 0) {
-        return (
-            <Alert severity="info">
-                {_('This story has no playable character yet.')}
-            </Alert>
-        );
-    }
-
-    return (
-        <SGrid>
-            {characters.map((id) => (
-                <CharacterButton key={id} characterId={id} />
-            ))}
-        </SGrid>
-    );
+type Props = {
+    characters: readonly TCharacterId[];
+    selectedId: TCharacterId;
+    onSelect: (id: TCharacterId) => void;
 };
 
-const SGrid = styled('div')`
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-    gap: ${spacingCss(2)};
+export const CharacterList = ({ characters, selectedId, onSelect }: Props) => (
+    <SList>
+        {characters.map((id) => (
+            <CharacterButton
+                key={id}
+                characterId={id}
+                isSelected={id === selectedId}
+                onSelect={onSelect}
+            />
+        ))}
+    </SList>
+);
+
+const SList = styled(Column)`
+    flex: 0 1 240px;
+    min-width: 180px;
+    gap: ${spacingCss(1)};
 `;

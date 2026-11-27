@@ -4,6 +4,7 @@ import { ApiError } from '../ApiError';
 import { AuthStore } from '../auth';
 import { ApiEvents, matchesFilter } from '../events';
 import { createHttpApi } from '../httpApi';
+import { AI_IMAGE_CREDITS } from '../mockAiApi';
 import { createMockApi, extractEdges } from '../mockApi';
 
 const ev = (e: Partial<TChangeEvent>): TChangeEvent => ({ kind: 'passage', id: 'a-b-c', version: 'v1', ...e });
@@ -421,16 +422,11 @@ describe('httpApi', () => {
 });
 
 describe('git over http and SSE', () => {
-    it('sends the log query, and reports story writes but not git calls', async () => {
+    it('reports story writes but not git calls', async () => {
         const fetch = vi.fn<typeof globalThis.fetch>(() => Promise.resolve(new Response('[]', { status: 200 })));
         const onStoryWrite = vi.fn();
         const api = createHttpApi({ storyId: 'example', fetch, onStoryWrite });
 
-        await api.getGitLog({ limit: 20, before: 'abc' });
-        expect(fetch).toHaveBeenLastCalledWith(
-            '/api/stories/example/git/log?limit=20&before=abc',
-            expect.objectContaining({ method: 'GET' })
-        );
         await api.gitPull();
         expect(fetch).toHaveBeenLastCalledWith(
             '/api/stories/example/git/pull',
@@ -500,6 +496,27 @@ describe('mockApi', () => {
         expect(seen[0]).toMatchObject({ kind: 'chapter', id: 'village' });
     });
 
+    it('returns and updates the doc comment of passages and chapters', async () => {
+        const api = createMockApi();
+        const chapter = await api.getChapter('wedding');
+        expect(chapter.docComment).toBe('');
+        const savedChapter = await api.updateChapter('wedding', {
+            version: chapter.version,
+            docComment: 'They marry.',
+        });
+        expect(savedChapter).toMatchObject({ docComment: 'They marry.', description: chapter.description });
+
+        const passage = await api.getPassage('village-thomas-forest');
+        expect(passage.docComment).toBe('');
+        let saved = await api.updatePassage(passage.passageId, { version: passage.version, docComment: 'Hunting.' });
+        expect(saved.docComment).toBe('Hunting.');
+        saved = await api.updatePassage(passage.passageId, { version: saved.version, title: 'Woods' });
+        expect(saved.docComment).toBe('Hunting.');
+
+        const created = await api.createPassage('village', { characterId: 'thomas', localId: 'lake', type: 'linear' });
+        expect(created.docComment).toBe('');
+    });
+
     it('adds and removes a chapter character, refusing while referenced', async () => {
         const api = createMockApi();
         let chapter = await api.addChapterCharacter('wedding', { characterId: 'thomas' });
@@ -565,6 +582,62 @@ describe('mockApi images', () => {
     });
 });
 
+describe('mockApi image generation', () => {
+    const generate = (api: ReturnType<typeof createMockApi>, prompt: string, version = '') =>
+        api.generateImage('characters', 'thomas', { prompt, version });
+
+    it('stores a WebP placeholder with a new version and charges AI_IMAGE_CREDITS', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        expect((await api.getAi()).imageGeneration).toBe(true);
+        const first = await generate(api, 'Thomas waving');
+        expect(first).toMatchObject({ file: 'data/characters/thomas.webp', credits: 10 - AI_IMAGE_CREDITS });
+        expect(first.url).toMatch(/^data:image\/webp;base64,UklGR/);
+        const { credits, ...stored } = first;
+        expect(await api.getImage('characters', 'thomas')).toEqual(stored);
+        expect(credits).toBe((await api.getAi()).credits);
+
+        const second = await generate(api, 'Thomas sitting', first.version);
+        expect(second.version).not.toBe(first.version);
+    });
+
+    it('refuses a stale version after charging, like the server', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        await generate(api, 'Thomas waving');
+        await expect(generate(api, 'Thomas again', '')).rejects.toMatchObject({ isStale: true });
+        expect((await api.getAi()).credits).toBe(10 - 2 * AI_IMAGE_CREDITS);
+    });
+
+    it('fails on the word fail, without a charge', async () => {
+        const api = createMockApi({ aiCredits: 10, aiStepMs: 0 });
+        await expect(generate(api, 'Please fail now')).rejects.toMatchObject({ code: 'ai_image_failed' });
+        expect((await api.getAi()).credits).toBe(10);
+    });
+
+    it('checks availability, credits, the owner and the prompt first', async () => {
+        const unavailable = createMockApi({ aiImageGeneration: false });
+        expect((await unavailable.getAi()).imageGeneration).toBe(false);
+        await expect(generate(unavailable, 'Thomas')).rejects.toMatchObject({ code: 'ai_unavailable' });
+        await expect(generate(createMockApi({ aiCredits: 0 }), 'Thomas')).rejects.toMatchObject({
+            code: 'ai_no_credits',
+        });
+        const api = createMockApi({ aiStepMs: 0 });
+        await expect(api.generateImage('story', 'landing', { prompt: 'A castle', version: '' })).rejects.toMatchObject({
+            code: 'bad_request',
+        });
+        await expect(generate(api, '  ')).rejects.toMatchObject({ code: 'bad_request' });
+        await expect(
+            api.generateImage('passages', 'village-thomas-intro', { prompt: '@forest.png', version: '' })
+        ).rejects.toMatchObject({ code: 'bad_request' });
+    });
+
+    it('refuses a second generation of the same owner while one runs', async () => {
+        const api = createMockApi({ aiStepMs: 20 });
+        const running = generate(api, 'Thomas waving');
+        await expect(generate(api, 'Thomas again')).rejects.toMatchObject({ code: 'ai_image_busy' });
+        await running;
+    });
+});
+
 describe('extractEdges', () => {
     it('finds passage ids inside code fields as conditional edges', () => {
         const edges = extractEdges([
@@ -576,6 +649,7 @@ describe('extractEdges', () => {
                 version: 'v',
                 file: 'f',
                 params: ['s'],
+                docComment: '',
                 type: 'screen',
                 title: 'X',
                 image: '',
@@ -583,5 +657,26 @@ describe('extractEdges', () => {
             },
         ]);
         expect(edges).toEqual([{ from: 'c-a-x', to: 'c-a-y', kind: 'link', conditional: true, resolved: false }]);
+    });
+
+    it('finds the targets of a redirect passage as redirect edges', () => {
+        const edges = extractEdges([
+            {
+                passageId: 'c-a-x',
+                chapterId: 'c',
+                characterId: 'a',
+                localId: 'x',
+                version: 'v',
+                file: 'f',
+                params: ['s'],
+                docComment: '',
+                type: 'redirect',
+                body: [{ condition: { code: 's.ok' }, redirect: 'c-a-y' }, { redirect: 'c-a-z' }],
+            },
+        ]);
+        expect(edges).toEqual([
+            { from: 'c-a-x', to: 'c-a-y', kind: 'redirect', conditional: true, resolved: false },
+            { from: 'c-a-x', to: 'c-a-z', kind: 'redirect', conditional: false, resolved: false },
+        ]);
     });
 });

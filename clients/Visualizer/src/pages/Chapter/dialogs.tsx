@@ -1,11 +1,14 @@
 import type { TReferenceDto } from '@story/protocol';
+import { errorMessage, type TVisualizerApi } from '../../api';
+import { entityStore, structureStore } from '../../context';
 import { modals } from '../../shell';
 import { ReferencedError, type ChapterGraphStore } from './ChapterGraphStore';
 import { AddCharacterDialog } from './AddCharacterDialog';
 import { AddPassageDialog } from './AddPassageDialog';
-import { PickCharacterDialog } from './PickCharacterDialog';
-import { ReferencesDialog } from './ReferencesDialog';
-import { errorText } from './dialogUtils';
+import { ReferencesDialog } from '../../components/dialog/ReferencesDialog';
+import { ChapterInfoDialog } from './ChapterInfoForm/ChapterInfoDialog';
+import { passageIdPrefix } from './dialogUtils';
+import type { TPassageCreator } from './editor/PassageEditor/types';
 
 const showReferences = (
     title: string,
@@ -21,10 +24,13 @@ const showReferences = (
         />
     ));
 
-export const openAddCharacter = (store: ChapterGraphStore) => {
+export const openAddCharacter = (
+    store: ChapterGraphStore,
+    onAdded?: (characterId: string) => void
+) => {
     void store.refetchProject();
     modals.open((close) => (
-        <AddCharacterDialog store={store} onClose={close} />
+        <AddCharacterDialog store={store} onClose={close} onAdded={onAdded} />
     ));
 };
 
@@ -53,31 +59,44 @@ export const confirmRemoveCharacter = async (
                 e.references
             );
         } else {
-            await modals.confirm({
-                title: _('Could not remove %s', summary.name),
-                message: errorText(e),
-            });
+            await modals.alert(
+                errorMessage(e),
+                _('Could not remove %s', summary.name)
+            );
         }
     }
 };
-
-export const openRemoveCharacter = (store: ChapterGraphStore) =>
-    modals.open((close) => (
-        <PickCharacterDialog
-            store={store}
-            onClose={close}
-            onPick={(id) => void confirmRemoveCharacter(store, id)}
-        />
-    ));
 
 export const openAddPassage = (store: ChapterGraphStore) =>
     modals.open((close) => (
         <AddPassageDialog
             store={store}
             onClose={close}
-            onAddCharacter={() => openAddCharacter(store)}
+            onAddCharacter={(onAdded) => openAddCharacter(store, onAdded)}
         />
     ));
+
+export const linkedPassageCreator = (
+    store: ChapterGraphStore,
+    characterId: string
+): TPassageCreator => {
+    const idPrefix = passageIdPrefix(store.chapterId, characterId);
+    return {
+        idPrefix,
+        create: async (localId) => {
+            try {
+                await store.addPassage({ characterId, localId, type: 'screen' });
+                return true;
+            } catch (e) {
+                await modals.alert(
+                    errorMessage(e),
+                    _('Could not create %s', idPrefix + localId)
+                );
+                return false;
+            }
+        },
+    };
+};
 
 export const confirmDeletePassage = async (
     store: ChapterGraphStore,
@@ -100,10 +119,21 @@ export const confirmDeletePassage = async (
                 e.references
             );
         } else {
-            await modals.confirm({
-                title: _('Could not delete %s', passageId),
-                message: errorText(e),
-            });
+            await modals.alert(
+                errorMessage(e),
+                _('Could not delete %s', passageId)
+            );
         }
     }
 };
+
+export const openChapterInfoDialog = (chapterId: string, api: TVisualizerApi) =>
+    modals.open((close) => (
+        <ChapterInfoDialog
+            chapterId={chapterId}
+            api={api}
+            structure={structureStore}
+            entities={entityStore}
+            onClose={close}
+        />
+    ));

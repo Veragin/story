@@ -1,34 +1,25 @@
-import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { TChangeEvent } from '@story/protocol';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventBus } from '../src/events/EventBus';
+import { migrateClassLayout } from '../src/project/migrations/classLayout';
 import { migrateStructureLayout } from '../src/project/migrations/structureLayout';
 import { EXAMPLE_STORY_ROOT, type ProjectRoot } from '../src/project/ProjectRoot';
 import { SourceProject } from '../src/project/SourceProject';
+import { CLASS_FILES, fixtureDir, fixtureFiles, toPreClassLayout, writeFixture } from './helpers/fixtures';
 import { login, requestJson, type TAny } from './helpers/http';
 import { changedFiles, snapshot, tscTemp } from './helpers/sourceHelpers';
 import { makeTempProject } from './helpers/storiesRoot';
 import { createTestApp } from './helpers/testApp';
 
-const FIXTURE_DIR = path.join(import.meta.dirname, 'fixtures', 'preStructureLayout');
+const FIXTURE_DIR = fixtureDir('preStructureLayout');
 const ADDED_BY_MIGRATION = ['types/literals.ts', 'types/TNpc.ts'];
-
-const fixtureFiles = async (dir = FIXTURE_DIR): Promise<string[]> => {
-    const out: string[] = [];
-    for (const e of await readdir(dir, { withFileTypes: true })) {
-        const full = path.join(dir, e.name);
-        if (e.isDirectory()) out.push(...(await fixtureFiles(full)));
-        else out.push(path.relative(FIXTURE_DIR, full).replace(/\.txt$/, ''));
-    }
-    return out.sort();
-};
 
 // the example story as it was before the structure layout: `TNpc` in `TCharacter.ts`, local `TItemInfo`s
 const toPreMigration = async (project: ProjectRoot) => {
-    for (const file of await fixtureFiles()) {
-        await writeFile(project.abs(file), await readFile(path.join(FIXTURE_DIR, `${file}.txt`), 'utf8'));
-    }
+    await toPreClassLayout(project);
+    await writeFixture(project, FIXTURE_DIR);
     for (const file of ADDED_BY_MIGRATION) await rm(project.abs(file));
 };
 
@@ -55,8 +46,8 @@ afterEach(async () => {
 });
 
 describe('structure layout migration', () => {
-    it('turns the pre-migration example into the committed one, type-checked, and then is a no-op', async () => {
-        expect((await tscTemp(project.root)).output).toBe('');
+    // the class layout migration runs next, so only both together give the committed example
+    it('with the class layout, turns the pre-migration example into the committed one, then is a no-op', async () => {
         const before = await snapshot(project.root);
 
         const first = await migrate(project);
@@ -64,11 +55,23 @@ describe('structure layout migration', () => {
         expect(first.events).toEqual([
             { kind: 'structure', id: 'structure', version: expect.any(String), op: 'updated' },
         ]);
+        const sp = new SourceProject(project);
+        await sp.sync();
+        expect(await migrateClassLayout(sp, new EventBus({ project }))).toEqual(['Character', 'Npc', 'Location']);
         const after = await snapshot(project.root);
         const changed = changedFiles(before, after);
-        expect(changed).toEqual([...(await fixtureFiles()), ...ADDED_BY_MIGRATION].sort());
+        const touched = [
+            ...(await fixtureFiles(FIXTURE_DIR)),
+            ...(await fixtureFiles(fixtureDir('preClassLayout'))),
+            ...ADDED_BY_MIGRATION,
+            ...CLASS_FILES,
+        ];
+        // created by the layout migration, moved to `types/Npc.ts` by the class one
+        const passing = 'types/TNpc.ts';
+        expect(changed).toEqual([...new Set(touched)].filter((file) => file !== passing).sort());
         for (const file of changed) {
-            expect(after.get(file), file).toBe(await readFile(path.join(EXAMPLE_STORY_ROOT, file), 'utf8'));
+            const committed = await readFile(path.join(EXAMPLE_STORY_ROOT, file), 'utf8').catch(() => undefined);
+            expect(after.get(file), file).toBe(committed);
         }
         expect((await tscTemp(project.root)).output).toBe('');
 
@@ -101,8 +104,8 @@ describe('structure layout migration', () => {
                 headers: { cookie },
             });
             expect(status).toBe(200);
-            const npc = body.types.find((t: TAny) => t.name === 'TNpc');
-            expect(npc).toMatchObject({ file: 'types/TNpc.ts', origin: 'extendable' });
+            const npc = body.types.find((t: TAny) => t.name === 'TNpcData');
+            expect(npc).toMatchObject({ file: 'types/Npc.ts', origin: 'extendable' });
             expect(body.types.find((t: TAny) => t.name === 'TItemInfo')).toMatchObject({
                 file: 'data/items/itemInfo.ts',
             });

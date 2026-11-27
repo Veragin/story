@@ -4,7 +4,7 @@ import { toolInfo } from './toolInfo';
 /** Every item of the story. Food lives in `foodInfo.ts`, tools in `toolInfo.ts`, the rest here. */
 export const itemInfo = {
     gold: {
-        name: 'Gold',
+        name: _('Gold'),
         type: 'value',
     },
     ...foodInfo,

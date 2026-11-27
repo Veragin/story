@@ -23,7 +23,7 @@ import {
     structureEvent,
     type TWriter,
 } from './common';
-import { assertStructName, parseLiteralValues, parseRenames } from './structureBody';
+import { assertStructName, parseLiteralValues, parseOwnerClass, parseRenames } from './structureBody';
 
 const LITERALS_MODULE = './literals';
 
@@ -59,8 +59,8 @@ const localLiteralsFile = (s: EditSession, file: string): SourceFile => {
     return s.edit(abs, file);
 };
 
-const insertLiteral = (sf: SourceFile, name: string, values: string[], afterImports: boolean) => {
-    const alias = { name, isExported: true, type: unionText(values) };
+const insertLiteral = (sf: SourceFile, name: string, values: string[], afterImports: boolean, isExported = true) => {
+    const alias = { name, isExported, type: unionText(values) };
     const imports = sf.getImportDeclarations();
     const last = imports[imports.length - 1];
     if (afterImports) sf.insertTypeAlias(last ? last.getChildIndex() + 1 : 0, alias);
@@ -70,12 +70,19 @@ const insertLiteral = (sf: SourceFile, name: string, values: string[], afterImpo
 export const createLiteral = ({ sp, bus }: TWriter, rawBody: TCreateLiteralBody) =>
     sp.run(async (): Promise<TLiteralDto> => {
         const body = asBody(rawBody);
-        const name = assertStructName(body.name, readStructure(sp));
+        const structure = readStructure(sp);
+        const name = assertStructName(body.name, structure, 'type');
         const values = parseLiteralValues(body.values);
         const file = optionalText(body, 'file');
+        if (body.owner !== undefined && file !== undefined) {
+            throw HttpError.badRequest('A private literal is declared in its class\'s file; omit "file"');
+        }
+        const privateFile = body.owner === undefined ? undefined : parseOwnerClass(sp, body.owner, structure).file;
         const s = sp.session();
         s.apply(() => {
-            if (file === undefined || file === LITERALS_FILE) {
+            if (privateFile !== undefined) {
+                insertLiteral(s.edit(sp.root.abs(privateFile)), name, values, true, false);
+            } else if (file === undefined || file === LITERALS_FILE) {
                 const sf = globalLiteralsFile(s);
                 removeEmptyExports(sf);
                 insertLiteral(sf, name, values, false);

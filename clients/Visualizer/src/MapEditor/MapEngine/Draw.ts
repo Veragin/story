@@ -116,7 +116,7 @@ export class Draw {
         this.drawHighlights(ctx, map);
         ctx.restore();
 
-        if (this.mapStore.interactive && this.mapStore.showMinimap) this.renderMinimap(ctx, map);
+        if (this.mapStore.showMinimap) this.renderMinimap(ctx, map);
     };
 
     visibleRange = (map: Pick<TMapDocument, 'width' | 'height'>) => {

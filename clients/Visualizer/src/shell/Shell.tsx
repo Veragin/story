@@ -1,19 +1,21 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { CircularProgress, styled } from '@mui/material';
-import { Column } from '@story/ui';
+import { styled } from '@mui/material';
+import { Column, Row } from '@story/ui';
 import { observer } from 'mobx-react-lite';
 import { router, TRoute } from './router';
 import { TopBar } from './TopBar';
 import { ModalHost } from './ModalHost';
 import { LoginPrompt } from './LoginPrompt';
+import { LoadingState } from '../components/feedback/LoadingState';
 import { MapPage } from '../pages/Map';
 import { TimelinePage } from '../pages/Timeline';
 import { ChapterPage } from '../pages/Chapter/ChapterPage';
 import { EntitiesPage } from '../pages/Entities';
 import { StructurePage } from '../pages/Structure/StructurePage';
 import { StorySettingsPage } from '../pages/Settings/StorySettingsPage';
-import { StructureContext } from '../components/inputs/structureContext';
-import { structureStore } from '../context';
+import { StructureContext } from '../structure/structureContext';
+import { aiStore, structureStore } from '../context';
+import { AiSidebar } from '../ai/AiSidebar';
 
 // CodeMirror stays out of the main bundle until the tab opens
 const EnginePage = lazy(async () => ({
@@ -26,8 +28,7 @@ const CanvasPlayground = lazy(async () => ({
         .CanvasPlayground,
 }));
 const InputsPlayground = lazy(async () => ({
-    default: (await import('../components/inputs/playground/InputsPlayground'))
-        .InputsPlayground,
+    default: (await import('../dev/InputsPlayground')).InputsPlayground,
 }));
 
 const renderPage = (route: TRoute) => {
@@ -70,11 +71,14 @@ export const Shell = observer(() => {
         <SRoot>
             <TopBar />
             <StructureContext.Provider value={structureStore}>
-                <SPage>
-                    <Suspense fallback={<CircularProgress />}>
-                        {renderPage(router.route)}
-                    </Suspense>
-                </SPage>
+                <SMain>
+                    {aiStore.visible && <AiSidebar store={aiStore} />}
+                    <SPage>
+                        <Suspense fallback={<LoadingState />}>
+                            {renderPage(router.route)}
+                        </Suspense>
+                    </SPage>
+                </SMain>
                 <ModalHost />
             </StructureContext.Provider>
             <LoginPrompt />
@@ -89,8 +93,14 @@ const SRoot = styled(Column)`
     background-color: #000;
 `;
 
+const SMain = styled(Row)`
+    flex: 1;
+    min-height: 0;
+`;
+
 const SPage = styled(Column)`
     flex: 1;
+    min-width: 0;
     min-height: 0;
     position: relative;
     overflow: hidden;

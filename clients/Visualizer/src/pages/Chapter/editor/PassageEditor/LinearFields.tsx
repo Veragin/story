@@ -1,8 +1,9 @@
 import { observer } from 'mobx-react-lite';
 import type { TLinearPassageDto } from '@story/protocol';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
 import { ExecuteField } from './ExecuteField';
+import { IllustrationFields } from './IllustrationFields';
+import { NextPassageField } from './NextPassageField';
 import type { TFieldsProps } from './types';
 
 export const LinearFields = observer(
@@ -11,43 +12,37 @@ export const LinearFields = observer(
         edit,
         diag,
         passageOptions,
+        api,
         preamble,
     }: TFieldsProps<TLinearPassageDto>) => (
         <>
+            <IllustrationFields
+                draft={draft}
+                edit={edit}
+                diag={diag}
+                api={api}
+            />
             <ExecuteField
                 draft={draft}
                 edit={edit}
                 diag={diag}
                 preamble={preamble}
             />
-            <FormStringInput
-                label={_('Description')}
+            <FormMaybeCodeTextInput
+                label={_('Body')}
                 multiline
-                value={draft.description}
+                value={draft.body}
                 onChange={(v) =>
-                    edit(
-                        (d) => d.type === 'linear' && (d.description = v ?? '')
-                    )
+                    edit((d) => d.type === 'linear' && (d.body = v ?? ''))
                 }
-                diagnostics={diag('description')}
-                dataField="description"
+                diagnostics={diag('body')}
+                dataField="body"
             />
-            <FormTypeInput
-                label={_('Next passage')}
-                value={draft.nextPassageId}
-                onChange={(v) =>
-                    edit(
-                        (d) =>
-                            d.type === 'linear' &&
-                            v !== undefined &&
-                            (d.nextPassageId = v)
-                    )
-                }
-                options={passageOptions}
-                // can be added but not removed again
-                optional={draft.nextPassageId === undefined}
-                diagnostics={diag('nextPassageId')}
-                dataField="nextPassageId"
+            <NextPassageField
+                draft={draft}
+                edit={edit}
+                diag={diag}
+                passageOptions={passageOptions}
             />
         </>
     )

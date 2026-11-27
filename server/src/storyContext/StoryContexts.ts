@@ -3,7 +3,7 @@ import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import type { FSWatcher } from 'chokidar';
 import { EventBus } from '../events/EventBus';
 import { startWatcher } from '../events/watcher';
-import { migrateStructureLayout } from '../project/migrations/structureLayout';
+import { migrateStory } from '../project/migrations/migrateStory';
 import { ProjectRoot } from '../project/ProjectRoot';
 import { SourceProject } from '../project/SourceProject';
 import { StoryFolders } from '../stories/StoryFolders';
@@ -162,7 +162,7 @@ export class StoryContexts implements OnApplicationShutdown {
         const bus = new EventBus({ project, batchMs: this.options.batchMs });
         loaded.bus = bus;
         const sp = SourceProject.for(project);
-        sp.onFirstRun(() => migrateStructureLayout(sp, bus));
+        sp.onFirstRun(() => migrateStory(sp, bus));
         if (this.options.watch) loaded.watcher = await startWatcher(bus);
         return { storyId, project, sp, bus, watching: () => loaded.watcher !== null };
     }
@@ -170,7 +170,7 @@ export class StoryContexts implements OnApplicationShutdown {
     // the same context, so open event streams keep their bus; SourceProject re-reads changed files by itself
     private async refresh(ctx: TServerContext, loaded: TLoaded): Promise<TServerContext> {
         await migrateStoryTsconfig(ctx.project.root);
-        ctx.sp.onFirstRun(() => migrateStructureLayout(ctx.sp, ctx.bus));
+        ctx.sp.onFirstRun(() => migrateStory(ctx.sp, ctx.bus));
         if (loaded.watcher) {
             await loaded.watcher.close();
             loaded.watcher = await startWatcher(ctx.bus);

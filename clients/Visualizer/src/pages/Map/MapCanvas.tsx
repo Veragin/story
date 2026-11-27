@@ -1,20 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
-import styled from '@emotion/styled';
+import { styled } from '@mui/material';
 import { Scene } from '../../canvas';
 import { modals } from '../../shell';
-import { Palette } from '../../MapEditor/components/Palette/Palette';
-import { EditWidget } from '../../MapEditor/components/EditWidget';
 import { LocationsLayer } from './LocationsLayer';
 import type { MapPageStore } from './MapPageStore';
+import { MinimapInteraction } from './MinimapInteraction';
 
-type Props = {
+type TProps = {
     store: MapPageStore;
     onOpenLocation: (locationId: string) => void;
 };
 
-export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
+export const MapCanvas = observer(({ store, onOpenLocation }: TProps) => {
     const stageRef = useRef<HTMLDivElement>(null);
     const tilesRef = useRef<HTMLCanvasElement>(null);
     const sceneRef = useRef<HTMLCanvasElement>(null);
@@ -35,6 +34,7 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         const layer = new LocationsLayer(scene, store, (id) =>
             openRef.current(id)
         );
+        const minimap = new MinimapInteraction(scene, store.tiles);
 
         const measure = () =>
             store.setViewport({
@@ -56,6 +56,7 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         return () => {
             offModal();
             observer?.disconnect();
+            minimap.destroy();
             layer.destroy();
             scene.destroy();
             detachTiles();
@@ -66,25 +67,19 @@ export const MapCanvas = observer(({ store, onOpenLocation }: Props) => {
         <SStage ref={stageRef}>
             <SCanvas ref={tilesRef} data-testid="map-tiles-canvas" />
             <SCanvas ref={sceneRef} data-testid="map-locations-canvas" />
-            {store.mode === 'tiles' && (
-                <>
-                    <Palette mapStore={store.tiles} />
-                    <EditWidget mapStore={store.tiles} />
-                </>
-            )}
         </SStage>
     );
 });
 
-const SStage = styled.div`
+const SStage = styled('div')`
     position: relative;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background-color: #000;
+    background-color: ${({ theme }) => theme.palette.common.black};
 `;
 
-const SCanvas = styled.canvas`
+const SCanvas = styled('canvas')`
     position: absolute;
     inset: 0;
     width: 100%;

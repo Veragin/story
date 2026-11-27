@@ -1,58 +1,6 @@
-resume ?=
 COMPOSE = docker compose -f docker/docker-compose.yml
-
-# Git author for commits made inside the container. Read from the host's git
-# config unless already set in the environment.
-GIT_USER_NAME ?= $(shell git config user.name)
-GIT_USER_EMAIL ?= $(shell git config user.email)
-
-define CLAUDE_CONFIG
-{"includeCoAuthoredBy":false}
-endef
-
-define TS_CLAUDE_LSP
-{"name":"village-lsp","version":"1.0.0","lspServers":{"typescript":{"command":"typescript-language-server","args":["--stdio"],"extensionToLanguage":{".ts":"typescript",".tsx":"typescriptreact",".js":"javascript",".jsx":"javascriptreact"}}}}
-endef
-
-AGENT_ENV_ARGS = \
-	-e CLAUDE_CODE_OAUTH_TOKEN=$(CLAUDE_CODE_OAUTH_TOKEN) \
-	-e CLAUDE_CODE_ENABLE_TELEMETRY=0 \
-	-e AUTHOR_EMAIL=$(AUTHOR_EMAIL) \
-	-e "GIT_USER_NAME=$(GIT_USER_NAME)" \
-	-e "GIT_USER_EMAIL=$(GIT_USER_EMAIL)"
-
-# Shared bootstrap: ensure local bins are on PATH and configure git author.
-define GIT_SETUP
-	export PATH="$$HOME/.local/bin:$$PATH" && \
-	if [ -f "$$HOME/.gitconfig-host" ]; then git config --global include.path "$$HOME/.gitconfig-host"; fi && \
-	if [ -n "$$GIT_USER_NAME" ]; then git config --global user.name "$$GIT_USER_NAME"; fi && \
-	if [ -n "$$GIT_USER_EMAIL" ]; then git config --global user.email "$$GIT_USER_EMAIL"; fi && \
-	if [ -z "$$GIT_USER_NAME" ] && [ -z "$$GIT_USER_EMAIL" ]; then \
-		printf "\033[0;33mWarning: Could not determine git author. Set user.name/user.email in git config on your host.\033[0m\n"; \
-	fi
-endef
-
-define CLAUDE_INIT
-	mkdir -p $$HOME/.claude/lsp-plugin/.claude-plugin && \
-	echo '"'"'$(CLAUDE_CONFIG)'"'"' > $$HOME/.claude/settings.json && \
-	echo '"'"'$(TS_CLAUDE_LSP)'"'"' > $$HOME/.claude/lsp-plugin/.claude-plugin/plugin.json && \
-	CJ="$$HOME/.claude.json"; [ -s "$$CJ" ] || echo "{}" > "$$CJ"; \
-	if command -v jq >/dev/null 2>&1; then \
-		VER=$$(claude --version 2>/dev/null | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -1); \
-		jq --arg v "$$VER" --arg pwd "$$PWD" '"'"'. + {hasCompletedOnboarding:true,theme:"dark",bypassPermissionsModeAccepted:true} + (if $$v=="" then {} else {lastOnboardingVersion:$$v} end) | .projects[$$pwd] = ((.projects[$$pwd] // {}) + {hasTrustDialogAccepted:true,hasCompletedProjectOnboarding:true})'"'"' "$$CJ" > "$$CJ.tmp" && mv "$$CJ.tmp" "$$CJ"; \
-	else \
-		echo '"'"'{"hasCompletedOnboarding":true,"theme":"dark","bypassPermissionsModeAccepted":true,"projects":{"/app":{"hasTrustDialogAccepted":true,"hasCompletedProjectOnboarding":true}}}'"'"' > "$$CJ"; \
-	fi && \
-	$(GIT_SETUP) && \
-	$(if $(COPILOT_VERSION),claude --version,claude --model opus --dangerously-skip-permissions --plugin-dir $$HOME/.claude/lsp-plugin$(if $(resume), --continue))
-endef
-
-define LAUNCH_CLAUDE
-	@$(COMPOSE) exec $(AGENT_ENV_ARGS) $(1) bash -c '$(CLAUDE_INIT)'
-endef
-
 # One `docker compose exec` into the dev container, at /app. Every dev target below is
-# this plus a yarn script, so they all share the container `make ai` is exec'd into.
+# this plus a yarn script, so they all share the container `make bash` is exec'd into.
 # Split in two because `docker compose exec` only accepts flags *before* the service name,
 # so `-d` cannot be appended to a variable that already ends in one.
 DEV_EXEC_FLAGS = -w /app
@@ -64,22 +12,22 @@ DEV_EXEC_DETACHED = $(COMPOSE) exec -d $(DEV_EXEC_FLAGS) story-template
 # `/app` is the bind mount, so this file is also readable straight from the host.
 DEV_LOG = .dev.log
 
-.PHONY: start up stop bash destroy ai build rebuild dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs
+.PHONY: start up stop bash destroy build dev dev-player dev-visualizer dev-server dev-landing-page dev-multi-engine logs prod-up prod-down prod-logs ai-image
 
-# The Phase 11 gate: brings up every service (8100 SinglePlayer, 8101 Visualizer client,
-# 8102 MultiEngine client, 8103 landing page, 8123 server). The server needs the mysql service; on
+# The Phase 11 gate: brings up every service (8150 SinglePlayer, 8151 Visualizer client,
+# 8152 MultiEngine client, 8153 landing page, 8154 server). The server needs the mysql service; on
 # start it seeds the example and demo stories' database rows when missing (server/scripts/dev.ts).
 # The container stays idle at PID 1 and `yarn dev` runs as a detached exec inside it, so a dev
 # server that dies cannot take `make ai` / `make bash` down with it.
-start: stop
+start: ai-setup-update stop
 	$(COMPOSE) up -d --build --remove-orphans
 	$(DEV_EXEC_DETACHED) bash -c 'yarn dev > $(DEV_LOG) 2>&1'
 	@echo ""
-	@echo "  Stories (landing)   http://localhost:8103  (start here: create, open, play, export)"
-	@echo "  SinglePlayer        http://localhost:8100"
-	@echo "  Visualizer client   http://localhost:8101"
-	@echo "  Server (NestJS)     http://localhost:8123  (/api/health, /api/stories …; needs MySQL)"
-	@echo "  MultiEngine client  http://localhost:8102"
+	@echo "  Stories (landing)   http://localhost:8153  (start here: create, open, play, export)"
+	@echo "  SinglePlayer        http://localhost:8150"
+	@echo "  Visualizer client   http://localhost:8151"
+	@echo "  Server (NestJS)     http://localhost:8154  (/api/health, /api/stories …; needs MySQL)"
+	@echo "  MultiEngine client  http://localhost:8152"
 	@echo ""
 	@echo "  logs: make logs     one service instead: make up, then make dev-player"
 
@@ -92,25 +40,11 @@ up:
 stop:
 	$(COMPOSE) down
 
-# Rebuild the image to pick up a newer claude CLI. `make up`/`make start` already pass
-# --build, but the `npm install -g @anthropic-ai/claude-code` layer is cached and would
-# keep whatever version was current when the image was first built, so this passes a fresh
-# CLAUDE_REBUILD value to invalidate it. Everything above that line in docker/Dockerfile.dev
-# (apt, playwright browsers) stays cached. Leaves the container up, without the dev servers.
-rebuild: stop
-	$(COMPOSE) build --pull --build-arg CLAUDE_REBUILD=$(shell date +%s) story-template
-	$(COMPOSE) up -d --remove-orphans
-	@$(DEV_EXEC) claude --version
-
 bash:
 	$(COMPOSE) exec -w /app story-template bash
 
 destroy:
 	$(COMPOSE) down -v
-
-ai:
-	@echo "Starting claude for React..."
-	$(call LAUNCH_CLAUDE,story-template)
 
 logs:
 	$(DEV_EXEC) tail -f $(DEV_LOG)
@@ -126,11 +60,11 @@ dev-player:
 dev-visualizer:
 	$(DEV_EXEC) yarn dev:visualizer
 
-# The NestJS server on :8123 (needs the mysql service). Every client proxies /api to it.
+# The NestJS server on :8154 (needs the mysql service). Every client proxies /api to it.
 dev-server:
 	$(DEV_EXEC) yarn dev:server
 
-# The landing page (story list) on :8103. Like the client, it proxies /api to the server.
+# The landing page (story list) on :8153. Like the client, it proxies /api to the server.
 dev-landing-page:
 	$(DEV_EXEC) yarn dev:landing-page
 
@@ -145,7 +79,12 @@ dev-multi-engine:
 # `prod-down` keeps the volumes (the stories, the database, Caddy's certificates).
 PROD_COMPOSE = docker compose -f docker/docker-compose.prod.yml
 
+# docker compose refuses a missing secret file; an empty ai_agents.json means the built-in defaults, an empty
+# gemini_token no image generation
 prod-up:
+	test -e docker/secrets/ai_agents.json || touch docker/secrets/ai_agents.json
+	test -e docker/secrets/gemini_token || touch docker/secrets/gemini_token
+	$(PROD_COMPOSE) --profile build build ai-image
 	SITE_ADDRESS=$(or $(SITE_ADDRESS),localhost) $(PROD_COMPOSE) up -d --build --remove-orphans
 	@echo ""
 	@echo "  https://$(or $(SITE_ADDRESS),localhost)/   (/visualizer/, /api/)"
@@ -156,3 +95,22 @@ prod-down:
 
 prod-logs:
 	$(PROD_COMPOSE) logs -f
+
+# The AI agent image (docker/Dockerfile.ai), `story-ai:latest`, which the launcher runs per story. Rebuild it
+# after engine changes (clients/shared) or agent config changes (server/ai/agent). Production builds it in
+# `prod-up` (the `ai-image` service of docker/docker-compose.prod.yml).
+AI_IMAGE = story-ai:latest
+
+ai-image:
+	docker build -f docker/Dockerfile.ai -t $(AI_IMAGE) .
+
+
+## ai-setup START
+# Shared Claude Code sandbox: https://github.com/Veragin/ai-setup (managed by its init.md)
+AI_SERVICE = story-template
+AI_PROJECT = story
+AI_SETUP_REPO ?= git@github.com:Veragin/ai-setup.git
+include .ai/setup/ai-setup.mk
+.ai/setup/ai-setup.mk:
+	git clone $(AI_SETUP_REPO) .ai/setup
+## ai-setup END

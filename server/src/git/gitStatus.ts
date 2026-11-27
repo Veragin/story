@@ -1,4 +1,4 @@
-import type { TGitChangeDto, TGitChangeKind, TGitLogEntryDto } from '@story/protocol';
+import type { TGitBranchDto, TGitChangeDto, TGitChangeKind, TGitCommitDto } from '@story/protocol';
 
 export type TPorcelainStatus = {
     oid: string | null;
@@ -7,6 +7,8 @@ export type TPorcelainStatus = {
     ahead: number;
     behind: number;
     changes: TGitChangeDto[];
+    /** A rename's new path → its original path. */
+    renamedFrom: Map<string, string>;
 };
 
 const REMOTE_PREFIX = 'refs/remotes/origin/';
@@ -40,7 +42,15 @@ const fieldsAfter = (record: string, count: number): [string[], string] => {
 
 // `git status --porcelain=v2 --branch -z`: a rename's original path is the next NUL-separated record
 export const parsePorcelainStatus = (output: string): TPorcelainStatus => {
-    const status: TPorcelainStatus = { oid: null, head: null, upstream: null, ahead: 0, behind: 0, changes: [] };
+    const status: TPorcelainStatus = {
+        oid: null,
+        head: null,
+        upstream: null,
+        ahead: 0,
+        behind: 0,
+        changes: [],
+        renamedFrom: new Map(),
+    };
     const records = output.split('\0');
     for (let k = 0; k < records.length; k++) {
         const record = records[k];
@@ -51,6 +61,7 @@ export const parsePorcelainStatus = (output: string): TPorcelainStatus => {
         } else if (record.startsWith('2 ')) {
             const [[, xy], path] = fieldsAfter(record, 9);
             k++;
+            status.renamedFrom.set(path, records[k]);
             status.changes.push({ path, kind: xy.includes('R') ? 'renamed' : changeKind(xy) });
         } else if (record.startsWith('u ')) {
             status.changes.push({ path: fieldsAfter(record, 10)[1], kind: 'modified' });
@@ -75,29 +86,50 @@ export const parseRefs = (output: string): TRefs => {
     return refs;
 };
 
-const RECORD = '\x1e';
 const FIELD = '\x1f';
 
-export const LOG_FORMAT = `--format=${RECORD}%H${FIELD}%h${FIELD}%an${FIELD}%aI${FIELD}%s`;
+// the fields of COMMIT_FORMAT and BRANCH_FORMAT, in order
+const parseCommit = ([hash, shortHash, author, date, subject]: string[]): TGitCommitDto => ({
+    hash,
+    shortHash,
+    subject: subject ?? '',
+    author: author ?? '',
+    date: date ? new Date(date).toISOString() : '',
+});
 
-// `git log <LOG_FORMAT> --name-only`: each record is the header line, then the changed paths
-export const parseLog = (output: string): TGitLogEntryDto[] =>
-    output
-        .split(RECORD)
-        .filter((record) => record.trim() !== '')
-        .map((record) => {
-            const [header, ...lines] = record.split('\n');
-            const [hash, shortHash, author, date, subject] = header.split(FIELD);
-            const files = lines.filter(Boolean);
-            return {
-                hash,
-                shortHash,
-                subject: subject ?? '',
-                author: author ?? '',
-                date: date ? new Date(date).toISOString() : '',
-                ...(files.length > 0 && { files }),
-            };
+export const COMMIT_FORMAT = `--format=%H${FIELD}%h${FIELD}%an${FIELD}%aI${FIELD}%s`;
+
+// `git log -1 <COMMIT_FORMAT>`: null when empty
+export const parseCommitLine = (output: string): TGitCommitDto | null => {
+    const line = output.trim();
+    return line === '' ? null : parseCommit(line.split(FIELD));
+};
+
+export const BRANCH_FORMAT = `--format=%(refname)${FIELD}%(objectname)${FIELD}%(objectname:short)${FIELD}%(authorname)${FIELD}%(authordate:iso-strict)${FIELD}%(contents:subject)`;
+
+const newestFirst = (a: TGitBranchDto, b: TGitBranchDto) =>
+    b.commit.date.localeCompare(a.commit.date) || a.name.localeCompare(b.name);
+
+// `git for-each-ref <BRANCH_FORMAT> refs/heads refs/remotes/origin`: a local branch shows its own tip
+export const parseBranches = (output: string, current: string | null): TGitBranchDto[] => {
+    const branches = new Map<string, TGitBranchDto>();
+    for (const line of output.split('\n').filter(Boolean)) {
+        const [ref, ...fields] = line.split(FIELD);
+        const commit = parseCommit(fields);
+        const local = ref.startsWith(LOCAL_PREFIX);
+        if (!local && (!ref.startsWith(REMOTE_PREFIX) || ref === `${REMOTE_PREFIX}HEAD`)) continue;
+        const name = ref.slice((local ? LOCAL_PREFIX : REMOTE_PREFIX).length);
+        const known = branches.get(name);
+        branches.set(name, {
+            name,
+            current: name === current,
+            local: local || (known?.local ?? false),
+            remote: !local || (known?.remote ?? false),
+            commit: local || !known ? commit : known.commit,
         });
+    }
+    return [...branches.values()].sort(newestFirst);
+};
 
 // `git diff --name-only -z`
 export const parsePathList = (output: string): string[] => output.split('\0').filter(Boolean);

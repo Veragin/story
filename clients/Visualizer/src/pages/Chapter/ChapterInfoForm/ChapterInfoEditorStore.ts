@@ -1,14 +1,17 @@
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import type { TChapterDto, TDiagnosticDto, TUpdateChapterBody } from '@story/protocol';
-import { ApiError, type TVisualizerApi } from '../../../api';
+import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
+import { NO_DIAGNOSTICS } from '../../../api/diagnostics';
+import type { IEditorSource } from '../../../components/layout/editorSource';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
-import { mapDiagnostics } from '../editor/diagnostics';
+import { mapDiagnostics, type TDiagnosticIndex } from '../editor/diagnostics';
 import { CHAPTER_INFO_FIELDS, chapterFieldPaths, chapterInfoOf, type TChapterInfoValue } from './chapterInfo';
 
 const draftKey = (chapterId: string) => `chapter-info-draft:${chapterId}`;
+const NO_DIAGNOSTIC_INDEX: TDiagnosticIndex = { byField: new Map(), unmapped: [] };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-export class ChapterInfoEditorStore {
+export class ChapterInfoEditorStore implements IEditorSource {
     chapter: TChapterDto | null = null;
     draft: TChapterInfoValue | null = null;
     saving = false;
@@ -21,7 +24,7 @@ export class ChapterInfoEditorStore {
         readonly chapterId: string,
         private readonly api: TVisualizerApi
     ) {
-        makeObservable(this, {
+        makeObservable<this, 'diagnosticIndex'>(this, {
             chapter: observable.ref,
             draft: observable.ref,
             saving: observable,
@@ -30,9 +33,13 @@ export class ChapterInfoEditorStore {
             conflict: observable.ref,
             patch: computed,
             dirty: computed,
-            setDraft: action,
+            stale: computed,
+            diagnosticIndex: computed,
+            setDraft: action.bound,
+            reset: action,
             reloadFromDisk: action,
             onExternal: action,
+            discard: action,
         });
     }
 
@@ -50,11 +57,18 @@ export class ChapterInfoEditorStore {
         return Object.keys(this.patch).length > 0;
     }
 
-    private get diagnosticIndex() {
+    get stale() {
+        return this.conflict;
+    }
+
+    // without diagnostics the draft is not read, so typing does not re-render the fields that ask
+    private get diagnosticIndex(): TDiagnosticIndex {
+        if (this.diagnostics.length === 0) return NO_DIAGNOSTIC_INDEX;
         return mapDiagnostics(this.diagnostics, chapterFieldPaths(this.draft));
     }
 
-    diagnosticsFor = (path: string) => this.diagnosticIndex.byField.get(path) ?? [];
+    diagnosticsFor = (path: string): readonly TDiagnosticDto[] =>
+        this.diagnosticIndex.byField.get(path) ?? NO_DIAGNOSTICS;
 
     get unmappedDiagnostics() {
         return this.diagnosticIndex.unmapped;
@@ -74,7 +88,7 @@ export class ChapterInfoEditorStore {
                 if (saved && saved.version !== chapter.version && this.dirty) this.conflict = { current: chapter };
             });
         } catch (e) {
-            runInAction(() => (this.error = e instanceof Error ? e.message : String(e)));
+            runInAction(() => (this.error = errorMessage(e)));
         }
     }
 
@@ -107,19 +121,24 @@ export class ChapterInfoEditorStore {
                 this.saving = false;
                 if (e instanceof ApiError && e.isStale) this.conflict = { current: (e.current as TChapterDto) ?? null };
                 else if (e instanceof ApiError && e.isInvalid) this.diagnostics = e.diagnostics;
-                else this.error = e instanceof Error ? e.message : String(e);
+                else this.error = errorMessage(e);
             });
             return false;
         }
     }
 
-    reloadFromDisk() {
-        const current = this.conflict?.current;
-        if (current) this.chapter = current;
+    reset() {
         if (this.chapter) this.draft = chapterInfoOf(this.chapter);
         this.conflict = null;
         this.diagnostics = [];
+        this.error = null;
         removeUiState(draftKey(this.chapterId));
+    }
+
+    reloadFromDisk() {
+        const current = this.conflict?.current;
+        if (current) this.chapter = current;
+        this.reset();
     }
 
     // untouched fields take the disk's value, so only the author's edits overwrite
@@ -156,6 +175,6 @@ export class ChapterInfoEditorStore {
     }
 
     discard() {
-        removeUiState(draftKey(this.chapterId));
+        this.reset();
     }
 }

@@ -50,7 +50,7 @@ const KNOWS_MAGIC: TFieldDesc[] = [field('knowsMagic', { t: 'boolean' })];
 
 const STRING: TTypeRef = { t: 'string' };
 
-const LOCATION_REF: TTypeRef = { t: 'ref', name: 'TLocation' };
+const LOCATION_REF: TTypeRef = { t: 'ref', name: 'Location' };
 
 const INVENTORY: TTypeRef = {
     t: 'array',
@@ -65,8 +65,14 @@ const extendableType = (name: string, file: string, fields: TFieldDesc[]) => ({
     file,
     exportName: name,
     name,
+    kind: 'type' as const,
     origin: 'extendable' as const,
     fields,
+});
+
+const extendableClass = (name: string, file: string, fields: TFieldDesc[]) => ({
+    ...extendableType(name, file, fields),
+    kind: 'class' as const,
 });
 
 const RACES_FILE = 'data/catalogs/races.ts';
@@ -74,7 +80,7 @@ const RACES_FILE = 'data/catalogs/races.ts';
 const raceEntry = (id: string, name: string, strength: number): TSeed<TCatalogEntryDto> => ({
     kind: 'catalog',
     catalog: 'races',
-    type: 'TRace',
+    type: 'Race',
     id,
     file: RACES_FILE,
     exportName: 'races',
@@ -94,7 +100,7 @@ const createMockStructure = (): TStructureDto => ({
         },
     ],
     types: [
-        extendableType('TCharacter', 'types/TCharacter.ts', [
+        extendableClass('Character', 'types/Character.ts', [
             locked('id', { t: 'code', code: 'Ch' }),
             locked('name', STRING),
             locked('description', STRING, true),
@@ -105,15 +111,16 @@ const createMockStructure = (): TStructureDto => ({
                 code: "Omit<TWorldState['characters'][Ch], 'inventory' | 'ref'> & TInitInventory",
             }),
         ]),
-        extendableType('TCharacterData', 'types/TCharacter.ts', [
+        extendableType('TCharacterData', 'types/Character.ts', [
             locked('location', LOCATION_REF, true),
             locked('health', { t: 'number' }),
             locked('inventory', INVENTORY),
         ]),
-        extendableType('TLocation', 'types/TLocation.ts', [
+        extendableClass('Location', 'types/Location.ts', [
             locked('id', { t: 'code', code: 'L' }),
             locked('name', STRING),
             locked('description', STRING),
+            locked('image', STRING, true),
             locked('localCharacters', {
                 t: 'array',
                 of: { t: 'object', fields: [field('name', STRING), field('description', STRING)] },
@@ -122,14 +129,14 @@ const createMockStructure = (): TStructureDto => ({
             locked('mapId', STRING, true),
             locked('init', { t: 'code', code: "Partial<TWorldState['locations'][L]>" }),
         ]),
-        extendableType('TNpc', 'types/TNpc.ts', [
+        extendableClass('Npc', 'types/Npc.ts', [
             locked('id', { t: 'code', code: 'Ch' }),
             locked('name', STRING),
             locked('description', STRING),
             locked('image', STRING, true),
             locked('init', { t: 'code', code: "Omit<TWorldState['npcs'][Ch], 'inventory' | 'ref'> & TInitInventory" }),
         ]),
-        extendableType('TNpcData', 'types/TNpc.ts', [
+        extendableType('TNpcData', 'types/Npc.ts', [
             locked('location', LOCATION_REF),
             locked('inventory', INVENTORY),
             locked('isDead', { t: 'boolean' }),
@@ -140,12 +147,22 @@ const createMockStructure = (): TStructureDto => ({
         ]),
         {
             version: 'mock',
-            file: 'types/TRace.ts',
-            exportName: 'TRace',
-            name: 'TRace',
+            file: 'types/Race.ts',
+            exportName: 'Race',
+            name: 'Race',
+            kind: 'class',
             origin: 'story',
             fields: [field('name', STRING), field('strength', { t: 'number' })],
             catalog: { name: 'races', file: RACES_FILE, idType: 'TRaceId' },
+        },
+        {
+            version: 'mock',
+            file: 'types/TStats.ts',
+            exportName: 'TStats',
+            name: 'TStats',
+            kind: 'type',
+            origin: 'story',
+            fields: [field('strength', { t: 'number' }), field('title', STRING, true)],
         },
     ],
     diagnostics: [],
@@ -157,6 +174,7 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'village',
             file: chapterFile('village'),
             exportName: 'villageChapter',
+            docComment: 'Thomas learns about the robbery at the noble house.',
             title: 'Village Chapter',
             description: 'A village chapter is happening',
             timeRange: { start: '2.1. 8:00', end: '5.1. 8:00' },
@@ -181,6 +199,7 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'kingdom',
             file: chapterFile('kingdom'),
             exportName: 'kingdomChapter',
+            docComment: '',
             title: 'Kingdom Chapter',
             description: 'A Kingdom chapter is happening',
             timeRange: { start: '2.1. 8:00', end: '5.1. 8:00' },
@@ -206,7 +225,8 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'wedding',
             file: chapterFile('wedding'),
             exportName: 'weddingChapter',
-            title: { code: "_('Wedding Chapter')" },
+            docComment: '',
+            title: 'Wedding Chapter',
             description: '',
             timeRange: { start: '5.1. 9:00', end: '6.1. 8:00' },
             location: 'kingdom',
@@ -227,6 +247,7 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('village', 'thomas', 'intro.ts'),
             exportName: 'introPassage',
             params: [],
+            docComment: 'Thomas wakes up on the forest path and decides where to go.',
             type: 'screen',
             title: 'Intro',
             image: 'Thomas, a young hunter in a brown tunic, standing on a misty forest path.',
@@ -253,6 +274,7 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('village', 'thomas', 'forest.ts'),
             exportName: 'forestPassage',
             params: ['s'],
+            docComment: '',
             execute: {
                 code: '() => {\n    if (s.characters.annie.health < 50) {\n        s.characters.annie.health += 50;\n    }\n}',
                 description: 'Annie gets healed when she is weak.',
@@ -280,10 +302,11 @@ export const createMockSeed = (): TMockSeed => ({
             chapterId: 'village',
             characterId: 'thomas',
             localId: 'cool',
-            file: passageFile('village', 'thomas', 'cool.transition.ts'),
+            file: passageFile('village', 'thomas', 'cool.finish.ts'),
             exportName: 'default',
             params: [],
-            type: 'transition',
+            docComment: '',
+            type: 'finish',
             nextPassageId: 'village-thomas-',
         },
         {
@@ -294,6 +317,7 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('kingdom', 'annie', 'intro.ts'),
             exportName: 'introPassage',
             params: ['s'],
+            docComment: '',
             type: 'screen',
             title: 'Intro',
             image: '',
@@ -320,6 +344,7 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('kingdom', 'annie', 'palace.ts'),
             exportName: 'palacePassage',
             params: [],
+            docComment: '',
             type: 'screen',
             title: 'Palace',
             image: '',
@@ -352,16 +377,17 @@ export const createMockSeed = (): TMockSeed => ({
             file: passageFile('kingdom', 'thomas', 'visit.screen.ts'),
             exportName: 'visitPassage',
             params: ['s', 'e'],
+            docComment: '',
             preamble: 'void s;\nvoid e;',
             type: 'screen',
-            title: { code: "_('visit')" },
+            title: 'visit',
             image: '',
             body: [
                 {
-                    text: { code: "_('')" },
+                    text: '',
                     links: [
                         {
-                            text: { code: "_('')" },
+                            text: '',
                             passageId: 'kingdom-thomas-visit',
                             cost: { seconds: 600 },
                         },
@@ -468,7 +494,7 @@ export const createMockSeed = (): TMockSeed => ({
             id: 'kingdom',
             file: 'data/locations/kingdom.location.ts',
             exportName: 'kingdomLocation',
-            name: { code: "_('kingdom')" },
+            name: 'kingdom',
             description: '',
             localCharacters: [],
             init: {},

@@ -1,9 +1,9 @@
-import { TNpc } from '@story/types';
+import type { Npc } from '@story/types';
 
-export const Franta: TNpc<'franta'> = {
+export const Franta: Npc<'franta'> = {
     id: 'franta',
-    name: 'Franta',
-    description: 'Franta is a very old',
+    name: _('Franta'),
+    description: _('Franta is a very old'),
 
     init: {
         inventory: [],

@@ -61,13 +61,13 @@ describe('GitSettingsForm', () => {
             'Set from the story email when that changes.'
         );
 
-        typeInto(input('remote url'), 'not a url');
+        typeInto(input('Remote URL'), 'not a url');
         await submit();
         expect(store.configured).toBe(false);
-        expect(input('remote url').getAttribute('aria-invalid')).toBe('true');
+        expect(input('Remote URL').getAttribute('aria-invalid')).toBe('true');
 
-        typeInto(input('remote url'), 'https://example.com/story.git');
-        typeInto(input('author email'), 'me@example.com');
+        typeInto(input('Remote URL'), 'https://example.com/story.git');
+        typeInto(input('Author email'), 'me@example.com');
         await submit();
 
         expect(store.config).toMatchObject({
@@ -83,10 +83,10 @@ describe('GitSettingsForm', () => {
             initial: 'push',
         });
         await mountAsync(<GitSettingsForm store={store} />);
-        expect(input('remote url').value).toBe('https://example.com/story.git');
-        expect(input('author email').value).toBe('example@story.local');
+        expect(input('Remote URL').value).toBe('https://example.com/story.git');
+        expect(input('Author email').value).toBe('example@story.local');
 
-        typeInto(input('author name'), 'Jane');
+        typeInto(input('Author name'), 'Jane');
         await press('Save git settings');
 
         expect(store.config).toMatchObject({

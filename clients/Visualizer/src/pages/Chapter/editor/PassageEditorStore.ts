@@ -1,13 +1,15 @@
 import { action, computed, makeObservable, observable, reaction, runInAction, toJS } from 'mobx';
 import type { TDiagnosticDto, TPassageDto, TPassageType, TUpdatePassageBody } from '@story/protocol';
-import { ApiError, type TVisualizerApi } from '../../../api';
+import { ApiError, errorMessage, type TVisualizerApi } from '../../../api';
 import { getUiState, removeUiState, setUiState } from '../../../ui-state';
 import { mapDiagnostics, passageFieldPaths, type TDiagnosticIndex } from './diagnostics';
 
 const EDITABLE_FIELDS: Record<TPassageType, readonly string[]> = {
-    screen: ['execute', 'title', 'image', 'body'],
-    linear: ['execute', 'description', 'nextPassageId'],
-    transition: ['execute', 'nextPassageId'],
+    start: ['docComment', 'execute', 'description', 'nextPassageId'],
+    screen: ['docComment', 'execute', 'title', 'image', 'body'],
+    linear: ['docComment', 'execute', 'title', 'image', 'body', 'nextPassageId'],
+    redirect: ['docComment', 'execute', 'body'],
+    finish: ['docComment', 'execute', 'nextPassageId'],
 };
 
 // current: null when the passage was deleted
@@ -144,7 +146,7 @@ export class PassageEditorStore {
                 } else if (e instanceof ApiError && e.isInvalid) {
                     this.diagnostics = e.diagnostics;
                 } else {
-                    this.error = e instanceof Error ? e.message : String(e);
+                    this.error = errorMessage(e);
                 }
             });
             return false;

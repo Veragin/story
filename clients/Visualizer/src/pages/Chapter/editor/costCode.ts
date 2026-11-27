@@ -9,22 +9,12 @@ import {
     type TValue,
     type TValueRecord,
 } from '@story/protocol';
-import { isString, parsePlainValue } from '../../../components/inputs/valueSource';
+import { parseDelta } from '../../../values/deltaTime';
+import { isString, parsePlainValue } from '../../../values/valueSource';
 
 export type TCostItem = { id: string; amount: number };
 
-export const DEFAULT_COST_TIME: TDeltaTimeDto = { seconds: 600 };
-
 const COST_KEYS: readonly string[] = ['time', 'items', 'tools'];
-
-const DELTA_RE = /^DeltaTime\.from(Min|S|Hour)\(\s*(\d+(?:\.\d+)?)\s*\)$/;
-
-export const parseDelta = (code: string): TDeltaTimeDto | undefined => {
-    const m = DELTA_RE.exec(code.trim());
-    if (!m) return undefined;
-    const factor = m[1] === 'Min' ? 60 : m[1] === 'Hour' ? 3600 : 1;
-    return { seconds: Number(m[2]) * factor };
-};
 
 export const isCostItem = (value: TValue): value is TCostItem => {
     if (!isValueRecord(value)) return false;

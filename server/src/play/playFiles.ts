@@ -13,6 +13,7 @@ const PLAY_CONTENT_TYPES = new Map([
     ['.ts', 'text/typescript; charset=utf-8'],
     ['.tsx', 'text/typescript; charset=utf-8'],
     ['.png', 'image/png'],
+    ['.webp', 'image/webp'],
 ]);
 
 const PLAY_SKIPPED_DIRS = ['node_modules', '__tests__'];

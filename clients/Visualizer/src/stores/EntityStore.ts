@@ -17,7 +17,7 @@ import {
     type TVersion,
 } from '@story/protocol';
 import { errorMessage, type ApiEvents, type TVisualizerApi } from '../api';
-import type { TOption } from '../components/inputs/inputTypes';
+import type { TOption } from '../structure/option';
 import { RefCountedSubscription } from './RefCountedSubscription';
 
 type TEntityStoreOptions = {

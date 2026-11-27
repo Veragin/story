@@ -1,17 +1,5 @@
 import { useState } from 'react';
-import {
-    Alert,
-    Button,
-    Checkbox,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControlLabel,
-    Stack,
-    TextField,
-    Typography,
-} from '@mui/material';
+import { Alert, styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     GIT_CHANGE_KINDS,
@@ -21,11 +9,18 @@ import {
 } from '@story/protocol';
 import { showToast } from '@story/ui';
 import { errorBodyMessage } from '../api';
+import { AppDialog } from '../components/dialog/AppDialog';
+import { DialogButtons } from '../components/dialog/DialogButtons';
+import { FormCheckbox } from '../components/form/FormCheckbox';
+import { FormSection } from '../components/form/FormSection';
+import { FormTextInput } from '../components/form/FormTextInput';
+import { GitChangeRow } from './GitChangeRow';
 import type { GitStore } from './GitStore';
 
 type TProps = {
     store: GitStore;
     onClose: () => void;
+    onCommitted: () => void;
 };
 
 const KIND_LABELS: Record<TGitChangeKind, () => string> = {
@@ -35,170 +30,159 @@ const KIND_LABELS: Record<TGitChangeKind, () => string> = {
     renamed: () => _('Renamed'),
 };
 
-export const GitCommitDialog = observer(({ store, onClose }: TProps) => {
-    const [message, setMessage] = useState('');
-    const [push, setPush] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [pushError, setPushError] = useState<TApiErrorBody | null>(null);
-
-    const changes = store.status?.changes ?? [];
-    const trimmed = message.trim();
-    const committed = pushError !== null;
-
-    const commit = async () => {
-        if (!trimmed || store.busy) return;
-        setError(null);
-        const result = await store.commit(trimmed, push);
-        if (!result.ok) {
-            setError(result.message);
-            return;
-        }
-        if (result.value.pushError) {
-            setPushError(result.value.pushError);
-            return;
-        }
-        showToast(
-            result.value.pushed ? _('Committed and pushed') : _('Committed'),
-            {
-                variant: 'success',
-            }
+export const GitCommitDialog = observer(
+    ({ store, onClose, onCommitted }: TProps) => {
+        const [message, setMessage] = useState('');
+        const [push, setPush] = useState(true);
+        const [error, setError] = useState<string | null>(null);
+        const [pushError, setPushError] = useState<TApiErrorBody | null>(null);
+        const [excluded, setExcluded] = useState<ReadonlySet<string>>(
+            new Set()
         );
-        onClose();
-    };
 
-    const pullThenPush = async () => {
-        setError(null);
-        const result = await store.pullThenPush();
-        if (!result.ok) {
-            setError(result.message);
-            return;
-        }
-        showToast(_('Pulled and pushed'), { variant: 'success' });
-        onClose();
-    };
+        const changes = store.status?.changes ?? [];
+        const selected = changes
+            .map((c) => c.path)
+            .filter((path) => !excluded.has(path));
+        const trimmed = message.trim();
+        const committed = pushError !== null;
+        const close = committed ? onCommitted : onClose;
 
-    return (
-        <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    void commit();
-                }}
+        const commit = async () => {
+            if (!trimmed || store.busy || selected.length === 0) return;
+            setError(null);
+            const result = await store.commit(trimmed, push, selected);
+            if (!result.ok) {
+                setError(result.message);
+                return;
+            }
+            if (result.value.pushError) {
+                setPushError(result.value.pushError);
+                return;
+            }
+            showToast(
+                result.value.pushed
+                    ? _('Committed and pushed')
+                    : _('Committed'),
+                {
+                    variant: 'success',
+                }
+            );
+            onCommitted();
+        };
+
+        const toggle = (path: string, checked: boolean) => {
+            setExcluded((prev) => {
+                const next = new Set(prev);
+                if (checked) next.delete(path);
+                else next.add(path);
+                return next;
+            });
+        };
+
+        const pullThenPush = async () => {
+            setError(null);
+            const result = await store.pullThenPush();
+            if (!result.ok) {
+                setError(result.message);
+                return;
+            }
+            showToast(_('Pulled and pushed'), { variant: 'success' });
+            onCommitted();
+        };
+
+        const actions = !committed ? (
+            <DialogButtons
+                submit
+                onClose={close}
+                label={push ? _('Commit & push') : _('Commit')}
+                disabled={store.busy || !trimmed || selected.length === 0}
+            />
+        ) : pushError.error === 'git_rejected' ? (
+            <DialogButtons
+                onClose={close}
+                cancelLabel={_('Close')}
+                onConfirm={() => void pullThenPush()}
+                label={_('Pull then push')}
+                disabled={store.busy}
+            />
+        ) : (
+            <DialogButtons closeOnly onClose={close} />
+        );
+
+        return (
+            <AppDialog
+                title={_('Commit & push')}
+                onClose={close}
+                onSubmit={commit}
+                error={error}
+                actions={actions}
             >
-                <DialogTitle>{_('Commit & push')}</DialogTitle>
-                <DialogContent>
-                    <Stack gap={2} sx={{ pt: 1 }}>
-                        {committed ? (
-                            <Alert
-                                severity="warning"
-                                sx={{ whiteSpace: 'pre-wrap' }}
-                            >
-                                {_(
-                                    'Committed locally, but the push failed: %s',
-                                    errorBodyMessage(pushError)
-                                )}
+                {committed ? (
+                    <SAlert severity="warning">
+                        {_(
+                            'Committed locally, but the push failed: %s',
+                            errorBodyMessage(pushError)
+                        )}
+                    </SAlert>
+                ) : (
+                    <>
+                        {changes.length === 0 && (
+                            <Alert severity="info">
+                                {_('There is nothing to commit.')}
                             </Alert>
-                        ) : (
-                            <>
-                                {changes.length === 0 && (
-                                    <Alert severity="info">
-                                        {_('There is nothing to commit.')}
-                                    </Alert>
-                                )}
-                                {GIT_CHANGE_KINDS.map((kind) => {
-                                    const files = changes.filter(
-                                        (c) => c.kind === kind
-                                    );
-                                    if (files.length === 0) return null;
-                                    return (
-                                        <div key={kind} data-kind={kind}>
-                                            <Typography variant="overline">
-                                                {KIND_LABELS[kind]()} (
-                                                {files.length})
-                                            </Typography>
+                        )}
+                        {GIT_CHANGE_KINDS.map((kind) => {
+                            const files = changes.filter(
+                                (c) => c.kind === kind
+                            );
+                            if (files.length === 0) return null;
+                            return (
+                                <div key={kind} data-kind={kind}>
+                                    <FormSection
+                                        title={`${KIND_LABELS[kind]()} (${files.length})`}
+                                    >
+                                        <div>
                                             {files.map((c) => (
-                                                <Typography
+                                                <GitChangeRow
                                                     key={c.path}
-                                                    variant="body2"
-                                                    sx={{
-                                                        fontFamily: 'monospace',
-                                                    }}
-                                                >
-                                                    {c.path}
-                                                </Typography>
+                                                    path={c.path}
+                                                    checked={
+                                                        !excluded.has(c.path)
+                                                    }
+                                                    disabled={store.busy}
+                                                    onChange={(checked) =>
+                                                        toggle(c.path, checked)
+                                                    }
+                                                />
                                             ))}
                                         </div>
-                                    );
-                                })}
-                                <TextField
-                                    autoFocus
-                                    required
-                                    multiline
-                                    minRows={2}
-                                    label={_('Message')}
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    slotProps={{
-                                        htmlInput: {
-                                            'aria-label': 'message',
-                                            'maxLength':
-                                                GIT_LIMITS.messageMaxLength,
-                                        },
-                                    }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={push}
-                                            onChange={(e) =>
-                                                setPush(e.target.checked)
-                                            }
-                                            inputProps={{
-                                                'aria-label': 'push',
-                                            }}
-                                        />
-                                    }
-                                    label={_('Push after commit')}
-                                />
-                            </>
-                        )}
-                        {error && (
-                            <Alert
-                                severity="error"
-                                sx={{ whiteSpace: 'pre-wrap' }}
-                            >
-                                {error}
-                            </Alert>
-                        )}
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button color="inherit" onClick={onClose}>
-                        {committed ? _('Close') : _('Cancel')}
-                    </Button>
-                    {committed ? (
-                        pushError.error === 'git_rejected' && (
-                            <Button
-                                variant="contained"
-                                disabled={store.busy}
-                                onClick={() => void pullThenPush()}
-                            >
-                                {_('Pull then push')}
-                            </Button>
-                        )
-                    ) : (
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={
-                                store.busy || !trimmed || changes.length === 0
-                            }
-                        >
-                            {push ? _('Commit & push') : _('Commit')}
-                        </Button>
-                    )}
-                </DialogActions>
-            </form>
-        </Dialog>
-    );
-});
+                                    </FormSection>
+                                </div>
+                            );
+                        })}
+                        <FormTextInput
+                            autoFocus
+                            multiline
+                            label={_('Message')}
+                            value={message}
+                            onChange={(next) => setMessage(next ?? '')}
+                            maxLength={GIT_LIMITS.messageMaxLength}
+                            dataField="message"
+                        />
+                        <FormCheckbox
+                            label={_('Push after commit')}
+                            value={push}
+                            onChange={(next) => setPush(next ?? false)}
+                            dataField="push"
+                        />
+                    </>
+                )}
+            </AppDialog>
+        );
+    }
+);
+
+const SAlert = styled(Alert)`
+    white-space: pre-wrap;
+`;

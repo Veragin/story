@@ -1,21 +1,20 @@
 import { action, makeObservable, observable } from 'mobx';
 import { isEngineSection, type TEngineSection } from '@story/protocol';
-import type { TChapterId } from '@story/types';
 import { getUiState, setUiState } from '../ui-state';
 
 export const ENTITY_KINDS = ['characters', 'locations', 'npcs', 'items'] as const;
 export type TEntityKind = (typeof ENTITY_KINDS)[number];
 
-export const STRUCTURE_SECTIONS = ['types', 'literals'] as const;
+export const STRUCTURE_SECTIONS = ['classes', 'types', 'literals'] as const;
 export type TStructureSection = (typeof STRUCTURE_SECTIONS)[number];
 
-export const SETTINGS_SECTIONS = ['git'] as const;
+export const SETTINGS_SECTIONS = ['general', 'ai', 'git'] as const;
 export type TSettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export type TRoute =
     | { page: 'map'; mapId?: string }
     | { page: 'timeline' }
-    | { page: 'chapter'; chapterId: TChapterId }
+    | { page: 'chapter'; chapterId: string }
     | { page: 'entities'; kind?: TEntityKind; id?: string }
     | { page: 'catalog'; catalog: string; id?: string }
     | { page: 'structure'; section?: TStructureSection; name?: string }
@@ -57,7 +56,7 @@ export const parseHash = (hash: string): TRoute | null => {
         case 'timeline':
             if (parts.length === 1) return { page: 'timeline' };
             if (parts.length === 3 && parts[1] === 'chapter' && parts[2]) {
-                return { page: 'chapter', chapterId: parts[2] as TChapterId };
+                return { page: 'chapter', chapterId: parts[2] };
             }
             return null;
         case 'entities': {
@@ -132,11 +131,8 @@ const initialRoute = (): TRoute => {
     return parseHash(window.location.hash) ?? parseHash(getUiState<string>(LAST_ROUTE_KEY, '')) ?? DEFAULT_ROUTE;
 };
 
-const pageRouteOf = (route: TRoute): TRoute | null => (route.page === 'settings' ? null : route);
-
 export class Router {
     route: TRoute = initialRoute();
-    private routeBeforeSettings: TRoute | null = pageRouteOf(this.route);
     private started = false;
 
     constructor() {
@@ -176,8 +172,6 @@ export class Router {
 
     href = (route: TRoute) => routeToHash(route);
 
-    leaveSettings = () => this.navigate(this.routeBeforeSettings ?? DEFAULT_ROUTE);
-
     sync = () => {
         const parsed = parseHash(window.location.hash);
         if (parsed === null) {
@@ -186,7 +180,6 @@ export class Router {
         } else {
             this.route = parsed;
         }
-        this.routeBeforeSettings = pageRouteOf(this.route) ?? this.routeBeforeSettings;
         setUiState(LAST_ROUTE_KEY, routeToHash(this.route));
     };
 

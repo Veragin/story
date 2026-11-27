@@ -1,6 +1,7 @@
 import { Body, Controller, Req, Res } from '@nestjs/common';
 import type { TRouteBody, TRouteResponse } from '@story/protocol';
 import type { Request, Response } from 'express';
+import { ImageGenService } from '../../ai/imageGen/ImageGenService';
 import { ProtocolRoute } from '../../common/ProtocolRoute';
 import { RouteParams, type THandlerParams } from '../../common/RouteParams';
 import { sendVersionedFile } from '../../common/versionedFile';
@@ -10,6 +11,8 @@ import { StoryCtx } from '../../storyContext/StoryCtx';
 
 @Controller()
 export class ImagesController {
+    constructor(private readonly imageGen: ImageGenService) {}
+
     @ProtocolRoute('getImage')
     getImage(
         @StoryCtx() { sp }: TServerContext,
@@ -25,8 +28,7 @@ export class ImagesController {
         @Req() req: Request,
         @Res() res: Response
     ): Promise<void> {
-        const { bytes, version } = await readImageFile(sp, owner, id);
-        sendVersionedFile(req, res, { bytes, version, contentType: 'image/png' });
+        sendVersionedFile(req, res, await readImageFile(sp, owner, id));
     }
 
     @ProtocolRoute('uploadImage')
@@ -45,5 +47,14 @@ export class ImagesController {
         @Body() body: TRouteBody<'deleteImage'>
     ): Promise<TRouteResponse<'deleteImage'>> {
         return deleteImage(ctx, owner, id, body);
+    }
+
+    @ProtocolRoute('generateImage')
+    generateImage(
+        @StoryCtx() ctx: TServerContext,
+        @RouteParams() { owner, id }: THandlerParams<'generateImage'>,
+        @Body() body: TRouteBody<'generateImage'>
+    ): Promise<TRouteResponse<'generateImage'>> {
+        return this.imageGen.generate(ctx, owner, id, body);
     }
 }

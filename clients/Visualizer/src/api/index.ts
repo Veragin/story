@@ -6,12 +6,14 @@ import { goToLanding, STORY_ID } from './story';
 import type { TVisualizerApi } from './types';
 
 export { ApiError } from './ApiError';
+export { formatDiagnostic, NO_DIAGNOSTICS } from './diagnostics';
 export { errorBodyMessage, errorMessage } from './errorMessage';
+export { isImageDto, isLocationDto, isSourceDto, isStaleError } from './staleConflict';
 export { ApiEvents } from './events';
 export { createMockApi, displayText, extractEdges, type TMockApi } from './mockApi';
 export { createMockSeed } from './mockData';
 export { goToLanding, landingUrl, playerUrl, STORY_ID } from './story';
-export type { TVisualizerApi } from './types';
+export type { TStoryImageFile, TVisualizerApi } from './types';
 
 const useMock = import.meta.env.VITE_VISUALIZER_API === 'mock';
 

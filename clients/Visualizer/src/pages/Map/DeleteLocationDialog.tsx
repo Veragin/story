@@ -1,27 +1,24 @@
 import { useState } from 'react';
-import {
-    Button,
-    Checkbox,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    FormControlLabel,
-    FormGroup,
-} from '@mui/material';
+import { DialogContentText } from '@mui/material';
+import { AppDialog } from '../../components/dialog/AppDialog';
+import { DialogButtons } from '../../components/dialog/DialogButtons';
+import { FormCheckbox } from '../../components/form/FormCheckbox';
 import type {
     TDeleteLocationChoice,
     TDeleteLocationRequest,
 } from './MapPageStore';
 
+type TProps = {
+    request: TDeleteLocationRequest;
+    onDelete: (choice: TDeleteLocationChoice) => void;
+    onClose: () => void;
+};
+
 export const DeleteLocationDialog = ({
     request,
-    onAnswer,
-}: {
-    request: TDeleteLocationRequest;
-    onAnswer: (choice: TDeleteLocationChoice | null) => void;
-}) => {
+    onDelete,
+    onClose,
+}: TProps) => {
     const { name, file, hasMap, sublocationIds } = request;
     const hasSublocations = sublocationIds.length > 0;
     const [choice, setChoice] = useState<TDeleteLocationChoice>({
@@ -32,88 +29,69 @@ export const DeleteLocationDialog = ({
     // a deleted location takes its map and its sublocations with it
     const map = choice.map || choice.location;
     const sublocations = choice.sublocations || choice.location;
-    const toggle = (key: keyof TDeleteLocationChoice) =>
-        setChoice((c) => ({ ...c, [key]: !c[key] }));
+    const set = (key: keyof TDeleteLocationChoice) => (value?: boolean) =>
+        setChoice((c) => ({ ...c, [key]: value ?? false }));
+    const answer: TDeleteLocationChoice = {
+        map: hasMap && map,
+        sublocations: hasSublocations && sublocations,
+        location: choice.location,
+    };
 
     return (
-        <Dialog open onClose={() => onAnswer(null)} maxWidth="xs" fullWidth>
-            <DialogTitle>{_('Delete %s', name)}</DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    {_('What should be deleted?')}
-                </DialogContentText>
-                <FormGroup>
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={hasMap && map}
-                                disabled={!hasMap || choice.location}
-                                onChange={() => toggle('map')}
-                            />
-                        }
-                        label={
-                            hasMap
-                                ? _('Delete map')
-                                : _('Delete map (there is none)')
-                        }
-                    />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={hasSublocations && sublocations}
-                                disabled={!hasSublocations || choice.location}
-                                onChange={() => toggle('sublocations')}
-                            />
-                        }
-                        label={
-                            hasSublocations
-                                ? _(
-                                      'Delete sublocations (%s)',
-                                      sublocationIds.join(', ')
-                                  )
-                                : _('Delete sublocations (there are none)')
-                        }
-                    />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={choice.location}
-                                onChange={() => toggle('location')}
-                            />
-                        }
-                        label={
-                            file
-                                ? _('Delete location (%s)', file)
-                                : _(
-                                      'Delete location (only its shape, there is no file)'
-                                  )
-                        }
-                    />
-                </FormGroup>
-            </DialogContent>
-            <DialogActions>
-                <Button color="inherit" onClick={() => onAnswer(null)}>
-                    {_('Cancel')}
-                </Button>
-                <Button
-                    variant="contained"
-                    color="error"
+        <AppDialog
+            title={_('Delete %s', name)}
+            size="xs"
+            onClose={onClose}
+            actions={
+                <DialogButtons
+                    onClose={onClose}
+                    onConfirm={() => onDelete(answer)}
+                    label={_('Delete')}
+                    danger
                     disabled={
-                        !(hasMap && map) &&
-                        !(hasSublocations && sublocations) &&
-                        !choice.location
+                        !answer.map && !answer.sublocations && !answer.location
                     }
-                    onClick={() =>
-                        onAnswer({
-                            map: hasMap && map,
-                            sublocations: hasSublocations && sublocations,
-                            location: choice.location,
-                        })
-                    }
-                >
-                    {_('Delete')}
-                </Button>
-            </DialogActions>
-        </Dialog>
+                />
+            }
+        >
+            <DialogContentText>
+                {_('What should be deleted?')}
+            </DialogContentText>
+            <FormCheckbox
+                label={
+                    hasMap ? _('Delete map') : _('Delete map (there is none)')
+                }
+                value={answer.map}
+                onChange={set('map')}
+                disabled={!hasMap || choice.location}
+                dataField="map"
+            />
+            <FormCheckbox
+                label={
+                    hasSublocations
+                        ? _(
+                              'Delete sublocations (%s)',
+                              sublocationIds.join(', ')
+                          )
+                        : _('Delete sublocations (there are none)')
+                }
+                value={answer.sublocations}
+                onChange={set('sublocations')}
+                disabled={!hasSublocations || choice.location}
+                dataField="sublocations"
+            />
+            <FormCheckbox
+                label={
+                    file
+                        ? _('Delete location (%s)', file)
+                        : _(
+                              'Delete location (only its shape, there is no file)'
+                          )
+                }
+                value={choice.location}
+                onChange={set('location')}
+                dataField="location"
+            />
+        </AppDialog>
     );
 };

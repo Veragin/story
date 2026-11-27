@@ -7,9 +7,9 @@ import type {
     TTimeRangeDto,
     TValueRecord,
 } from '@story/protocol';
-import type { SourceFile } from 'ts-morph';
+import type { Node, SourceFile, VariableDeclaration } from 'ts-morph';
 import { version } from '../../events/version';
-import { findTypeAlias, getProp, lineOf } from '../ast';
+import { findTypeAlias, getProp, lineOf, readJsDoc } from '../ast';
 import type { SourceProject } from '../SourceProject';
 import {
     chapterCharacterFiles,
@@ -26,8 +26,8 @@ import { readFields, readValue, S, type TField, type TSchema } from '../values';
 import { readTypeNames, type TTypeNames, typeLiteralFields } from './structure';
 
 export const chapterFields = (sp: SourceProject): Record<string, TField> => ({
-    title: { schema: S.string },
-    description: { schema: S.string },
+    title: { schema: S.text },
+    description: { schema: S.text },
     timeRange: { schema: S.timeRange },
     location: { schema: S.string },
     children: {
@@ -51,6 +51,8 @@ export const readDataType = (sf: SourceFile, suffix: string, names: TTypeNames):
     const fields = typeLiteralFields(node, names);
     return { name: alias.getName(), code: node.getText(), ...(fields ? { fields } : {}) };
 };
+
+export const chapterDocNode = (decl: VariableDeclaration): Node => decl.getVariableStatement() ?? decl;
 
 export const chapterVersion = (sp: SourceProject, chapterId: string) =>
     version(sp.text(sp.root.paths.chapterFile(chapterId)), chapterPassagesFile(sp, chapterId)?.getFullText() ?? null);
@@ -86,6 +88,7 @@ export const readChapter = (sp: SourceProject, chapterId: string): TChapterDto =
               : [],
         init: (fields.init ?? {}) as TMaybeCode<TValueRecord>,
         dataType: readDataType(sf, 'ChapterData', readTypeNames(sp)),
+        docComment: readJsDoc(chapterDocNode(decl)) ?? '',
         characters: readChapterCharacters(sp, chapterId),
     };
 };

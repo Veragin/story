@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-    Alert,
-    Button,
-    FormControlLabel,
-    Radio,
-    RadioGroup,
-    Stack,
-    TextField,
-} from '@mui/material';
+import { Alert, Button, styled } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import {
     GIT_DEFAULT_BRANCH,
@@ -16,6 +8,14 @@ import {
     type TGitSetupMode,
 } from '@story/protocol';
 import { remoteUrlErrorMessage, showToast } from '@story/ui';
+import { ErrorAlert } from '../components/feedback/ErrorAlert';
+import { FormField } from '../components/form/FormField';
+import { FormFields } from '../components/form/FormFields';
+import { FormRadioInput } from '../components/form/FormRadioInput';
+import { FormTextInput } from '../components/form/FormTextInput';
+import { TextInput } from '../components/inputs/TextInput';
+import { ActionRow } from '../components/layout/ActionRow';
+import { InlineRow } from '../components/layout/InlineRow';
 import { modals } from '../shell';
 import { GitDisconnectPanel } from './GitDisconnectPanel';
 import type { GitStore, TGitConfigPatch, TGitResult } from './GitStore';
@@ -24,8 +24,16 @@ type TProps = {
     store: GitStore;
 };
 
-const setupMode = (value: string): TGitSetupMode =>
+const setupMode = (value: string | undefined): TGitSetupMode =>
     value === 'pull' ? 'pull' : 'push';
+
+const setupModeOptions = () => [
+    { id: 'push', label: _('Upload this story to the repository') },
+    {
+        id: 'pull',
+        label: _("Replace this story with the repository's content"),
+    },
+];
 
 export const GitSettingsForm = observer(({ store }: TProps) => {
     const config = store.config;
@@ -123,123 +131,85 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
                 void submit();
             }}
         >
-            <Stack gap={2}>
-                <TextField
-                    required
+            <FormFields>
+                <FormTextInput
                     label={_('Remote URL')}
                     placeholder="https://github.com/me/story.git"
                     value={remoteUrl}
-                    onChange={(e) => setRemoteUrl(e.target.value)}
-                    error={touched && urlError !== null}
-                    helperText={touched ? urlError : null}
-                    slotProps={{
-                        htmlInput: {
-                            'aria-label': 'remote url',
-                            'spellCheck': false,
-                            'maxLength': GIT_LIMITS.remoteUrlMaxLength,
-                        },
-                    }}
+                    onChange={(next) => setRemoteUrl(next ?? '')}
+                    error={touched ? urlError : null}
+                    spellCheck={false}
+                    maxLength={GIT_LIMITS.remoteUrlMaxLength}
+                    dataField="remoteUrl"
                 />
-                <TextField
-                    required
+                <FormTextInput
                     label={_('Branch')}
                     value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
-                    error={touched && branchError !== null}
-                    helperText={touched ? branchError : null}
-                    slotProps={{
-                        htmlInput: {
-                            'aria-label': 'branch',
-                            'spellCheck': false,
-                            'maxLength': GIT_LIMITS.branchMaxLength,
-                        },
-                    }}
+                    onChange={(next) => setBranch(next ?? '')}
+                    error={touched ? branchError : null}
+                    spellCheck={false}
+                    maxLength={GIT_LIMITS.branchMaxLength}
+                    dataField="branch"
                 />
-                <Stack direction="row" gap={1} alignItems="flex-start">
-                    <TextField
-                        fullWidth
-                        type="password"
-                        autoComplete="new-password"
-                        label={_('Access token')}
-                        placeholder={
-                            config?.hasToken
-                                ? _('unchanged')
-                                : _('none: a public repository')
-                        }
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        slotProps={{
-                            htmlInput: {
-                                'aria-label': 'token',
-                                'maxLength': GIT_LIMITS.tokenMaxLength,
-                            },
-                        }}
-                    />
-                    {config?.hasToken && (
-                        <Button
-                            color="inherit"
-                            disabled={store.busy}
-                            onClick={() => void removeToken()}
-                            sx={{ mt: 1, flexShrink: 0 }}
-                        >
-                            {_('Remove token')}
-                        </Button>
-                    )}
-                </Stack>
+                <FormField label={_('Access token')}>
+                    <InlineRow>
+                        <TextInput
+                            type="password"
+                            autoComplete="new-password"
+                            placeholder={
+                                config?.hasToken
+                                    ? _('unchanged')
+                                    : _('none: a public repository')
+                            }
+                            value={token}
+                            onChange={setToken}
+                            maxLength={GIT_LIMITS.tokenMaxLength}
+                            ariaLabel={_('Access token')}
+                            dataField="token"
+                        />
+                        {config?.hasToken && (
+                            <SRemoveTokenButton
+                                color="inherit"
+                                disabled={store.busy}
+                                onClick={() => void removeToken()}
+                            >
+                                {_('Remove token')}
+                            </SRemoveTokenButton>
+                        )}
+                    </InlineRow>
+                </FormField>
                 <Alert severity="info">
                     {_(
                         'The token is stored encrypted on the server and is never shown again. Everyone with the story password pushes and pulls with it, so use a fine-grained token limited to this one repository (contents: read and write).'
                     )}
                 </Alert>
-                <Stack direction="row" gap={2}>
-                    <TextField
-                        fullWidth
-                        label={_('Author name')}
-                        placeholder={_("the story's author")}
-                        value={authorName}
-                        onChange={(e) => setAuthorName(e.target.value)}
-                        slotProps={{
-                            htmlInput: {
-                                'aria-label': 'author name',
-                                'maxLength': GIT_LIMITS.authorNameMaxLength,
-                            },
-                        }}
-                    />
-                    <TextField
-                        fullWidth
-                        label={_('Author email')}
-                        placeholder="<story>@story.local"
-                        helperText={_(
-                            'Set from the story email when that changes.'
-                        )}
-                        value={authorEmail}
-                        onChange={(e) => setAuthorEmail(e.target.value)}
-                        slotProps={{
-                            htmlInput: {
-                                'aria-label': 'author email',
-                                'maxLength': GIT_LIMITS.authorEmailMaxLength,
-                            },
-                        }}
-                    />
-                </Stack>
+                <FormTextInput
+                    label={_('Author name')}
+                    placeholder={_("the story's author")}
+                    value={authorName}
+                    onChange={(next) => setAuthorName(next ?? '')}
+                    maxLength={GIT_LIMITS.authorNameMaxLength}
+                    dataField="authorName"
+                />
+                <FormTextInput
+                    label={_('Author email')}
+                    placeholder="<story>@story.local"
+                    helperText={_(
+                        'Set from the story email when that changes.'
+                    )}
+                    value={authorEmail}
+                    onChange={(next) => setAuthorEmail(next ?? '')}
+                    maxLength={GIT_LIMITS.authorEmailMaxLength}
+                    dataField="authorEmail"
+                />
                 {!config && (
-                    <RadioGroup
+                    <FormRadioInput
+                        label={_('First sync')}
                         value={initial}
-                        onChange={(e) => setInitial(setupMode(e.target.value))}
-                    >
-                        <FormControlLabel
-                            value="push"
-                            control={<Radio />}
-                            label={_('Upload this story to the repository')}
-                        />
-                        <FormControlLabel
-                            value="pull"
-                            control={<Radio />}
-                            label={_(
-                                "Replace this story with the repository's content"
-                            )}
-                        />
-                    </RadioGroup>
+                        onChange={(next) => setInitial(setupMode(next))}
+                        options={setupModeOptions()}
+                        dataField="initial"
+                    />
                 )}
                 {config && disconnecting && (
                     <GitDisconnectPanel
@@ -250,20 +220,15 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
                         onCancel={() => setDisconnecting(false)}
                     />
                 )}
-                {error && (
-                    <Alert severity="error" sx={{ whiteSpace: 'pre-wrap' }}>
-                        {error}
-                    </Alert>
-                )}
-                <Stack direction="row" gap={1} justifyContent="flex-end">
+                <ErrorAlert error={error} />
+                <ActionRow>
                     {config && !disconnecting && (
-                        <Button
+                        <SDisconnectButton
                             color="error"
                             onClick={() => setDisconnecting(true)}
-                            sx={{ mr: 'auto' }}
                         >
                             {_('Disconnect…')}
-                        </Button>
+                        </SDisconnectButton>
                     )}
                     <Button
                         type="submit"
@@ -272,8 +237,16 @@ export const GitSettingsForm = observer(({ store }: TProps) => {
                     >
                         {config ? _('Save git settings') : _('Connect')}
                     </Button>
-                </Stack>
-            </Stack>
+                </ActionRow>
+            </FormFields>
         </form>
     );
 });
+
+const SRemoveTokenButton = styled(Button)`
+    flex-shrink: 0;
+`;
+
+const SDisconnectButton = styled(Button)`
+    margin-right: auto;
+`;

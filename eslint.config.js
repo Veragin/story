@@ -215,6 +215,23 @@ export default tseslint.config(
         },
     },
     {
+        files: ['clients/Visualizer/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    paths: [
+                        {
+                            name: '@emotion/styled',
+                            message:
+                                'clients/Visualizer styles with `styled` from @mui/material, which is typed against the theme.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
         files: ['clients/SinglePlayer/src/**/*.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [

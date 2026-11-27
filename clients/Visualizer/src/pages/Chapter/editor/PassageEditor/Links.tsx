@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { Button, Typography } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { isCode, type TLinkDto, type TMaybeCode } from '@story/protocol';
 import { CodeBlock } from '../CodeBlock';
-import { ItemDiagnostics } from './ItemDiagnostics';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
+import { FormSection } from '../../../../components/form/FormSection';
 import { LinkEditor } from './LinkEditor';
 import { linkHasDiagnostics } from './linkSummary';
 import { LinkSummary } from './LinkSummary';
 import { replaceAt } from './listUtils';
-import { SLink } from './styles';
+import { SAddButton, SLink } from './styles';
 import type { TDiag, TOptionsProps } from './types';
 
 type TProps = TOptionsProps & {
@@ -25,41 +24,33 @@ export const Links = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
     if (value === undefined) {
         return (
-            <Button
-                size="small"
-                color="inherit"
-                startIcon={<AddIcon fontSize="small" />}
+            <SAddButton
+                label={_('Links')}
+                tone="inherit"
                 onClick={() => onChange([])}
-                sx={{ alignSelf: 'flex-start' }}
-            >
-                {_('Links')}
-            </Button>
+            />
         );
     }
     if (isCode(value)) {
         return (
-            <>
-                <Typography variant="caption" color="text.secondary">
-                    {_('Links (code)')}
-                </Typography>
+            <FormSection title={_('Links (code)')}>
                 <CodeBlock
                     code={value.code}
                     onChange={(code) => onChange({ code })}
                     diagnostics={diag(path)}
+                    ariaLabel={_('Links code')}
                 />
-            </>
+            </FormSection>
         );
     }
     const add = () => {
         setOpen((o) => new Set(o).add(value.length));
-        onChange([
-            ...value,
-            { text: '', passageId: passageOptions[0]?.id ?? '' },
-        ]);
+        onChange([...value, { text: '', passageId: '' }]);
     };
     const remove = (j: number) => {
         // the open set is keyed by index: the links after `j` move up by one
@@ -80,8 +71,8 @@ export const Links = ({
             return next;
         });
     return (
-        <>
-            <ItemDiagnostics diagnostics={diag(path)} />
+        <FormSection title={_('Links')}>
+            <DiagnosticsList diagnostics={diag(path)} />
             {value.map((link, j) => {
                 const linkPath = `${path}.${j}`;
                 const hasError = linkHasDiagnostics(diag, linkPath);
@@ -109,20 +100,18 @@ export const Links = ({
                                 diag={diag}
                                 passageOptions={passageOptions}
                                 itemOptions={itemOptions}
+                                passageCreator={passageCreator}
                             />
                         )}
                     </SLink>
                 );
             })}
-            <Button
-                size="small"
-                color="inherit"
-                startIcon={<AddIcon fontSize="small" />}
+            <SAddButton
+                label={_('Add link')}
+                data-action="add-link"
+                tone="inherit"
                 onClick={add}
-                sx={{ alignSelf: 'flex-start' }}
-            >
-                {_('Add link')}
-            </Button>
-        </>
+            />
+        </FormSection>
     );
 };

@@ -1,8 +1,7 @@
-import { Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import type { TBodyItemDto } from '@story/protocol';
 import { BodyItemEditor } from './BodyItemEditor';
 import { replaceAt } from './listUtils';
+import { SAddButton } from './styles';
 import type { TListProps } from './types';
 
 export const BodyItems = ({
@@ -11,6 +10,7 @@ export const BodyItems = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TListProps<TBodyItemDto>) => (
     <>
         {items.map((item, i) => (
@@ -24,21 +24,18 @@ export const BodyItems = ({
                 diag={diag}
                 passageOptions={passageOptions}
                 itemOptions={itemOptions}
+                passageCreator={passageCreator}
             />
         ))}
-        <Button
-            size="small"
-            color="inherit"
-            startIcon={<AddIcon fontSize="small" />}
+        <SAddButton
+            label={_('Add body item')}
+            tone="inherit"
             onClick={() =>
                 onChange([
                     ...items,
                     { condition: { code: 'true' }, text: '', links: [] },
                 ])
             }
-            sx={{ alignSelf: 'flex-start' }}
-        >
-            {_('Add body item')}
-        </Button>
+        />
     </>
 );

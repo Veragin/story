@@ -1,10 +1,20 @@
 import path from 'node:path';
-import type { TGitStatusDto } from '@story/protocol';
+import type { TGitBranchDto, TGitCommitDto, TGitStatusDto } from '@story/protocol';
 import { lstatOrNull } from '../common/fileStat';
 import { HttpError } from '../common/HttpError';
-import { asRemote } from './gitErrors';
+import { asRemote, isRemoteRefGone, remoteHttpError } from './gitErrors';
 import type { GitRunner } from './GitRunner';
-import { parsePathList, parsePorcelainStatus, parseRefs, type TRefs } from './gitStatus';
+import {
+    BRANCH_FORMAT,
+    COMMIT_FORMAT,
+    parseBranches,
+    parseCommitLine,
+    parsePathList,
+    parsePorcelainStatus,
+    parseRefs,
+    type TPorcelainStatus,
+    type TRefs,
+} from './gitStatus';
 
 export type TAuthor = { authorName: string; authorEmail: string };
 
@@ -22,16 +32,28 @@ const lastFetchedAt = async (git: GitRunner): Promise<string | null> => {
 export const readRefs = async (git: GitRunner): Promise<TRefs> =>
     parseRefs(await git.text(['for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/remotes/origin']));
 
+// null: no commits yet
+const readHead = async (git: GitRunner): Promise<TGitCommitDto | null> => {
+    const { stdout, code } = await git.run(['log', '-1', COMMIT_FORMAT, 'HEAD', '--'], { okCodes: [128] });
+    return code === 0 ? parseCommitLine(stdout) : null;
+};
+
+export const readPorcelainStatus = async (git: GitRunner): Promise<TPorcelainStatus> =>
+    parsePorcelainStatus(
+        await git.text(['--no-optional-locks', 'status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'])
+    );
+
 export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
-    const [porcelain, refs, fetchedAt] = await Promise.all([
-        git.text(['--no-optional-locks', 'status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all']),
+    const [status, refs, fetchedAt, head] = await Promise.all([
+        readPorcelainStatus(git),
         readRefs(git),
         lastFetchedAt(git),
+        readHead(git),
     ]);
-    const status = parsePorcelainStatus(porcelain);
     return {
         branch: status.head ?? status.oid?.slice(0, SHORT_HASH_LENGTH) ?? '',
         detached: status.head === null,
+        head,
         ahead: status.ahead,
         behind: status.behind,
         upstream: status.upstream,
@@ -40,6 +62,9 @@ export const readStatus = async (git: GitRunner): Promise<TGitStatusDto> => {
         lastFetchedAt: fetchedAt,
     };
 };
+
+export const readBranches = async (git: GitRunner, current: string | null): Promise<TGitBranchDto[]> =>
+    parseBranches(await git.text(['for-each-ref', BRANCH_FORMAT, 'refs/heads', 'refs/remotes/origin']), current);
 
 export const requireClean = (status: TGitStatusDto, action: string) => {
     if (status.changes.length > 0) {
@@ -61,16 +86,61 @@ export const resolveCommit = async (git: GitRunner, rev: string): Promise<string
 };
 
 // null: nothing was staged
-export const commitAll = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
-    await git.run(['add', '-A']);
+const commitIndex = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
     const { code } = await git.run(['diff', '--cached', '--quiet'], { okCodes: [1] });
     if (code === 0) return null;
     await git.run(['commit', '-q', '-F', '-'], { input: message, config: identity(author) });
     return resolveCommit(git, 'HEAD');
 };
 
-export const pushHead = async (git: GitRunner, branch?: string): Promise<void> => {
-    await asRemote(git.run(['push', '-u', 'origin', branch ? `HEAD:refs/heads/${branch}` : 'HEAD'], { network: true }));
+export const commitAll = async (git: GitRunner, message: string, author: TAuthor): Promise<string | null> => {
+    await git.run(['add', '-A']);
+    return commitIndex(git, message, author);
+};
+
+// paths no longer pending are dropped; a rename brings its original path along
+export const pendingPathsOf = async (git: GitRunner, paths: readonly string[]): Promise<string[]> => {
+    const { changes, renamedFrom } = await readPorcelainStatus(git);
+    const pending = new Set(changes.map((c) => c.path));
+    return paths
+        .filter((p) => pending.has(p))
+        .flatMap((p) => {
+            const from = renamedFrom.get(p);
+            return from === undefined ? [p] : [p, from];
+        });
+};
+
+export const commitPaths = async (
+    git: GitRunner,
+    message: string,
+    author: TAuthor,
+    paths: readonly string[]
+): Promise<string | null> => {
+    // an empty pathspec would make `add -A` stage everything
+    if (paths.length === 0) return null;
+    await git.run(['reset', '-q']);
+    await git.run(['add', '-A', '--pathspec-from-file=-', '--pathspec-file-nul'], {
+        input: paths.map((p) => `:(literal)${p}`).join('\0'),
+    });
+    return commitIndex(git, message, author);
+};
+
+type TPushOptions = { branch?: string; force?: boolean };
+
+export const pushHead = async (git: GitRunner, { branch, force = false }: TPushOptions = {}): Promise<void> => {
+    const target = branch ? `HEAD:refs/heads/${branch}` : 'HEAD';
+    await asRemote(
+        git.run(['push', '-u', ...(force ? ['--force-with-lease'] : []), 'origin', target], { network: true })
+    );
+};
+
+export const deleteRemoteBranch = async (git: GitRunner, branch: string): Promise<void> => {
+    try {
+        await git.run(['push', 'origin', '--delete', branch], { network: true });
+    } catch (e) {
+        if (!isRemoteRefGone(e)) throw remoteHttpError(e);
+        await git.run(['update-ref', '-d', `refs/remotes/origin/${branch}`]);
+    }
 };
 
 export const fetchOrigin = async (git: GitRunner): Promise<void> => {

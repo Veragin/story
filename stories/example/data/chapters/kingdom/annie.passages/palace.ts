@@ -9,22 +9,22 @@ export const palacePassage = (): TPassage<'kingdom', 'annie', TKingdomAnniePassa
         id: 'palace',
 
         type: 'screen',
-        title: 'Palace',
+        title: _('Palace'),
         image: '',
 
         body: [
             {
                 condition: true,
-                text: 'text',
+                text: _('text'),
                 links: [
                     {
-                        text: 'Back to intro',
+                        text: _('Back to intro'),
                         passageId: 'kingdom-annie-intro',
                         cost: DeltaTime.fromMin(10),
                         autoPriortiy: 1,
                     },
                     {
-                        text: 'Back to intro with axe',
+                        text: _('Back to intro with axe'),
                         passageId: 'kingdom-annie-intro',
                         cost: {
                             time: DeltaTime.fromMin(100),

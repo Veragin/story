@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { DEFAULT_ROUTE, parseHash, Router, routeToHash, TRoute } from '../router';
+import { describe, expect, it } from 'vitest';
+import { parseHash, routeToHash, TRoute } from '../router';
 
 describe('router hash parsing', () => {
     const cases: [string, TRoute][] = [
@@ -14,12 +14,16 @@ describe('router hash parsing', () => {
         ['#/entities/catalogs/races/elf', { page: 'catalog', catalog: 'races', id: 'elf' }],
         ['#/structure', { page: 'structure' }],
         ['#/structure/types', { page: 'structure', section: 'types' }],
-        ['#/structure/types/TRace', { page: 'structure', section: 'types', name: 'TRace' }],
+        ['#/structure/classes', { page: 'structure', section: 'classes' }],
+        ['#/structure/classes/Race', { page: 'structure', section: 'classes', name: 'Race' }],
+        ['#/structure/types/TStats', { page: 'structure', section: 'types', name: 'TStats' }],
         ['#/structure/literals/TItemType', { page: 'structure', section: 'literals', name: 'TItemType' }],
         ['#/engine', { page: 'engine' }],
         ['#/engine/onLinkClick', { page: 'engine', section: 'onLinkClick' }],
         ['#/engine/topbar', { page: 'engine', section: 'topbar' }],
         ['#/settings', { page: 'settings' }],
+        ['#/settings/general', { page: 'settings', section: 'general' }],
+        ['#/settings/ai', { page: 'settings', section: 'ai' }],
         ['#/settings/git', { page: 'settings', section: 'git' }],
         ['#/_canvas', { page: 'canvas' }],
         ['#/_inputs', { page: 'inputs' }],
@@ -45,44 +49,12 @@ describe('router hash parsing', () => {
         '#/entities/catalogs',
         '#/entities/catalogs/races/elf/x',
         '#/structure/enums',
-        '#/structure/types/TRace/x',
+        '#/structure/classes/Race/x',
         '#/engine/statusBar',
         '#/engine/topbar/x',
         '#/settings/mail',
         '#/settings/git/x',
     ])('returns null for %j', (hash) => {
         expect(parseHash(hash)).toBeNull();
-    });
-});
-
-describe('router leaving the settings', () => {
-    let router: Router | null = null;
-
-    afterEach(() => {
-        router?.stop();
-        router = null;
-    });
-
-    const start = (hash: string) => {
-        window.history.replaceState(null, '', hash);
-        const started = new Router();
-        started.start();
-        router = started;
-        return started;
-    };
-
-    it('returns to the route before the settings', () => {
-        const r = start('#/timeline');
-        r.navigate({ page: 'settings' }, { replace: true });
-        r.navigate({ page: 'settings', section: 'git' }, { replace: true });
-        r.leaveSettings();
-        expect(window.location.hash).toBe('#/timeline');
-    });
-
-    it('returns to the default route when the settings were opened first', () => {
-        const r = start('#/settings/git');
-        expect(r.route).toEqual({ page: 'settings', section: 'git' });
-        r.leaveSettings();
-        expect(window.location.hash).toBe(routeToHash(DEFAULT_ROUTE));
     });
 });

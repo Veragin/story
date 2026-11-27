@@ -2,11 +2,13 @@ import { act } from 'react';
 import { runInAction } from 'mobx';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TTopbarProps } from '@story/types';
+import { setStoryImages } from '../src/images';
 import { StatusBar } from '../src/templates/Components/StatusBar';
 import { newSession, renderWithSession, unmount } from './support/render';
 
 afterEach(() => {
     unmount();
+    setStoryImages({});
     vi.restoreAllMocks();
 });
 
@@ -85,5 +87,16 @@ describe('StatusBar topbar', () => {
         expect(
             container.querySelector('[data-testid="FavoriteIcon"]')
         ).not.toBeNull();
+    });
+});
+
+describe('StatusBar character', () => {
+    it('shows the character name without a portrait', async () => {
+        setStoryImages({ 'characters/thomas.png': 'thomas-url' });
+
+        const container = await renderStatusBar(newSession({}));
+
+        expect(container.textContent).toContain('Thomas');
+        expect(container.querySelector('img')).toBeNull();
     });
 });

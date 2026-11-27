@@ -5,17 +5,18 @@ services:
     platform: linux/amd64
     image: story/template
     ports:
-      - 8100:8100 # SinglePlayer          (vite)
-      - 8101:8101 # Visualizer client     (vite)
-      - 8102:8102 # MultiEngine client    (vite)
-      - 8103:8103 # Landing page          (vite) — the story list, proxies /api to 8123
-      - 8123:8123 # Server                (NestJS, server/) — the clients reach it via their /api proxies
+      - 8150:8150 # SinglePlayer          (vite)
+      - 8151:8151 # Visualizer client     (vite)
+      - 8152:8152 # MultiEngine client    (vite)
+      - 8153:8153 # Landing page          (vite) — the story list, proxies /api to 8154
+      - 8154:8154 # Server                (NestJS, server/) — the clients reach it via their /api proxies
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
     volumes:
       - ..:/app
       - ~/.gitconfig:/home/node/.gitconfig-host:ro
+      - ai-sessions:/ai-sessions
     environment:
       DB_HOST: mysql
       DB_PORT: '3306'
@@ -26,6 +27,10 @@ services:
       GIT_TOKEN_KEY: L+dnTukTcCDqLBNIOfteI4CzvsvD7tucPgyOafLIREw=
       # "Export for web" zips this folder: `yarn workspace @story/single-player build:standalone` first
       SINGLE_PLAYER_STANDALONE_DIR: /app/clients/SinglePlayer/dist-standalone
+      AI_LAUNCHER_URL: http://ai-launcher:8155
+      AI_LAUNCHER_KEY_FILE: /app/docker/ai-launcher-dev.key
+      AI_SESSIONS_DIR: /ai-sessions
+      AI_AGENTS_CONFIG_FILE: /app/docker/secrets/ai_agents.json
     depends_on:
       mysql:
         condition: service_healthy
@@ -33,6 +38,47 @@ services:
     working_dir: /app
     user: node
     tty: true
+
+  # The AI launcher (server/aiLauncher/, plans/ai-implementation.md), run from the repo mount; the only
+  # service with the docker socket. Agents are `docker run` on the host daemon, so their mounts are host
+  # paths: set AI_STORIES_HOST_DIR (the repo's `stories/`) and AI_REPO_HOST_DIR (the repo) in docker/.env.
+  # Without them the launcher exits and AI stays unavailable. The agent image is `make ai-image`; the
+  # launcher creates the agents' network. The Anthropic token is docker/secrets/ai_token (optional, gitignored);
+  # the Gemini key for image generation is docker/secrets/gemini_token (optional, gitignored; empty = no images).
+  # Models and limits are docker/secrets/ai_agents.json (optional, gitignored; missing = defaults; see
+  # ai_agents.example.json), shared with the server; after a change, `docker compose restart ai-launcher` and
+  # restart the server (`yarn dev`).
+  # On Docker Desktop, AI_SANDBOX_DRIVER=docker-sandbox runs the agents in Docker Sandboxes instead.
+  ai-launcher:
+    platform: linux/amd64
+    image: story/ai-launcher
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: launcher
+    volumes:
+      - ..:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - ${DOCKER_GID:-0}
+    environment:
+      AI_LAUNCHER_PORT: '8155'
+      AI_TOKEN_FILE: /app/docker/secrets/ai_token
+      AI_GEMINI_TOKEN_FILE: /app/docker/secrets/gemini_token
+      AI_AGENTS_CONFIG_FILE: /app/docker/secrets/ai_agents.json
+      # dev only: the server and the launcher share it; production uses the `ai_launcher_key` secret
+      AI_LAUNCHER_KEY_FILE: /app/docker/ai-launcher-dev.key
+      AI_SANDBOX_DRIVER: ${AI_SANDBOX_DRIVER:-docker-run}
+      AI_INSTANCE: dev
+      AI_STORIES_HOST_DIR: ${AI_STORIES_HOST_DIR:-}
+      AI_REPO_HOST_DIR: ${AI_REPO_HOST_DIR:-}
+      AI_SESSIONS_VOLUME: story-ai-sessions-dev
+      AI_NETWORK: story-ai
+    command:
+      [node, --import, '@swc-node/register/esm-register', aiLauncher/main.ts]
+    working_dir: /app/server
+    user: node
+    init: true
 
   # Not published: the app and the tests reach it from the dev container as `mysql:3306`.
   mysql:
@@ -52,5 +98,23 @@ services:
       retries: 20
       start_period: 30s
 
+  # Dev only, never in docker-compose.prod.yml: auto-logs in as `story`, so anyone on the port gets the DB
+  pma:
+    platform: linux/amd64
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - '127.0.0.1:${PMA_PORT:-8155}:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: story
+      PMA_PASSWORD: story
+    depends_on:
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql:
+  # fixed name: the launcher mounts it into the agent containers by name
+  ai-sessions:
+    name: story-ai-sessions-dev

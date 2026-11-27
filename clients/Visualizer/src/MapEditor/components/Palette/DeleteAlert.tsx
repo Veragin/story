@@ -1,56 +1,38 @@
-import { Button, Tooltip } from '@mui/material';
-import { Row, spacingCss } from '@story/ui';
+import { Button, styled } from '@mui/material';
 import type { MapStore } from '../../MapStore';
-import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import { List } from './List';
-import styled from '@emotion/styled';
+import { ActionRow } from '../../../components/layout/ActionRow';
+import { PanelSection } from '../../../components/layout/PanelSection';
 
-type Props = {
+type TProps = {
     mapStore: MapStore;
     onBack: () => void;
 };
 
-export const DeleteAlert = ({ mapStore, onBack }: Props) => {
-    return (
-        <>
-            <SList>
-                {_('Are you sure you want to delete color')}
-                <b>{mapStore.data?.palette[mapStore.selectedColorId]?.name}</b>
-                {_('All tiles with that color will be set to None.')}
-            </SList>
-            <Row>
-                <Tooltip title={_('Back')}>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={onBack}
-                        fullWidth
-                    >
-                        <ArrowBackIosNewRoundedIcon />
-                    </Button>
-                </Tooltip>
-                <Tooltip title={_('Delete color')}>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        color={'error'}
-                        onClick={() => {
-                            mapStore.deleteColor();
-                            onBack();
-                        }}
-                        fullWidth
-                    >
-                        <DeleteRoundedIcon />
-                    </Button>
-                </Tooltip>
-            </Row>
-        </>
-    );
-};
+export const DeleteAlert = ({ mapStore, onBack }: TProps) => (
+    <PanelSection label={_('Delete tile type')}>
+        <SText>
+            {_('Are you sure you want to delete tile type')}{' '}
+            <b>{mapStore.data?.palette[mapStore.selectedColorId]?.name}</b>?{' '}
+            {_('All tiles of that type will be set to None.')}
+        </SText>
+        <ActionRow>
+            <Button color="inherit" onClick={onBack}>
+                {_('Cancel')}
+            </Button>
+            <Button
+                variant="contained"
+                color="error"
+                onClick={() => {
+                    mapStore.deleteColor();
+                    onBack();
+                }}
+            >
+                {_('Delete')}
+            </Button>
+        </ActionRow>
+    </PanelSection>
+);
 
-const SList = styled(List)`
-    padding: ${spacingCss(1)} ${spacingCss(2)};
-    gap: ${spacingCss(2)};
-    text-align: center;
+const SText = styled('span')`
+    line-height: 1.5;
 `;

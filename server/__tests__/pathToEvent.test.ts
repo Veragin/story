@@ -19,7 +19,7 @@ describe('pathToResources', () => {
             { kind: 'passage', id: 'village-thomas-intro', chapterId: 'village', primary: true },
         ],
         [
-            'data/chapters/village/thomas.passages/cool.transition.ts',
+            'data/chapters/village/thomas.passages/cool.finish.ts',
             { kind: 'passage', id: 'village-thomas-cool', chapterId: 'village', primary: true },
         ],
         [

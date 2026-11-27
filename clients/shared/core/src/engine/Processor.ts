@@ -1,8 +1,8 @@
 import type { TWorldState } from '@story/data';
 import { Engine } from './Engine';
-import { DeltaTime, Time } from '@story/shared';
-import { TChapter, TChapterId, TLinkClick, TLinkCost } from '@story/types';
-import { TUnkownPassageScreen } from './const';
+import { DeltaTime, Time, TPassageId } from '@story/shared';
+import { TChapter, TChapterId, TCharacterId, TLink, TLinkClick, TLinkCost } from '@story/types';
+import { TPlayablePassage } from './const';
 import { parsePassageId } from '../parsePassageId';
 
 export class Processor {
@@ -33,44 +33,58 @@ export class Processor {
 
         const { chapterId } = parsePassageId(turn.passageId);
         const passages = await this.e.storyModule.register.passages[chapterId]();
-        this.e.activePassage = passages.default[turn.passageId](this.s, this.e);
-        this.e.activePassage.execute?.();
+        const passage = passages.default[turn.passageId](this.s, this.e);
+        this.e.activePassage = passage;
+        passage.execute?.();
 
-        if (this.e.activePassage.type === 'transition') {
-            this.e.history.addTurn({
-                passageId: this.e.activePassage.nextPassageId,
-                time: this.s.time,
-            });
-            void this.continue();
-            return;
+        switch (passage.type) {
+            case 'finish':
+                this.redirectTo(passage.nextPassageId);
+                return;
+            case 'start':
+                this.redirectOrEnd(passage.characterId, passage.nextPassageId);
+                return;
+            case 'redirect':
+                this.redirectOrEnd(passage.characterId, passage.body.find((b) => b.condition !== false)?.redirect);
+                return;
+            case 'screen':
+            case 'linear':
+                this.play(passage);
+                return;
         }
-
-        const activeScreenPassage = this.e.activePassage as TUnkownPassageScreen;
-        const redirect = activeScreenPassage.body.find(
-            (b) => b.condition !== false && b.redirect !== undefined
-        )?.redirect;
-        if (redirect !== undefined) {
-            this.e.history.addTurn({
-                passageId: redirect,
-                time: this.s.time,
-            });
-            void this.continue();
-            return;
-        }
-
-        if (this.e.activePassage.characterId !== this.s.mainCharacterId) {
-            this.autoProcess(activeScreenPassage);
-            return;
-        }
-
-        this.e.store.setPassage(activeScreenPassage);
     };
 
-    private autoProcess = (p: TUnkownPassageScreen) => {
+    private play = (passage: TPlayablePassage) => {
+        if (passage.characterId !== this.s.mainCharacterId) {
+            this.autoProcess(passage);
+            return;
+        }
+
+        this.e.store.setPassage(passage);
+    };
+
+    private redirectTo = (passageId: TPassageId) => {
+        this.e.history.addTurn({ passageId, time: this.s.time });
+        void this.continue();
+    };
+
+    private redirectOrEnd = (characterId: TCharacterId, passageId: TPassageId | undefined) => {
+        if (passageId === undefined) {
+            this.endWithNoActions(characterId);
+            return;
+        }
+        this.redirectTo(passageId);
+    };
+
+    private endWithNoActions = (characterId: TCharacterId) => {
+        this.e.history.addEnd(characterId, 'NO_ACTIONS');
+        void this.continue();
+    };
+
+    private autoProcess = (p: TPlayablePassage) => {
         const actions = this.getPossibleActions(p);
         if (actions.length === 0) {
-            this.e.history.addEnd(p.characterId, 'NO_ACTIONS');
-            void this.continue();
+            this.endWithNoActions(p.characterId);
             return;
         }
 
@@ -80,10 +94,14 @@ export class Processor {
         this.e.story.goToPassage(action);
     };
 
-    getPossibleActions = (p: TUnkownPassageScreen) => {
-        const links = p.body.filter((b) => b.condition !== false).flatMap((b) => b.links ?? []);
-        return links.filter((l) => this.isActionPossible(l.cost));
+    getLinks = (p: TPlayablePassage): TLink<TPassageId>[] => {
+        if (p.type === 'linear') {
+            return p.nextPassageId === undefined ? [] : [{ text: _('Continue'), passageId: p.nextPassageId }];
+        }
+        return p.body.filter((b) => b.condition !== false).flatMap((b) => b.links ?? []);
     };
+
+    getPossibleActions = (p: TPlayablePassage) => this.getLinks(p).filter((l) => this.isActionPossible(l.cost));
 
     isActionPossible = (cost?: TLinkCost) => {
         if (cost === undefined) return true;

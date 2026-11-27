@@ -1,0 +1,66 @@
+# The AI agent image (`story-ai`, plans/ai-implementation.md §3): Claude Code in a fake repo that holds one
+# story, `/repo/stories/story`. The launcher (`server/aiLauncher/`) runs it with `docker run --rm -i
+# --read-only` and mounts only that story's `data/` and `types/`, a tmpfs `/home/agent` and the
+# session transcripts at `/sessions` (outside HOME: docker would create a nested mountpoint root-owned, leaving
+# `~/.claude` unwritable; the entrypoint links `~/.claude/projects` to it). Built with `make ai-image`, or in production by the
+# `ai-image` service of `docker/docker-compose.prod.yml`. Build context: the repo root.
+#
+#   /repo/tsconfig.base.json, /repo/clients/shared/{core,utils,ui}/src   the engine, read-only
+#   /repo/node_modules/@types/react, @mui/icons-material/*.d.ts         the types the story tsconfig points at
+#   /repo/stories/story/tsconfig.json                                   `server/ai/agent/tsconfig.json`
+#   /opt/agent/claude/                                                  `server/ai/agent/` config, copied into
+#                                                                       the tmpfs HOME by `ai-entrypoint.sh`
+#
+# The engine paths are every `enginePaths()` entry of `server/src/project/ProjectRoot.ts`;
+# `server/__tests__/ai/agentImage.test.ts` fails when one is not copied here.
+
+# Keep these at the versions in yarn.lock (the test checks them against node_modules).
+ARG TYPES_REACT_VERSION=18.3.24
+ARG MUI_ICONS_VERSION=6.5.0
+
+# The type declarations only: node_modules is not in the build context (.dockerignore).
+FROM node:22.14.0-slim AS deps
+ARG TYPES_REACT_VERSION
+ARG MUI_ICONS_VERSION
+WORKDIR /deps
+RUN npm init -y > /dev/null \
+    && npm install --no-save --ignore-scripts --legacy-peer-deps --no-audit --no-fund \
+        "@types/react@${TYPES_REACT_VERSION}" "@mui/icons-material@${MUI_ICONS_VERSION}"
+
+FROM node:22.14.0-slim
+# Needs --max-budget-usd (§0.3). Bump on purpose: the stream-json shapes the server parses come from this version.
+ARG CLAUDE_CODE_VERSION=2.1.325
+ENV DISABLE_AUTOUPDATER=1 \
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+    DISABLE_TELEMETRY=1 \
+    DISABLE_ERROR_REPORTING=1 \
+    NPM_CONFIG_UPDATE_NOTIFIER=false
+RUN npm install -g --no-audit --no-fund "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+    && npm cache clean --force
+
+# uid 1000 owns the story files on the volume (the app image's `node` user); the base image's `node` takes its place
+RUN userdel --remove node \
+    && groupadd --gid 1000 agent \
+    && useradd --uid 1000 --gid 1000 --home-dir /home/agent --shell /usr/sbin/nologin agent
+
+COPY tsconfig.base.json /repo/tsconfig.base.json
+COPY clients/shared/core/src /repo/clients/shared/core/src
+COPY clients/shared/utils/src /repo/clients/shared/utils/src
+COPY clients/shared/ui/src /repo/clients/shared/ui/src
+COPY --from=deps /deps/node_modules/@types/react /repo/node_modules/@types/react
+COPY --from=deps /deps/node_modules/@mui/icons-material/*.d.ts /repo/node_modules/@mui/icons-material/
+
+COPY server/ai/agent/tsconfig.json /repo/stories/story/tsconfig.json
+COPY server/ai/agent/CLAUDE.md server/ai/agent/settings.json /opt/agent/claude/
+COPY server/ai/agent/skills /opt/agent/claude/skills
+COPY --chmod=0755 docker/ai-entrypoint.sh /usr/local/bin/ai-entrypoint.sh
+
+# mount points; the launcher mounts the story's folders over them
+RUN mkdir -p /repo/stories/story/data /repo/stories/story/types /home/agent /sessions \
+    && chown agent:agent /repo/stories/story/data /repo/stories/story/types /home/agent /sessions \
+    && chmod -R a+rX,go-w /repo /opt/agent
+
+USER agent
+ENV HOME=/home/agent
+WORKDIR /repo/stories/story
+ENTRYPOINT ["/usr/local/bin/ai-entrypoint.sh"]

@@ -1,19 +1,19 @@
-import { CircularProgress } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { FormHeader } from '../../components/FormHeader';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { EditorHeader } from '../../components/layout/EditorHeader';
 import {
     FormCenter,
-    FormFields,
     FormMeta,
     FormPage,
-} from '../../components/formLayout';
-import { Notices } from '../../components/Notices';
+} from '../../components/layout/formLayout';
+import { FormFields } from '../../components/form/FormFields';
+import { Notices } from '../../components/feedback/Notices';
 import { router } from '../../shell';
 import type { StructureStore } from '../../stores/StructureStore';
-import { confirmDelete } from './confirmDelete';
+import { confirmDelete } from './entityDialogs';
 import { EntityFields } from './EntityFields';
 import type { EntityFormStore } from './EntityFormStore';
-import { displayName } from './entityFields';
+import { displayText } from '../../api';
 
 type TProps = {
     store: EntityFormStore;
@@ -34,7 +34,7 @@ export const EntityForm = observer(({ store, structure }: TProps) => {
     if (store.loading && !draft)
         return (
             <FormCenter>
-                <CircularProgress size={24} />
+                <LoadingState />
             </FormCenter>
         );
     if (store.notFound) {
@@ -78,8 +78,8 @@ export const EntityForm = observer(({ store, structure }: TProps) => {
 
     return (
         <FormPage>
-            <FormHeader
-                title={displayName(draft.name, draft.id)}
+            <EditorHeader
+                title={displayText(draft.name, draft.id)}
                 store={store.resource}
                 onDelete={() => void onDelete()}
             />

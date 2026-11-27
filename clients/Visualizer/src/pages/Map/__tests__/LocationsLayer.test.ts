@@ -85,8 +85,12 @@ describe('LocationsLayer', () => {
         expect(layer.getShape('cave')?.label).toMatch(/no location file/);
         store.setLocationColor('village', '#112233');
         flushFrames();
-        expect(layer.getShape('village')?.fill).toBe('#11223359');
+        expect(layer.getShape('village')?.fill).toBe('#11223373');
         expect(layer.getShape('village')?.stroke?.color).toBe('#112233');
+        expect(layer.getShape('village')?.labelStyle?.color).toBe('#fff');
+        store.setLocationColor('village', '#ffeb3b');
+        flushFrames();
+        expect(layer.getShape('village')?.labelStyle?.color).toBe('#000');
         store.setMode('locations');
         store.selectLocation('village');
         expect(layer.selection.selected?.id).toBe('location:village');

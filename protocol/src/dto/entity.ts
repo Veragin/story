@@ -13,7 +13,7 @@ type TEntityBase<K extends TEntityKind> = TVersioned &
         id: string;
     };
 
-/** The fields the author added to `TCharacter` / `TNpc` / `TLocation`; set when the type has any. */
+/** The fields the author added to the character / npc / location class; set when the class has any. */
 type TUserFields = { userFields?: TValueRecord };
 
 export type TInventoryEntryDto = { id: string; amount?: number } & { [key: string]: TValue };
@@ -22,7 +22,7 @@ export type TCharacterDto = TEntityBase<'characters'> &
     TUserFields & {
         name: TMaybeCode<string>;
         description?: TMaybeCode<string>;
-        /** A text description of the portrait; the picture is the sibling `.png`. */
+        /** A text description of the portrait; the picture is the sibling `.webp` or `.png`. */
         image?: TMaybeCode<string>;
         /** Full passage id. */
         startPassageId?: TMaybeCode<string>;
@@ -35,7 +35,7 @@ export type TNpcDto = TEntityBase<'npcs'> &
     TUserFields & {
         name: TMaybeCode<string>;
         description: TMaybeCode<string>;
-        /** A text description of the portrait; the picture is the sibling `.png`. */
+        /** A text description of the portrait; the picture is the sibling `.webp` or `.png`. */
         image?: TMaybeCode<string>;
         init: TMaybeCode<TValueRecord>;
         dataType?: TDataTypeDto;
@@ -46,6 +46,8 @@ export type TLocationDto = TEntityBase<'locations'> &
     TUserFields & {
         name: TMaybeCode<string>;
         description: TMaybeCode<string>;
+        /** A text description of the picture; the picture is the sibling `.webp` or `.png`. */
+        image?: TMaybeCode<string>;
         localCharacters: TMaybeCode<TLocalCharacterDto[]>;
         /** Location ids. */
         sublocations?: TMaybeCode<string[]>;

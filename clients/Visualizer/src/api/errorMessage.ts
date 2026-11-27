@@ -1,5 +1,6 @@
 import type { TApiErrorBody, TApiErrorCode } from '@story/protocol';
 import { ApiError } from './ApiError';
+import { formatDiagnostic } from './diagnostics';
 
 type TGitErrorCode = Extract<TApiErrorCode, `git_${string}`>;
 
@@ -22,15 +23,30 @@ const GIT_MESSAGES: Record<TGitErrorCode, (body: TApiErrorBody) => string> = {
 
 const isGitErrorCode = (code: TApiErrorCode): code is TGitErrorCode => code in GIT_MESSAGES;
 
+type TAiErrorCode = Extract<TApiErrorCode, `ai_${string}`>;
+
+const AI_MESSAGES: Record<TAiErrorCode, () => string> = {
+    ai_no_credits: () => _('The story has no AI credits left.'),
+    ai_busy: () => _('The agent is still working on the previous message. Wait, or stop it.'),
+    ai_disabled: () => _('The AI agent is not enabled for this story.'),
+    ai_unavailable: () => _('The AI agent is not available on this server.'),
+    ai_image_failed: () => _('The image could not be generated. Try again, or change the description.'),
+    ai_image_busy: () => _('An image is already being generated. Wait for it to finish.'),
+};
+
+const isAiErrorCode = (code: TApiErrorCode): code is TAiErrorCode => code in AI_MESSAGES;
+
 export const errorBodyMessage = (body: TApiErrorBody, status?: number): string => {
     if (isGitErrorCode(body.error)) return GIT_MESSAGES[body.error](body);
+    if (isAiErrorCode(body.error)) return AI_MESSAGES[body.error]();
     if (body.message) return `${body.error}: ${body.message}`;
     return status === undefined ? body.error : `${body.error} (${status})`;
 };
 
 export const errorMessage = (e: unknown): string => {
     if (e instanceof ApiError) {
-        if (e.isNotImplemented) return 'The server does not implement this route yet (501).';
+        if (e.isNotImplemented) return _('The server does not implement this yet (501).');
+        if (e.isInvalid && e.diagnostics.length > 0) return e.diagnostics.map(formatDiagnostic).join('\n');
         return errorBodyMessage(e.body, e.status);
     }
     return e instanceof Error ? e.message : String(e);

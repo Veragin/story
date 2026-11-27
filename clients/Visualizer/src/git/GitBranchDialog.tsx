@@ -1,24 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-    Alert,
     Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
+    Chip,
+    LinearProgress,
     List,
+    ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    ListSubheader,
     Stack,
-    TextField,
+    styled,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { observer } from 'mobx-react-lite';
-import { isGitBranchName } from '@story/protocol';
+import { isGitBranchName, type TGitBranchDto } from '@story/protocol';
 import { showToast } from '@story/ui';
+import { DeleteButton } from '../components/buttons/DeleteButton';
+import { AppDialog } from '../components/dialog/AppDialog';
+import { DialogButtons } from '../components/dialog/DialogButtons';
+import { ErrorAlert } from '../components/feedback/ErrorAlert';
+import { FormField } from '../components/form/FormField';
+import { FormTextInput } from '../components/form/FormTextInput';
+import { TextInput } from '../components/inputs/TextInput';
+import { InlineRow } from '../components/layout/InlineRow';
+import { useVisualizerStore } from '../context';
+import { askDeleteBranch, cleanBeforeSwitch } from './gitDialogs';
 import type { GitStore } from './GitStore';
+import { relativeAge } from './relativeAge';
 
 type TProps = {
     store: GitStore;
@@ -26,18 +35,29 @@ type TProps = {
 };
 
 export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
+    const { timeManager } = useVisualizerStore();
     const [filter, setFilter] = useState('');
     const [newBranch, setNewBranch] = useState('');
-    const [error, setError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [fetching, setFetching] = useState(false);
 
-    const status = store.status;
-    const current = status?.branch ?? '';
-    const local = status?.localBranches ?? [];
-    const remoteOnly = (status?.remoteBranches ?? []).filter(
-        (b) => !local.includes(b)
-    );
+    const { refsKey, clearError } = store;
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            const result = await store.loadBranches();
+            if (!cancelled) setLoadError(result.ok ? null : result.message);
+        };
+        void load();
+        return () => {
+            cancelled = true;
+        };
+    }, [store, refsKey]);
+    useEffect(clearError, [clearError]);
+
+    const branches = store.branches ?? [];
     const needle = filter.trim().toLowerCase();
-    const matches = (branch: string) => branch.toLowerCase().includes(needle);
+    const shown = branches.filter((b) => b.name.toLowerCase().includes(needle));
 
     const name = newBranch.trim();
     const nameError =
@@ -45,117 +65,162 @@ export const GitBranchDialog = observer(({ store, onClose }: TProps) => {
             ? null
             : !isGitBranchName(name)
               ? _('Not a valid branch name')
-              : local.includes(name) || remoteOnly.includes(name)
+              : branches.some((b) => b.name === name)
                 ? _('That branch exists')
                 : null;
 
-    const checkout = async (branch: string, create: boolean) => {
-        setError(null);
-        const result = await store.checkout(branch, create);
-        if (!result.ok) {
-            setError(result.message);
-            return;
-        }
-        showToast(_('Switched to %s', branch), { variant: 'success' });
-        onClose();
+    const fetchBranches = async () => {
+        setFetching(true);
+        await store.fetch({ force: true });
+        setFetching(false);
     };
 
-    const renderBranch = (branch: string, remote: boolean) => (
-        <ListItemButton
-            key={`${remote ? 'remote' : 'local'}/${branch}`}
-            selected={branch === current}
-            disabled={store.busy || store.dirty || branch === current}
-            onClick={() => void checkout(branch, false)}
+    const switchTo = async (branch: string) => {
+        if (!(await cleanBeforeSwitch(store, branch))) return;
+        const result = await store.checkout(branch, false);
+        if (result.ok)
+            showToast(_('Switched to %s', branch), { variant: 'success' });
+    };
+
+    const create = async () => {
+        const result = await store.checkout(name, true);
+        if (!result.ok) return;
+        setNewBranch('');
+        showToast(_('Created and switched to %s', name), {
+            variant: 'success',
+        });
+    };
+
+    const remove = async (branch: TGitBranchDto) => {
+        const answer = await askDeleteBranch(branch);
+        if (!answer) return;
+        const result = await store.deleteBranch(branch.name, answer.remote);
+        if (result.ok)
+            showToast(_('Deleted %s', branch.name), { variant: 'success' });
+    };
+
+    const renderBranch = (branch: TGitBranchDto) => (
+        <ListItem
+            key={branch.name}
+            disablePadding
+            secondaryAction={
+                !branch.current && (
+                    <DeleteButton
+                        iconOnly
+                        label={_('Delete %s', branch.name)}
+                        edge="end"
+                        disabled={store.busy}
+                        onClick={() => void remove(branch)}
+                    />
+                )
+            }
         >
-            <ListItemIcon>
-                {branch === current && <CheckIcon fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText
-                primary={remote ? `origin/${branch}` : branch}
-                secondary={branch === current ? _('current') : undefined}
-            />
-        </ListItemButton>
+            <ListItemButton
+                selected={branch.current}
+                disabled={store.busy || branch.current}
+                onClick={() => void switchTo(branch.name)}
+            >
+                <SCheck>
+                    {branch.current && <CheckIcon fontSize="small" />}
+                </SCheck>
+                <ListItemText
+                    primary={
+                        <Stack direction="row" gap={1} alignItems="center">
+                            <span>{branch.name}</span>
+                            {!branch.local && (
+                                <Chip size="small" label={_('Remote')} />
+                            )}
+                            {!branch.remote && (
+                                <Chip size="small" label={_('Local')} />
+                            )}
+                        </Stack>
+                    }
+                    secondary={
+                        <span
+                            title={new Date(
+                                branch.commit.date
+                            ).toLocaleString()}
+                        >
+                            <code>{branch.commit.shortHash}</code> ·{' '}
+                            {branch.commit.subject} · {branch.commit.author} ·{' '}
+                            {relativeAge(timeManager, branch.commit.date)}
+                        </span>
+                    }
+                    slotProps={{ secondary: { noWrap: true } }}
+                />
+            </ListItemButton>
+        </ListItem>
     );
 
+    const error = store.lastError ?? loadError;
+
     return (
-        <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-            <DialogTitle>{_('Switch branch')}</DialogTitle>
-            <DialogContent>
-                <Stack gap={2} sx={{ pt: 1 }}>
-                    {store.dirty && (
-                        <Alert severity="warning">
-                            {_(
-                                'There are uncommitted changes. Commit them before switching.'
-                            )}
-                        </Alert>
-                    )}
-                    <TextField
-                        size="small"
-                        label={_('Filter')}
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        slotProps={{ htmlInput: { 'aria-label': 'filter' } }}
-                    />
-                    <List dense sx={{ maxHeight: 320, overflow: 'auto' }}>
-                        <ListSubheader>{_('Local')}</ListSubheader>
-                        {local
-                            .filter(matches)
-                            .map((b) => renderBranch(b, false))}
-                        {remoteOnly.length > 0 && (
-                            <ListSubheader>{_('Remote')}</ListSubheader>
-                        )}
-                        {remoteOnly
-                            .filter(matches)
-                            .map((b) => renderBranch(b, true))}
-                    </List>
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            if (name && !nameError) void checkout(name, true);
-                        }}
-                    >
-                        <Stack direction="row" gap={1} alignItems="flex-start">
-                            <TextField
-                                size="small"
-                                fullWidth
-                                label={_('New branch from current')}
-                                value={newBranch}
-                                onChange={(e) => setNewBranch(e.target.value)}
-                                error={nameError !== null}
-                                helperText={nameError ?? ' '}
-                                slotProps={{
-                                    htmlInput: {
-                                        'aria-label': 'new branch',
-                                        'spellCheck': false,
-                                    },
-                                }}
-                            />
-                            <Button
-                                type="submit"
-                                variant="outlined"
-                                disabled={
-                                    store.busy ||
-                                    store.dirty ||
-                                    !name ||
-                                    nameError !== null
-                                }
-                            >
-                                {_('Create')}
-                            </Button>
-                        </Stack>
-                    </form>
-                    {error && (
-                        <Alert severity="error" sx={{ whiteSpace: 'pre-wrap' }}>
-                            {error}
-                        </Alert>
-                    )}
-                </Stack>
-            </DialogContent>
-            <DialogActions>
-                <Button color="inherit" onClick={onClose}>
-                    {_('Close')}
+        <AppDialog
+            title={_('Branches')}
+            titleActions={
+                <Button
+                    size="small"
+                    startIcon={<RefreshIcon />}
+                    disabled={store.busy || fetching}
+                    onClick={() => void fetchBranches()}
+                >
+                    {_('Fetch')}
                 </Button>
-            </DialogActions>
-        </Dialog>
+            }
+            onClose={onClose}
+            onSubmit={() => {
+                if (name && !nameError) void create();
+            }}
+            actions={<DialogButtons closeOnly onClose={onClose} />}
+        >
+            {(store.busy || fetching) && <LinearProgress />}
+            <FormTextInput
+                label={_('Filter')}
+                value={filter}
+                onChange={(next) => setFilter(next ?? '')}
+                dataField="filter"
+            />
+            <SBranches dense>{shown.map(renderBranch)}</SBranches>
+            <FormField
+                label={_('New branch from current')}
+                error={nameError}
+                helperText={
+                    store.dirty
+                        ? _('The uncommitted changes come along')
+                        : undefined
+                }
+            >
+                <InlineRow>
+                    <TextInput
+                        value={newBranch}
+                        onChange={setNewBranch}
+                        hasError={nameError !== null}
+                        spellCheck={false}
+                        ariaLabel={_('New branch from current')}
+                        dataField="newBranch"
+                    />
+                    <Button
+                        type="submit"
+                        variant="outlined"
+                        disabled={store.busy || !name || nameError !== null}
+                    >
+                        {_('Create')}
+                    </Button>
+                </InlineRow>
+            </FormField>
+            <ErrorAlert
+                error={error}
+                onClose={store.lastError ? clearError : undefined}
+            />
+        </AppDialog>
     );
 });
+
+const SCheck = styled(ListItemIcon)`
+    min-width: 32px;
+`;
+
+const SBranches = styled(List)`
+    max-height: 360px;
+    overflow: auto;
+`;

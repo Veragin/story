@@ -1,12 +1,13 @@
 import type { TLinkDto } from '@story/protocol';
-import { FormFunctionInput } from '../../../../components/inputs/form/FormFunctionInput';
-import { FormNumberInput } from '../../../../components/inputs/form/FormNumberInput';
-import { FormStringInput } from '../../../../components/inputs/form/FormStringInput';
-import { FormTypeInput } from '../../../../components/inputs/form/FormTypeInput';
+import { FormFunctionEditor } from '../../../../components/editors/FormFunctionEditor';
+import { FormMaybeCodeNumberInput } from '../../../../components/code/FormMaybeCodeNumberInput';
+import { FormMaybeCodeTextInput } from '../../../../components/code/FormMaybeCodeTextInput';
+import { FormMaybeCodeAutocompleteInput } from '../../../../components/code/FormMaybeCodeAutocompleteInput';
 import { nestedDiagnostics } from '../../../../components/inputs/inputTypes';
 import { CostField } from '../CostField/CostField';
-import { ItemDiagnostics } from './ItemDiagnostics';
+import { DiagnosticsList } from '../../../../components/feedback/DiagnosticsList';
 import { setField } from './listUtils';
+import { newPassageOption } from './newPassageOption';
 import type { TDiag, TOptionsProps } from './types';
 
 type TProps = TOptionsProps & {
@@ -23,6 +24,7 @@ export const LinkEditor = ({
     diag,
     passageOptions,
     itemOptions,
+    passageCreator,
 }: TProps) => {
     const set = <K extends keyof TLinkDto>(
         key: K,
@@ -30,23 +32,24 @@ export const LinkEditor = ({
     ) => onChange(setField(link, key, value));
     return (
         <>
-            <ItemDiagnostics diagnostics={diag(path)} />
-            <FormStringInput
+            <DiagnosticsList diagnostics={diag(path)} />
+            <FormMaybeCodeTextInput
                 label={_('Text')}
                 value={link.text}
                 onChange={(v) => set('text', v ?? '')}
                 diagnostics={diag(`${path}.text`)}
                 dataField={`${path}.text`}
             />
-            <FormTypeInput
+            <FormMaybeCodeAutocompleteInput
                 label={_('Target passage')}
                 value={link.passageId}
                 onChange={(v) => set('passageId', v ?? '')}
                 options={passageOptions}
+                {...newPassageOption(passageCreator)}
                 diagnostics={diag(`${path}.passageId`)}
                 dataField={`${path}.passageId`}
             />
-            <FormNumberInput
+            <FormMaybeCodeNumberInput
                 label={_('Auto priority')}
                 value={link.autoPriortiy}
                 onChange={(v) => set('autoPriortiy', v)}
@@ -64,8 +67,8 @@ export const LinkEditor = ({
                 diagnosticsOf={nestedDiagnostics(diag, `${path}.cost`)}
                 dataField={`${path}.cost`}
             />
-            <FormFunctionInput
-                label="onFinish"
+            <FormFunctionEditor
+                label={_('On finish')}
                 value={link.onFinish}
                 onChange={(v) => set('onFinish', v)}
                 optional

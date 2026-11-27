@@ -1,10 +1,12 @@
-# Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Three targets:
+# Production image (multiple stories, phase 11), used by `docker/docker-compose.prod.yml`. Four targets:
 #
-#   app    the repo with its dependencies installed: runs the server (`server/`, through the swc loader);
-#          also holds the standalone SinglePlayer build (base `./`) that the server zips for "Export for web"
-#   web    `app` plus the static builds of the landing page (base `/`), the Visualizer client
-#          (base `/visualizer/`) and SinglePlayer (base `/play/`); only a build stage, nothing runs it
-#   proxy  Caddy with `docker/Caddyfile` and the three builds from `web`: the one public origin
+#   app       the repo with its dependencies installed: runs the server (`server/`, through the swc loader);
+#             also holds the standalone SinglePlayer build (base `./`) that the server zips for "Export for web"
+#   launcher  `app` plus the docker CLI: the AI launcher (`server/aiLauncher/`), the only service with the
+#             docker socket. The server image gets no docker CLI
+#   web       `app` plus the static builds of the landing page (base `/`), the Visualizer client
+#             (base `/visualizer/`) and SinglePlayer (base `/play/`); only a build stage, nothing runs it
+#   proxy     Caddy with `docker/Caddyfile` and the three builds from `web`: the one public origin
 #
 # The cross-app links are baked into the static builds as paths, not origins (`/`, `/visualizer`,
 # `/play`), so the images do not depend on the domain; `SITE_ADDRESS` is read at run time.
@@ -25,7 +27,18 @@ ENV MAIL_FROM=info@story.cz
 # The example's content for an empty `stories` volume (`docker/prod-entrypoint.sh`; its metadata is
 # `server/seed/example.story.json`). `/app/stories` itself is shadowed by the volume at run time.
 RUN mkdir -p /app/.seed && cp -a stories/example /app/.seed/ && chmod +x docker/prod-entrypoint.sh
+# The mount point of the `story-ai-sessions` volume: created here so a new volume is owned by `node`, the uid
+# the agents run as (the server creates one folder per story in it)
+RUN mkdir -p /app/ai-sessions
 ENTRYPOINT ["/app/docker/prod-entrypoint.sh"]
+
+FROM app AS launcher
+USER root
+RUN sh docker/install-docker-cli.sh
+USER node
+WORKDIR /app/server
+ENTRYPOINT []
+CMD ["node", "--import", "@swc-node/register/esm-register", "aiLauncher/main.ts"]
 
 FROM app AS web
 RUN LANDING_BASE=/ VITE_VISUALIZER_URL=/visualizer VITE_ENGINE_URL=/play \

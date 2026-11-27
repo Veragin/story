@@ -1,4 +1,11 @@
-import { TChapterId, TChapterPassage, TChapterPassageId, TCharacterId, TPassageScreen } from '@story/types';
+import {
+    TChapterId,
+    TChapterPassage,
+    TChapterPassageId,
+    TCharacterId,
+    TPassageLinear,
+    TPassageScreen,
+} from '@story/types';
 
 export const createDummyPassage = (chapterId: TChapterId, characterId: TCharacterId): TChapterPassage<TChapterId> => ({
     id: '' as TChapterPassageId<TChapterId>,
@@ -11,3 +18,5 @@ export const createDummyPassage = (chapterId: TChapterId, characterId: TCharacte
 });
 
 export type TUnkownPassageScreen = TPassageScreen<TChapterId, TCharacterId, TChapterPassageId<TChapterId>>;
+export type TUnkownPassageLinear = TPassageLinear<TChapterId, TCharacterId, TChapterPassageId<TChapterId>>;
+export type TPlayablePassage = TUnkownPassageScreen | TUnkownPassageLinear;

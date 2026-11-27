@@ -1,5 +1,9 @@
 import type {
     TAddChapterCharacterBody,
+    TAiDto,
+    TAiResumeDto,
+    TAiSendMessageDto,
+    TAiSessionDto,
     TCatalogEntryDto,
     TCatalogListDto,
     TClearedReferencesDto,
@@ -15,6 +19,7 @@ import type {
     TCreatePassageBody,
     TCreateTriggerBody,
     TCreateTypeBody,
+    TDeleteGitBranchBody,
     TDeleteGitConfigBody,
     TDeleteMapBody,
     TEditStoryInfoDto,
@@ -23,12 +28,13 @@ import type {
     TEntityDtoByKind,
     TEntityKind,
     TEntityListDto,
+    TGenerateImageBody,
+    TGenerateImageResult,
+    TGitBranchDto,
     TGitCheckoutBody,
     TGitCommitBody,
     TGitCommitResultDto,
     TGitDto,
-    TGitLogEntryDto,
-    TGitLogQuery,
     TGitPullResultDto,
     TGitStatusDto,
     THealthDto,
@@ -66,6 +72,13 @@ import type {
     TUploadImageBody,
     TVersionedBody,
 } from '@story/protocol';
+import type { TAiEventListener, TAiEventsConnection } from './aiEvents';
+
+export type TStoryImageFile = {
+    /** Relative to the story folder, `/`-separated. */
+    file: string;
+    url: string;
+};
 
 export type TVisualizerApi = {
     health(): Promise<THealthDto>;
@@ -126,6 +139,8 @@ export type TVisualizerApi = {
     getImage(owner: TImageOwner, id: string): Promise<TImageDto>;
     uploadImage(owner: TImageOwner, id: string, body: TUploadImageBody): Promise<TImageDto>;
     deleteImage(owner: TImageOwner, id: string, body: TVersionedBody): Promise<TImageDto>;
+    generateImage(owner: TImageOwner, id: string, body: TGenerateImageBody): Promise<TGenerateImageResult>;
+    listImageFiles(): Promise<TStoryImageFile[]>;
 
     getMap(mapId: string): Promise<TMapDto>;
     updateMap(mapId: string, body: TUpdateMapBody): Promise<TMapDto>;
@@ -143,7 +158,18 @@ export type TVisualizerApi = {
     gitFetch(): Promise<TGitStatusDto>;
     gitCommit(body: TGitCommitBody): Promise<TGitCommitResultDto>;
     gitPush(): Promise<TGitStatusDto>;
+    gitForcePush(): Promise<TGitStatusDto>;
     gitPull(): Promise<TGitPullResultDto>;
     gitCheckout(body: TGitCheckoutBody): Promise<TGitStatusDto>;
-    getGitLog(query?: TGitLogQuery): Promise<TGitLogEntryDto[]>;
+    gitDiscard(): Promise<TGitStatusDto>;
+    getGitBranches(): Promise<TGitBranchDto[]>;
+    deleteGitBranch(body: TDeleteGitBranchBody): Promise<TGitStatusDto>;
+
+    getAi(): Promise<TAiDto>;
+    aiEvents(onEvent: TAiEventListener): TAiEventsConnection;
+    sendAiMessage(body: TAiSendMessageDto): Promise<TOkDto>;
+    interruptAi(): Promise<TOkDto>;
+    listAiSessions(): Promise<TAiSessionDto[]>;
+    resumeAi(body: TAiResumeDto): Promise<TOkDto>;
+    clearAi(): Promise<TOkDto>;
 };

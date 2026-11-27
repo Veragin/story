@@ -1,47 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import {
-    Button,
-    IconButton,
-    MenuItem,
-    styled,
-    TextField,
-    Tooltip,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { styled, ToggleButton, Tooltip } from '@mui/material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AlarmIcon from '@mui/icons-material/Alarm';
 import { spacingCss } from '@story/ui';
-import type { TChapterId } from '@story/types';
 import { api, apiEvents } from '../../api';
-import { useVisualizerStore } from '../../context';
+import { entityStore, structureStore, useVisualizerStore } from '../../context';
+import { AddButton } from '../../components/buttons/AddButton';
+import { HelpButton } from '../../components/buttons/HelpButton';
+import { HintText } from '../../components/feedback/HintText';
+import { LoadErrorState } from '../../components/feedback/LoadErrorState';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { SelectInput } from '../../components/inputs/SelectInput';
 import { ControlBar, modals, PageContainer, router, useKey } from '../../shell';
 import { TimelineStore, toastNotify } from './store/TimelineStore';
 import { TimelineView, type TTimelineTooltip } from './canvas/TimelineView';
-import { AddModal } from './AddModal';
-import { ReferencesModal } from './ReferencesModal';
-import { TriggerModal } from './TriggerModal';
+import { ChapterSidebar } from './ChapterSidebar';
+import {
+    openAddTimelineItem,
+    openTimelineHelp,
+    openTrigger,
+    showUndeletedReferences,
+} from './timelineDialogs';
 
 const ALL = '__all__';
-
-const toggleSx = (on: boolean) => ({ color: on ? '#ffc107' : '#ffffff55' });
 
 const createStore = () =>
     new TimelineStore(api, apiEvents, {
         confirm: (o) => modals.confirm(o),
-        showReferences: (title, references) =>
-            modals.open((close) => (
-                <ReferencesModal
-                    title={title}
-                    references={references}
-                    close={close}
-                />
-            )),
+        showReferences: showUndeletedReferences,
         notify: toastNotify,
         openChapter: (chapterId) =>
             router.navigate({
                 page: 'chapter',
-                chapterId: chapterId as TChapterId,
+                chapterId,
             }),
     });
 
@@ -64,18 +56,10 @@ export const TimelinePage = observer(() => {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const openTrigger = (triggerId: string) =>
-            modals.open((close) => (
-                <TriggerModal
-                    store={store}
-                    triggerId={triggerId}
-                    close={close}
-                />
-            ));
         const view = new TimelineView(canvas, store, {
             timeManager,
             onTooltip: setTooltip,
-            onOpenTrigger: openTrigger,
+            onOpenTrigger: (triggerId) => openTrigger(store, triggerId),
         });
         viewRef.current = view;
         return () => {
@@ -91,11 +75,14 @@ export const TimelinePage = observer(() => {
     });
 
     const openAdd = () => {
-        const time = viewRef.current?.viewCenterTime() ?? 0;
-        modals.open((close) => (
-            <AddModal store={store} time={time} close={close} />
-        ));
+        openAddTimelineItem(store, viewRef.current?.viewCenterTime() ?? 0);
     };
+
+    const selectedChapterId =
+        store.selected?.kind === 'chapter' &&
+        store.chapters.has(store.selected.id)
+            ? store.selected.id
+            : null;
 
     const unplaced =
         store.unplaced.chapters.length + store.unplaced.triggers.length;
@@ -104,35 +91,28 @@ export const TimelinePage = observer(() => {
         <PageContainer>
             <ControlBar>
                 <SControls>
-                    <TextField
-                        select
-                        size="small"
-                        aria-label={_('Character')}
-                        value={store.characterId ?? ALL}
-                        onChange={(e) =>
-                            store.setCharacter(
-                                e.target.value === ALL ? null : e.target.value
-                            )
-                        }
-                        sx={{ minWidth: 170 }}
-                    >
-                        <MenuItem value={ALL}>{_('All characters')}</MenuItem>
-                        {store.characters.map((c) => (
-                            <MenuItem key={c.id} value={c.id}>
-                                {c.name}
-                            </MenuItem>
-                        ))}
-                    </TextField>
-                    <Button
+                    <SCharacter>
+                        <SelectInput
+                            ariaLabel={_('Character')}
+                            value={store.characterId ?? ALL}
+                            onChange={(id) =>
+                                store.setCharacter(id === ALL ? null : id)
+                            }
+                            options={[
+                                { id: ALL, label: _('All characters') },
+                                ...store.characters.map((c) => ({
+                                    id: c.id,
+                                    label: c.name,
+                                })),
+                            ]}
+                        />
+                    </SCharacter>
+                    <AddButton
                         variant="outlined"
-                        color="inherit"
-                        size="small"
-                        startIcon={<AddIcon />}
+                        tone="inherit"
                         disabled={store.status !== 'ready'}
                         onClick={openAdd}
-                    >
-                        {_('Add')}
-                    </Button>
+                    />
                     <Tooltip
                         title={
                             store.showConnections
@@ -140,13 +120,14 @@ export const TimelinePage = observer(() => {
                                 : _('Show connections')
                         }
                     >
-                        <IconButton
-                            onClick={store.toggleConnections}
-                            sx={toggleSx(store.showConnections)}
-                            aria-pressed={store.showConnections}
+                        <ToggleButton
+                            value="showConnections"
+                            size="small"
+                            selected={store.showConnections}
+                            onChange={store.toggleConnections}
                         >
-                            <AccountTreeIcon />
-                        </IconButton>
+                            <AccountTreeIcon fontSize="small" />
+                        </ToggleButton>
                     </Tooltip>
                     <Tooltip
                         title={
@@ -155,14 +136,16 @@ export const TimelinePage = observer(() => {
                                 : _('Show time triggers')
                         }
                     >
-                        <IconButton
-                            onClick={store.toggleTriggers}
-                            sx={toggleSx(store.showTriggers)}
-                            aria-pressed={store.showTriggers}
+                        <ToggleButton
+                            value="showTriggers"
+                            size="small"
+                            selected={store.showTriggers}
+                            onChange={store.toggleTriggers}
                         >
-                            <AlarmIcon />
-                        </IconButton>
+                            <AlarmIcon fontSize="small" />
+                        </ToggleButton>
                     </Tooltip>
+                    <HelpButton onClick={() => openTimelineHelp()} />
                 </SControls>
             </ControlBar>
             <SStage>
@@ -176,17 +159,19 @@ export const TimelinePage = observer(() => {
                     </STooltip>
                 )}
                 {store.status === 'loading' && (
-                    <SStatus>{_('Loading…')}</SStatus>
+                    <SStatus>
+                        <LoadingState />
+                    </SStatus>
                 )}
                 {store.status === 'error' && (
                     <SStatus>
-                        {_(
-                            'Could not load the timeline: %s',
-                            store.loadError ?? ''
-                        )}{' '}
-                        <Button size="small" onClick={() => void store.load()}>
-                            {_('Retry')}
-                        </Button>
+                        <LoadErrorState
+                            message={_(
+                                'Could not load the timeline: %s',
+                                store.loadError ?? ''
+                            )}
+                            onRetry={() => void store.load()}
+                        />
                     </SStatus>
                 )}
                 {unplaced > 0 && (
@@ -197,6 +182,15 @@ export const TimelinePage = observer(() => {
                         )}
                     </SHint>
                 )}
+                {selectedChapterId && (
+                    <ChapterSidebar
+                        key={selectedChapterId}
+                        store={store}
+                        chapterId={selectedChapterId}
+                        entities={entityStore}
+                        structure={structureStore}
+                    />
+                )}
             </SStage>
         </PageContainer>
     );
@@ -206,6 +200,10 @@ const SControls = styled('div')`
     display: flex;
     align-items: center;
     gap: ${spacingCss(1)};
+`;
+
+const SCharacter = styled('div')`
+    min-width: 170px;
 `;
 
 const SStage = styled('div')`
@@ -226,9 +224,9 @@ const STooltip = styled('div')`
     max-width: 320px;
     padding: 6px 10px;
     border-radius: 6px;
-    background: #2b2f36ee;
-    color: #fff;
-    font-size: 13px;
+    background: ${({ theme }) => theme.palette.surface.overlay};
+    color: ${({ theme }) => theme.palette.text.primary};
+    font-size: ${({ theme }) => theme.typography.small.fontSize};
     white-space: pre-wrap;
     z-index: 2;
 `;
@@ -237,17 +235,11 @@ const SStatus = styled('div')`
     position: absolute;
     top: ${spacingCss(2)};
     left: ${spacingCss(2)};
-    color: #fff;
-    background: #222c;
-    padding: ${spacingCss(1)} ${spacingCss(2)};
-    border-radius: 6px;
 `;
 
-const SHint = styled('div')`
+const SHint = styled(HintText)`
     position: absolute;
     top: ${spacingCss(1)};
     right: ${spacingCss(1)};
-    color: #fff9;
-    font-size: 12px;
     pointer-events: none;
 `;

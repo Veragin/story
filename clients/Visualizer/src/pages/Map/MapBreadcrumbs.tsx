@@ -1,6 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import styled from '@emotion/styled';
-import { Breadcrumbs, Link, Typography } from '@mui/material';
+import { Breadcrumbs, Link, styled, Typography } from '@mui/material';
 import { GLOBAL_MAP_ID } from '@story/protocol';
 import { spacingCss } from '@story/ui';
 import { router } from '../../shell';
@@ -41,7 +40,7 @@ const SBreadcrumbs = styled(Breadcrumbs)`
     max-width: calc(100% - ${spacingCss(3)});
     padding: ${spacingCss(0.5)} ${spacingCss(1.5)};
     border-radius: 8px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #fff;
+    background-color: ${({ theme }) => theme.palette.surface.overlay};
+    color: ${({ theme }) => theme.palette.text.primary};
     white-space: nowrap;
 `;

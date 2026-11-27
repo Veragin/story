@@ -13,13 +13,13 @@ import {
 import { HttpError } from '../common/HttpError';
 import {
     asObject,
+    displayText,
     ensureNamedImport,
     findExportedObject,
     getPropInit,
     propertyKey,
     relativeModule,
     resolveIdentifierFile,
-    stringLiteral,
     stringProp,
     topLevelVariables,
     unwrap,
@@ -329,15 +329,5 @@ export const locationRef = (sp: SourceProject): TRefResolver => ({
     },
 });
 
-export const displayName = (expr: Expression | undefined, fallback: string): string => {
-    if (!expr) return fallback;
-    const lit = stringLiteral(expr);
-    if (lit !== undefined) return lit || fallback;
-    const e = unwrap(expr);
-    if (Node.isCallExpression(e) && e.getExpression().getText() === '_') {
-        const arg = e.getArguments()[0];
-        const s = arg && Node.isExpression(arg) ? stringLiteral(arg) : undefined;
-        if (s) return s;
-    }
-    return fallback;
-};
+export const displayName = (expr: Expression | undefined, fallback: string): string =>
+    (expr && displayText(expr)) || fallback;

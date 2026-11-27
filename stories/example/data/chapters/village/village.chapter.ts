@@ -4,8 +4,8 @@ import { nobleHouseRobberyTrigger } from './triggers';
 
 export const villageChapter: TChapter<'village'> = {
     chapterId: 'village',
-    title: 'Village Chapter',
-    description: 'A village chapter is happening',
+    title: _('Village Chapter'),
+    description: _('A village chapter is happening'),
     timeRange: {
         start: Time.fromString('2.1. 7:00'),
         end: Time.fromString('5.1. 7:00'),

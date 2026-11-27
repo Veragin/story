@@ -58,10 +58,10 @@ describe('CatalogFormStore', () => {
 
     it('deletes an entry, clearing the values that pointed at it', async () => {
         const structure = await api.getStructure();
-        const character = structure.types.find((t) => t.name === 'TCharacter');
-        await api.updateType('TCharacter', {
+        const character = structure.types.find((t) => t.name === 'Character');
+        await api.updateType('Character', {
             version: character?.version ?? '',
-            fields: [{ key: 'race', type: { t: 'ref', name: 'TRace' }, optional: true }],
+            fields: [{ key: 'race', type: { t: 'ref', name: 'Race' }, optional: true }],
         });
         const thomas = await api.getEntity('characters', 'thomas');
         await api.updateEntity('characters', 'thomas', { version: thomas.version, userFields: { race: 'elf' } });
@@ -82,10 +82,10 @@ describe('CatalogFormStore', () => {
 
     it('sets a required reference to the first remaining id, and refuses when none is left', async () => {
         const structure = await api.getStructure();
-        const character = structure.types.find((t) => t.name === 'TCharacter');
-        await api.updateType('TCharacter', {
+        const character = structure.types.find((t) => t.name === 'Character');
+        await api.updateType('Character', {
             version: character?.version ?? '',
-            fields: [{ key: 'race', type: { t: 'ref', name: 'TRace' }, optional: false }],
+            fields: [{ key: 'race', type: { t: 'ref', name: 'Race' }, optional: false }],
         });
         expect(((await api.getEntity('characters', 'thomas')) as TCharacterDto).userFields).toEqual({ race: 'elf' });
 

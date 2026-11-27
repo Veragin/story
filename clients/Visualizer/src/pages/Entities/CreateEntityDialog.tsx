@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import {
-    Alert,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-    TextField,
-} from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import type { TEntityDto, TEntityKind } from '@story/protocol';
-import { ApiError } from '../../api';
-import { FormLiteralInput } from '../../components/inputs/form/FormLiteralInput';
+import { ApiError, errorMessage } from '../../api';
+import { AppDialog } from '../../components/dialog/AppDialog';
+import { DialogButtons } from '../../components/dialog/DialogButtons';
+import { useDialogSubmit } from '../../components/dialog/useDialogSubmit';
+import { ErrorAlert } from '../../components/feedback/ErrorAlert';
+import { FormAutocompleteInput } from '../../components/form/FormAutocompleteInput';
+import { FormTextInput } from '../../components/form/FormTextInput';
+import { TitleIdInput } from '../../components/form/TitleIdInput';
+import { useTitleId } from '../../components/form/useTitleId';
+import { optionsOf } from '../../structure/option';
 import type { EntityStore } from '../../stores/EntityStore';
 import type { StructureStore } from '../../stores/StructureStore';
 import {
@@ -32,13 +30,15 @@ const TITLE: Record<TEntityKind, () => string> = {
     items: () => _('New item'),
 };
 
-type Props = {
+type TProps = {
     kind: TEntityKind;
     entities: EntityStore;
     structure: StructureStore;
     onCreated: (entity: TEntityDto) => void;
-    onCancel: () => void;
+    onClose: () => void;
 };
+
+type TFormFields = Omit<TCreateForm, 'id' | 'name'>;
 
 const ITEM_TYPE_LITERAL = 'TItemType';
 
@@ -49,170 +49,117 @@ const itemTypeLiteral = (structure: StructureStore): string => {
     return type?.t === 'literal' ? type.name : ITEM_TYPE_LITERAL;
 };
 
+const createError = (e: unknown) => {
+    if (e instanceof ApiError && e.code === 'exists')
+        return idErrorMessage('exists');
+    if (e instanceof ApiError && e.isNotImplemented)
+        return _('The server does not implement creating entities yet (501).');
+    return errorMessage(e);
+};
+
 export const CreateEntityDialog = observer(
-    ({ kind, entities, structure, onCreated, onCancel }: Props) => {
+    ({ kind, entities, structure, onCreated, onClose }: TProps) => {
         const typeLiteral = itemTypeLiteral(structure);
         const typeOptions = structure.literalValues(typeLiteral);
-        const [form, setForm] = useState<TCreateForm>(() => ({
-            id: '',
-            name: '',
+        const [form, setForm] = useState<TFormFields>(() => ({
             description: '',
             type: typeOptions.includes('value')
                 ? 'value'
                 : (typeOptions[0] ?? 'value'),
         }));
-        const [touched, setTouched] = useState(false);
-        const [busy, setBusy] = useState(false);
-        const [error, setError] = useState<string | null>(null);
         const fields = createFields(kind);
-
-        const idProblem = validateEntityId(
-            form.id.trim(),
-            entities.idsOf(kind)
+        const existingIds = entities.idsOf(kind);
+        const titleId = useTitleId(
+            ENTITY_TYPE_NAMES[kind].entity.toLowerCase(),
+            (id) => validateEntityId(id, existingIds) === 'exists'
         );
+
+        const idProblem = validateEntityId(titleId.id, existingIds);
         const descriptionMissing =
             fields.description === 'required' && form.description.trim() === '';
-        const canSubmit = !idProblem && !descriptionMissing && !busy;
+        const canSubmit = !idProblem && !descriptionMissing;
 
-        const submit = async () => {
-            setTouched(true);
-            if (!canSubmit) return;
-            setBusy(true);
-            setError(null);
-            try {
+        const { busy, error, touched, submit } = useDialogSubmit(
+            async () =>
                 onCreated(
-                    await entities.create(kind, buildCreateBody(kind, form))
-                );
-            } catch (e) {
-                if (e instanceof ApiError && e.isInvalid) {
-                    setError(
-                        e.diagnostics
-                            .map((d) => `${d.file}:${d.line} ${d.message}`)
-                            .join('\n')
-                    );
-                } else if (e instanceof ApiError && e.code === 'exists') {
-                    setError(idErrorMessage('exists'));
-                } else if (e instanceof ApiError && e.isNotImplemented) {
-                    setError(
-                        _(
-                            'The server does not implement creating entities yet (501).'
-                        )
-                    );
-                } else {
-                    setError(e instanceof Error ? e.message : String(e));
-                }
-            } finally {
-                setBusy(false);
-            }
-        };
+                    await entities.create(
+                        kind,
+                        buildCreateBody(kind, {
+                            ...form,
+                            id: titleId.id,
+                            name: titleId.title,
+                        })
+                    )
+                ),
+            { canSubmit, toError: createError }
+        );
 
-        const set = (patch: Partial<TCreateForm>) =>
+        const set = (patch: Partial<TFormFields>) =>
             setForm((f) => ({ ...f, ...patch }));
-        const showIdError = (touched || form.id !== '') && idProblem;
+        const showIdError = (touched || titleId.id !== '') && idProblem;
 
         return (
-            <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        void submit();
-                    }}
-                >
-                    <DialogTitle>{TITLE[kind]()}</DialogTitle>
-                    <DialogContent>
-                        <Stack gap={2} sx={{ pt: 1 }}>
-                            <TextField
-                                autoFocus
-                                required
-                                label={_('id')}
-                                value={form.id}
-                                onChange={(e) => set({ id: e.target.value })}
-                                error={!!showIdError}
-                                helperText={
-                                    showIdError
-                                        ? idErrorMessage(idProblem)
-                                        : _(
-                                              'Used in code and file names; cannot be changed later.'
-                                          )
-                                }
-                                inputProps={{
-                                    'spellCheck': false,
-                                    'aria-label': 'id',
-                                }}
-                            />
-                            <TextField
-                                label={_('name')}
-                                value={form.name}
-                                placeholder={form.id}
-                                onChange={(e) => set({ name: e.target.value })}
-                                helperText={_('Defaults to the id.')}
-                            />
-                            {fields.description !== 'none' && (
-                                <TextField
-                                    label={_('description')}
-                                    required={fields.description === 'required'}
-                                    multiline
-                                    minRows={2}
-                                    value={form.description}
-                                    onChange={(e) =>
-                                        set({ description: e.target.value })
-                                    }
-                                    error={touched && descriptionMissing}
-                                />
-                            )}
-                            {fields.type && (
-                                <FormLiteralInput
-                                    label={_('type')}
-                                    value={form.type}
-                                    onChange={(type) =>
-                                        set({ type: type ?? form.type })
-                                    }
-                                    options={typeOptions}
-                                    onCreateOption={(value) =>
-                                        structure.addLiteralValue(
-                                            typeLiteral,
-                                            value
-                                        )
-                                    }
-                                    helperText={_(
-                                        'Goes into data/items/%s.ts',
-                                        itemSourceForType(form.type)
-                                    )}
-                                    dataField="type"
-                                />
-                            )}
-                            {fields.type && structure.writeError && (
-                                <Alert
-                                    severity="error"
-                                    onClose={structure.dismissWriteError}
-                                >
-                                    {structure.writeError}
-                                </Alert>
-                            )}
-                            {error && (
-                                <Alert
-                                    severity="error"
-                                    sx={{ whiteSpace: 'pre-wrap' }}
-                                >
-                                    {error}
-                                </Alert>
-                            )}
-                        </Stack>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button color="inherit" onClick={onCancel}>
-                            {_('Cancel')}
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={busy || (touched && !canSubmit)}
-                        >
-                            {_('Create')}
-                        </Button>
-                    </DialogActions>
-                </form>
-            </Dialog>
+            <AppDialog
+                title={TITLE[kind]()}
+                onClose={onClose}
+                onSubmit={submit}
+                error={error}
+                actions={
+                    <DialogButtons
+                        onClose={onClose}
+                        label={_('Create')}
+                        busyLabel={_('Creating…')}
+                        busy={busy}
+                        disabled={touched && !canSubmit}
+                        submit
+                    />
+                }
+            >
+                <TitleIdInput
+                    state={titleId}
+                    label={_('Name')}
+                    autoFocus
+                    idError={showIdError ? idErrorMessage(idProblem) : null}
+                    idHelperText={_(
+                        'Used in code and file names; cannot be changed later.'
+                    )}
+                    titleDataField="name"
+                />
+                {fields.description !== 'none' && (
+                    <FormTextInput
+                        label={_('Description')}
+                        multiline
+                        value={form.description}
+                        onChange={(description = '') => set({ description })}
+                        error={
+                            touched && descriptionMissing ? _('Required') : null
+                        }
+                        dataField="description"
+                    />
+                )}
+                {fields.type && (
+                    <FormAutocompleteInput
+                        label={_('Type')}
+                        value={form.type}
+                        onChange={(type) => set({ type: type ?? form.type })}
+                        options={optionsOf(typeOptions)}
+                        onCreateOption={(value) =>
+                            structure.addLiteralValue(typeLiteral, value)
+                        }
+                        helperText={_(
+                            'Goes into data/items/%s.ts',
+                            itemSourceForType(form.type)
+                        )}
+                        dataField="type"
+                    />
+                )}
+                {fields.type && (
+                    <ErrorAlert
+                        error={structure.writeError}
+                        onClose={structure.dismissWriteError}
+                    />
+                )}
+            </AppDialog>
         );
     }
 );

@@ -1,6 +1,5 @@
 import { deepEqual } from '../../deepEqual';
 import {
-    isCode,
     isValueRecord,
     type TCreateEntityBody,
     type TEntityDto,
@@ -11,7 +10,7 @@ import {
 
 const SERVER_FIELDS = ['version', 'file', 'line', 'exportName', 'kind', 'id'] as const;
 
-const isServerField = (key: string) => (SERVER_FIELDS as readonly string[]).includes(key);
+const isServerField = (key: string) => SERVER_FIELDS.some((field) => field === key);
 
 // same rule as the server's ID_RE; case-insensitive uniqueness because npc files are `<Id>.ts`
 const ENTITY_ID_RE = /^[a-z][A-Za-z0-9_]*$/;
@@ -115,19 +114,10 @@ export const editableOf = (entity: TEntityDto): TEntityFields =>
 
 export const withFields = (entity: TEntityDto, patch: Record<string, unknown>): TEntityDto => ({ ...entity, ...patch });
 
-export const displayName = (value: unknown, fallback: string): string => {
-    if (typeof value === 'string') return value || fallback;
-    if (isCode(value)) {
-        const m = /^_\(\s*(['"`])(.*)\1\s*\)$/.exec(value.code.trim());
-        return m ? m[2] : fallback;
-    }
-    return fallback;
-};
-
 export const ENTITY_TYPE_NAMES = {
-    characters: { entity: 'TCharacter', data: 'TCharacterData' },
-    npcs: { entity: 'TNpc', data: 'TNpcData' },
-    locations: { entity: 'TLocation', data: null },
+    characters: { entity: 'Character', data: 'TCharacterData' },
+    npcs: { entity: 'Npc', data: 'TNpcData' },
+    locations: { entity: 'Location', data: null },
     items: { entity: 'TItemInfo', data: null },
 } as const satisfies Record<TEntityKind, { entity: string; data: string | null }>;
 

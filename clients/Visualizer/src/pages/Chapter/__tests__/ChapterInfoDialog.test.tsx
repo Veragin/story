@@ -63,8 +63,6 @@ describe('ChapterInfoDialog', () => {
         );
         expect(labels).toEqual(
             expect.arrayContaining([
-                'Title',
-                'Description',
                 'Location',
                 'Time range',
                 'Child chapters',
@@ -74,9 +72,8 @@ describe('ChapterInfoDialog', () => {
         expect(get('[data-form-section="dataType"]').textContent).toContain(
             'TKingdomChapterData'
         );
-        expect(get<HTMLInputElement>('[data-field="title"]').value).toBe(
-            'Kingdom Chapter'
-        );
+        expect($('[data-field="title"]')).toBeNull();
+        expect($('[data-field="description"]')).toBeNull();
         expect(
             get('[data-form-field="Init"] [data-form-field="mojePromena"]')
         ).toBeTruthy();
@@ -87,7 +84,6 @@ describe('ChapterInfoDialog', () => {
 
     it('saves the edited fields only', async () => {
         await open('village');
-        typeInto(get<HTMLInputElement>('[data-field="title"]'), 'Village');
         typeInto(
             get<HTMLInputElement>('[data-field="timeRange.end"]'),
             '6.1. 8:00'
@@ -95,13 +91,30 @@ describe('ChapterInfoDialog', () => {
         act(() => saveButton().click());
         await act(settle);
         const saved = await stores.api.getChapter('village');
-        expect(saved.title).toBe('Village');
         expect(saved.timeRange).toEqual({
             start: '2.1. 8:00',
             end: '6.1. 8:00',
         });
         expect(saved.description).toBe('A village chapter is happening');
         expect(onClose).toHaveBeenCalled();
+    });
+
+    it('saves the author description apart from the in-game one', async () => {
+        await open('village');
+        const updateChapter = vi.spyOn(stores.api, 'updateChapter');
+        typeInto(
+            get<HTMLTextAreaElement>('textarea[data-field="docComment"]'),
+            'Thomas wakes up'
+        );
+        act(() => saveButton().click());
+        await act(settle);
+        expect(updateChapter).toHaveBeenCalledWith(
+            'village',
+            expect.objectContaining({ docComment: 'Thomas wakes up' })
+        );
+        expect(updateChapter.mock.calls[0]?.[1]).not.toHaveProperty(
+            'description'
+        );
     });
 
     it('fills a new required data-type field into init and saves both', async () => {
@@ -155,13 +168,16 @@ describe('ChapterInfoDialog', () => {
                 ],
             })
         );
-        typeInto(get<HTMLInputElement>('[data-field="title"]'), 'Village');
+        typeInto(
+            get<HTMLInputElement>('[data-field="timeRange.end"]'),
+            '6.1. 8:00'
+        );
         act(() => saveButton().click());
         await act(settle);
         expect(get('[data-form-field="time"]').textContent).toContain(
             'Not a number'
         );
-        expect(get('[data-form-field="Title"]').textContent).not.toContain(
+        expect(get('[data-form-field="Location"]').textContent).not.toContain(
             'Not a number'
         );
         expect(document.body.textContent).toContain('Somewhere else');

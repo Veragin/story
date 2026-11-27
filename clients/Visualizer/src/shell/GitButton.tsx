@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, styled, Tooltip } from '@mui/material';
+import { Badge, IconButton, styled, Tooltip } from '@mui/material';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import { observer } from 'mobx-react-lite';
-import { spacingCss } from '@story/ui';
 import { gitStore } from '../context';
 import { GitMenu } from '../git/GitMenu';
 import { openGitSettings } from '../git/gitDialogs';
@@ -17,15 +16,16 @@ export const GitButton = observer(() => {
     const status = gitStore.status;
     if (!status) {
         return (
-            <SButton
-                variant="outlined"
-                color="inherit"
-                size="small"
-                startIcon={<CallSplitIcon />}
-                onClick={openGitSettings}
-            >
-                {_('Git')}
-            </SButton>
+            <Tooltip title={_('Set up git')}>
+                <SButton
+                    color="inherit"
+                    size="small"
+                    aria-label={_('Git')}
+                    onClick={openGitSettings}
+                >
+                    <CallSplitIcon />
+                </SButton>
+            </Tooltip>
         );
     }
 
@@ -45,17 +45,15 @@ export const GitButton = observer(() => {
                 <SButton
                     color="inherit"
                     size="small"
-                    startIcon={<CallSplitIcon />}
                     aria-label={_('Git')}
                     onClick={(e) => {
                         setAnchor(e.currentTarget);
                         void gitStore.fetch();
                     }}
                 >
-                    <SBranch>{status.branch}</SBranch>
-                    {changes > 0 && <SDirty>● {changes}</SDirty>}
-                    {status.ahead > 0 && <span>↑{status.ahead}</span>}
-                    {status.behind > 0 && <span>↓{status.behind}</span>}
+                    <Badge badgeContent={changes} color="warning" max={999}>
+                        <CallSplitIcon />
+                    </Badge>
                 </SButton>
             </Tooltip>
             {anchor && (
@@ -69,19 +67,6 @@ export const GitButton = observer(() => {
     );
 });
 
-const SButton = styled(Button)`
+const SButton = styled(IconButton)`
     flex-shrink: 0;
-    gap: ${spacingCss(0.75)};
-    text-transform: none;
-`;
-
-const SBranch = styled('span')`
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-`;
-
-const SDirty = styled('span')`
-    color: ${({ theme }) => theme.palette.warning.light};
 `;

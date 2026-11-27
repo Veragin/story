@@ -3,18 +3,21 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
 import {
     SideMenu,
+    type TSideMenuEntry,
     type TSideMenuGroup,
-} from '../../components/SideMenu/SideMenu';
-import { modals, router, type TStructureSection } from '../../shell';
-import { CreateLiteralDialog } from './CreateLiteralDialog';
-import { CreateTypeDialog } from './CreateTypeDialog';
+} from '../../components/layout/SideMenu';
+import { router, type TStructureSection } from '../../shell';
+import { askNewClass, askNewLiteral, askNewType } from './structureDialogs';
 import type { StructureEditorStore } from './StructureEditorStore';
 
 type TProps = {
     editor: StructureEditorStore;
 };
 
-type TListEntry = { name: string; secondary?: string };
+type TListEntry = {
+    name: string;
+    secondary?: string;
+};
 
 type TGroup = {
     title: string;
@@ -25,57 +28,58 @@ type TGroup = {
 
 export const StructureList = observer(({ editor }: TProps) => {
     const { structure } = editor;
-    const [tab, setTab] = useState<TStructureSection>(editor.section);
+    // a private type or literal belongs to its class's page
+    const selectedOwner =
+        editor.selectedType?.owner ?? editor.selectedLiteral?.owner;
+    const selectedTab: TStructureSection = selectedOwner
+        ? 'classes'
+        : editor.section;
+    const [tab, setTab] = useState<TStructureSection>(selectedTab);
 
-    useEffect(() => setTab(editor.section), [editor.section]);
+    useEffect(() => setTab(selectedTab), [selectedTab]);
 
     const select = (section: TStructureSection, name: string) =>
         router.navigate({ page: 'structure', section, name });
 
-    const newType = () =>
-        modals.open((close) => (
-            <CreateTypeDialog
-                structure={structure}
-                onCancel={close}
-                onCreated={(type) => {
-                    close();
-                    select('types', type.name);
-                }}
-            />
-        ));
+    const newClass = async () => {
+        const type = await askNewClass(structure);
+        if (type) select('classes', type.name);
+    };
 
-    const newLiteral = () =>
-        modals.open((close) => (
-            <CreateLiteralDialog
-                structure={structure}
-                onCancel={close}
-                onCreated={(literal) => {
-                    close();
-                    select('literals', literal.name);
-                }}
-            />
-        ));
+    const newType = async () => {
+        const type = await askNewType(structure);
+        if (type) select('types', type.name);
+    };
+
+    const newLiteral = async () => {
+        const literal = await askNewLiteral(structure);
+        if (literal) select('literals', literal.name);
+    };
 
     const groups: TGroup[] = [
         {
-            title: _('Literals'),
-            section: 'literals',
-            entries: structure.literals.map((literal) => ({
-                name: literal.name,
-                secondary: literal.scope === 'local' ? literal.file : undefined,
+            title: _('Story classes'),
+            section: 'classes',
+            entries: structure.storyClasses.map((type) => ({
+                name: type.name,
+                secondary: type.catalog?.name,
             })),
-            onNew: newLiteral,
+            onNew: () => void newClass(),
+        },
+        {
+            title: _('Built-in classes (extendable)'),
+            section: 'classes',
+            entries: structure.builtInClasses.map((type) => ({
+                name: type.name,
+            })),
         },
         {
             title: _('Story types'),
             section: 'types',
-            entries: structure.storyTypes.map((type) => ({
+            entries: structure.publicStoryTypes.map((type) => ({
                 name: type.name,
-                secondary: type.catalog
-                    ? _('catalog %s', type.catalog.name)
-                    : undefined,
             })),
-            onNew: newType,
+            onNew: () => void newType(),
         },
         {
             title: _('Engine types (extendable)'),
@@ -84,10 +88,35 @@ export const StructureList = observer(({ editor }: TProps) => {
                 name: type.name,
             })),
         },
+        {
+            title: _('Literals'),
+            section: 'literals',
+            entries: structure.publicLiterals.map((literal) => ({
+                name: literal.name,
+                secondary: literal.scope === 'local' ? literal.file : undefined,
+            })),
+            onNew: () => void newLiteral(),
+        },
     ];
 
-    const isDirty = (section: TStructureSection) =>
-        (section === 'types' ? editor.type : editor.literal).dirty;
+    const unsaved = (
+        editor.section === 'literals' ? editor.literal : editor.type
+    ).dirty;
+    const selectedName = selectedOwner ?? editor.name;
+
+    const menuEntry = (
+        entry: TListEntry,
+        section: TStructureSection
+    ): TSideMenuEntry => {
+        const selected = selectedTab === section && selectedName === entry.name;
+        return {
+            name: entry.name,
+            secondary: entry.secondary,
+            href: router.href({ page: 'structure', section, name: entry.name }),
+            selected,
+            unsaved: selected && unsaved,
+        };
+    };
 
     const menuGroups: TSideMenuGroup[] = groups
         .filter((group) => group.section === tab)
@@ -95,21 +124,9 @@ export const StructureList = observer(({ editor }: TProps) => {
             title: group.title,
             onNew: group.onNew,
             newAction: `new-${group.section}`,
-            entries: group.entries.map((entry) => {
-                const selected =
-                    editor.section === group.section &&
-                    editor.name === entry.name;
-                return {
-                    ...entry,
-                    href: router.href({
-                        page: 'structure',
-                        section: group.section,
-                        name: entry.name,
-                    }),
-                    selected,
-                    unsaved: selected && isDirty(group.section),
-                };
-            }),
+            entries: group.entries.map((entry) =>
+                menuEntry(entry, group.section)
+            ),
         }));
 
     return (
@@ -123,6 +140,11 @@ export const StructureList = observer(({ editor }: TProps) => {
                     }
                     variant="fullWidth"
                 >
+                    <Tab
+                        value="classes"
+                        label={_('Classes')}
+                        data-tab="classes"
+                    />
                     <Tab value="types" label={_('Types')} data-tab="types" />
                     <Tab
                         value="literals"

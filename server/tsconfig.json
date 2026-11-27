@@ -15,5 +15,5 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true
     },
-    "include": ["src", "__tests__", "scripts"]
+    "include": ["src", "__tests__", "scripts", "aiLauncher"]
 }

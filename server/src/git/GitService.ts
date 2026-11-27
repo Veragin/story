@@ -2,10 +2,10 @@ import { rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
+    TGitBranchDto,
     TGitCommitResultDto,
     TGitConfigDto,
     TGitDto,
-    TGitLogEntryDto,
     TGitPullResultDto,
     TGitStatusDto,
 } from '@story/protocol';
@@ -27,10 +27,14 @@ import { GitAvailability } from './GitAvailability';
 import {
     checkBranchName,
     commitAll,
+    commitPaths,
+    deleteRemoteBranch,
     fetchOrigin,
     gitDir,
     mergeNoEdit,
+    pendingPathsOf,
     pushHead,
+    readBranches,
     readRefs,
     readStatus,
     requireClean,
@@ -42,14 +46,14 @@ import {
     parseCommitBody,
     parseConfigChange,
     parseDeleteBody,
-    parseLogQuery,
+    parseDeleteBranchBody,
     parseSetupBody,
     type TSetupInput,
 } from './gitInput';
 import { GitLocks } from './GitLocks';
 import { GIT_OPTIONS, type TGitOptions } from './gitOptions';
 import { GitRunner } from './GitRunner';
-import { LOG_FORMAT, parseLog, type TRefs } from './gitStatus';
+import type { TRefs } from './gitStatus';
 import { GITIGNORE_FILE, STORY_GITIGNORE } from './storyGitignore';
 import { decryptToken, encryptToken, TokenCipherError } from './tokenCipher';
 
@@ -169,9 +173,11 @@ export class GitService {
     }
 
     commit(ctx: TServerContext, body: unknown): Promise<TGitCommitResultDto> {
-        const { message, push } = parseCommitBody(jsonObjectBody(body));
+        const { message, push, paths } = parseCommitBody(jsonObjectBody(body));
         return this.withRepo(ctx, async ({ git, current }) => {
-            const commit = await commitAll(git, message, current.record);
+            const commit = paths
+                ? await commitPaths(git, message, current.record, await pendingPathsOf(git, paths))
+                : await commitAll(git, message, current.record);
             if (commit === null) throw HttpError.of('git_nothing_to_commit', 'There are no changes to commit');
             const pushError = push ? await this.tryPush(git) : undefined;
             return {
@@ -183,10 +189,10 @@ export class GitService {
         });
     }
 
-    push(ctx: TServerContext): Promise<TGitStatusDto> {
+    push(ctx: TServerContext, { force = false } = {}): Promise<TGitStatusDto> {
         return this.withRepo(ctx, async ({ git }) => {
             if ((await readStatus(git)).detached) throw HttpError.badRequest('Switch to a branch before you push');
-            await pushHead(git);
+            await pushHead(git, { force });
             return readStatus(git);
         });
     }
@@ -212,13 +218,13 @@ export class GitService {
         const { branch, create } = parseCheckoutBody(jsonObjectBody(body));
         return this.withRepo(ctx, async ({ git }) => {
             await checkBranchName(git, branch);
-            requireClean(await readStatus(git), 'switch branches');
             const refs = await readRefs(git);
             if (create) {
                 if (refs.localBranches.includes(branch)) throw HttpError.exists(`Branch "${branch}" exists`);
                 await git.run(['switch', '-q', '-c', branch]);
                 return readStatus(git);
             }
+            requireClean(await readStatus(git), 'switch branches');
             const args = switchArgs(branch, refs);
             await rewriteInBulk(ctx.bus, () => git.run(['switch', '-q', ...args]));
             await this.reloader.afterBulkRewrite(ctx, 'git');
@@ -226,16 +232,40 @@ export class GitService {
         });
     }
 
-    log(ctx: TServerContext, query: unknown): Promise<TGitLogEntryDto[]> {
-        const { limit, before } = parseLogQuery(query);
+    discard(ctx: TServerContext): Promise<TGitStatusDto> {
         return this.withRepo(ctx, async ({ git }) => {
-            const start = await resolveCommit(git, before ?? 'HEAD');
-            if (start === null) {
-                if (before !== null) throw HttpError.notFound(`No commit "${before}"`);
-                return [];
+            const before = await readStatus(git);
+            if (before.changes.length === 0) return before;
+            await this.head(git);
+            await rewriteInBulk(ctx.bus, async () => {
+                await git.run(['reset', '-q', '--hard', 'HEAD']);
+                await git.run(['clean', '-q', '-f', '-d']);
+            });
+            await this.reloader.afterBulkRewrite(ctx, 'git');
+            return readStatus(git);
+        });
+    }
+
+    branches(ctx: TServerContext): Promise<TGitBranchDto[]> {
+        return this.withRepo(ctx, async ({ git }) => {
+            const status = await readStatus(git);
+            return readBranches(git, status.detached ? null : status.branch);
+        });
+    }
+
+    deleteBranch(ctx: TServerContext, body: unknown): Promise<TGitStatusDto> {
+        const { branch, remote } = parseDeleteBranchBody(jsonObjectBody(body));
+        return this.withRepo(ctx, async ({ git }) => {
+            const status = await readStatus(git);
+            if (!status.detached && status.branch === branch) {
+                throw HttpError.badRequest('Switch to another branch before you delete this one');
             }
-            const skip = before === null ? [] : ['--skip=1'];
-            return parseLog(await git.text(['log', LOG_FORMAT, '--name-only', `-n${limit}`, ...skip, start, '--']));
+            const local = status.localBranches.includes(branch);
+            const onRemote = remote && status.remoteBranches.includes(branch);
+            if (!local && !onRemote) throw HttpError.notFound(`No branch "${branch}"`);
+            if (onRemote) await deleteRemoteBranch(git, branch);
+            if (local) await git.run(['branch', '-q', '-D', branch]);
+            return readStatus(git);
         });
     }
 
@@ -258,7 +288,7 @@ export class GitService {
 
     private async firstPush(git: GitRunner, branch: string): Promise<void> {
         try {
-            await pushHead(git, branch);
+            await pushHead(git, { branch });
         } catch (e) {
             if (isHttpError(e) && e.body.error === 'git_rejected') {
                 throw HttpError.of(

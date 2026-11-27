@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { TChapterId } from '@story/types';
 import { reaction } from 'mobx';
 import { styled } from '@mui/material';
 import {
@@ -12,11 +11,12 @@ import {
     type Shape,
     type TCameraState,
 } from '../../../canvas';
+import type { AiStore } from '../../../ai/AiStore';
+import { aiStore } from '../../../context';
 import { router } from '../../../shell';
 import { getUiState, setUiState } from '../../../ui-state';
 import { uiKeys, type ChapterGraphStore } from '../ChapterGraphStore';
 import { BOX } from './autoLayout';
-import { characterColor } from './colors';
 import {
     isGhostId,
     type TGhostNode,
@@ -29,24 +29,40 @@ type TShapeData =
     | { kind: 'ghost'; ghost: TGhostNode }
     | { kind: 'edge'; edge: TGraphEdge };
 
+const REDIRECT_COLOR = '#b388ff';
+
 const TYPE_FILL: Record<TGraphNode['type'], string> = {
+    start: '#1f4d3a',
     screen: '#1d3557',
     linear: '#1f4d3a',
-    transition: '#5a3d1a',
+    redirect: '#35224f',
+    finish: '#5a1f1f',
+};
+
+const TYPE_BORDER: Record<TGraphNode['type'], string> = {
+    start: '#66bb6a',
+    screen: '#78909c',
+    linear: '#78909c',
+    redirect: REDIRECT_COLOR,
+    finish: '#e53935',
 };
 
 const EDGE_COLOR: Record<TGraphEdge['kinds'][number], string> = {
     link: '#9fb3c8',
-    redirect: '#f4a261',
+    redirect: REDIRECT_COLOR,
     next: '#80cbc4',
 };
 
-const nodeLabel = (n: TGraphNode) =>
-    `${n.title}\n${n.type}${n.selfLoop ? '  ↻' : ''}`;
+const nodeLabel = (n: TGraphNode) => `${n.title}${n.selfLoop ? '  ↻' : ''}`;
 
 type TTooltip = { text: string; x: number; y: number } | null;
 
-export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
+type TProps = {
+    store: ChapterGraphStore;
+    ai?: Pick<AiStore, 'suggest' | 'insertMention'>;
+};
+
+export const ChapterGraphCanvas = ({ store, ai = aiStore }: TProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [tooltip, setTooltip] = useState<TTooltip>(null);
 
@@ -67,6 +83,13 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             highlight: { color: '#ffd166', width: 3 },
         });
 
+        const boxes = new Map<string, RectShape<TShapeData>>();
+        const lines = new Map<string, LineShape<TShapeData>>();
+        const boxData = (shape: Shape | null) =>
+            shape ? boxes.get(shape.id)?.data : undefined;
+        let dragging: string | null = null;
+        let fitted = savedCamera !== null;
+
         // Twine-like: pressing an unselected box selects it, so the same gesture drags it.
         const offPress = scene.addInteraction({
             priority: 10,
@@ -81,12 +104,15 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                 }
                 return false;
             },
+            // only fires for a press released without moving, so drags never open the editor
+            onClick: (e) => {
+                const data = boxData(e.hit);
+                if (data?.kind !== 'passage') return false;
+                if (ai.suggest.awaitingPassage) ai.insertMention('passage', data.node.id);
+                else store.openEditor(data.node.id);
+                return false;
+            },
         });
-
-        const boxes = new Map<string, RectShape<TShapeData>>();
-        const lines = new Map<string, LineShape<TShapeData>>();
-        let dragging: string | null = null;
-        let fitted = savedCamera !== null;
 
         const sync = () => {
             const { nodes, ghosts, edges } = store.graph;
@@ -100,7 +126,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                     label: nodeLabel(node),
                     fill: TYPE_FILL[node.type],
                     stroke: {
-                        color: characterColor(node.characterId),
+                        color: TYPE_BORDER[node.type],
                         width: 2,
                         screenWidth: true,
                     },
@@ -324,22 +350,21 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
                 store.setPosition(shape.id, { x: shape.x, y: shape.y });
             }),
             scene.events.on('action', ({ shape }) => {
-                const data = (shape as Shape<TShapeData>).data;
-                if (data?.kind === 'passage') store.openEditor(data.node.id);
-                else if (data?.kind === 'ghost' && data.ghost.resolved) {
+                const data = boxData(shape);
+                if (data?.kind === 'ghost' && data.ghost.resolved) {
                     const chapterId = data.ghost.passageId.split('-')[0];
                     if (chapterId)
                         router.navigate({
                             page: 'chapter',
-                            chapterId: chapterId as TChapterId,
+                            chapterId,
                         });
                 }
             }),
             scene.events.on('pointermove', ({ shape, screen }) => {
-                const data = (shape as Shape<TShapeData> | null)?.data;
+                const data = boxData(shape);
                 const text =
                     data?.kind === 'passage'
-                        ? `${data.node.id} · ${_('double-click to edit')}`
+                        ? `${data.node.id} · ${_('click to edit')}`
                         : data?.kind === 'ghost'
                           ? data.ghost.resolved
                               ? _(
@@ -367,7 +392,7 @@ export const ChapterGraphCanvas = ({ store }: { store: ChapterGraphStore }) => {
             selection.destroy();
             scene.destroy();
         };
-    }, [store]);
+    }, [store, ai]);
 
     return (
         <SStage>
@@ -402,5 +427,5 @@ const STooltip = styled('div')`
     border-radius: 4px;
     background: #333e;
     color: #eee;
-    font-size: 12px;
+    font-size: ${({ theme }) => theme.typography.meta.fontSize};
 `;
