@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { observer } from 'mobx-react-lite';
 import { LoadingState } from '../../../components/feedback/LoadingState';
 import { StructureContext } from '../../../structure/structureContext';
@@ -8,10 +9,11 @@ import type { ChapterInfoEditorStore } from './ChapterInfoEditorStore';
 type TProps = {
     store: ChapterInfoEditorStore;
     structure: StructureStore;
+    parents?: ReactNode;
 };
 
 export const ChapterInfoEditorForm = observer(
-    ({ store, structure }: TProps) => {
+    ({ store, structure, parents }: TProps) => {
         if (!store.draft || !store.chapter) {
             return store.error ? null : <LoadingState />;
         }
@@ -24,6 +26,7 @@ export const ChapterInfoEditorForm = observer(
                     onChange={store.setDraft}
                     diagnostics={store.diagnosticsFor}
                     disabled={store.saving}
+                    parents={parents}
                 />
             </StructureContext.Provider>
         );

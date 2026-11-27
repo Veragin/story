@@ -172,6 +172,10 @@ export class TimelineStore {
         return out;
     }
 
+    parentChapterIds = (chapterId: string): string[] => [
+        ...new Set(this.connections.filter((c) => c.to === chapterId).map((c) => c.from)),
+    ];
+
     get unplaced(): { chapters: string[]; triggers: string[] } {
         return {
             chapters: [...this.chapters.keys()].filter((id) => this.chapterRange(id) === null),

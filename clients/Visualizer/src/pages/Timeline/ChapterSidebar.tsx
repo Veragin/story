@@ -19,6 +19,7 @@ import { ChapterInfoEditorForm } from '../Chapter/ChapterInfoForm/ChapterInfoEdi
 import { useChapterInfoEditor } from '../Chapter/ChapterInfoForm/useChapterInfoEditor';
 import { useStructureStores } from '../Chapter/ChapterInfoForm/useStructureStores';
 import type { TimelineStore } from './store/TimelineStore';
+import { ChapterParents } from './ChapterParents';
 
 type TProps = {
     store: TimelineStore;
@@ -93,6 +94,12 @@ export const ChapterSidebar = observer(
                     <ChapterInfoEditorForm
                         store={editor}
                         structure={structure}
+                        parents={
+                            <ChapterParents
+                                store={store}
+                                chapterId={chapterId}
+                            />
+                        }
                     />
                 </Sidebar>
             </SideDrawer>

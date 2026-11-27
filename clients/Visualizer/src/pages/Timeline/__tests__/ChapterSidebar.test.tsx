@@ -69,6 +69,11 @@ describe('ChapterSidebar', () => {
         );
     });
 
+    it('lists the parent chapters and selects one', () => {
+        click('[data-parent="kingdom"]');
+        expect(store.selected).toEqual({ kind: 'chapter', id: 'kingdom' });
+    });
+
     it('opens the passages and closes', () => {
         click('[data-action="open"]');
         expect(openChapter).toHaveBeenCalledWith(CHAPTER);

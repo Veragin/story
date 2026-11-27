@@ -1,6 +1,6 @@
 import { capitalize } from '@story/shared';
 import { observer } from 'mobx-react-lite';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, type ReactNode } from 'react';
 import type {
     TDataTypeDto,
     TMaybeCode,
@@ -40,6 +40,7 @@ type TChapterInfoFormProps = {
     onChange: (value: TChapterInfoValue) => void;
     diagnostics?: TDiagnosticsOf;
     disabled?: boolean;
+    parents?: ReactNode;
 };
 
 const CHAPTER_REF = 'TChapter';
@@ -66,6 +67,7 @@ export const ChapterInfoForm = observer(
         onChange,
         diagnostics = noDiagnosticsOf,
         disabled,
+        parents,
     }: TChapterInfoFormProps) => {
         const structure = useStructureContext();
         // handlers read the latest props, so they stay stable and unchanged sections skip re-rendering
@@ -159,6 +161,7 @@ export const ChapterInfoForm = observer(
                     disabled={disabled}
                     dataField="timeRange"
                 />
+                {parents}
                 <StructureContext.Provider value={childStructure}>
                     <FormArrayEditor
                         label={_('Child chapters')}
